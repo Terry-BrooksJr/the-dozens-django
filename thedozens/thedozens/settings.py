@@ -80,7 +80,7 @@ DATABASES = {
         # "OPTIONS": {"sslmode": "require"},
     }
 }
-CACHEOPS_CLIENT_CLASS = "django_redis.client.DefaultClient"
+# CACHEOPS_CLIENT_CLASS = "django_redis.client.DefaultClient"
 
 CACHEOPS_REDIS = os.getenv("REDIS_CACHE_URI")
 CACHEOPS = {
@@ -107,9 +107,9 @@ CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": os.getenv("REDIS_CACHE_URI"),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
+        # "OPTIONS": {
+        #     "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        # },
     }
 }
 
