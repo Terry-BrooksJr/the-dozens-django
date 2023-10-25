@@ -11,6 +11,9 @@
   <meta name="keywords" content="API, Joke, Entertainment, Yo Mama Jokes, The Dozens "/>
   <title>The Dozens - The Yo Mama Roast API</title>
   <link rel="icon" type="image/x-icon" href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@94065f369600b5ac3fd17c56da7800c83bf356dd/images/yoyoo_400x400.jpg"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet"/>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous"/>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
@@ -75,7 +78,10 @@
         background-color: transparent;
       }
 
-
+      .img-modal {
+        height: 15em;
+        width: auto;
+      }
 
       /* Modify the background color */
      nav {
@@ -86,7 +92,9 @@
       #joke{
         color: white;
       }
-
+      .modal-title{
+        font-family: 'Pacifico', cursive;
+      }
       .flex {
         display: flex;
         align-items: center;
@@ -274,7 +282,7 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
             <li>Joke Recatagorizion - Changing the Catagory of the Joke to a more accurate category </li>
             <li>Joke Removal - Complete removal from the Joke Database</li>
           </ol>
-          {% crispy ReportForm %}
+          {% comment %} {% crispy ReportForm %} {% endcomment %}
 
         </div>
         <div class="modal-footer">
@@ -290,7 +298,7 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
     <div class="uk-modal-dialog">
         <button class="uk-modal-close-default" type="button" uk-close></button>
         <div class="uk-modal-header">
-            <h2 class="uk-modal-title">The Dozens</h2>
+            <h2 class="uk-modal-title modal-title">The Dozens</h2>
             <hr/>
             <p class="history-modal-sub-title"><em>An Overview</em></p>
         </div>
@@ -298,12 +306,13 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
             <p><em>The Dozens</em> is a game played between two contestants in which the participants insult each other until one of them gives up. Common in African-American communities, the Dozens is almost exclusively played in front of an audience, who encourage the participants to reply with increasingly severe insults in order to heighten the tension and consequently make the contest more interesting to watch.</p>
 
               <p>Comments in the game may focus on the opposite player's intelligence, appearance, competency, social status, and financial situation. Disparaging remarks about the other player's family members are common, especially regarding their mother.[1] Commentary is often related to sexual issues, and this version of the game is referred to as the "Dirty Dozens".[2]</p>
+              <img class="img-modal wrap-left" alt="Overview Image" src="{% static 'assets/img-overview.jpg' %}" />
 
              <p> According to sociologist Harry Lefever and journalist John Leland, the game is played almost entirely by African-Americans; other ethnic groups often fail to understand how to play the game and can take remarks in the Dozens seriously.[note 1] Its popularity is higher among low-income and urban communities, but it is also found in middle-class and rural settings. Both men and women participate, but the game is more commonly played among men</p>
         </div>
         <div class="uk-modal-footer uk-text-center">
-            <button class="btn btn-info nav-bttn uk-modal-close" type="button">Exit</button>
-            <a href="#history-origins-modal" class="btn nav-bttn btn-success" uk-toggle>Origins <i class="fa-solid fa-forward"></i></a>
+            <button class="btn nav-bttn btn-primary uk-modal-close" type="button">Exit</button>
+            <a href="#history-origins-modal" class="btn nav-bttn btn-primary"uk-toggle>Origins <i class="fa-solid fa-forward"></i></a>
         </div>
     </div>
 </div>
@@ -312,21 +321,22 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
     <div class="uk-modal-dialog">
         <button class="uk-modal-close-default" type="button" uk-close></button>
         <div class="uk-modal-header">
-            <h2 class="uk-modal-title">Origins</h2>
+            <h2 class="uk-modal-title modal-title">Origins</h2>
         </div>
         <div class="uk-modal-body">
           <p>The first academic treatment of the Dozens was made in 1939 by Yale-based psychologist and social theorist John Dollard, who described the importance of the game among African-American men, and how it is generally played. Dollard's description is considered pioneering and accurate.[7] Dollard originally wrote that he was unaware of how the term "Dozens" developed, although he suggested a popular twelve-part rhyme may have been the reason for its name. He only speculated on how the game itself grew to such prominence.</p>
 
             <p>Other authors following Dollard have added their theories. Author John Leland describes an etymology, writing that the term is a modern survival of an English verb—<em>"to dozen"</em>—dating back at least to the fourteenth century and meaning <em>"to stun, stupefy, daze" </em>or <em>"to make insensible, torpid, powerless"</em>.[8]</p>
+            <img class="img-modal wrap-right" alt="Origin Image" src="{% static 'assets/img-origin.png' %}" />
 
             <p>Amuzie Chimezie, writing in the Journal of Black Studies in 1976, connects the Dozens to a Nigerian game called Ikocha Nkocha, literally translated as "making disparaging remarks". This form of the game is played by children and adolescents, and takes place in the evening, in the presence of parents and siblings. Commentary among the Igbo is more restrained: remarks about family members are rare, and are based more in fanciful imaginings than participants' actual traits. In contrast, during the game in Ghana, which is also commonly played in the evenings, insults are frequently directed at family members.[2]</p>
 
             <p>Amiri Baraka independently concluded that the Dozens originated in Africa and states that they are a surviving adaptation of "African songs of recrimination."[9]</p>
         </div>
         <div class="uk-modal-footer uk-text-center">
-            <a href="#history-overview-modal" class="btn nav-bttn btn-danger" uk-toggle>Overview</a>
-            <button class="btn btn-info nav-bttn uk-modal-close" type="button">Exit</button>
-            <a href="#history-practice-modal" class="btn  nav-bttn btn-success" uk-toggle>Practice & Purpose </a>
+            <a href="#history-overview-modal" class="btn nav-bttn btn-primary" uk-toggle><i class="fa-solid fa-backward"></i>  Overview</a>
+            <button class="btn nav-bttn btn-primary uk-modal-close" type="button">Exit</button>
+            <a href="#history-practice-modal" class="btn nav-bttn btn-primary"uk-toggle>Practice & Purpose <i class="fa-solid fa-forward"></i></a>
         </div>
     </div>
 </div>
@@ -335,17 +345,16 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
   <div class="uk-modal-dialog">
       <button class="uk-modal-close-default" type="button" uk-close></button>
       <div class="uk-modal-header">
-          <h2 class="uk-modal-title">Purpose & Practice</h2>
+          <h2 class="uk-modal-title modal-title">Purpose & Practice</h2>
       </div>
       <div class="uk-modal-body">
         <p>The Dozens is a "pattern of interactive insult" evident among all classes of African Americans, among men and women, children and adults.[11] Usually two participants engage in banter, but always in front of others, who incite the participants to continue the game by making the insults worse. Frequently used topics among players who "play the Dozens" or are "put in the Dozens" are one's opponent's lack of intelligence, ugliness, alleged homosexuality, alleged incest, cowardice, poor hygiene, and exaggerations of physical defects, such as crossed eyes.[11]</p>
-        <img alt="Origin Image" src="{% static 'assets/img-origin.png' %}" class="warp-right" />
         <p>Participants in the Dozens are required to exhibit mental acuity and proficiency with words. In his memoir <em> Die Nigger Die! </em> (1969), H. Rap Brown writes that the children he grew up with employed the Dozens to kill time and stave off boredom, in the way that whites might play Scrabble. Brown asserts playing the game is a form of mental exercise. Sociologist Harry Lefever states that verbal skill and wit is just as valued among African Americans as physical strength: <em>"Verbal facility is thus a criterion that is used to separate the men from the boys".</em>[3] According to author John Leland, the object of the game is to stupefy and daze one's opponents with swift and skillful speech. The meaning of the words, however, is lost in the game. The object of the game is the performance.[8]</p>
       </div>
       <div class="uk-modal-footer uk-text-center">
-          <a href="#history-origins-modal" class="nav-bttn btn btn-danger" uk-toggle>Origins</a>
-          <button class="btn btn-info nav-bttn uk-modal-close" type="button">Exit</button>
-          <a href="#history-ref-modal" class="btn nav-bttn btn-success" uk-toggle>References</a>
+        <a href="#history-origins-modal" class="btn nav-bttn btn-primary" uk-toggle><i class="fa-solid fa-backward"></i> Origins</a>
+        <a  class="btn nav-bttn btn-primary uk-modal-close" type="button">Exit</a>
+          <a href="#history-ref-modal" class="btn nav-bttn btn-primary"  uk-toggle>References  <i class="fa-solid fa-forward"></i></a>
       </div>
   </div>
 </div>
@@ -354,10 +363,9 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
   <div class="uk-modal-dialog">
       <button class="uk-modal-close-default" type="button" uk-close></button>
       <div class="uk-modal-header">
-          <h2 class="uk-modal-title">References</h2>
+          <h2 class="uk-modal-title modal-title ">References & Citations</h2>
       </div>
       <div class="uk-modal-body">
-        <h3>Citations</h3>
         <ol>
  <li>Jeffries, Stuart (June 12, 2006). "The mother of all insults". The Guardian. London.</li>
  <li>Chimezie, Amuzie (June 1976). "The Dozens: An African-Heritage Theory", Journal of Black Studies, Vol. 6, No. 4, pp. 401–420.</li>
@@ -376,8 +384,8 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
         </ol>
       </div>
       <div class="uk-modal-footer uk-text-center">
-          <a href="#history-origins-modal" class="btn nav-bttn btn-primary" uk-toggle>Practice and Purpose</a>
-          <button class="btn nav-bttn btn-info uk-modal-close" type="button">Exit</button>
+          <a href="#history-practice-modal" class="btn nav-bttn btn-primary" uk-toggle><i class="fa-solid fa-backward"></i> Practice and Purpose</a>
+          <a  class="btn nav-bttn btn-primary uk-modal-close" type="button">Exit</a>
               </div>
   </div>
 </div>
