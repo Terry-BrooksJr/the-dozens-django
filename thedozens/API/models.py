@@ -30,6 +30,11 @@ class Insult(models.Model):
         verbose_name = "Insult/Joke"
         verbose_name_plural = "Insults/Jokes"
         managed = True
+        indexes = [
+            models.Index(fields=["id"], name="pk_idx"),
+            models.Index(fields=["category"], name="category_idx"),
+            models.Index(fields=["added_by"], name="creator_idx"),
+        ]
 
     class CATEGORY(models.TextChoices):
         POOR = "P", _("Poor")
@@ -186,7 +191,7 @@ class InsultReview(models.Model):
         SAME_CATAGORY = "SJC", _("Completed - No New Catagory Assigned")
         REMOVED = "X", _("Completed - Joke Removed")
 
-    insult_id = models.ForeignKey(Insult, on_delete=models.CASCADE)
+    insult_id = models.IntegerField()
     anonymous = models.BooleanField(default=False)
     reporter_first_name = models.CharField(max_length=80, null=True, blank=True)
     reporter_last_name = models.CharField(max_length=80, null=True, blank=True)

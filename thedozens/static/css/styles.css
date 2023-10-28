@@ -1,75 +1,402 @@
+
+:root {
+  --primary-lime-color: #BEDA00;
+  --primary-purple-color: #92037B;
+  --pallette-dark: #2F2C2E;
+  --pallette-warm-accent:#9A3232;
+  --pallette-cool-accent:#186072;
+
+}
 @font-face {
-    font-family: YoMamaHeader;
-    src: url(https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@c6715b28123debb772de65c5c4b2d41ca63e775e/fonts/RubikVinyl-Regular.ttf);
+  font-family: YoMamaHeader;
+  src: url(https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@c6715b28123debb772de65c5c4b2d41ca63e775e/fonts/RubikVinyl-Regular.ttf);
+}
+
+@font-face {
+  font-family: YoMamaBody;
+  src: url(https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@1a2c14865a818cec1a0982dc0197d56106eb95a4/fonts/JuliusSansOne-Regular.ttf);
+}
+body {
+ background-image: url("https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@5781529605d5e009fd1f740a25f5a105a35e450e/images/background%20(1).svg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  font-family: "YoMamaBody";
+}
+main{
+  height: 780px;
+  width: 100%;
+}
+
+#copy-right{
+  position: fixed;
+  bottom: 225px;
+  left: 15px;
+}
+.video-sub-copy{
+  position: fixed;
+  bottom: 190px;
+  left: 15px;
+}
+#dozens-image{
+  position: fixed;
+  left: -205px;
+  top: 3em;
+}
+.nav-bar-parent {
+  font-weight: 900;
+  font-size: medium;
+  letter-spacing: .15em;
+}
+
+.nav-bar-parent:hover {
+  font-weight: 900;
+  font-size: large;
+  letter-spacing: .10em;
+  color: white;
+  text-decoration: underline;
+
+}
+#yo-mama-brand {
+  height: 100px;
+  width: auto;
+  margin-right: 60px;
+  float: left;
+}
+.nav-bar-parent-li{
+  margin-right: 3em;
+  margin-left: 3em;
+}
+
+#about-video {
+  position: fixed;
+  left: 25px;
+  bottom: 275px;
+}
+
+#yo-mama-dropdown{
+  outline:0;
+  border:0;
+  background-color: transparent;
+}
+
+.img-modal {
+  height: 15em;
+  width: auto;
+}
+
+/* Modify the background color */
+nav {
+
+width: 100%;
+    background-color: var(--primary-purple-color);
+}
+#joke{
+  color: white;
+}
+.modal-title{
+  font-family: 'Pacifico', cursive;
+}
+.flex {
+  display: flex;
+  align-items: center;
+  align-content: center;
+  flex-direction: row;
+}
+
+.btn-primary {
+  background-color: var(--primary-purple-color) !important;
+}
+.btn-primary:hover, .btn-primary:active, .btn-primary:visited {
+    background-color: var(--primary-lime-color) !important;
+}
+#dozens-image {
+  margin-left: 130px;
+}
+
+.footer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background-color: var(--primary-purple-color);
+  color: white;
+  text-align: center
+
+}
+#bb-py-logo {
+  height: 5%;
+  width: 5%;
+}
+
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.wrap-right {
+    float: right;
+    margin: 5px;
+}
+
+
+.wrap-left {
+  float: left;
+  margin: 5px;
+}
+#owlreporter-preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000
+}
+
+#loader {
+  display: block;
+  position: relative;
+  left: 50%;
+  top: 50%;
+  width: 150px;
+  height: 150px;
+  margin: -75px 0 0 -75px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--pallette-warm-accent);
+  -webkit-animation: spin 2s linear infinite;
+  animation: spin 2s linear infinite;
+  z-index: 1001
+}
+
+#loader:before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: white;
+  -webkit-animation: spin 3s linear infinite;
+  animation: spin 3s linear infinite
+}
+
+#loader:after {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  bottom: 15px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--primary-lime-color);
+  -webkit-animation: spin 1.5s linear infinite;
+  animation: spin 1.5s linear infinite
+}
+
+@-webkit-keyframes spin {
+  0% {
+      -webkit-transform: rotate(0deg);
+      -ms-transform: rotate(0deg);
+      transform: rotate(0deg)
   }
 
-  @font-face {
-    font-family: YoMamaBody;
-    src: url(https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@1a2c14865a818cec1a0982dc0197d56106eb95a4/fonts/JuliusSansOne-Regular.ttf);
+  100% {
+      -webkit-transform: rotate(360deg);
+      -ms-transform: rotate(360deg);
+      transform: rotate(360deg)
   }
-  body {
-   background-image: url("https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@5781529605d5e009fd1f740a25f5a105a35e450e/images/background%20(1).svg");
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-color: rgb(130,142,152);
-    font-family: "YoMamaBody";
-  }
-  main{
-    height: 780px;
-    width: 100%;
-  }
-  #yo-mama-brand {
-    height: 100px;
-    width: auto;
-    margin-left 230px;
-    float: left;
-  }
-  #yo-mama-dropdown{
-    outline:0;
-    border:0;
-    background-color: transparent;
-  }
-  nav {
-  background-color: rgb(130,142,152);
+}
+
+@keyframes spin {
+  0% {
+      -webkit-transform: rotate(0deg);
+      -ms-transform: rotate(0deg);
+      transform: rotate(0deg)
   }
 
+  100% {
+      -webkit-transform: rotate(360deg);
+      -ms-transform: rotate(360deg);
+      transform: rotate(360deg)
+  }
+}
 
-  /* Modify the background color */
-  .navbar-main {
-      background-color: purple;
-  }
-  #joke{
-    color: white;
+#owlreporter-preloader .loader-section {
+  position: fixed;
+  top: 0;
+  width: 51%;
+  height: 100%;
+  background: var(--primary-purple-color);
+  z-index: 1000;
+  -webkit-transform: translateX(0);
+  -ms-transform: translateX(0);
+  transform: translateX(0)
+}
+
+#owlreporter-preloader .loader-section.section-left {
+  left: 0
+}
+
+#owlreporter-preloader .loader-section.section-right {
+  right: 0
+}
+
+.loaded #owlreporter-preloader .loader-section.section-left {
+  -webkit-transform: translateX(-100%);
+  -ms-transform: translateX(-100%);
+  transform: translateX(-100%);
+  -webkit-transition: all .7s .3s cubic-bezier(0.645,0.045,0.355,1.000);
+  transition: all .7s .3s cubic-bezier(0.645,0.045,0.355,1.000)
+}
+
+.loaded #owlreporter-preloader .loader-section.section-right {
+  -webkit-transform: translateX(100%);
+  -ms-transform: translateX(100%);
+  transform: translateX(100%);
+  -webkit-transition: all .7s .3s cubic-bezier(0.645,0.045,0.355,1.000);
+  transition: all .7s .3s cubic-bezier(0.645,0.045,0.355,1.000)
+}
+
+.loaded #loader {
+  opacity: 0;
+  -webkit-transition: all .3s ease-out;
+  transition: all .3s ease-out
+}
+
+.loaded #owlreporter-preloader {
+  visibility: hidden;
+  -webkit-transform: translateY(-100%);
+  -ms-transform: translateY(-100%);
+  transform: translateY(-100%);
+  -webkit-transition: all .3s 1s ease-out;
+  transition: all .3s 1s ease-out
+}
+
+.no-js #owlreporter-preloader {
+  display: none
+}
+
+.no-js h1 {
+  color: #222
+}
+
+#content {
+  margin: 0 auto;
+  padding-bottom: 50px;
+  width: 80%;
+  max-width: 978px
+}
+
+.ir {
+  background-color: transparent;
+  border: 0;
+  overflow: hidden;
+  *text-indent: -9999px
+}
+
+.ir:before {
+  content: "";
+  display: block;
+  width: 0;
+  height: 150%
+}
+
+.hidden {
+  display: none!important;
+  visibility: hidden
+}
+
+.visuallyhidden {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px
+}
+
+.visuallyhidden.focusable:active,.visuallyhidden.focusable:focus {
+  clip: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  position: static;
+  width: auto
+}
+
+.invisible {
+  visibility: hidden
+}
+
+.clearfix:before,.clearfix:after {
+  content: " ";
+  display: table
+}
+
+.clearfix:after {
+  clear: both
+}
+
+.clearfix {
+  *zoom:1}
+
+@media print {
+  * {
+      background: transparent!important;
+      color: #000!important;
+      box-shadow: none!important;
+      text-shadow: none!important
   }
 
-  .flex {
-    display: flex;
-    align-items: center;
-    align-content: center;
-    flex-direction: row;
+  a,a:visited {
+      text-decoration: underline
   }
 
-  .btn-primary {
-    background-color: purple !important
-  }
-  .btn-primary:hover, .btn-primary:active, .btn-primary:visited {
-      background-color: #BEDA00 !important
-  }
-  #dozens-image {
-    margin-left: 130px;
+  a[href]:after {
+      content: " (" attr(href) ")"
   }
 
-  .footer {
-    position: fixed;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    background-color: purple;
-    color: white;
-    text-align: center
+  abbr[title]:after {
+      content: " (" attr(title) ")"
+  }
 
+  .ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after {
+      content: ""
   }
-  #bb-py-logo {
-    height: 5%;
-    width: 5%;
+
+  pre,blockquote {
+      border: 1px solid #999;
+      page-break-inside: avoid
   }
+
+  thead {
+      display: table-header-group
+  }
+
+  tr,img {
+      page-break-inside: avoid
+  }
+
+  img {
+      max-width: 100%!important
+  }
+
+  @page {
+      margin: .5cm
+  }
+
+  p,h2,h3 {
+      orphans: 3;
+      widows: 3
+  }
+
+  h2,h3 {
+      page-break-after: avoid
+  }
+}

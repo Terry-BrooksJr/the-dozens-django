@@ -16,6 +16,28 @@ files = [
 dev = ["black", "coverage", "isort", "pre-commit", "pyenchant", "pylint"]
 
 [[package]]
+name = "anyio"
+version = "4.0.0"
+description = "High level compatibility layer for multiple asynchronous event loop implementations"
+category = "dev"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "anyio-4.0.0-py3-none-any.whl", hash = "sha256:cfdb2b588b9fc25ede96d8db56ed50848b0b649dca3dd1df0b11f683bb9e0b5f"},
+    {file = "anyio-4.0.0.tar.gz", hash = "sha256:f7ed51751b2c2add651e5747c891b47e26d2a21be5d32d9311dfe9692f3e5d7a"},
+]
+
+[package.dependencies]
+exceptiongroup = {version = ">=1.0.2", markers = "python_version < \"3.11\""}
+idna = ">=2.8"
+sniffio = ">=1.1"
+
+[package.extras]
+doc = ["Sphinx (>=7)", "packaging", "sphinx-autodoc-typehints (>=1.2.0)"]
+test = ["anyio[trio]", "coverage[toml] (>=7)", "hypothesis (>=4.0)", "psutil (>=5.9)", "pytest (>=7.0)", "pytest-mock (>=3.6.1)", "trustme", "uvloop (>=0.17)"]
+trio = ["trio (>=0.22)"]
+
+[[package]]
 name = "asgiref"
 version = "3.7.2"
 description = "ASGI specs, helper code, and adapters"
@@ -102,6 +124,18 @@ colorama = ["colorama (>=0.4.3)"]
 d = ["aiohttp (>=3.7.4)"]
 jupyter = ["ipython (>=7.8.0)", "tokenize-rt (>=3.2.0)"]
 uvloop = ["uvloop (>=0.15.2)"]
+
+[[package]]
+name = "cerberus"
+version = "1.3.5"
+description = "Lightweight, extensible schema and data validation tool for Pythondictionaries."
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "Cerberus-1.3.5-py3-none-any.whl", hash = "sha256:7649a5815024d18eb7c6aa5e7a95355c649a53aacfc9b050e9d0bf6bfa2af372"},
+    {file = "Cerberus-1.3.5.tar.gz", hash = "sha256:81011e10266ef71b6ec6d50e60171258a5b134d69f8fb387d16e4936d0d47642"},
+]
 
 [[package]]
 name = "certifi"
@@ -536,20 +570,20 @@ dev = ["jupyterlab", "matplotlib", "nbdev (>=0.2.39)", "numpy", "pandas", "pillo
 
 [[package]]
 name = "filelock"
-version = "3.12.4"
+version = "3.13.0"
 description = "A platform independent file lock."
 category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "filelock-3.12.4-py3-none-any.whl", hash = "sha256:08c21d87ded6e2b9da6728c3dff51baf1dcecf973b768ef35bcbc3447edb9ad4"},
-    {file = "filelock-3.12.4.tar.gz", hash = "sha256:2e6f249f1f3654291606e046b09f1fd5eac39b360664c27f5aad072012f8bcbd"},
+    {file = "filelock-3.13.0-py3-none-any.whl", hash = "sha256:a552f4fde758f4eab33191e9548f671970f8b06d436d31388c9aa1e5861a710f"},
+    {file = "filelock-3.13.0.tar.gz", hash = "sha256:63c6052c82a1a24c873a549fbd39a26982e8f35a3016da231ead11a5be9dad44"},
 ]
 
 [package.extras]
-docs = ["furo (>=2023.7.26)", "sphinx (>=7.1.2)", "sphinx-autodoc-typehints (>=1.24)"]
-testing = ["covdefaults (>=2.3)", "coverage (>=7.3)", "diff-cover (>=7.7)", "pytest (>=7.4)", "pytest-cov (>=4.1)", "pytest-mock (>=3.11.1)", "pytest-timeout (>=2.1)"]
-typing = ["typing-extensions (>=4.7.1)"]
+docs = ["furo (>=2023.9.10)", "sphinx (>=7.2.6)", "sphinx-autodoc-typehints (>=1.24)"]
+testing = ["covdefaults (>=2.3)", "coverage (>=7.3.2)", "diff-cover (>=8)", "pytest (>=7.4.3)", "pytest-cov (>=4.1)", "pytest-mock (>=3.12)", "pytest-timeout (>=2.2)"]
+typing = ["typing-extensions (>=4.8)"]
 
 [[package]]
 name = "funcy"
@@ -678,6 +712,18 @@ setproctitle = ["setproctitle"]
 tornado = ["tornado (>=0.2)"]
 
 [[package]]
+name = "h11"
+version = "0.14.0"
+description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "h11-0.14.0-py3-none-any.whl", hash = "sha256:e3fe4ac4b851c468cc8363d500db52c2ead036020723024a109d37346efaa761"},
+    {file = "h11-0.14.0.tar.gz", hash = "sha256:8f19fbbe99e72420ff35c00b27a34cb9937e902a8b810e2c88300c6f0a3b699d"},
+]
+
+[[package]]
 name = "hiredis"
 version = "2.2.3"
 description = "Python wrapper for hiredis"
@@ -777,15 +823,61 @@ files = [
 ]
 
 [[package]]
+name = "httpcore"
+version = "0.18.0"
+description = "A minimal low-level HTTP client."
+category = "dev"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "httpcore-0.18.0-py3-none-any.whl", hash = "sha256:adc5398ee0a476567bf87467063ee63584a8bce86078bf748e48754f60202ced"},
+    {file = "httpcore-0.18.0.tar.gz", hash = "sha256:13b5e5cd1dca1a6636a6aaea212b19f4f85cd88c366a2b82304181b769aab3c9"},
+]
+
+[package.dependencies]
+anyio = ">=3.0,<5.0"
+certifi = "*"
+h11 = ">=0.13,<0.15"
+sniffio = ">=1.0.0,<2.0.0"
+
+[package.extras]
+http2 = ["h2 (>=3,<5)"]
+socks = ["socksio (>=1.0.0,<2.0.0)"]
+
+[[package]]
+name = "httpx"
+version = "0.25.0"
+description = "The next generation HTTP client."
+category = "dev"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "httpx-0.25.0-py3-none-any.whl", hash = "sha256:181ea7f8ba3a82578be86ef4171554dd45fec26a02556a744db029a0a27b7100"},
+    {file = "httpx-0.25.0.tar.gz", hash = "sha256:47ecda285389cb32bb2691cc6e069e3ab0205956f681c5b2ad2325719751d875"},
+]
+
+[package.dependencies]
+certifi = "*"
+httpcore = ">=0.18.0,<0.19.0"
+idna = "*"
+sniffio = "*"
+
+[package.extras]
+brotli = ["brotli", "brotlicffi"]
+cli = ["click (>=8.0.0,<9.0.0)", "pygments (>=2.0.0,<3.0.0)", "rich (>=10,<14)"]
+http2 = ["h2 (>=3,<5)"]
+socks = ["socksio (>=1.0.0,<2.0.0)"]
+
+[[package]]
 name = "identify"
-version = "2.5.30"
+version = "2.5.31"
 description = "File identification library for Python"
 category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "identify-2.5.30-py2.py3-none-any.whl", hash = "sha256:afe67f26ae29bab007ec21b03d4114f41316ab9dd15aa8736a167481e108da54"},
-    {file = "identify-2.5.30.tar.gz", hash = "sha256:f302a4256a15c849b91cfcdcec052a8ce914634b2f77ae87dad29cd749f2d88d"},
+    {file = "identify-2.5.31-py2.py3-none-any.whl", hash = "sha256:90199cb9e7bd3c5407a9b7e81b4abec4bb9d249991c79439ec8af740afc6293d"},
+    {file = "identify-2.5.31.tar.gz", hash = "sha256:7736b3c7a28233637e3c36550646fc6389bedd74ae84cb788200cc8e2dd60b75"},
 ]
 
 [package.extras]
@@ -874,6 +966,84 @@ MarkupSafe = ">=2.0"
 
 [package.extras]
 i18n = ["Babel (>=2.7)"]
+
+[[package]]
+name = "kolo"
+version = "2.16.1"
+description = "See everything happening in your running Django app"
+category = "dev"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "kolo-2.16.1-cp310-cp310-macosx_10_7_x86_64.whl", hash = "sha256:5343090506a4e108710da8fc562307ef350496ff10376ce2ef7404e0045c748e"},
+    {file = "kolo-2.16.1-cp310-cp310-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:fcb84d20dca0c9d35e4bceec98c6fee7d862f297643d6a1f2c19f0dde6af243d"},
+    {file = "kolo-2.16.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:504e81d1ba44012632eefc1b62552be2c4dd1364978a31a3c2250377c94b8c8d"},
+    {file = "kolo-2.16.1-cp310-cp310-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:5a53b8694592f0f592ca6fea3e0de0f3a2586248e9bbd409b976940486729aa4"},
+    {file = "kolo-2.16.1-cp310-cp310-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:3b776707e2bf79fd274d153e3a7a85f92591b13e7c7449c1ca24b817eb620ea5"},
+    {file = "kolo-2.16.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:da56bcbf373446f017fb6c45da83f5b7a7a80356d1a7c2d91621d77df311cb6d"},
+    {file = "kolo-2.16.1-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:8c0ad6438149d715fa4deabfa728e1c245472d86b4c4cb9f4a2eb3797e82be2a"},
+    {file = "kolo-2.16.1-cp310-none-win32.whl", hash = "sha256:13caa1600c2aa8afa000f3fc0f70620ddb2b1cce90f8480d8393dea14f89ddbf"},
+    {file = "kolo-2.16.1-cp310-none-win_amd64.whl", hash = "sha256:953223542d17c854cb786422b577fb4731cc14c358344b27d2c9ff4d02292750"},
+    {file = "kolo-2.16.1-cp311-cp311-macosx_10_7_x86_64.whl", hash = "sha256:b0df7a41aed1cb329dcc8b828cc521ce4fe7e1e875ca9b2c702616ea3fc31978"},
+    {file = "kolo-2.16.1-cp311-cp311-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:05a98794694a73e8e2387bfaa3eecbb54e33be9ec4eed8892678de9ec9d288f9"},
+    {file = "kolo-2.16.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4c54f3d3efdbf3b6715f5309567d5b1e775b544486bb85346a8c852a8906f48b"},
+    {file = "kolo-2.16.1-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:5406f0e9b9a82ad657b0de87ca00457eef142d3624d1192400ad400f18338911"},
+    {file = "kolo-2.16.1-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:86c3c7a4491bd4d63f10b7d8e830e1a01eb6ceb8fede79224f22fada662d9553"},
+    {file = "kolo-2.16.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:71a24e2a0d6534cc51980f146bd32d95b3c1efd133948650cd2bf58931d24d4d"},
+    {file = "kolo-2.16.1-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:d175805ef999b4f49615793e593c6891d83317a2e370a8a137df45528a6ca0a8"},
+    {file = "kolo-2.16.1-cp311-none-win32.whl", hash = "sha256:d5e828b42d0d5fb88ffcbc4da63b2ee82b0005fb11f50eb28f34925fbe33ba95"},
+    {file = "kolo-2.16.1-cp311-none-win_amd64.whl", hash = "sha256:b86d91d077fa4761264428c6e3d1503ddb9f2f1771f50269a9233f0af04126ed"},
+    {file = "kolo-2.16.1-cp312-cp312-macosx_10_7_x86_64.whl", hash = "sha256:77ab72f2bf16b16e860147fd6ecb572613cd59696d38fd88d1bb4dd36a40ecf5"},
+    {file = "kolo-2.16.1-cp312-cp312-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:4c7521e4d529579ee999bc22f10b877b4afab89a2963fe0b82783ee384df55e4"},
+    {file = "kolo-2.16.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3c2992bc85794c3d0589804939871c9f14dbb788424d22ca7e696f29750a505c"},
+    {file = "kolo-2.16.1-cp312-cp312-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:e8e33de1ec2de23f82b751171ced350a7c093dd4a70ad9a9146b74d781560bb7"},
+    {file = "kolo-2.16.1-cp312-cp312-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:789dcbdee1fd2d7e9efbfbec22e927214194b904c8817aa52e6d5fb247beaeb2"},
+    {file = "kolo-2.16.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:98a15674ea0d9e6f77be8da4b5ba3b37871dcdf337978ba14c08dfa70b9152fa"},
+    {file = "kolo-2.16.1-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:1a072d95a0a45cd5843d065ac7a7078367dc13f7d6826aa281b40ee8a3200a03"},
+    {file = "kolo-2.16.1-cp312-none-win32.whl", hash = "sha256:c7a76f58995634ceeea3f71f205c97bc45ceeee4ad3d44c44c48df9ed78c7ecb"},
+    {file = "kolo-2.16.1-cp312-none-win_amd64.whl", hash = "sha256:2950a2d4c6177a1b79798d605e7e177a61554c957dfc263a3a49d8e5055a115c"},
+    {file = "kolo-2.16.1-cp38-cp38-macosx_10_7_x86_64.whl", hash = "sha256:c5df3b548b332c40eb65c2851537abce4ab551d3aa24a794fca96c46cc587e32"},
+    {file = "kolo-2.16.1-cp38-cp38-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:c7703e073c86b80cc0f21b8740b10c6f6098fd6364123d7f7dbbd516eeb63be1"},
+    {file = "kolo-2.16.1-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6a88e5288223323520c6f43c0004e1d780e15417bb30c7ed0e337b86accdd8fd"},
+    {file = "kolo-2.16.1-cp38-cp38-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:a2443b266d072cc384b85f00874a6cb2ecf5193f0d2d2cf026948d5ad9529fd7"},
+    {file = "kolo-2.16.1-cp38-cp38-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:d4f10f1fd25adb22c8c2030dbd84828b3a3ccdccc3f36dceea251c8973d38a8f"},
+    {file = "kolo-2.16.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c88843218b7302c7bce0e63d375f8abf58695d07b66903a9a000c5c2b7fc4a63"},
+    {file = "kolo-2.16.1-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:88c2f085129ff2bbb4408130661344a9b153eed54f09c63f7d2e767fd2545393"},
+    {file = "kolo-2.16.1-cp38-none-win32.whl", hash = "sha256:c9f302947cb311bf620a02572dca80f79f75a997d294b46111326d1bf68fac4e"},
+    {file = "kolo-2.16.1-cp38-none-win_amd64.whl", hash = "sha256:0990b635ca977c21e6fa514ecfdefccc666da8b1f7e8bc1212f4ebc196795eb5"},
+    {file = "kolo-2.16.1-cp39-cp39-macosx_10_7_x86_64.whl", hash = "sha256:df2752383d1687a5badde5e57ccba2f34dfb9b5c11091fae099ae2f2ad9b02f6"},
+    {file = "kolo-2.16.1-cp39-cp39-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:29b3d05c7674e10df801fa5e8578cfebe882533eaeb62a1f47d65effd2b9a9bc"},
+    {file = "kolo-2.16.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7fb607ba56d84949d979d8676bfb055ae896a59fd022856c166496229b99e202"},
+    {file = "kolo-2.16.1-cp39-cp39-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:97a8211fa001b87fb736664906d630bd65676e12102d9cf26c51b11fd792da93"},
+    {file = "kolo-2.16.1-cp39-cp39-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:48357f205a421c301f4f9ea9d9d9ff87ddc1cd5277286f6b764ff25d02719912"},
+    {file = "kolo-2.16.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8dc433fb13ceed0036cd61d49facb68406f1afcc7e3826619a98a8c135d06ae6"},
+    {file = "kolo-2.16.1-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:349dafe69935fbfdab3c860cba247035e0067d8bf03b08060776cc45aa4e8c78"},
+    {file = "kolo-2.16.1-cp39-none-win32.whl", hash = "sha256:1c53796c4c555f8e8e0fe373837f51fdb0e201a94bc0455a600fb4b727fd6130"},
+    {file = "kolo-2.16.1-cp39-none-win_amd64.whl", hash = "sha256:528e0eb3a12da9c0936ac7ef79806640f837bc85c7d37c222874ca7144afbc29"},
+    {file = "kolo-2.16.1-pp310-pypy310_pp73-macosx_10_7_x86_64.whl", hash = "sha256:993a05785352cb9e125ae96771d14eb3d2d96ef59dabc8841f689be690826770"},
+    {file = "kolo-2.16.1-pp310-pypy310_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d87b5ee76577ebadee4845f4c798aae710884c70ed71ad958f8f67ab6be445d6"},
+    {file = "kolo-2.16.1-pp310-pypy310_pp73-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:c7cb1949ecf163f929d582d61150fdc5168480ff1214948ce7e49b274e89af00"},
+    {file = "kolo-2.16.1-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:beb255cbb685800b3662f43c9c3629939c3ce26faf319266c46f0f62a92b3aa4"},
+    {file = "kolo-2.16.1-pp39-pypy39_pp73-macosx_10_7_x86_64.whl", hash = "sha256:31a092ebc14f753f8ea47b5b42346639da7c1f20ab4d1ed96049f36e6ece1dc5"},
+    {file = "kolo-2.16.1-pp39-pypy39_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6fc1614f3fe77b78f3ae24c013a3ba3d1f58b191ca321825099b63cfe5e54b6a"},
+    {file = "kolo-2.16.1-pp39-pypy39_pp73-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:0c306acaa1dd44c425c70665506a29bb14be1f274f679b97add654919d7af54d"},
+    {file = "kolo-2.16.1-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:89546c62308eb99645a2db12539fd30257737c51c975c1f8ccde93e272e17437"},
+    {file = "kolo-2.16.1.tar.gz", hash = "sha256:9d0fe9bc9ea282655d46df1a5230f5ce1df548340bc435fb3c5083c9bd5a95d6"},
+]
+
+[package.dependencies]
+asgiref = ">=3.6.0"
+cerberus = ">=1.3.4"
+click = ">=7.1.2"
+httpx = "*"
+msgpack = ">=1.0.0"
+simplejson = ">=3.8.0"
+tomli = {version = ">=2.0.0", markers = "python_version < \"3.11\""}
+toolz = ">=0.11.1"
+ulid-py = ">=1.1.0"
+
+[package.extras]
+test-generation = ["jinja2 (>=3.0.0)", "more_itertools", "sqlglot (>=16.1.1)"]
 
 [[package]]
 name = "lockfile"
@@ -1711,6 +1881,18 @@ files = [
 ]
 
 [[package]]
+name = "sniffio"
+version = "1.3.0"
+description = "Sniff out which async library your code is running under"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "sniffio-1.3.0-py3-none-any.whl", hash = "sha256:eecefdce1e5bbfb7ad2eeaabf7c1eeb404d7757c379bd1f7e5cce9d8bf425384"},
+    {file = "sniffio-1.3.0.tar.gz", hash = "sha256:e60305c5e5d314f5389259b7f22aaa33d8f7dee49763119234af3755c55b9101"},
+]
+
+[[package]]
 name = "sqlparse"
 version = "0.4.4"
 description = "A non-validating SQL parser."
@@ -1764,6 +1946,18 @@ files = [
 ]
 
 [[package]]
+name = "toolz"
+version = "0.12.0"
+description = "List processing tools and functional utilities"
+category = "dev"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "toolz-0.12.0-py3-none-any.whl", hash = "sha256:2059bd4148deb1884bb0eb770a3cde70e7f954cfbbdc2285f1f2de01fd21eb6f"},
+    {file = "toolz-0.12.0.tar.gz", hash = "sha256:88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194"},
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.8.0"
 description = "Backported and Experimental Type Hints for Python 3.8+"
@@ -1785,6 +1979,18 @@ python-versions = ">=2"
 files = [
     {file = "tzdata-2023.3-py2.py3-none-any.whl", hash = "sha256:7e65763eef3120314099b6939b5546db7adce1e7d6f2e179e3df563c70511eda"},
     {file = "tzdata-2023.3.tar.gz", hash = "sha256:11ef1e08e54acb0d4f95bdb1be05da659673de4acbd21bf9c69e94cc5e907a3a"},
+]
+
+[[package]]
+name = "ulid-py"
+version = "1.1.0"
+description = "Universally Unique Lexicographically Sortable Identifier"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "ulid-py-1.1.0.tar.gz", hash = "sha256:dc6884be91558df077c3011b9fb0c87d1097cb8fc6534b11f310161afd5738f0"},
+    {file = "ulid_py-1.1.0-py2.py3-none-any.whl", hash = "sha256:b56a0f809ef90d6020b21b89a87a48edc7c03aea80e5ed5174172e82d76e3987"},
 ]
 
 [[package]]
@@ -1856,4 +2062,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "fa5efe4566a5d50a1786c2c071358a3857702e6e1697b99aa43b127e6f963e34"
+content-hash = "f90aa3b86fb840bdf65bbccd0ddaf078a73d5b48b0a17a6fef75eac44885c702"

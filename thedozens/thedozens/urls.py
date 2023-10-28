@@ -4,8 +4,9 @@ Root URL configuration for thedozens project.
 """
 from API.forms import InsultReviewForm
 from django.conf import settings
+from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib import admin
-from django.shortcuts import render
+from django.shortcuts import render, redirect, reverse
 from django.urls import include, path, re_path
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -22,6 +23,10 @@ from rest_framework_swagger.views import get_swagger_view
 import API.urls
 import graphQL.urls
 import os
+from rest_framework.decorators import api_view, renderer_classes, permission_classes
+from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
+from rest_framework.permissions import AllowAny
+from API.models import InsultReview
 
 PRIMARY_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "primary_ops.log")
 CRITICAL_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "fatal.log")
@@ -33,19 +38,17 @@ logger.add(PRIMARY_LOG_FILE, diagnose=False, catch=True, backtrace=False, level=
 logger.add(LOGTAIL_HANDLER, diagnose=False, catch=True, backtrace=False, level="INFO")
 
 
-# @cache_page(timeout=43200, key_prefix="index")
+@cache_page(timeout=43200, key_prefix="index")
 def home(request):
-    context = dict()
-    form = InsultReviewForm()
-    context["ReportForm"] = form
-    return render(request, "index.html", context)
-
-
-def create_github_issue(request):
     if request.method == "POST":
         form = InsultReviewForm(request.POST)
+        logger.debug(form)
         if form.is_valid():
             try:
+                logger.success(
+                    f'Save Report For Insult Report for  {form.cleaned_data["insult_id"]} to database'
+                )
+
                 issue_body = form.cleaned_data["rationale_for_review"]
                 issue_title = f"New Joke Review (Joke Id: {form.cleaned_data['insult_id']}) - {form.cleaned_data['review_type']}"
                 GITHUB_API = GhApi(
@@ -54,19 +57,29 @@ def create_github_issue(request):
                     token=os.getenv("GITHUB_ACCESS_TOKEN"),
                 )
                 GITHUB_API.issue.create(title=issue_title, body=issue_body)
+                form.save()
                 logger.success(
                     f"successfully submitted Joke: {form.cleaned_data['insult_id']} for review"
                 )
-                return Response(data={"status": "OK"}, status=status.HTTP_201_CREATED)
+                return HttpResponse(
+                    data={"status": "OK"},
+                    template_name="index.html",
+                    status=status.HTTP_201_CREATED,
+                )
             except Exception as e:
                 logger.error(
                     f"Unable to Submit {form.cleaned_data['insult_id']} For Review: {str(e)}"
                 )
-                return Response(
-                    data={"status": "FAILED"}, status=status.HTTP_417_EXPECTATION_FAILED
+                return HttpResponse(
+                    data={"status": "FAILED"},
+                    template_name="index.html",
+                    status=status.HTTP_417_EXPECTATION_FAILED,
                 )
-    else:
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        else:
+            context = dict()
+            form = InsultReviewForm()
+            context["ReportForm"] = form
+            return render(request, "index.html", context)
 
 
 urlpatterns = [
@@ -77,11 +90,11 @@ urlpatterns = [
         ),
         name="swagger",
     ),
-    path("graphql", include("graphQL.urls"), name="GraphQL"),
+    path("graphql", include("graphQL.urls"), name="graph"),
     path("admin/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),
     path("__debug__/", include("debug_toolbar.urls")),
     path("api/", include(API.urls)),
     path("home", home, name="home-page"),
-    path("report-joke", create_github_issue, name="Report-Joke"),
+    re_path(r"^", home, name="home-page"),
 ]
