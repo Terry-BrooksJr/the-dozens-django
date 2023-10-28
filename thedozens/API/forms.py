@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from API.models import InsultReview
+from API.models import InsultReview, Insult
 from django.forms import ModelForm
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Column
@@ -10,8 +10,25 @@ from django.urls import reverse
 from crispy_forms.bootstrap import FormActions
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from loguru import logger
+from logtail import LogtailHandler
+import os
+from django.conf import settings
 
-1
+PRIMARY_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "primary_ops.log")
+CRITICAL_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "fatal.log")
+DEBUG_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "utility.log")
+LOGTAIL_HANDLER = LogtailHandler(source_token=os.getenv("LOGTAIL_API_KEY"))
+
+logger.add(DEBUG_LOG_FILE, diagnose=True, catch=True, backtrace=True, level="DEBUG")
+logger.add(PRIMARY_LOG_FILE, diagnose=False, catch=True, backtrace=False, level="INFO")
+logger.add(LOGTAIL_HANDLER, diagnose=False, catch=True, backtrace=False, level="INFO")
+RESULT_IDs = Insult.objects.all().values("id").cache(ops=["get"])
+ID_LIST = list()
+for id in RESULT_IDs:
+    ID_LIST.append(id["id"])
+
+logger.debug(ID_LIST)
 
 
 class InsultReviewForm(ModelForm):
@@ -20,11 +37,11 @@ class InsultReviewForm(ModelForm):
         self.helper = FormHelper()
         self.helper.form_id = "report-joke-form"
         self.helper.form_method = "post"
-        self.helper.form_action = reverse("Report-Joke")
+        self.helper.form_action = reverse("home-page")
         self.helper.layout = Layout(
             HTML(
                 """
-        <h3 class="application-text">About the Reporter</strong></h3>
+        <h3 class="application-text modal-title">Report Form</strong></h3>
         <br/>
         <hr class="border border-primary border-3 opacity-75"/>"""
             ),
@@ -66,39 +83,47 @@ class InsultReviewForm(ModelForm):
             ),
         )
 
-    def clean(self):
-        cleaned_data = super().clean()
-        anonymous = self.clean_data.get("anonymous")
-        reporter_first_name = self.clean_data.get("reporter_first_name")
-        reporter_last_name = self.clean_data.get("reporter_last_name")
-        post_review_contact_desired = self.clean_data.get("post_review_contact_desired")
-        reporter_email = self.clean_data.get("reporter_email")
+    # def clean(self):
+    #     cleaned_data = super().clean()
+    #     anonymous = self.cleaned_data.get("anonymous")
+    #     insult_id = self.cleaned_data.get("insult_id")
+    #     reporter_first_name = self.cleaned_data.get("reporter_first_name")
+    #     reporter_last_name = self.cleaned_data.get("reporter_last_name")
+    #     post_review_contact_desired = self.cleaned_data.get("post_review_contact_desired")
+    #     reporter_email = self.cleaned_data.get("reporter_email")
 
-        if anonymous is False:
-            if reporter_first_name in [None, " ", ""]:
-                raise ValidationError(
-                    _(
-                        "Name Not Provided - You have selected that you do not wish submit this report anonymously, but have not provided a first name. Please change your anonymity preference or enter a first name"
-                    ),
-                    code="invalid-first-name-not-provided",
-                )
+    #     if insult_id not in ID_LIST:
+    #         raise ValidationError(
+    #                 _(
+    #                     "Invaild Insult ID - Please confirm Insult ID"
+    #                 ),
+    #                 code="invaild-insult-id",
+    #             )
+    #     if anonymous is False:
+    #         if reporter_first_name in [None, " ", ""]:
+    #             raise ValidationError(
+    #                 _(
+    #                     "Name Not Provided - You have selected that you do not wish submit this report anonymously, but have not provided a first name. Please change your anonymity preference or enter a first name"
+    #                 ),
+    #                 code="invalid-first-name-not-provided",
+    #             )
 
-            if reporter_last_name in [None, " ", ""]:
-                raise ValidationError(
-                    _(
-                        "Name Not Provided - You have selected that you do not wish submit this report anonymously, but have not provided a last name, or last inital. Please change your anonymity preference or enter a last name"
-                    ),
-                    code="invalid-last-name-not-provided",
-                )
+    #         if reporter_last_name in [None, " ", ""]:
+    #             raise ValidationError(
+    #                 _(
+    #                     "Name Not Provided - You have selected that you do not wish submit this report anonymously, but have not provided a last name, or last inital. Please change your anonymity preference or enter a last name"
+    #                 ),
+    #                 code="invalid-last-name-not-provided",
+    #             )
 
-        if post_review_contact_desired is True:
-            if reporter_email in [None, " ", ""]:
-                raise ValidationError(
-                    _(
-                        "Email Not Provided - You have selected that you wish to be contacted to know the desired outcome of the review, but have not provided an email address. Please change your results contact preference or enter a vaild email addrwss"
-                    ),
-                    code="invalid-last-name-not-provided",
-                )
+    #     if post_review_contact_desired is True:
+    #         if reporter_email in [None, " ", ""]:
+    #             raise ValidationError(
+    #                 _(
+    #                     "Email Not Provided - You have selected that you wish to be contacted to know the desired outcome of the review, but have not provided an email address. Please change your results contact preference or enter a vaild email addrwss"
+    #                 ),
+    #                 code="invalid-last-name-not-provided",
+    #             )
 
     class Meta:
         model = InsultReview

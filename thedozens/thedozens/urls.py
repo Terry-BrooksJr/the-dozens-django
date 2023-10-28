@@ -17,6 +17,10 @@ from rest_framework.response import Response
 import API.urls
 import graphQL.urls
 import os
+from rest_framework.decorators import api_view, renderer_classes, permission_classes
+from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
+from rest_framework.permissions import AllowAny
+from API.models import InsultReview
 
 
 class HomePage(TemplateView):
@@ -29,6 +33,10 @@ class GitHubCreateIssueEndPoint(APIView):
         form = InsultReviewForm(**request.POST)
         if form.is_valid():
             try:
+                logger.success(
+                    f'Save Report For Insult Report for  {form.cleaned_data["insult_id"]} to database'
+                )
+
                 issue_body = form.cleaned_data["rationale_for_review"]
                 issue_title = f"New Joke Review (Joke Id: {form.cleaned_data['insult_id']}) - {form.cleaned_data['review_type']}"
                 GITHUB_API = GhApi(
@@ -37,10 +45,15 @@ class GitHubCreateIssueEndPoint(APIView):
                     token=os.environ["GITHUB_ACCESS_TOKEN"],
                 )
                 GITHUB_API.issue.create(title=issue_title, body=issue_body)
+                form.save()
                 logger.success(
                     f"successfully submitted Joke: {form.cleaned_data['insult_id']} for review"
                 )
-                return Response(data={"status": "OK"}, status=status.HTTP_201_CREATED)
+                return HttpResponse(
+                    data={"status": "OK"},
+                    template_name="index.html",
+                    status=status.HTTP_201_CREATED,
+                )
             except Exception as e:
                 logger.error(
                     f"Unable to Submit {form.cleaned_data['insult_id']} For Review: {str(e)}"

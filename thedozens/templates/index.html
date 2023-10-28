@@ -12,13 +12,15 @@
   <title>The Dozens - The Yo Mama Roast API</title>
   <link rel="icon" type="image/x-icon" href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@94065f369600b5ac3fd17c56da7800c83bf356dd/images/yoyoo_400x400.jpg"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet"/>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous"/>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+  <script src="{% static 'js/preloader.js' %}"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/css/uikit.min.css" />
-
+  <link rel="stylesheet" type="text/css" href="https://learnosity.b-cdn.net/loading-bar.css"/>
+  <script type="text/javascript" src="https://learnosity.b-cdn.net/loading-bar.min.js"></script>
   <script src="https://kit.fontawesome.com/58e27c88da.js" crossorigin="anonymous"></script>
   <link
   rel="stylesheet"
@@ -146,29 +148,36 @@
 </head>
 
 <body>
+  <div style='z-index:100000' id='owlreporter-preloader'>
+    <div id='loader'></div><div class='loader-section section-left'></div>
+    <div class='loader-section section-right'></div>
+  </div>
+
   <!-- partial:index.partial.html -->
-
-
-
-
-
-
-
     <nav uk-dropnav>
       <ul class="uk-subnav navbar-main">
           <li><img id="yo-mama-brand" class="navbar-brand" src="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@9e332cf2c71dd4f7e75ccaef4520e2484ba10b30/images/1981605_1-removebg-preview%20(1).png" alt="Yo Mama Logo"/></li>
-          <li><a href="https://www.brooksjr.com" target="_blank">About the Developer</a></li>
-          <li>
-              <a href>The API <span uk-drop-parent-icon></span></a>
+          <li class="nav-bar-parent-li"><a  href="https://www.brooksjr.com" target="_blank"><p class="nav-bar-parent">About the Developer</p></a></li>
+          <li class="nav-bar-parent-li">
+              <a href=""><p class="nav-bar-parent">The API</p> <span uk-drop-parent-icon></span></a>
               <div class="uk-dropdown">
                   <ul class="uk-nav uk-dropdown-nav">
                       <li><a href="#">Register to Contribute</a></li>
                       <li><a id="reportAJokeTrigger" data-bs-toggle="modal" data-bs-target="#reportJokeModal">Report a Joke To Be Reviewed</a></li>
+                      <li><a href="#">Documentation <span uk-drop-parent-icon></span></a></li>
+                      <div class="uk-dropdown">
+                        <ul class="uk-nav uk-dropdown-nav">
+                          <li><a href="{% url 'swagger' %}" target="_blank">Swagger</a></li>
+                          {% comment %} FIXME - Link GraphQL {% endcomment %}
+                          <li><a href="#" target="_blank">GraphQL</a></li>
+                          <li><a href="https://www.postman.com/terryabrooksjr/workspace/the-roast-api-yo-mama-jokes" target="_blank">Postman</a></li>
+                        </ul>
+                      </div>
                   </ul>
               </div>
           </li>
 
-          <li><a href>The History of Yo' Mama Jokes<span uk-drop-parent-icon></span></a>
+          <li class="nav-bar-parent-li"><a href><p class="nav-bar-parent">The History of Yo' Mama Jokes</p><span uk-drop-parent-icon></span></a>
           <div class="uk-dropdown">
             <ul class="uk-nav uk-dropdown-nav">
                 <li><a href="#history-overview-modal" uk-toggle>Overview</a></li><br/>
@@ -230,7 +239,8 @@
 <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"></script>
   <script>
-    // Inital Joke On Load
+
+
 $.getJSON("https://the-dozens.onrender.com/insult", response => {
     $("#joke").text(
       Object.values(response)[0]
@@ -244,16 +254,9 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
     );
   });
   };
-  const modalNavButtons = document.querySelectorAll('.nav-bttn')
 
-  for (let i = 0; i < modalNavButtons.length; i++) {
-    modalNavButtons[i].addEventListener("mouseenter", function() {
-      modalNavButtons[i].classList.add("animate__animated animate__pulse");
-    });
-}
   const reportModalTrigger = document.getElementById("reportAJokeTrigger")
   const reportAJokeModal = document.getElementById("reportJokeModal")
- console.log(modalNavButtons)
   </script>
   <!-- Modal -->
   <div class="modal fade" id="reportJokeModal" tabindex="-1" role="dialog" aria-labelledby="reportJokeModal" aria-hidden="true">
@@ -266,9 +269,9 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
           </button>
         </div>
         <div class="modal-body">
-          <h3>Overview</h3>
+          <h3 class="modal-title">Overview</h3>
           <p>The Dozen's API intends to serve as a humorous, joyful piece of African-American culture where, as a community, good-hearted jokes are shared and enjoyed. To this end, please submit a joke for review if you feel its presence is a disservice to that end.</p>
-          <h3>Review Process</h3>
+          <h3 class="modal-title">Review Process</h3>
           <p>Depending on the reason for the review process, a contributor to the API will review the submitted joke  within seven working days.</p>
             <br/>
 
@@ -282,13 +285,11 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
             <li>Joke Recatagorizion - Changing the Catagory of the Joke to a more accurate category </li>
             <li>Joke Removal - Complete removal from the Joke Database</li>
           </ol>
-          {% comment %} {% crispy ReportForm %} {% endcomment %}
+
+    {% crispy ReportForm %}
 
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary">Submit</button>
-        </div>
+
       </div>
     </div>
   </div>
@@ -367,20 +368,20 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
       </div>
       <div class="uk-modal-body">
         <ol>
- <li>Jeffries, Stuart (June 12, 2006). "The mother of all insults". The Guardian. London.</li>
- <li>Chimezie, Amuzie (June 1976). "The Dozens: An African-Heritage Theory", Journal of Black Studies, Vol. 6, No. 4, pp. 401–420.</li>
- <li>Lefever, Harry (Spring 1981). "Playing the Dozens": A Mechanism for Social Control, Phylon, Vol. 42, No. 1, pp. 73–85.</li>
-<li>Abrahams, Roger D. (July–September 1962). "Playing the Dozens". The Journal of American Folklore. Symposium on Obscenity in Folklore. 75 (297): 209–220. doi:10.2307/537723. JSTOR 537723.</li>
-  <li>Percelay, James, Stephan Dweck, and Monteria Ivey, Snaps: The Original Yo' Mama Joke Book, William Morrow Paperbacks, February 18, 1994, ISBN 0688128963. Amazon.com. Retrieved May 21, 2001.</li>
-    <li> Pimpdaddy's Yo Mama Snaps. Retrieved May 18, 2012.</li>
-      <li>Jordan, Larry (1983). "Social Construction as Tradition: A Review and Reconceptualization of the Dozens", Review of Research in Education, Vol. 10, pp. 79–101.</li>
-        <li>Leland, p. 173.</li>
+          <li>Jeffries, Stuart (June 12, 2006). "The mother of all insults". The Guardian. London.</li>
+          <li>Chimezie, Amuzie (June 1976). "The Dozens: An African-Heritage Theory", Journal of Black Studies, Vol. 6, No. 4, pp. 401–420.</li>
+          <li>Lefever, Harry (Spring 1981). "Playing the Dozens": A Mechanism for Social Control, Phylon, Vol. 42, No. 1, pp. 73–85.</li>
+          <li>Abrahams, Roger D. (July–September 1962). "Playing the Dozens". The Journal of American Folklore. Symposium on Obscenity in Folklore. 75 (297): 209–220. doi:10.2307/537723. JSTOR 537723.</li>
+          <li>Percelay, James, Stephan Dweck, and Monteria Ivey, Snaps: The Original Yo' Mama Joke Book, William Morrow Paperbacks, February 18, 1994, ISBN 0688128963. Amazon.com. Retrieved May 21, 2001.</li>
+          <li> Pimpdaddy's Yo Mama Snaps. Retrieved May 18, 2012.</li>
+          <li>Jordan, Larry (1983). "Social Construction as Tradition: A Review and Reconceptualization of the Dozens", Review of Research in Education, Vol. 10, pp. 79–101.</li>
+          <li>Leland, p. 173.</li>
           <li>Baraka, Amiri (1999). Blues People: Negro Music in White America. Harper Perennial. p. 27. ISBN 978-0688184742.</li>
-            <li>Saloy, Mona Lisa, "African American Oral Traditions in Louisiana", Folklife in Louisiana (1998). Retrieved November 12, 2009.</li>
-              <li>Dollard, pp. 278–279.</li>
-                <li>Dollard, p. 283.</li>
-                  <li>Dollard, pp. 290–294.</li>
-                    <li>Dundes, pp. 295–297.</li>
+          <li>Saloy, Mona Lisa, "African American Oral Traditions in Louisiana", Folklife in Louisiana (1998). Retrieved November 12, 2009.</li>
+          <li>Dollard, pp. 278–279.</li>
+          <li>Dollard, p. 283.</li>
+          <li>Dollard, pp. 290–294.</li>
+          <li>Dundes, pp. 295–297.</li>
         </ol>
       </div>
       <div class="uk-modal-footer uk-text-center">
