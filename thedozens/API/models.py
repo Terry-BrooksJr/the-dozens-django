@@ -8,6 +8,9 @@ from django.utils.translation import gettext_lazy as _
 from logtail import LogtailHandler
 from loguru import logger
 import datetime
+from cacheops import cache
+from django_prometheus.models import ExportModelOperationsMixin
+
 
 NOW = datetime.datetime.now()
 

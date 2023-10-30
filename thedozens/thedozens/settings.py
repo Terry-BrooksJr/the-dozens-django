@@ -52,6 +52,7 @@ USE_I18N = True
 USE_TZ = True
 MIDDLEWARE = [
     "kolo.middleware.KoloMiddleware",
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
         "django.middleware.cache.UpdateCacheMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -63,6 +64,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
         "django.middleware.cache.FetchFromCacheMiddleware",
 
+    'django_prometheus.middleware.PrometheusAfterMiddleware'
 ]
 
 
@@ -85,15 +87,24 @@ DATABASES = {
 
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.environ["REDIS_CACHE_URI"]
+        "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
+        "LOCATION": os.getenv("REDIS_CACHE_URI")
+
     }
 }
-CACHE_MIDDLEWARE_ALIAS = "default"
-CACHE_MIDDLEWARE_SECONDS = 300
-CACHE_MIDDLEWARE_KEY_PREFIX = "yo-mama"
-
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+CACHEOPS_DEGRADE_ON_FAILURE = True
+CACHEOPS_ENABLED = True
 #!SECTION
+
+#  SECTION - Applicatiom Preformance Mointoring
+PROMETHEUS_LATENCY_BUCKETS = (0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0, 25.0, 50.0, 75.0, float("inf"),)
+PROMETHEUS_LATENCY_BUCKETS = (.1, .2, .5, .6, .8, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.5, 9.0, 12.0, 15.0, 20.0, 30.0, float("inf"))
+
+
+
+# !SECTION
+
 
 # SECTION - Password validatio and User Authentication
 
@@ -198,7 +209,7 @@ EMAIL_HOST_PASSWORD = os.environ["EMAIL_ACCT_PASSWORD"]
 MAILER_EMPTY_QUEUE_SLEEP = os.environ["MAILER_EMPTY_QUEUE_SLEEP"]
 # !SECTION
 
-#  SECTION - GraphQL Settings (Graphene-Django)
+#  SECTION - GraphQL Settings (Graphene-Django)``
 
 GRAPHENE = {
     "SCHEMA": "graphQL.schema.schema",
