@@ -4,13 +4,10 @@ Root URL configuration for thedozens project.
 """
 from API.forms import InsultReviewForm
 from django.conf import settings
-from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib import admin
 from django.shortcuts import render, redirect, reverse
 from django.urls import include, path, re_path
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
-from django.views.decorators.cache import cache_page
+
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.vary import vary_on_cookie, vary_on_headers
 from django.views.generic import TemplateView
@@ -18,15 +15,10 @@ from ghapi.all import GhApi
 from logtail import LogtailHandler
 from loguru import logger
 from rest_framework import status
-from rest_framework.response import Response
 from rest_framework_swagger.views import get_swagger_view
 import API.urls
 import graphQL.urls
 import os
-from rest_framework.decorators import api_view, renderer_classes, permission_classes
-from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
-from rest_framework.permissions import AllowAny
-from API.models import InsultReview
 
 PRIMARY_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "primary_ops.log")
 CRITICAL_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "fatal.log")
@@ -75,18 +67,18 @@ def home(request):
                     template_name="index.html",
                     status=status.HTTP_417_EXPECTATION_FAILED,
                 )
-        else:
-            context = dict()
-            form = InsultReviewForm()
-            context["ReportForm"] = form
-            return render(request, "index.html", context)
+    else:
+        context = dict()
+        form = InsultReviewForm()
+        context["ReportForm"] = form
+        return render(request, "index.html", context)
 
 
 urlpatterns = [
     path(
         "swagger",
         get_swagger_view(
-            title="Your Project",
+            title="The Yo' Mama Roast API",
         ),
         name="swagger",
     ),
@@ -97,4 +89,7 @@ urlpatterns = [
     path("api/", include(API.urls)),
     path("home", home, name="home-page"),
     re_path(r"^", home, name="home-page"),
+    path('', include('django_prometheus.urls')),
+
+
 ]

@@ -55,6 +55,7 @@ USE_I18N = True
 USE_TZ = True
 MIDDLEWARE = [
     "kolo.middleware.KoloMiddleware",
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -63,6 +64,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'django_prometheus.middleware.PrometheusAfterMiddleware'
 ]
 
 
@@ -72,7 +74,7 @@ MIDDLEWARE = [
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "ENGINE": "django_prometheus.db.backends.postgresql",
         "NAME": os.getenv("POSTGRES_DB"),
         "USER": os.getenv("POSTGRES_USER"),
         "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
@@ -81,7 +83,7 @@ DATABASES = {
         # "OPTIONS": {"sslmode": "require"},
     }
 }
-CACHEOPS_CLIENT_CLASS = "django_redis.client.DefaultClient"
+# CACHEOPS_CLIENT_CLASS = "redis.client.Redis"
 
 CACHEOPS_REDIS = os.getenv("REDIS_CACHE_URI")
 CACHEOPS = {
@@ -106,17 +108,24 @@ CACHEOPS = {
 }
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.getenv("REDIS_CACHE_URI"),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
+        "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
+        "LOCATION": os.getenv("REDIS_CACHE_URI")
+
     }
 }
-
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 CACHEOPS_DEGRADE_ON_FAILURE = True
 CACHEOPS_ENABLED = True
 #!SECTION
+
+#  SECTION - Applicatiom Preformance Mointoring
+PROMETHEUS_LATENCY_BUCKETS = (0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0, 25.0, 50.0, 75.0, float("inf"),)
+PROMETHEUS_LATENCY_BUCKETS = (.1, .2, .5, .6, .8, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.5, 9.0, 12.0, 15.0, 20.0, 30.0, float("inf"))
+
+
+
+# !SECTION
+
 
 # SECTION - Password validatio and User Authentication
 
@@ -203,7 +212,7 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_ACCT_PASSWORD")
 MAILER_EMPTY_QUEUE_SLEEP = os.getenv("MAILER_EMPTY_QUEUE_SLEEP")
 # !SECTION
 
-#  SECTION - GraphQL Settings (Graphene-Django)
+#  SECTION - GraphQL Settings (Graphene-Django)``
 
 GRAPHENE = {
     "SCHEMA": "graphQL.schema.schema",

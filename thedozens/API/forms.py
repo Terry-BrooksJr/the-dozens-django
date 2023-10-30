@@ -23,7 +23,7 @@ LOGTAIL_HANDLER = LogtailHandler(source_token=os.getenv("LOGTAIL_API_KEY"))
 logger.add(DEBUG_LOG_FILE, diagnose=True, catch=True, backtrace=True, level="DEBUG")
 logger.add(PRIMARY_LOG_FILE, diagnose=False, catch=True, backtrace=False, level="INFO")
 logger.add(LOGTAIL_HANDLER, diagnose=False, catch=True, backtrace=False, level="INFO")
-RESULT_IDs = Insult.objects.all().values("id").cache(ops=["get"])
+RESULT_IDs = Insult.objects.all().values("id").cache()
 ID_LIST = list()
 for id in RESULT_IDs:
     ID_LIST.append(id["id"])
