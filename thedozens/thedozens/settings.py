@@ -14,17 +14,24 @@ from django.core.mail import send_mail
 from datetime import datetime
 from loguru import logger
 from logtail import LogtailHandler
+from infisical import InfisicalClient
 
-load_dotenv(override=True)
+load_dotenv()
+
 GLOBAL_NOW = datetime.now()
-
 
 # SECTION - Application definition
 ROOT_URLCONF = "thedozens.urls"
 WSGI_APPLICATION = "thedozens.wsgi.application"
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = True
+SECRETS = InfisicalClient(token=os.getenv("INFISICAL_TOKEN_FOR_APP"), debug=DEBUG)
+# if DEBUG:
+#     SECRETS.get_all_secrets(environment="Development", attach_to_os_environ=True)
+# else:
+#     SECRETS.get_all_secrets(environment="Production", attach_to_os_environ=True)
+
+SECRET_KEY = os.getenv("SECRET_KEY")
 ADMINS = [("Terry Brooks", "Terry@BrooksJr.com")]
 ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
@@ -42,20 +49,31 @@ INSTALLED_APPS = [
     "graphene_django",
     "rest_framework_swagger",
     "crispy_forms",
+    "captcha",
     "crispy_bootstrap5",
     "cacheops",
     "django_prometheus",
+    "drf_spectacular",
     # Project Apps
     "API",
     "graphQL",
 ]
+PRIMARY_LOG_FILE = os.path.join(BASE_DIR, "standup", "logs", "primary_ops.log")
+CRITICAL_LOG_FILE = os.path.join(BASE_DIR, "standup", "logs", "fatal.log")
+DEBUG_LOG_FILE = os.path.join(BASE_DIR, "standup", "logs", "utility.log")
+LOGTAIL_HANDLER = LogtailHandler(source_token=os.getenv("LOGTAIL_API_KEY"))
+
+logger.add(DEBUG_LOG_FILE, diagnose=True, catch=True, backtrace=True, level="DEBUG")
+logger.add(PRIMARY_LOG_FILE, diagnose=False, catch=True, backtrace=False, level="INFO")
+logger.add(LOGTAIL_HANDLER, diagnose=False, catch=True, backtrace=False, level="INFO")
+
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "America/New_York"
 USE_I18N = True
 USE_TZ = True
 MIDDLEWARE = [
     "kolo.middleware.KoloMiddleware",
-    'django_prometheus.middleware.PrometheusBeforeMiddleware',
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -64,9 +82,12 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'django_prometheus.middleware.PrometheusAfterMiddleware'
+    "django.middleware.cache.UpdateCacheMiddleware",
+    "django.middleware.cache.FetchFromCacheMiddleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
-
+RECAPTCHA_PRIVATE_KEY = os.getenv("RECAPTCHA_PRIVATE_KEY")
+RECAPTCHA_PUBLIC_KEY = os.getenv("RECAPTCHA_PUBLIC_KEY")
 
 #!SECTION
 
@@ -83,6 +104,9 @@ DATABASES = {
         # "OPTIONS": {"sslmode": "require"},
     }
 }
+CACHE_MIDDLEWARE_ALIAS = "default"
+CACHE_MIDDLEWARE_SECONDS = 900
+
 # CACHEOPS_CLIENT_CLASS = "redis.client.Redis"
 
 CACHEOPS_REDIS = os.getenv("REDIS_CACHE_URI")
@@ -109,8 +133,7 @@ CACHEOPS = {
 CACHES = {
     "default": {
         "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
-        "LOCATION": os.getenv("REDIS_CACHE_URI")
-
+        "LOCATION": os.getenv("REDIS_CACHE_URI"),
     }
 }
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
@@ -119,9 +142,45 @@ CACHEOPS_ENABLED = True
 #!SECTION
 
 #  SECTION - Applicatiom Preformance Mointoring
-PROMETHEUS_LATENCY_BUCKETS = (0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0, 25.0, 50.0, 75.0, float("inf"),)
-PROMETHEUS_LATENCY_BUCKETS = (.1, .2, .5, .6, .8, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.5, 9.0, 12.0, 15.0, 20.0, 30.0, float("inf"))
-
+PROMETHEUS_LATENCY_BUCKETS = (
+    0.01,
+    0.025,
+    0.05,
+    0.075,
+    0.1,
+    0.25,
+    0.5,
+    0.75,
+    1.0,
+    2.5,
+    5.0,
+    7.5,
+    10.0,
+    25.0,
+    50.0,
+    75.0,
+    float("inf"),
+)
+PROMETHEUS_LATENCY_BUCKETS = (
+    0.1,
+    0.2,
+    0.5,
+    0.6,
+    0.8,
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0,
+    6.0,
+    7.5,
+    9.0,
+    12.0,
+    15.0,
+    20.0,
+    30.0,
+    float("inf"),
+)
 
 
 # !SECTION
@@ -180,6 +239,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles/"
 
 # SECTION - DRF Settings
 REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
     ],
@@ -199,6 +259,17 @@ REST_FRAMEWORK = {
 }
 
 #!SECTION
+
+# SECTION Rest Documentation
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "The Yo Mama Roast API",
+    "DESCRIPTION": "Your project description",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    # OTHER SETTINGS
+}
+# !SECTION
 
 # SECTION - Email Settings (Django-Mailer)
 

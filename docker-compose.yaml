@@ -8,12 +8,12 @@ services:
     restart: unless-stopped
     networks:
       - dozens-ecosystem
-    env_file:
-      - .env
+    environment:
+      - INFISICAL_T1OKEN=${INFISICAL_TOKEN_FOR_REDIS}
     working_dir: /data/cache
     volumes:
       - 'primary_hhd_dozens:/data/cache'
-    ports: 
+    ports:
       - '3001:6379'
     healthcheck:
       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
@@ -30,7 +30,7 @@ services:
     networks:
       - dozens-ecosystem
     env_file:
-      - .env      
+      - .env
     ports:
       - '3002:5432'
     working_dir: /data/db
@@ -49,14 +49,14 @@ services:
     networks:
       - dozens-ecosystem
     env_file:
-      - .env      
+      - .env
     ports:
       - '3003:80'
     depends_on:
       - db
     volumes:
       - 'primary_hhd_dozens:/pgAdmin'
-  
+
   graphite-statsd:
       container_name: graphite_dozens
       networks:

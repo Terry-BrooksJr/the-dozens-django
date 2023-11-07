@@ -14,6 +14,8 @@ from loguru import logger
 from logtail import LogtailHandler
 import os
 from django.conf import settings
+from captcha.fields import ReCaptchaField
+
 
 PRIMARY_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "primary_ops.log")
 CRITICAL_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "fatal.log")
@@ -32,6 +34,8 @@ logger.debug(ID_LIST)
 
 
 class InsultReviewForm(ModelForm):
+    recaptha = ReCaptchaField()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
@@ -67,6 +71,7 @@ class InsultReviewForm(ModelForm):
                 "rationale_for_review",
                 css_class="form-row",
             ),
+            Field("recaptha"),
             Row(
                 Div(
                     FormActions(
