@@ -15,7 +15,6 @@ import sys
 
 GLOBAL_NOW = datetime.now()
 
-
 # SECTION - Application definition
 ROOT_URLCONF = "thedozens.urls"
 WSGI_APPLICATION = "thedozens.wsgi.application"
@@ -38,14 +37,25 @@ INSTALLED_APPS = [
     "django_filters",
     "debug_toolbar",
     "graphene_django",
-        'djoser',
+    "djoser",
     "crispy_forms",
+    "captcha",
     "crispy_bootstrap5",
     "django_prometheus",
+    "drf_spectacular",
     # Project Apps
     "API",
     "graphQL",
 ]
+PRIMARY_LOG_FILE = os.path.join(BASE_DIR, "standup", "logs", "primary_ops.log")
+CRITICAL_LOG_FILE = os.path.join(BASE_DIR, "standup", "logs", "fatal.log")
+DEBUG_LOG_FILE = os.path.join(BASE_DIR, "standup", "logs", "utility.log")
+LOGTAIL_HANDLER = LogtailHandler(source_token=os.getenv("LOGTAIL_API_KEY"))
+
+logger.add(DEBUG_LOG_FILE, diagnose=True, catch=True, backtrace=True, level="DEBUG")
+logger.add(PRIMARY_LOG_FILE, diagnose=False, catch=True, backtrace=False, level="INFO")
+logger.add(LOGTAIL_HANDLER, diagnose=False, catch=True, backtrace=False, level="INFO")
+
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "America/Chicago"
 USE_I18N = True
@@ -66,7 +76,8 @@ MIDDLEWARE = [
 
     'django_prometheus.middleware.PrometheusAfterMiddleware'
 ]
-
+RECAPTCHA_PRIVATE_KEY = os.getenv("RECAPTCHA_PRIVATE_KEY")
+RECAPTCHA_PUBLIC_KEY = os.getenv("RECAPTCHA_PUBLIC_KEY")
 
 #!SECTION
 
@@ -88,8 +99,7 @@ DATABASES = {
 CACHES = {
     "default": {
         "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
-        "LOCATION": os.getenv("REDIS_CACHE_URI")
-
+        "LOCATION": os.getenv("REDIS_CACHE_URI"),
     }
 }
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
@@ -98,9 +108,45 @@ CACHEOPS_ENABLED = True
 #!SECTION
 
 #  SECTION - Applicatiom Preformance Mointoring
-PROMETHEUS_LATENCY_BUCKETS = (0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0, 25.0, 50.0, 75.0, float("inf"),)
-PROMETHEUS_LATENCY_BUCKETS = (.1, .2, .5, .6, .8, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.5, 9.0, 12.0, 15.0, 20.0, 30.0, float("inf"))
-
+PROMETHEUS_LATENCY_BUCKETS = (
+    0.01,
+    0.025,
+    0.05,
+    0.075,
+    0.1,
+    0.25,
+    0.5,
+    0.75,
+    1.0,
+    2.5,
+    5.0,
+    7.5,
+    10.0,
+    25.0,
+    50.0,
+    75.0,
+    float("inf"),
+)
+PROMETHEUS_LATENCY_BUCKETS = (
+    0.1,
+    0.2,
+    0.5,
+    0.6,
+    0.8,
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0,
+    6.0,
+    7.5,
+    9.0,
+    12.0,
+    15.0,
+    20.0,
+    30.0,
+    float("inf"),
+)
 
 
 # !SECTION
@@ -163,6 +209,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles/"
 
 # SECTION - DRF Settings
 REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
     ],

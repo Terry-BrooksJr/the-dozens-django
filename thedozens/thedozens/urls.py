@@ -56,7 +56,7 @@ class GitHubCreateIssueEndPoint(APIView):
                 )
             except Exception as e:
                 logger.error(
-                    f"Unable to Submit {form.cleaned_data['insult_id']} For Review: {str(e)}"
+                    f"Unable to Submit {form.cleaned_data['insult_id']} For Review: {db_write_error}"
                 )
                 return Response(
                     data={"status": "FAILED"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY

@@ -285,11 +285,19 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
             <li>Joke Recatagorizion - Changing the Catagory of the Joke to a more accurate category </li>
             <li>Joke Removal - Complete removal from the Joke Database</li>
           </ol>
+          {% if form_errors %}
+          <div id='form-errors'>
 
+          <h3 class="error-header" >Unable to Submit Report - Please Correct The Error listed:</h3>
+          <ul>
+          {% for error in form_errors %}
+          <li>{{error}}</li>
+          {% endfor %}
+          </ul>
+          </div>
+          {% endif %}
     {% crispy ReportForm %}
-
         </div>
-
       </div>
     </div>
   </div>

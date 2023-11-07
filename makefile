@@ -22,8 +22,8 @@ migrate: ## Make and run migrations
 	doppler run -- $(PYTHON) /workspaces/the-dozens-django/thedozens/manage.py makemigrations
 	doppler run -- $(PYTHON) /workspaces/the-dozens-django/thedozens/manage.py migrate
 
-db-up: ## Pull and start the Docker Postgres container in the background
-	docker pull postgres
+.PHONY: run
+backup-services-up: ## Pull and start the Docker Postgres container in the background
 	docker-compose up -d
 
 db-shell: ## Access the Postgres Docker database interactively with psql. Pass in DBNAME=<name>.
