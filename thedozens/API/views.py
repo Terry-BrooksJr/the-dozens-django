@@ -13,25 +13,28 @@ from rest_framework import status
 import random
 from rest_framework.decorators import api_view, renderer_classes, permission_classes
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
-from rest_framework.permissions import AllowAny
-
-RANDOM_QS = Insult.objects.filter(status="A").values("id", "content").cache(ops=["get"])
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 
-@api_view(["GET"])
-@permission_classes([AllowAny])
-@renderer_classes((JSONRenderer, TemplateHTMLRenderer))
-def randomUnfilteredInsult(request):
-    queryset = list(RANDOM_QS)
-    return Response(data=random.choice(seq=queryset), status=status.HTTP_200_OK)
 
 
+class InsultMe(RetrieveAPIView):
+    serializer_class = InsultSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        nsfw = None
+        category = None
+
+        queryset = queryset # TODO
+        return queryset
 class InsultsView(ListAPIView):
     queryset = Insult.objects.all()
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = InsultFilter
     lookup_field = "category"
     serializer_class = InsultsCategorySerializer
+    permission_classes = [AllowAny]
 
 
 class InsultSingleItem(RetrieveAPIView):
@@ -40,9 +43,12 @@ class InsultSingleItem(RetrieveAPIView):
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = InsultFilter
     serializer_class = InsultSerializer
-
+    permission_classes = [AllowAny]
 
 class MyInsultsView(RetrieveUpdateDestroyAPIView):
+    serializer_class = InsultSerializer
+    filterset_class = InsultFilter
+    permission_classes = [IsAuthenticated]
     def get_queryset(self):
         """
         This view returns a list of all insults created by the currently

@@ -1,0 +1,75 @@
+name: General Test and Deploy
+on: push
+jobs:
+  setup-virtualenv:
+    runs-on: ubuntu-latest
+    container:
+      image: terrybrooks/nhhc-amd:latest
+      env:
+        DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+        DOPPLER_PROJECT: ${{ env.DOPPLER_PROJECT }}
+        DOPPLER_CONFIG: ${{ env.DOPPLER_CONFIG }}
+        DOPPLER_ENV: ${{ env.DOPPLER_ENV }}
+    steps:
+      - name: Get Code Checkout
+        uses: 'Actions/Checkout@v3'
+      - name: Fetch Env Vars From Doppler
+        uses: dopplerhq/secrets-fetch-action@v1.1.3
+        id: secrets
+        with:
+          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          inject-env-vars: true
+          doppler-project: nhhc
+          doppler-config: stg
+      - uses: actions/checkout@v1
+      - uses: actions/setup-python@v2
+      - uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
+      - uses: syphar/restore-pip-download-cache@v1
+        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
+      - run: pip install -r requirements_pipeline.txt
+        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
+  linter:
+        needs: setup-virtualenv
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v1
+        - name: Fetch Env Vars From Doppler
+          uses: dopplerhq/secrets-fetch-action@v1.1.3
+          id: secrets
+          with:
+            doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+            inject-env-vars: true
+            doppler-project: nhhc
+            doppler-config: stg
+        - uses: actions/setup-python@v2
+        - uses: syphar/restore-virtualenv@v1
+          id: cache-virtualenv
+
+        - run: prospector
+        - run: isort . --diff --check-only
+        - run: black --check --diff .
+
+  tests:
+          needs: setup-virtualenv
+          runs-on: ubuntu-latest
+          steps:
+          - uses: actions/checkout@v1
+          - uses: actions/setup-python@v2
+          - name: Fetch Env Vars From Doppler
+            uses: dopplerhq/secrets-fetch-action@v1.1.3
+            id: secrets
+            with:
+              doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+              inject-env-vars: true
+              doppler-project: nhhc
+              doppler-config: stg
+          - uses: syphar/restore-virtualenv@v1
+            id: cache-virtualenv
+
+          - run: |
+              sudo mkdir /data
+              sudo chown -R $USER:$USER /data
+              sudo chmod 777
+              cd nhhc
+              make pipeline-test
