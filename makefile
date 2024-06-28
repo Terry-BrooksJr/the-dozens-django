@@ -1,11 +1,10 @@
-VENV := env
+VENV := .venv
 BIN := $(VENV)/bin
 PYTHON := $(BIN)/python
 SHELL := /bin/bash
-include .env
 
 .PHONY: help
-help: ## Show this help
+help: ## Show this 
 	@egrep -h '\s##\s' $(MAKE`FILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: venv
@@ -20,8 +19,8 @@ freeze: ## Pin current dependencies
 	$(BIN)/pip freeze > requirements.txt
 
 migrate: ## Make and run migrations
-	$(PYTHON) manage.py makemigrations
-	$(PYTHON) manage.py migrate
+	doppler run -- $(PYTHON) /workspaces/the-dozens-django/thedozens/manage.py makemigrations
+	doppler run -- $(PYTHON) /workspaces/the-dozens-django/thedozens/manage.py migrate
 
 db-up: ## Pull and start the Docker Postgres container in the background
 	docker pull postgres
@@ -36,7 +35,14 @@ test: ## Run tests
 
 .PHONY: run
 run: ## Run the Django server
-	$(PYTHON) manage.py runserver
+	doppler run -- $(PYTHON) /workspaces/the-dozens-django/thedozens/manage.py runserver
 
 start:
 	install migrate run ## Install requirements, apply migrations, then start development server
+
+.PHONY: schema-check
+schema-check:
+	doppler run -- $(PYTHON) /workspaces/the-dozens-django/thedozens/manage.py spectacular --file schema.yaml --validate --fail-on-warn
+
+schema: schema-check
+	doppler run -- -- $(PYTHON) /workspaces/the-dozens-django/thedozens/manage.py spectacular --file schema.yaml 
