@@ -124,7 +124,12 @@
           margin: 5px;
       }
 
-
+      video#about-video {
+        margin-left: 5rem;
+    }
+    div#copyright-container {
+      margin-left: 5rem;
+  }
       .wrap-left {
         float: left;
         margin: 5px;
@@ -169,16 +174,28 @@
     </nav>
   <main>
     <div class="row" id="body-img-row">
-        <div class="col-4">
+        <div class="col-6">
       <img id="dozens-image" src="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@dab0dbeb8cccd8a35b669fcdd5f16443a7041240/images/Dozen-Word-brand.png" alt="body-typograpy"/>
     </div>
+    <div class="col-6">
+      <p>Introducing a powerful and versatile Yo Mama Jokes API, meticulously crafted using Python 3.0's exceptional web framework, Django, in conjunction with the Django REST framework. This robust REST API comes with built-in rate limiting to ensure fair usage and optimal performance.</p>
+    
+      <h2>Key Features</h2>
+      <ul>
+          <li><strong>Comprehensive Filtering:</strong> API consumers can effortlessly filter jokes based on specific categories and explicit content, allowing for a highly customized joke retrieval experience.</li>
+          <li><strong>Dual API Formats:</strong> In addition to the REST API, we offer a GraphQL API version, providing flexibility and convenience for developers who prefer this modern approach to querying data.</li>
+      </ul>
+  
+      <p>This Yo Mama Jokes API is designed to be scalable, secure, and user-friendly, making it the perfect tool for integrating humor into your applications. Whether you're building a fun app, adding some lightheartedness to a website, or conducting data analysis on humor, our API has you covered.</p>
+    </div>
 </div>
+
 <div class="row">
       <div class="col-6" id="video-row">
         <video id="about-video" width="530" height="auto" src="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@52e60ba4815d8385dda1160487cf1761b3f166ca/images/black-ish%EA%9E%89%20Dre%20Explains%20%23TheDozens.mp4" class="object-fit-fill" controls></video>
       </div>
     </div>
-    <div class="row">
+    <div id="copyright-container" class="row">
         <div class="video-sub-copy">
       <p>Clip from ABC's Hit Show <strong>black</strong>·<em>ish</em></p>
       </div>
