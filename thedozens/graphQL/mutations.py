@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from graphene import Mutation, Enum, Argument
 from API.models import Insult
+from graphene import Argument, Enum, Mutation
 
 
 class Mutation(Mutation):

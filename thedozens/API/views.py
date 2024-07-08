@@ -1,21 +1,18 @@
 # -*- coding: utf-8 -*-
-from rest_framework.generics import (
-    RetrieveUpdateDestroyAPIView,
-    RetrieveAPIView,
-    ListAPIView,
-)
-from API.filters import InsultFilter
-from API.serializers import InsultSerializer, InsultsCategorySerializer
-from django_filters import rest_framework as filters
-from API.models import Insult
-from rest_framework.response import Response
-from rest_framework import status
 import random
-from rest_framework.decorators import api_view, renderer_classes, permission_classes
-from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
+
+from API.filters import InsultFilter
+from API.models import Insult
+from API.serializers import InsultsCategorySerializer, InsultSerializer
+from django_filters import rest_framework as filters
+from rest_framework import status
+from rest_framework.decorators import (api_view, permission_classes,
+                                       renderer_classes)
+from rest_framework.generics import (ListAPIView, RetrieveAPIView,
+                                     RetrieveUpdateDestroyAPIView)
 from rest_framework.permissions import AllowAny, IsAuthenticated
-
-
+from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
+from rest_framework.response import Response
 
 
 class InsultMe(RetrieveAPIView):

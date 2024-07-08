@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 from API.models import InsultReview
-from django.forms import ModelForm
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Column
-from crispy_forms.layout import HTML, Div
-from crispy_forms.layout import Layout, Button
-from crispy_forms.layout import Row, Field, Submit
-from django.urls import reverse
 from crispy_forms.bootstrap import FormActions
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import (HTML, Button, Column, Div,  Layout, Row,
+                                 Submit)
 from django.core.exceptions import ValidationError
+from django.forms import ModelForm
 from django.utils.translation import gettext_lazy as _
 
 1
@@ -20,7 +17,7 @@ class InsultReviewForm(ModelForm):
         self.helper = FormHelper()
         self.helper.form_id = "report-joke-form"
         self.helper.form_method = "post"
-        self.helper.form_action = reverse("Report-Joke")
+        self.helper.form_action = "/report"
         self.helper.layout = Layout(
             HTML(
                 """

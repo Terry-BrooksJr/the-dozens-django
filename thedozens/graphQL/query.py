@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from graphene import ObjectType, String, ID, Boolean, Field, List
-from API.models import Insult
-from graphene_django import DjangoObjectType
 from API.filters import InsultFilter
+from API.models import Insult
+from graphene import ID, Boolean, Field, List, ObjectType, String
+from graphene_django import DjangoObjectType
 
 # Create your views here.
 
