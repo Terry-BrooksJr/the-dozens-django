@@ -39,10 +39,9 @@ run: ## Run the Django server
 
 start:
 	install migrate run ## Install requirements, apply migrations, then start development server
-
 .PHONY: schema-check
 schema-check:
 	doppler run -- $(PYTHON) /workspaces/the-dozens-django/thedozens/manage.py spectacular --file schema.yaml --validate --fail-on-warn
 
 schema: schema-check
-	doppler run -- -- $(PYTHON) /workspaces/the-dozens-django/thedozens/manage.py spectacular --file schema.yaml 
+	doppler run -- $(PYTHON) /workspaces/the-dozens-django/thedozens/manage.py spectacular --file schema.yaml 
