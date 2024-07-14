@@ -1,4 +1,3 @@
-from drf_spectacular.utils import extend_schema, OpenApiParameter
 from API.filters import InsultFilter
 from API.models import Insult
 from API.serializers import (
@@ -7,10 +6,8 @@ from API.serializers import (
     MyInsultSerializer,
 )
 from django_filters import rest_framework as filters
-from rest_framework.response import Response
 from drf_spectacular.types import OpenApiTypes
-from rest_framework.views import APIView, status
-
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.generics import (
     ListAPIView,
     RetrieveAPIView,
@@ -18,6 +15,8 @@ from rest_framework.generics import (
 )
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView, status
 
 
 class InsultMe(RetrieveAPIView):

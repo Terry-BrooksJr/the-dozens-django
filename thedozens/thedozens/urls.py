@@ -2,12 +2,11 @@
 """
 Root URL configuration for thedozens project.
 """
+import API.urls
+import certbot_django.server.urls
+import graphQL.urls
 from django.contrib import admin
 from django.urls import include, path, re_path
-import certbot_django.server.urls
-
-import API.urls
-import graphQL.urls
 
 from thedozens.views import HomePage  # ,  GitHubCreateIssueEndPoint
 

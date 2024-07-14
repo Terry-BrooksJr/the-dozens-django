@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-from API.models import InsultReview, Insult
-from django.urls import reverse
+from API.models import Insult, InsultReview
+from captcha.fields import ReCaptchaField
 from crispy_forms.bootstrap import FormActions
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Field, Button, Column, Div, Layout, Row, Submit
+from crispy_forms.layout import HTML, Button, Column, Div, Field, Layout, Row, Submit
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import ModelForm
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from loguru import logger
-from django.conf import settings
-from captcha.fields import ReCaptchaField
 
 
 class InsultReviewForm(ModelForm):

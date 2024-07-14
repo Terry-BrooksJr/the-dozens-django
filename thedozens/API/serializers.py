@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from API.models import Insult
+from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
 from rest_framework import serializers
-from drf_spectacular.utils import extend_schema_serializer, OpenApiExample
 
 
 # @extend_schema_serializer(
