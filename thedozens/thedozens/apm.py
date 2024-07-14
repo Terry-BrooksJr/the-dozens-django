@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from cacheops.signals import cache_read
-from statsd.defaults.django import statsd
 from prometheus_client import Counter
+from statsd.defaults.django import statsd
 
 
 def stats_collector(sender, func, hit, **kwargs):
