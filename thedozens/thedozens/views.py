@@ -19,11 +19,12 @@ from rest_framework.views import APIView
 
 class HomePage(TemplateView):
     template_name = "index.html"
-    extra_context = {"title": "The Dozens", "form":InsultReviewForm() }
+    extra_context = {"title": "The Dozens", "form": InsultReviewForm()}
     # def get_context_data(self, **kwargs) -> dict[str, Any]:
     #     context = super().get_context_data(**kwargs)
     #     context['title'] = "The Dozens"
     #     context['ReportForm'] = InsultReviewForm()
+
 
 # class GitHubCreateIssueEndPoint(APIView):
 #     def post(self, request:HttpRequest, *args, **kwargs) -> HttpResponse:
@@ -49,4 +50,3 @@ class HomePage(TemplateView):
 #                 return Response(
 #                     data={"status": "FAILED"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
 #                 )
-   

@@ -1,9 +1,7 @@
-VENV := /Users/terry-brooks/Documents/Github/the-dozens-django/.env-the-dozens-django/
+VENV := /Users/terry-brooks/Documents/Github/the-dozens-django/.venv/
 BIN := $(VENV)/bin
 PYTHON := $(BIN)/python
 SHELL := /bin/bash
-include .env
-
 .PHONY: help
 help: ## Show this help
 	@egrep -h '\s##\s' $(MAKE`FILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -40,8 +38,6 @@ run: ## Run the Django server
 
 start:
 	install migrate run ## Install requirements, apply migrations, then start development server
-<<<<<<< Updated upstream
-=======
 
 .PHONY: schema-check
 schema-check:
@@ -49,4 +45,3 @@ schema-check:
 
 schema: schema-check
 	doppler run -- $(PYTHON) /workspaces/the-dozens-django/thedozens/manage.py spectacular --file schema.yaml 
->>>>>>> Stashed changes

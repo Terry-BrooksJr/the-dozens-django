@@ -20,11 +20,7 @@ from loguru import logger
 
 GLOBAL_NOW = datetime.now()
 
-LOGGING_CONFIG = None 
-
-
-LOGGING_CONFIG = None 
-
+LOGGING_CONFIG = None
 
 # SECTION - Application definition
 ROOT_URLCONF = "thedozens.urls"
@@ -47,14 +43,16 @@ INSTALLED_APPS = [
     "django_filters",
     "debug_toolbar",
     "graphene_django",
-        'djoser',
-            'djoser.webauthn',
+    "djoser",
+    "djoser.webauthn",
     "crispy_forms",
     "captcha",
     "crispy_bootstrap5",
     "cacheops",
     "django_prometheus",
     "drf_spectacular",
+    "asymmetric_jwt_auth",
+    "certbot_django.server",
     # Project Apps
     "API",
     "graphQL",
@@ -73,10 +71,8 @@ TIME_ZONE = "America/New_York"
 USE_I18N = True
 USE_TZ = True
 MIDDLEWARE = [
-    
-    
     "kolo.middleware.KoloMiddleware",
-        # "django.middleware.cache.UpdateCacheMiddleware",
+    # "django.middleware.cache.UpdateCacheMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -85,8 +81,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-        # "django.middleware.cache.FetchFromCacheMiddleware",
-
+    "asymmetric_jwt_auth.middleware.JWTAuthMiddleware",
+    # "django.middleware.cache.FetchFromCacheMiddleware",
 ]
 RECAPTCHA_PRIVATE_KEY = os.getenv("RECAPTCHA_PRIVATE_KEY")
 RECAPTCHA_PUBLIC_KEY = os.getenv("RECAPTCHA_PUBLIC_KEY")
@@ -103,7 +99,7 @@ DATABASES = {
         "PASSWORD": os.environ["PG_DATABASE_PASSWORD"],
         "HOST": os.environ["PG_DATABASE_HOST"],
         "PORT": os.environ["PG_DATABASE_PORT"],
-         "OPTIONS": {"sslmode": "verify-full"},
+        "OPTIONS": {"sslmode": "verify-full"},
     }
 }
 
@@ -244,18 +240,19 @@ REST_FRAMEWORK = {
 # SECTION Rest Documentation
 
 SPECTACULAR_SETTINGS = {
-     'TITLE': 'Yo\' MaMa - The Roast API',
-    'DESCRIPTION': 'Robust REST API with rate limits for Yo Mama Jokes , that allows API Consumers to filter jokes based on Category and/or Explicitly ',
-    'VERSION': '2.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    'SCHEMA_PATH_PREFIX': " ",
+    "TITLE": "Yo' MaMa - The Roast API",
+    "DESCRIPTION": "Robust REST API with rate limits for Yo Mama Jokes , that allows API Consumers to filter jokes based on Category and/or Explicitly ",
+    "VERSION": "2.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "ENUM_ADD_EXPLICIT_BLANK_NULL_CHOICE": True,
+    "SCHEMA_PATH_PREFIX": " ",
     "SWAGGER_UI_SETTINGS": {
         "deepLinking": True,
         "persistAuthorization": True,
         "displayOperationId": True,
     },
-    "SWAGGER_UI_DIST": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest", # default
-    "SWAGGER_UI_FAVICON_HREF": "https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@94065f369600b5ac3fd17c56da7800c83bf356dd/images/yoyoo_400x400.jpg" # default is swagger favicon
+    "SWAGGER_UI_DIST": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest",  # default
+    "SWAGGER_UI_FAVICON_HREF": "https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@94065f369600b5ac3fd17c56da7800c83bf356dd/images/yoyoo_400x400.jpg",  # default is swagger favicon
 }
 # SECTION - Email Settings (Django-Mailer)
 
@@ -287,10 +284,9 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 # !SECTION
 
 
-
-PRIMARY_LOG_FILE = os.path.join( BASE_DIR, "logs", "primary_ops.log")
-CRITICAL_LOG_FILE = os.path.join( BASE_DIR, "logs", "fatal.log")
-DEBUG_LOG_FILE = os.path.join( BASE_DIR, "logs", "utility.log")
+PRIMARY_LOG_FILE = os.path.join(BASE_DIR, "logs", "primary_ops.log")
+CRITICAL_LOG_FILE = os.path.join(BASE_DIR, "logs", "fatal.log")
+DEBUG_LOG_FILE = os.path.join(BASE_DIR, "logs", "utility.log")
 LOGTAIL_HANDLER = LogtailHandler(source_token=os.environ["LOGTAIL_API_KEY"])
 DEFAULT_HANDLER = sys.stdout
 
@@ -298,5 +294,3 @@ logger.add(DEBUG_LOG_FILE, diagnose=True, catch=True, backtrace=True, level="DEB
 logger.add(DEFAULT_HANDLER, diagnose=True, catch=True, backtrace=True, level="DEBUG")
 logger.add(PRIMARY_LOG_FILE, diagnose=False, catch=True, backtrace=False, level="INFO")
 logger.add(LOGTAIL_HANDLER, diagnose=False, catch=True, backtrace=False, level="INFO")
-
-

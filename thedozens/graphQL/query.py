@@ -44,4 +44,3 @@ class Query(ObjectType):
 
     def resolve_insult_by_id(root, info, pk):
         return Insult.objects.get(id=pk)
-    
