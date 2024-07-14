@@ -14,6 +14,7 @@ from loguru import logger
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+
 import API.urls
 import graphQL.urls
 import os
@@ -63,13 +64,20 @@ class GitHubCreateIssueEndPoint(APIView):
                 )
    
 
+from thedozens.views import HomePage #,  GitHubCreateIssueEndPoint
+
 urlpatterns = [
     path("graphql", include(graphQL.urls), name="GraphQL"),
     path("admin/", admin.site.urls),
     re_path(r'^auth/', include('djoser.urls')),
     path("api-auth/", include("rest_framework.urls")),
     path("__debug__/", include("debug_toolbar.urls")),
+        re_path('^auth/webauthn/', include('djoser.webauthn.urls')),
     path("api/", include(API.urls)),
     re_path(r"$^", cache_page(HomePage.as_view()), name="home-page"),
     path("report-joke", GitHubCreateIssueEndPoint.as_view(), name="Report-Joke"),
+    re_path(r"$^", HomePage.as_view(), name="home-page"),
+    # path("report", GitHubCreateIssueEndPoint.as_view(), name="Report-Joke"),
+
+
 ]

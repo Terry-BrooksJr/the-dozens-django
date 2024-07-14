@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+<<<<<<< Updated upstream
 from API.models import InsultReview, Insult
 from django.forms import ModelForm
 from crispy_forms.helper import FormHelper
@@ -7,8 +8,15 @@ from crispy_forms.layout import HTML, Div
 from crispy_forms.layout import Layout, Button
 from crispy_forms.layout import Row, Field, Submit
 from django.urls import reverse
+=======
+from API.models import InsultReview
+>>>>>>> Stashed changes
 from crispy_forms.bootstrap import FormActions
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import (HTML, Button, Column, Div,  Layout, Row,
+                                 Submit)
 from django.core.exceptions import ValidationError
+from django.forms import ModelForm
 from django.utils.translation import gettext_lazy as _
 from loguru import logger
 from logtail import LogtailHandler
@@ -16,6 +24,7 @@ import os
 from django.conf import settings
 from captcha.fields import ReCaptchaField
 
+<<<<<<< Updated upstream
 
 PRIMARY_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "primary_ops.log")
 CRITICAL_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "fatal.log")
@@ -31,6 +40,8 @@ for id in RESULT_IDs:
     ID_LIST.append(id["id"])
 
 logger.debug(ID_LIST)
+=======
+>>>>>>> Stashed changes
 
 
 class InsultReviewForm(ModelForm):
@@ -41,7 +52,11 @@ class InsultReviewForm(ModelForm):
         self.helper = FormHelper()
         self.helper.form_id = "report-joke-form"
         self.helper.form_method = "post"
+<<<<<<< Updated upstream
         self.helper.form_action = reverse("home-page")
+=======
+        self.helper.form_action = "/report"
+>>>>>>> Stashed changes
         self.helper.layout = Layout(
             HTML(
                 """
@@ -88,6 +103,7 @@ class InsultReviewForm(ModelForm):
             ),
         )
 
+<<<<<<< Updated upstream
     # def clean(self):
     #     cleaned_data = super().clean()
     #     anonymous = self.cleaned_data.get("anonymous")
@@ -96,6 +112,15 @@ class InsultReviewForm(ModelForm):
     #     reporter_last_name = self.cleaned_data.get("reporter_last_name")
     #     post_review_contact_desired = self.cleaned_data.get("post_review_contact_desired")
     #     reporter_email = self.cleaned_data.get("reporter_email")
+=======
+    def clean(self):
+        clean_data = super().clean()
+        anonymous = clean_data.get("anonymous")
+        reporter_first_name = clean_data.get("reporter_first_name")
+        reporter_last_name = clean_data.get("reporter_last_name")
+        post_review_contact_desired = clean_data.get("post_review_contact_desired")
+        reporter_email = clean_data.get("reporter_email")
+>>>>>>> Stashed changes
 
     #     if insult_id not in ID_LIST:
     #         raise ValidationError(
@@ -121,6 +146,7 @@ class InsultReviewForm(ModelForm):
     #                 code="invalid-last-name-not-provided",
     #             )
 
+<<<<<<< Updated upstream
     #     if post_review_contact_desired is True:
     #         if reporter_email in [None, " ", ""]:
     #             raise ValidationError(
@@ -130,6 +156,17 @@ class InsultReviewForm(ModelForm):
     #                 code="invalid-last-name-not-provided",
     #             )
 
+=======
+        if post_review_contact_desired is True:
+            if reporter_email in [None, " ", ""]:
+                raise ValidationError(
+                    _(
+                        "Email Not Provided - You have selected that you wish to be contacted to know the desired outcome of the review, but have not provided an email address. Please change your results contact preference or enter a vaild email addrwss"
+                    ),
+                    code="invalid-last-name-not-provided",
+                )
+        return clean_data
+>>>>>>> Stashed changes
     class Meta:
         model = InsultReview
         fields = (

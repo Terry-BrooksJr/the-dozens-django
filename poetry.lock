@@ -974,6 +974,41 @@ description = "Internationalized Domain Names in Applications (IDNA)"
 optional = false
 python-versions = ">=3.5"
 files = [
+    {file = "idna-3.7.tar.gz", hash = "sha256:028ff3aadf0609c1fd278d8ea3089299412a7a8b9bd005dd08b9f8285bcb5cfc"},
+]
+
+[[package]]
+name = "infisical"
+version = "1.5.0"
+description = "Official Infisical SDK for Python"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "infisical-1.5.0-py3-none-any.whl", hash = "sha256:c69cf4c1875c9b417dee5c84dd7befd64f0b593a7939f35d9633a4a13820bdf5"},
+    {file = "infisical-1.5.0.tar.gz", hash = "sha256:8d3eec128081cd4c4ab5260e78f66fc600bdffd795ec95f32f02041e32a23ced"},
+]
+
+[package.dependencies]
+pycryptodomex = ">=3.17,<4.0.0"
+pydantic = ">=1.6.2,<1.7 || >1.7,<1.7.1 || >1.7.1,<1.7.2 || >1.7.2,<1.7.3 || >1.7.3,<1.8 || >1.8,<1.8.1 || >1.8.1,<2.0.0"
+pynacl = ">=1.5.0,<2.0.0"
+requests = "2.31.0"
+
+[package.extras]
+dev = ["black (==23.3.0)", "devtools[pygments] (==0.11.0)", "isort (>=5.0.6,<6.0.0)", "mypy (==1.1.1)", "ruff (==0.0.261)", "types-requests (==2.28.11.17)"]
+test = ["coverage[toml] (>=6.5.0,<8.0)", "pytest (>=7.1.3,<8.0.0)", "responses (==0.23.1)"]
+
+[[package]]
+name = "inflection"
+version = "0.5.1"
+description = "A port of Ruby on Rails inflector to Python"
+category = "main"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "inflection-0.5.1-py2.py3-none-any.whl", hash = "sha256:f38b2b640938a4f35ade69ac3d053042959b62a0f1076a5bbaa1b9526605a8a2"},
+    {file = "inflection-0.5.1.tar.gz", hash = "sha256:1a29730d366e996aaacffb2f1f1cb9593dc38e2ddd30c91250c6dde09ea9b417"},
     {file = "idna-3.7-py3-none-any.whl", hash = "sha256:82fee1fc78add43492d3a1898bfa6d8a904cc97d8427f683ed8e798d07761aa0"},
     {file = "idna-3.7.tar.gz", hash = "sha256:028ff3aadf0609c1fd278d8ea3089299412a7a8b9bd005dd08b9f8285bcb5cfc"},
 ]
@@ -2401,4 +2436,13 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
+<<<<<<< Updated upstream
+content-hash = "b116cbf800dd275d5d98ab20e51b329a0026895f154e4aee94f3c3d3c0821aa4"
+=======
+<<<<<<< ours
+content-hash = "99fc575b5ebd6c1d0a83dcdd778dfb413bf0430f5383d3d9259689bdbd364618"
+=======
+content-hash = "30e60515ee09bf7425960a4f0dbf61322ebdd7b8f87b45c5978cc88b85d4bc63"
+>>>>>>> theirs
+>>>>>>> Stashed changes
 content-hash = "440580c1fdcb67fad045092fc514d8086bb71e0d3a620b4383a0fffdab337eb3"
