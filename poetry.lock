@@ -986,14 +986,12 @@ license = ["ukkonen"]
 
 [[package]]
 name = "idna"
-version = "3.4"
 description = "Internationalized Domain Names in Applications (IDNA)"
 category = "main"
 optional = false
 python-versions = ">=3.5"
 files = [
-    {file = "idna-3.4-py3-none-any.whl", hash = "sha256:90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2"},
-    {file = "idna-3.4.tar.gz", hash = "sha256:814f528e8dead7d329833b91c5faa87d60bf71824cd12a7530b5526063d02cb4"},
+    {file = "idna-3.7.tar.gz", hash = "sha256:028ff3aadf0609c1fd278d8ea3089299412a7a8b9bd005dd08b9f8285bcb5cfc"},
 ]
 
 [[package]]
@@ -2508,4 +2506,12 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
+<<<<<<< Updated upstream
 content-hash = "b116cbf800dd275d5d98ab20e51b329a0026895f154e4aee94f3c3d3c0821aa4"
+=======
+<<<<<<< ours
+content-hash = "99fc575b5ebd6c1d0a83dcdd778dfb413bf0430f5383d3d9259689bdbd364618"
+=======
+content-hash = "30e60515ee09bf7425960a4f0dbf61322ebdd7b8f87b45c5978cc88b85d4bc63"
+>>>>>>> theirs
+>>>>>>> Stashed changes

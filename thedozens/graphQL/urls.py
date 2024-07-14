@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from graphene_django.views import GraphQLView
 from django.urls import path
+from graphene_django.views import GraphQLView
 from graphQL.schema import schema
 
 urlpatterns = [

@@ -1,16 +1,10 @@
-# -*- coding: utf-8 -*-
-import os
+import datetime
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from logtail import LogtailHandler
 from loguru import logger
-import datetime
-from cacheops import cache
-from django_prometheus.models import ExportModelOperationsMixin
-
 
 NOW = datetime.datetime.now()
 
@@ -33,28 +27,29 @@ class Insult(models.Model):
         verbose_name_plural = "Insults/Jokes"
         managed = True
         indexes = [
-            models.Index(fields=["id"], name="pk_idx"),
-            models.Index(fields=["category"], name="category_idx"),
-            models.Index(fields=["added_by"], name="creator_idx"),
+            models.Index(fields=["category"], name="idx_category"),
+            models.Index(fields=["category", "explicit"], name="idx_explicit_category"),
+            models.Index(fields=["explicit"], name="idx_explicit"),
+            models.Index(fields=["added_by"], name="idx_added_by"),
         ]
 
     class CATEGORY(models.TextChoices):
-        POOR = "P", _("Poor")
-        FAT = "F", _("Fat")
-        UGLY = "U", _("Ugly")
-        STUPID = "S", _("Stupid/Dumb")
-        SNOWFLAKE = "SNWF", _("Snowflake")
-        OLD = "O", _("Old")
-        DADDY_OLD = "DO", _("Old/Daddy")
-        DADDY_STUPID = "DS", _("Stupid/Daddy")
-        NASTY = "N", _("Nasty")
-        TALL = "T", _("Stupid/Dumb")
-        TESt_CATAGORY = "TEST", _("Testing")
-        SKINNY = "SKN", _("Skinny")
-        BALD = "B", _("Bald")
-        HAIRY = "H", _("Hairy")
-        LAZY = "L", _("Lazy")
-        SHORT = "SRT", _("Short")
+        POOR = "P", _("poor")
+        FAT = "F", _("fat")
+        UGLY = "U", _("ugly")
+        STUPID = "S", _("stupid")
+        SNOWFLAKE = "SNWF", _("snowflake")
+        OLD = "O", _("old")
+        DADDY_OLD = "DO", _("old_daddy")
+        DADDY_STUPID = "DS", _("stupid_daddy")
+        NASTY = "N", _("nasty")
+        TALL = "T", _("tall")
+        TEST_CATAGORY = "TEST", _("testing")
+        SKINNY = "SKN", _("skinny")
+        BALD = "B", _("bald")
+        HAIRY = "H", _("hairy")
+        LAZY = "L", _("lazy")
+        SHORT = "SRT", _("short")
 
     class STATUS(models.TextChoices):
         ACTIVE = "A", _("Active")
