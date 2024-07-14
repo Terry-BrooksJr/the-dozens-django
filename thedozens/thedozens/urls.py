@@ -3,15 +3,11 @@
 Root URL configuration for thedozens project.
 """
 from API.forms import InsultReviewForm
-from django.conf import settings
 from django.contrib import admin
-from django.shortcuts import render
 from django.urls import include, path, re_path
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from django.views.decorators.cache import cache_page
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.vary import vary_on_cookie, vary_on_headers
+
 from django.views.generic import TemplateView
 from ghapi.all import GhApi
 from loguru import logger
@@ -23,15 +19,14 @@ import graphQL.urls
 import os
 
 
-@method_decorator(cache_page(timeout=1200, key_prefix="index"))
 class HomePage(TemplateView):
     template_name = "index.html"
-    extra_context = {"title": "The Dozens", "form":InsultReviewForm() }
+    # extra_context = {"title": "The Dozens", "form":InsultReviewForm() }
 
 
 class GitHubCreateIssueEndPoint(APIView):
     def post(self, request, *args, **kwargs):
-        form = InsultReviewForm(request.POST)
+        form = InsultReviewForm(**request.POST)
         if form.is_valid():
             try:
                 issue_body = form.cleaned_data["rationale_for_review"]
@@ -62,6 +57,6 @@ urlpatterns = [
     path("api-auth/", include("rest_framework.urls")),
     path("__debug__/", include("debug_toolbar.urls")),
     path("api/", include(API.urls)),
-    re_path(r"$^", HomePage.as_view(), name="home-page"),
+    re_path(r"$^", cache_page(HomePage.as_view()), name="home-page"),
     path("report-joke", GitHubCreateIssueEndPoint.as_view(), name="Report-Joke"),
 ]

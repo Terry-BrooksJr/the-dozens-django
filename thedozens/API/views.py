@@ -10,9 +10,7 @@ from django_filters import rest_framework as filters
 from API.models import Insult
 from rest_framework.response import Response
 from rest_framework import status
-import random
-from rest_framework.decorators import api_view, renderer_classes, permission_classes
-from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
+
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 
