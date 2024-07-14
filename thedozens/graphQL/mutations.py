@@ -1,5 +1,5 @@
 # from API.models import Insult
-from graphene import Mutation #, Argument, Enum
+from graphene import Mutation  # , Argument, Enum
 
 
 class Mutate(Mutation):
