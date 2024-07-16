@@ -38,7 +38,7 @@ We ask that you:
 
 - **Avoid Public Disclosure**: Do not publicly disclose the vulnerability until we have had an opportunity to address it.
 - **Respect Confidentiality**: Keep all communication regarding the vulnerability confidential until we have released an official statement or patch.
-- **Act in Good Faith**: Do not exploit the vulnerability for any reason other than testing and reporting it to us.
+ **Act in Good Faith**: Do not exploit the vulnerability for any purpose other than testing and reporting it to us.
 
 Thank you for helping us maintain the security and integrity of our software.
 
