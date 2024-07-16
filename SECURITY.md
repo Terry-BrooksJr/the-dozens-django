@@ -18,7 +18,7 @@ We take the security of our software seriously. If you discover a security vulne
 ### How to Report
 
 1. **Open a GitHub Issue**: Create a new issue in the [GitHub repository](https://github.com/the-dozens-django) where the vulnerability was found.
-2. **Use the "Security Issue" Template**: When creating the issue, select the "Security Issue" template if available, or clearly mark the issue title with `[SECURITY]`.
+2. **Use the "Security Issue" Template**: When creating the issue, select the "Security Issue" template if available, or clearly mark the issue title with the tag `[SECURITY]`.
 3. **Provide Detailed Information**:
    - Description of the vulnerability.
    - Steps to reproduce the issue.
