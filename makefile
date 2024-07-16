@@ -1,4 +1,4 @@
-VENV := /Users/terry-brooks/Documents/Github/the-dozens-django/.venv/
+VENV := ${HOME}/the-dozens-django/.venv/
 BIN := $(VENV)/bin
 PYTHON := $(BIN)/python
 SHELL := /bin/bash

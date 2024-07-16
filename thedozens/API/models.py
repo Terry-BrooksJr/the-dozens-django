@@ -9,15 +9,6 @@ from loguru import logger
 NOW = datetime.datetime.now()
 
 
-PRIMARY_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "primary_ops.log")
-CRITICAL_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "fatal.log")
-DEBUG_LOG_FILE = os.path.join(settings.BASE_DIR, "standup", "logs", "utility.log")
-LOGTAIL_HANDLER = LogtailHandler(source_token=os.getenv("LOGTAIL_API_KEY"))
-
-logger.add(DEBUG_LOG_FILE, diagnose=True, catch=True, backtrace=True, level="DEBUG")
-logger.add(PRIMARY_LOG_FILE, diagnose=False, catch=True, backtrace=False, level="INFO")
-logger.add(LOGTAIL_HANDLER, diagnose=False, catch=True, backtrace=False, level="INFO")
-
 
 class Insult(models.Model):
     class Meta:
@@ -44,7 +35,7 @@ class Insult(models.Model):
         DADDY_STUPID = "DS", _("stupid_daddy")
         NASTY = "N", _("nasty")
         TALL = "T", _("tall")
-        TEST_CATAGORY = "TEST", _("testing")
+        TEST_CATEGORY = "TEST", _("testing")
         SKINNY = "SKN", _("skinny")
         BALD = "B", _("bald")
         HAIRY = "H", _("hairy")
@@ -84,12 +75,11 @@ class Insult(models.Model):
         )
 
     def remove_insult(self):
-        """Removes insult visibilitty from the API.
+        """Removes insult visibility from the API. (Soft Delete)
 
         Logs:
             Success: Logs the PK of the modified Insult Instance
-            Exception: If the Insis unable top be removed.
-
+            Exception: If the Insult unable top be removed. 
         Returns:
             None
         """
@@ -136,7 +126,7 @@ class Insult(models.Model):
         except Exception as e:
             logger.error(f"Unable to Send For Review({self.pk}): {e}")
 
-    def re_catagorize(self, new_catagory):
+    def re_categorize(self, new_category):
         """Re-categorizes the object with a new category.
 
         Args:
@@ -152,12 +142,12 @@ class Insult(models.Model):
         """
 
         try:
-            self.category = new_catagory
-            logger.success(f"Successfully Re-Catagorized {self.pk} to {self.category}")
+            self.category = new_category
+            logger.success(f"Successfully Re-Categorized {self.pk} to {self.category}")
         except Exception as e:
-            logger.error(f"Unable to RE-Catagorized Insult {self.pk}: {e}")
+            logger.error(f"Unable to RE-Categorized Insult {self.pk}: {e}")
 
-    def reclassify(self, explict_status):
+    def reclassify(self, explicit_status):
         """Changes the category of the insult
 
         Logs:
@@ -168,7 +158,7 @@ class Insult(models.Model):
         """
 
         try:
-            self.explicit = explict_status
+            self.explicit = explicit_status
             logger.success(f"Successfully reclassified {self.pk} to {self.explicit}")
         except Exception as e:
             logger.error(f"Unable to ReClassify Insult {self.pk}: {e}")
@@ -177,18 +167,18 @@ class Insult(models.Model):
 class InsultReview(models.Model):
     class REVIEW_TYPE(models.TextChoices):
         RECLASSIFY = "RE", _("Joke Reclassification")
-        RECATAGORIZE = "RC", _("Joke Recatagorizion")
+        RECATAGORIZE = "RC", _("Joke Recategorization")
         REMOVAL = "RX", _("Joke Removal")
 
     class STATUS(models.TextChoices):
         PENDING = "P", _("Pending")
-        NEW_CLASSIFICATION = "NCE", _("Completed - New Explicity Setting")
-        SAME_CLASSIFICATION = "SCE", _("Completed - No New Explicity Setting")
+        NEW_CLASSIFICATION = "NCE", _("Completed - New Explicitly Setting")
+        SAME_CLASSIFICATION = "SCE", _("Completed - No New Explicitly Setting")
         NEW_CATAGORY = "NJC", _("Completed - Assigned to New Catagory")
         SAME_CATAGORY = "SJC", _("Completed - No New Catagory Assigned")
         REMOVED = "X", _("Completed - Joke Removed")
 
-    insult_id = models.IntegerField()
+    insult_id = models.ForeignKey(Insult, on_delete=models.CASCADE)
     anonymous = models.BooleanField(default=False)
     reporter_first_name = models.CharField(max_length=80, null=True, blank=True)
     reporter_last_name = models.CharField(max_length=80, null=True, blank=True)
@@ -229,7 +219,7 @@ class InsultReview(models.Model):
             logger.error(f"ERROR: Unable to Update {self.pk}: {str(e)}")
 
     def mark_review_recatagoized(self):
-        """Marks the review as recategorized.
+        """Marks the review as re-categorized.
 
         This method sets the status of the review to "NJC" (New Joke Category) and updates the `date_reviewed` attribute to the current date and time. It also logs a success message indicating that the review has been marked as reclassified.
 

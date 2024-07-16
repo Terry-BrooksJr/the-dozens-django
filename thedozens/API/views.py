@@ -18,22 +18,31 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView, status
 
-
 class InsultMe(RetrieveAPIView):
+    """
+    A view to retrieve insults submitted by the authenticated use.
+    """
     serializer_class = InsultSerializer
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self) -:
+        """
+        Get the queryset of insults added by the authenticated user.
+        """
         nsfw = self.request.get("")
         category = None
+        if self.request.user.is_authenticated:
+            queryset = Insult.objects.filter(added_by=self.request.user)
 
-        queryset = queryset  # TODO
         return queryset
 
 
-class InsultCatergories(APIView):
+class InsultCategories(APIView):    """
+    A view to retrieve available insult categories.
+    """
     permission_classes = [AllowAny]
-
+    allowed_methods = ['GET']
+    
     def get(self, request, format=None):
         categories = Insult.CATEGORY.choices
         display_name = []
@@ -43,6 +52,7 @@ class InsultCatergories(APIView):
 
 
 @extend_schema(
+    description="API Get Only Endpoint to provide a list of available insult categories
     parameters=[
         OpenApiParameter(
             name="nfsw",
@@ -50,15 +60,14 @@ class InsultCatergories(APIView):
             description="Allows for the filtering of explicit or content Not Safe For Work(NSFW) Defaults to None, Allowing for All types",
             required=False,
             location="query",
-            default=Nonem,
+            default=None,
             allow_blank=True,
             many=True,
             enum=[True, False],
         )
     ]
 )
-class InsultsCatergoriesListView(ListAPIView):
-    queryset = Insult.objects.all()
+class InsultsCategoriesListView(ListAPIView):
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = InsultFilter
     lookup_field = "category"
@@ -70,8 +79,8 @@ class InsultsCatergoriesListView(ListAPIView):
         category = self.kwargs["category"]
         category = category.lower()
         available_categories = dict((y, x) for x, y in Insult.CATEGORY.choices)
-        available_categories = [[cat.lower()] for cat in available_categories]
-        if category not in available_categories.keys():
+        available_categories_list = [[cat.lower()] for cat in Insult.CATEGORY.choices]
+        if category not in available_categories_list:
             return Insult.objects.none()
         else:
             for key, value in available_categories.items():

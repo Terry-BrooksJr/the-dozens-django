@@ -27,7 +27,7 @@ class InsultSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Insult
-        read_only_fields = ["account_name"]
+        read_only_fields = ["pk", ]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -67,7 +67,7 @@ class InsultSerializer(serializers.ModelSerializer):
                 ],
             },
             request_only=False,  # signal that example only applies to requests
-            response_only=False,  # signal that example only applies to responses
+            response_only=True,  # signal that example only applies to responses
         ),
     ]
 )
