@@ -5,17 +5,16 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 urlpatterns = [
     path(
         "insults/categories",
-        views.InsultCatergories.as_view(),
+        views.InsultCategories.as_view(),
         name="insult-categories",
     ),
     path(
         "insults/categories/<str:category>",
-        views.InsultsCatergoriesListView.as_view(),
+        views.InsultsCategoriesListView.as_view(),
         name="List_View",
     ),
     path("insult/<int:id>", views.InsultSingleItem.as_view(), name="Single_View"),
     path("insult", views.randomUnfilteredInsult, name="Random-Unfiltered"),
-    # path("insult", views.randomUnfilteredInsult, name="Random-Unfiltered"),
     path("", SpectacularAPIView.as_view(), name="schema"),
     path("swagger", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger"),
 ]

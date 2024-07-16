@@ -13,7 +13,7 @@
 		"ghcr.io/itsmechlark/features/doppler:2": {}
 	},
 	"containerEnv": {
-        "DOPPLER_TOKEN": "dp.st.dev.zWkzKyV5QXw8rWcRdiCfEdbHYMEaTqAHBtE0iHhZSKl",
+        "DOPPLER_TOKEN": " ",
         "DOPPLER_ENV": "1",
         "DOPPLER_PROJECT": "yo-mama",
         "DOPPLER_CONFIG": "dev"        

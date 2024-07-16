@@ -69,13 +69,14 @@ class InsultReviewForm(ModelForm):
         )
 
     def clean(self):
-        clean_data = super().clean()
-        anonymous = clean_data.get("anonymous")
-        reporter_first_name = clean_data.get("reporter_first_name")
-        reporter_last_name = clean_data.get("reporter_last_name")
-        post_review_contact_desired = clean_data.get("post_review_contact_desired")
-        reporter_email = clean_data.get("reporter_email")
-
+        cleaned_data = super().clean()
+        anonymous = cleaned_data.get("anonymous")
+        reporter_first_name = cleaned_data.get("reporter_first_name")
+        reporter_last_name = cleaned_data.get("reporter_last_name")
+        post_review_contact_desired = cleaned_data.get("post_review_contact_desired")
+        reporter_email = cleaned_data.get("reporter_email")
+        insult_id = cleaned_data.get("insult_id")
+        
         if insult_id not in ID_LIST:
             raise ValidationError(
                 _("Invaild Insult ID - Please confirm Insult ID"),

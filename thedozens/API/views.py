@@ -19,7 +19,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView, status
 
-
 class InsultMe(RetrieveAPIView):
     """
     A view to retrieve insults submitted by the authenticated use.
