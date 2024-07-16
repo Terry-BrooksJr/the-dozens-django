@@ -1,0 +1,89 @@
+---
+version: "3"
+
+services:
+  redis:
+    image: redis:latest
+    container_name: cache_database_dozens
+    restart: unless-stopped
+    networks:
+      - dozens-ecosystem
+    working_dir: /data/cache
+    volumes:
+      - 'primary_hhd_dozens:/data/cache'
+    ports:
+      - '3001:6379'
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 5m
+      timeout: 2m
+      retries: 5
+      start_period: 2m
+      start_interval: 2m
+
+  db:
+    image: postgres:latest
+    container_name: app_database_dozens
+    restart: unless-stopped
+    networks:
+      - dozens-ecosystem
+    env_file:
+      - .env
+    ports:
+      - '3002:5432'
+    working_dir: /data/db
+    volumes:
+      - 'primary_hhd_dozens:/data/db'
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  pgAdmin:
+    image: dpage/pgadmin4:latest
+    container_name: PGA_4_dozens
+    restart: unless-stopped
+    networks:
+      - dozens-ecosystem
+    env_file:
+      - .env
+    ports:
+      - '3003:80'
+    depends_on:
+      - db
+    volumes:
+      - 'primary_hhd_dozens:/pgAdmin'
+
+  graphite-statsd:
+      container_name: graphite_dozens
+      networks:
+        - dozens-ecosystem
+      volumes:
+        - 'primary_hhd_dozens:/graphite'
+      ports:
+          - '3004:80'
+          - '2003-2004:2003-2004'
+          - '2023-2024:2023-2024'
+          - '8125:8125/udp'
+          - '8126:8126'
+      image: graphiteapp/graphite-statsd
+
+  grafana:
+    container_name: grafana_dozens
+    ports:
+        - '3005:3000'
+    image: grafana/grafana
+    networks:
+        - dozens-ecosystem
+    volumes:
+      - 'primary_hhd_dozens:/grafana'
+
+
+volumes:
+  primary_hhd_dozens:
+
+
+networks:
+  dozens-ecosystem:
+    driver: bridge
