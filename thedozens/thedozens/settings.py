@@ -22,6 +22,7 @@ LOGGING_CONFIG = None
 ROOT_URLCONF = "thedozens.urls"
 WSGI_APPLICATION = "thedozens.wsgi.application"
 BASE_DIR = Path(__file__).resolve().parent.parent
+SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = True
 ADMINS = [("Terry Brooks", "Terry@BrooksJr.com")]
 ALLOWED_HOSTS = ["*"]
@@ -35,16 +36,15 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Third-Party Apps
+ 
     "rest_framework",
     "django_filters",
     "debug_toolbar",
     "graphene_django",
-    "djoser",
-    "djoser.webauthn",
+    "rest_framework_swagger",
     "crispy_forms",
     "captcha",
     "crispy_bootstrap5",
-    "cacheops",
     "django_prometheus",
     "drf_spectacular",
     "asymmetric_jwt_auth",
@@ -63,12 +63,10 @@ logger.add(PRIMARY_LOG_FILE, diagnose=False, catch=True, backtrace=False, level=
 logger.add(LOGTAIL_HANDLER, diagnose=False, catch=True, backtrace=False, level="INFO")
 
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "America/New_York"
+TIME_ZONE = "America/Chicago"
 USE_I18N = True
 USE_TZ = True
 MIDDLEWARE = [
-    "kolo.middleware.KoloMiddleware",
-    # "django.middleware.cache.UpdateCacheMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -77,8 +75,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "asymmetric_jwt_auth.middleware.JWTAuthMiddleware",
-    # "django.middleware.cache.FetchFromCacheMiddleware",
 ]
 RECAPTCHA_PRIVATE_KEY = os.getenv("RECAPTCHA_PRIVATE_KEY")
 RECAPTCHA_PUBLIC_KEY = os.getenv("RECAPTCHA_PUBLIC_KEY")
@@ -89,31 +85,50 @@ RECAPTCHA_PUBLIC_KEY = os.getenv("RECAPTCHA_PUBLIC_KEY")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 DATABASES = {
     "default": {
-        "ENGINE": "django_cockroachdb",
-        "NAME": os.environ["POSTGRES_DB"],
-        "USER": os.environ["PG_DATABASE_USER"],
-        "PASSWORD": os.environ["PG_DATABASE_PASSWORD"],
-        "HOST": os.environ["PG_DATABASE_HOST"],
-        "PORT": os.environ["PG_DATABASE_PORT"],
-        "OPTIONS": {"sslmode": "verify-full"},
+        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "NAME": os.getenv("POSTGRES_DB"),
+        "USER": os.getenv("POSTGRES_USER"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+        "HOST": os.getenv("PG_DATABASE_HOST"),
+        "PORT": os.getenv("PG_DATABASE_PORT")
+        # "OPTIONS": {"sslmode": "require"},
+    }
+}
+CACHEOPS_CLIENT_CLASS = "django_redis.client.DefaultClient"
+
+CACHEOPS_REDIS = os.getenv("REDIS_CACHE_URI")
+CACHEOPS = {
+    # Automatically cache any User.objects.get() calls for 15 minutes
+    # This also includes .first() and .last() calls,
+    # as well as request.user or post.author access,
+    # where Post.author is a foreign key to auth.User
+    "auth.user": {"ops": "get", "timeout": 60 * 15},
+    # Automatically cache all gets and queryset fetches
+    # to other django.contrib.auth models for an hour
+    "auth.*": {"ops": {"fetch", "get"}, "timeout": 60 * 60},
+    # Cache all queries to Permission
+    # 'all' is an alias for {'get', 'fetch', 'count', 'aggregate', 'exists'}
+    "auth.permission": {"ops": "all", "timeout": 60 * 60},
+    # And since ops is empty by default you can rewrite last line as:
+    # "Insult.objects.filter(status='A').cache(ops=['get'])": {'timeout': 60*60},
+    # NOTE: binding signals has its overhead, like preventing fast mass deletes,
+    #       you might want to only register whatever you cache and dependencies.
+    "API.*": {"ops": ("get"), "timeout": 60 * 60},
+    # Finally you can explicitely forbid even manual caching with:
+    "some_app.*": None,
+}
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.getenv("REDIS_CACHE_URI"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
     }
 }
 
-
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-#         "LOCATION": os.environ["REDIS_CACHE_URI"],
-#     }
-# }
-CACHE_MIDDLEWARE_ALIAS = "default"
-CACHE_MIDDLEWARE_SECONDS = 300
-CACHE_MIDDLEWARE_KEY_PREFIX = "yo-mama"
-
-CACHE_MIDDLEWARE_ALIAS = "default"
-CACHE_MIDDLEWARE_SECONDS = 300
-CACHE_MIDDLEWARE_KEY_PREFIX = "yo-mama"
-
+CACHEOPS_DEGRADE_ON_FAILURE = True
+CACHEOPS_ENABLED = True
 #!SECTION
 
 #  SECTION - Applicatiom Preformance Mointoring
@@ -177,6 +192,10 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+AUTHENTICATION_BACKENDS = [
+     'django.contrib.auth.backends.ModelBackend',
+     'allauth.account.auth_backends.AuthenticationBackend',
+ ]
 
 #!SECTION
 
@@ -229,37 +248,22 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
 }
 
 #!SECTION
 
-# SECTION Rest Documentation
-
-SPECTACULAR_SETTINGS = {
-    "TITLE": "Yo' MaMa - The Roast API",
-    "DESCRIPTION": "Robust REST API with rate limits for Yo Mama Jokes , that allows API Consumers to filter jokes based on Category and/or Explicitly ",
-    "VERSION": "2.0.0",
-    "SERVE_INCLUDE_SCHEMA": False,
-    "ENUM_ADD_EXPLICIT_BLANK_NULL_CHOICE": True,
-    "SCHEMA_PATH_PREFIX": " ",
-    "SWAGGER_UI_SETTINGS": {
-        "deepLinking": True,
-        "persistAuthorization": True,
-        "displayOperationId": True,
-    },
-    "SWAGGER_UI_DIST": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest",  # default
-    "SWAGGER_UI_FAVICON_HREF": "https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@94065f369600b5ac3fd17c56da7800c83bf356dd/images/yoyoo_400x400.jpg",  # default is swagger favicon
-}
 # SECTION - Email Settings (Django-Mailer)
 
 EMAIL_BACKEND = "mailer.backend.DbBackend"
 MAILER_EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = os.getenv("EMAIL_SERVER")
+EMAIL_HOST = os.environ["EMAIL_SERVER"]
 EMAIL_USE_TLS = True
-EMAIL_PORT = os.getenv("EMAIL_TSL_PORT")
-EMAIL_HOST_USER = os.getenv("NOTIFICATION_SENDER_EMAIL")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_ACCT_PASSWORD")
-MAILER_EMPTY_QUEUE_SLEEP = os.getenv("MAILER_EMPTY_QUEUE_SLEEP")
+EMAIL_PORT = os.environ["EMAIL_TSL_PORT"]
+EMAIL_HOST_USER = os.environ["NOTIFICATION_SENDER_EMAIL"]
+EMAIL_HOST_PASSWORD = os.environ["EMAIL_ACCT_PASSWORD"]
+MAILER_EMPTY_QUEUE_SLEEP = os.environ["MAILER_EMPTY_QUEUE_SLEEP"]
 # !SECTION
 
 #  SECTION - GraphQL Settings (Graphene-Django)``

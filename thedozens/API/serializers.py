@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from API.models import Insult
-from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
 from rest_framework import serializers
 
 
@@ -84,4 +83,9 @@ class MyInsultSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Insult
+        fields = "__all__"
+
+class JokeReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InsultReview
         fields = "__all__"

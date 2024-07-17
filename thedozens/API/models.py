@@ -5,6 +5,8 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from loguru import logger
+import datetime
+from cacheops import cache
 
 NOW = datetime.datetime.now()
 
@@ -167,7 +169,7 @@ class Insult(models.Model):
 class InsultReview(models.Model):
     class REVIEW_TYPE(models.TextChoices):
         RECLASSIFY = "RE", _("Joke Reclassification")
-        RECATEGORIZE = "RC", _("Joke Recategorization")
+        RECATAGORIZE = "RC", _("Joke Recategorization")
         REMOVAL = "RX", _("Joke Removal")
 
     class STATUS(models.TextChoices):

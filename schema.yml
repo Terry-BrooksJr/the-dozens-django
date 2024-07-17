@@ -1,0 +1,207 @@
+openapi: 3.0.3
+info:
+  title: The Yo Mama - Roast API
+  version: 2.0.0
+  description: DRF Based REST API
+paths:
+  /api/insult/{id}:
+    get:
+      operationId: insult_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - insult
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Insult'
+          description: ''
+  /api/insult/create:
+    post:
+      operationId: insult_create_create
+      tags:
+      - insult
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Insult'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Insult'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Insult'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Insult'
+          description: ''
+  /api/insults/{category}:
+    get:
+      operationId: insults_list
+      parameters:
+      - in: path
+        name: category
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: category
+        schema:
+          type: string
+          enum:
+          - B
+          - DO
+          - DS
+          - F
+          - H
+          - L
+          - N
+          - O
+          - P
+          - S
+          - SKN
+          - SNWF
+          - SRT
+          - T
+          - TEST
+          - U
+        description: |-
+          * `P` - Poor
+          * `F` - Fat
+          * `U` - Ugly
+          * `S` - Stupid/Dumb
+          * `SNWF` - Snowflake
+          * `O` - Old
+          * `DO` - Old/Daddy
+          * `DS` - Stupid/Daddy
+          * `N` - Nasty
+          * `T` - Stupid/Dumb
+          * `TEST` - Testing
+          * `SKN` - Skinny
+          * `B` - Bald
+          * `H` - Hairy
+          * `L` - Lazy
+          * `SRT` - Short
+      - in: query
+        name: explicit
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - insults
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInsultsCategoryList'
+          description: ''
+components:
+  schemas:
+    Insult:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          type: string
+        status:
+          type: string
+        NSFW:
+          type: boolean
+        content:
+          type: string
+          maxLength: 65535
+        explicit:
+          type: boolean
+        added_on:
+          type: string
+          format: date
+          readOnly: true
+        last_modified:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        added_by:
+          type: integer
+      required:
+      - NSFW
+      - added_by
+      - added_on
+      - category
+      - content
+      - id
+      - last_modified
+      - status
+    InsultsCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        content:
+          type: string
+          maxLength: 65535
+      required:
+      - content
+      - id
+    PaginatedInsultsCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InsultsCategory'
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

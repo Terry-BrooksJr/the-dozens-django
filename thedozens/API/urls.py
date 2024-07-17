@@ -15,6 +15,4 @@ urlpatterns = [
     ),
     path("insult/<int:id>", views.InsultSingleItem.as_view(), name="Single_View"),
     path("insult", views.randomUnfilteredInsult, name="Random-Unfiltered"),
-    path("", SpectacularAPIView.as_view(), name="schema"),
-    path("swagger", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger"),
 ]

@@ -25,7 +25,7 @@ class InsultMe(RetrieveAPIView):
     serializer_class = InsultSerializer
     permission_classes = [IsAuthenticated]
     
-    def get_queryset(self) -:
+    def get_queryset(self):
         """
         Get the queryset of insults added by the authenticated user.
         """
@@ -37,22 +37,24 @@ class InsultMe(RetrieveAPIView):
         return queryset
 
 
-class InsultCategories(APIView):    """
+class InsultCategories(APIView):    
+    """
     A view to retrieve available insult categories.
     """
     permission_classes = [AllowAny]
     allowed_methods = ['GET']
     
-    def get(self, request, format=None):
+    def get(self, request):
         categories = Insult.CATEGORY.choices
         display_name = []
         for category in categories:
-            display_name.append(category[1])
+            if
+        display_name.append(category[1])
         return Response(display_name)
 
 
 @extend_schema(
-    description="API Get Only Endpoint to provide a list of available insult categories
+    description="API Get Only Endpoint to provide a list of available insult categories",
     parameters=[
         OpenApiParameter(
             name="nfsw",
@@ -103,6 +105,9 @@ class InsultSingleItem(RetrieveAPIView):
 
 @extend_schema(request=InsultSerializer, responses=MyInsultSerializer)
 class MyInsultsView(RetrieveUpdateDestroyAPIView):
+    serializer_class = InsultSerializer
+    filterset_class = InsultFilter
+    permission_classes = [IsAuthenticated]
     def get_queryset(self):
         """
         This view returns a list of all insults created by the currently
