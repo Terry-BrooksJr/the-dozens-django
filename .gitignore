@@ -1,5 +1,6 @@
 
 .env*
+.env-the-dozens-django/*
 .flaskenv*
 !.env.project
 !.env.vault
