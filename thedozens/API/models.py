@@ -167,7 +167,7 @@ class Insult(models.Model):
 class InsultReview(models.Model):
     class REVIEW_TYPE(models.TextChoices):
         RECLASSIFY = "RE", _("Joke Reclassification")
-        RECATAGORIZE = "RC", _("Joke Recategorization")
+        RECATEGORIZE = "RC", _("Joke Recategorization")
         REMOVAL = "RX", _("Joke Removal")
 
     class STATUS(models.TextChoices):
