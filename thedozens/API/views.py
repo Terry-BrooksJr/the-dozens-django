@@ -8,7 +8,6 @@ from API.serializers import (
 from django_filters import rest_framework as filters
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.generics import (
     ListAPIView,
     RetrieveAPIView,
@@ -49,7 +48,8 @@ class InsultCategories(APIView):
         categories = Insult.CATEGORY.choices
         display_name = []
         for category in categories:
-            display_name.append(category[1])
+            if
+        display_name.append(category[1])
         return Response(display_name)
 
 

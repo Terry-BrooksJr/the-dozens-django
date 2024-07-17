@@ -1,8 +1,7 @@
-VENV := .venv
+VENV := ${HOME}/the-dozens-django/.venv/
 BIN := $(VENV)/bin
 PYTHON := $(BIN)/python
 SHELL := /bin/bash
-
 .PHONY: help
 help: ## Show this 
 	@egrep -h '\s##\s' $(MAKE`FILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -35,7 +34,7 @@ test: ## Run tests
 
 .PHONY: run
 run: ## Run the Django server
-	doppler run -- $(PYTHON) /workspaces/the-dozens-django/thedozens/manage.py runserver
+	$(PYTHON) thedozens/manage.py runserver
 
 start:
 	install migrate run ## Install requirements, apply migrations, then start development server
