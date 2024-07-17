@@ -294,3 +294,15 @@ logger.add(DEBUG_LOG_FILE, diagnose=True, catch=True, backtrace=True, level="DEB
 logger.add(DEFAULT_HANDLER, diagnose=True, catch=True, backtrace=True, level="DEBUG")
 logger.add(PRIMARY_LOG_FILE, diagnose=False, catch=True, backtrace=False, level="INFO")
 logger.add(LOGTAIL_HANDLER, diagnose=False, catch=True, backtrace=False, level="INFO")
+logger.add(DEFAULT_HANDLER, diagnose=False, catch=True, backtrace=False, level="DEBUG")
+
+PRIMARY_LOG_FILE = os.path.join(BASE_DIR, "logs", "primary_ops.log")
+CRITICAL_LOG_FILE = os.path.join(BASE_DIR, "logs", "fatal.log")
+DEBUG_LOG_FILE = os.path.join(BASE_DIR, "logs", "utility.log")
+LOGTAIL_HANDLER = LogtailHandler(source_token=os.environ["LOGTAIL_API_KEY"])
+DEFAULT_HANDLER = sys.stdout
+
+logger.add(DEBUG_LOG_FILE, diagnose=True, catch=True, backtrace=True, level="DEBUG")
+logger.add(DEFAULT_HANDLER, diagnose=True, catch=True, backtrace=True, level="DEBUG")
+logger.add(PRIMARY_LOG_FILE, diagnose=False, catch=True, backtrace=False, level="INFO")
+logger.add(LOGTAIL_HANDLER, diagnose=False, catch=True, backtrace=False, level="INFO")

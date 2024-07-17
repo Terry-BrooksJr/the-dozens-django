@@ -1,12 +1,11 @@
 import datetime
+import datetime
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from loguru import logger
-import datetime
-from cacheops import cache
 
 NOW = datetime.datetime.now()
 
@@ -25,8 +24,30 @@ class Insult(models.Model):
             models.Index(fields=["explicit"], name="idx_explicit"),
             models.Index(fields=["added_by"], name="idx_added_by"),
         ]
+        indexes = [
+            models.Index(fields=["category"], name="idx_category"),
+            models.Index(fields=["category", "explicit"], name="idx_explicit_category"),
+            models.Index(fields=["explicit"], name="idx_explicit"),
+            models.Index(fields=["added_by"], name="idx_added_by"),
+        ]
 
     class CATEGORY(models.TextChoices):
+        POOR = "P", _("poor")
+        FAT = "F", _("fat")
+        UGLY = "U", _("ugly")
+        STUPID = "S", _("stupid")
+        SNOWFLAKE = "SNWF", _("snowflake")
+        OLD = "O", _("old")
+        DADDY_OLD = "DO", _("old_daddy")
+        DADDY_STUPID = "DS", _("stupid_daddy")
+        NASTY = "N", _("nasty")
+        TALL = "T", _("tall")
+        TEST_CATEGORY = "TEST", _("testing")
+        SKINNY = "SKN", _("skinny")
+        BALD = "B", _("bald")
+        HAIRY = "H", _("hairy")
+        LAZY = "L", _("lazy")
+        SHORT = "SRT", _("short")
         POOR = "P", _("poor")
         FAT = "F", _("fat")
         UGLY = "U", _("ugly")
@@ -78,9 +99,9 @@ class Insult(models.Model):
 
     def remove_insult(self):
         """Removes insult visibility from the API. (Soft Delete)
-
         Logs:
             Success: Logs the PK of the modified Insult Instance
+            Exception: If the Insult unable top be removed. 
             Exception: If the Insult unable top be removed. 
         Returns:
             None
@@ -146,11 +167,14 @@ class Insult(models.Model):
         try:
             self.category = new_category
             logger.success(f"Successfully Re-Categorized {self.pk} to {self.category}")
+            self.category = new_category
+            logger.success(f"Successfully Re-Categorized {self.pk} to {self.category}")
         except Exception as e:
+            logger.error(f"Unable to RE-Categorized Insult {self.pk}: {e}")
             logger.error(f"Unable to RE-Categorized Insult {self.pk}: {e}")
 
     def reclassify(self, explicit_status):
-        """Changes the category of the insult
+       """Changes the category of the insult
 
         Logs:
             Exception: If the Insult is unable top be removed.
@@ -158,17 +182,18 @@ class Insult(models.Model):
         Returns:
             None
         """
-
-        try:
+       try:
+            self.explicit = explicit_status
             self.explicit = explicit_status
             logger.success(f"Successfully reclassified {self.pk} to {self.explicit}")
-        except Exception as e:
+       except Exception as e:
             logger.error(f"Unable to ReClassify Insult {self.pk}: {e}")
 
 
 class InsultReview(models.Model):
     class REVIEW_TYPE(models.TextChoices):
         RECLASSIFY = "RE", _("Joke Reclassification")
+        RECATAGORIZE = "RC", _("Joke Recategorization")
         RECATAGORIZE = "RC", _("Joke Recategorization")
         REMOVAL = "RX", _("Joke Removal")
 

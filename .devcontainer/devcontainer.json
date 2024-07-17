@@ -13,7 +13,7 @@
 		"ghcr.io/itsmechlark/features/doppler:2": {}
 	},
 	"containerEnv": {
-        "DOPPLER_TOKEN": "dp.st.dev.zWkzKyV5QXw8rWcRdiCfEdbHYMEaTqAHBtE0iHhZSKl",
+        "DOPPLER_TOKEN": "${YO-MAMA-DT}",
         "DOPPLER_ENV": "1",
         "DOPPLER_PROJECT": "yo-mama",
         "DOPPLER_CONFIG": "dev"        
@@ -24,7 +24,7 @@
 				"ms-vscode.makefile-tools"
 			]
 		}
-	}
+	}, "postCreateCommand": "curl --create-dirs -o $HOME/.postgresql/root.crt 'https://cockroachlabs.cloud/clusters/86f3e1fa-ff5a-4b0a-bc98-216919d1bf21/cert'"
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
