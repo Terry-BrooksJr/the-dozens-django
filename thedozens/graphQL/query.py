@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
-from graphene import ObjectType, String, ID, Boolean, Field, List
-from API.models import Insult
-from graphene_django import DjangoObjectType
 from API.filters import InsultFilter
+from API.models import Insult
+from graphene import ID, Boolean, Field, List, ObjectType, String
+from graphene_django import DjangoObjectType
 
 # Create your views here.
 
@@ -43,5 +42,5 @@ class Query(ObjectType):
     def resolve_insults_by_classification(root, info, explicit):
         return Insult.objects.filter(explicit=explicit)
 
-    def resolve_insult_by_id(root, info, ID):
-        return Insult.objects.get(id=ID)
+    def resolve_insult_by_id(root, info, pk):
+        return Insult.objects.get(id=pk)

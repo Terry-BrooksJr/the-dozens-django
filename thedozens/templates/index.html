@@ -6,130 +6,138 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="keywords" content="API, Joke, Entertainment, Yo Mama Jokes, The Dozens "/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="keywords" content="API, Joke, Entertainment, Yo Mama Jokes, The Dozens " />
   <title>The Dozens - The Yo Mama Roast API</title>
-  <link rel="icon" type="image/x-icon" href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@94065f369600b5ac3fd17c56da7800c83bf356dd/images/yoyoo_400x400.jpg"/>
+  <link rel="icon" type="image/x-icon"
+    href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@94065f369600b5ac3fd17c56da7800c83bf356dd/images/yoyoo_400x400.jpg" />
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous"/>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+    crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/css/uikit.min.css" />
-
+  <link rel="stylesheet" type="text/css" href="https://learnosity.b-cdn.net/loading-bar.css"/>
+  <script type="text/javascript" src="https://learnosity.b-cdn.net/loading-bar.min.js"></script>
   <script src="https://kit.fontawesome.com/58e27c88da.js" crossorigin="anonymous"></script>
-  <link
-  rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
-/>
-  <style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+`  <style>
     @font-face {
-        font-family: YoMamaHeader;
-        src: url(https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@c6715b28123debb772de65c5c4b2d41ca63e775e/fonts/RubikVinyl-Regular.ttf);
-      }
+      font-family: YoMamaHeader;
+      src: url(https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@c6715b28123debb772de65c5c4b2d41ca63e775e/fonts/RubikVinyl-Regular.ttf);
+    }
 
-      @font-face {
-        font-family: YoMamaBody;
-        src: url(https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@1a2c14865a818cec1a0982dc0197d56106eb95a4/fonts/JuliusSansOne-Regular.ttf);
-      }
-      body {
-       background-image: url("https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@5781529605d5e009fd1f740a25f5a105a35e450e/images/background%20(1).svg");
-        background-repeat: no-repeat;
-        background-size: cover;
-        font-family: "YoMamaBody";
-      }
-      main{
-        height: 780px;
-        width: 100%;
-      }
-    #copy-right{
-        position: fixed;
-        bottom: 225px;
-        left: 15px;
+    @font-face {
+      font-family: YoMamaBody;
+      src: url(https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@1a2c14865a818cec1a0982dc0197d56106eb95a4/fonts/JuliusSansOne-Regular.ttf);
     }
-    .video-sub-copy{
-        position: fixed;
-        bottom: 190px;
-        left: 15px;
+
+    body {
+      background-image: url("https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@5781529605d5e009fd1f740a25f5a105a35e450e/images/background%20(1).svg");
+      background-repeat: no-repeat;
+      background-size: cover;
+      font-family: "YoMamaBody";
     }
-    #dozens-image{
-        position: fixed;
-        left: -205px;
-        top: 3em;
+
+    main {
+      height: 780px;
+      width: 100%;
     }
-      #yo-mama-brand {
-        height: 100px;
-        width: auto;
-        margin-left 230px;
-        float: left;
-      }
+
+    #copy-right {
+      position: fixed;
+      bottom: 225px;
+      left: 15px;
+    }
+
+    .video-sub-copy {
+      position: fixed;
+      bottom: 190px;
+      left: 15px;
+    }
+
+    #dozens-image {
+      position: fixed;
+      left: -200px;
+      top: 3em;
+    }
+
+    #yo-mama-brand {
+      height: 100px;
+      width: auto;
+      margin-left: 230px;
+      float: left;
+    }
 
     #about-video {
-        position: fixed;
-        left: 25px;
-        bottom: 275px;
+      position: fixed;
+      left: 25px;
+      bottom: 275px;
     }
 
-      #yo-mama-dropdown{
-        outline:0;
-        border:0;
-        background-color: transparent;
-      }
+    #yo-mama-dropdown {
+      outline: 0;
+      border: 0;
+      background-color: transparent;
+    }
 
 
 
-      /* Modify the background color */
-     nav {
+    /* Modify the background color */
+    nav {
 
       width: 100%;
-          background-color: purple;
-      }
-      #joke{
-        color: white;
-      }
-
-      .flex {
-        display: flex;
-        align-items: center;
-        align-content: center;
-        flex-direction: row;
-      }
-
-      .btn-primary {
-        background-color: purple !important
-      }
-      .btn-primary:hover, .btn-primary:active, .btn-primary:visited {
-          background-color: #BEDA00 !important
-      }
-      #dozens-image {
-        margin-left: 130px;
-      }
-
-      .footer {
-        position: fixed;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        background-color: purple;
-        color: white;
-        text-align: center
-
-      }
-      #bb-py-logo {
-        height: 5%;
-        width: 5%;
-      }
-
-      .wrap-right {
-          float: right;
-          margin: 5px;
-      }
-
-      video#about-video {
-        margin-left: 5rem;
+      background-color: purple;
     }
-    div#copyright-container {
-      margin-left: 5rem;
-  }
+
+    #joke {
+      color: white;
+    }
+
+    .flex {
+      display: flex;
+      align-items: center;
+      align-content: center;
+      flex-direction: row;
+    }
+
+    .btn-primary {
+      background-color: purple !important
+    }
+
+    .btn-primary:hover,
+    .btn-primary:active,
+    .btn-primary:visited {
+      background-color: #BEDA00 !important
+    }
+
+    #dozens-image {
+      margin-left: 130px;
+    }
+
+    .footer {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      background-color: purple;
+      color: white;
+      text-align: center
+    }
+
+    #bb-py-logo {
+      height: 5%;
+      width: 5%;
+    }
+
+    .wrap-right {
+      float: right;
+      margin: 5px;
+    }
+
+
       .wrap-left {
         float: left;
         margin: 5px;
@@ -138,6 +146,11 @@
 </head>
 
 <body>
+  <div style='z-index:100000' id='owlreporter-preloader'>
+    <div id='loader'></div><div class='loader-section section-left'></div>
+    <div class='loader-section section-right'></div>
+  </div>
+
   <!-- partial:index.partial.html -->
 
 
@@ -146,58 +159,54 @@
 
 
 
-    <nav uk-dropnav>
-      <ul class="uk-subnav navbar-main">
-          <li><img id="yo-mama-brand" class="navbar-brand" src="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@9e332cf2c71dd4f7e75ccaef4520e2484ba10b30/images/1981605_1-removebg-preview%20(1).png" alt="Yo Mama Logo"/></li>
-          <li><a href="https://www.brooksjr.com" target="_blank">About the Developer</a></li>
-          <li>
-              <a href>The API <span uk-drop-parent-icon></span></a>
-              <div class="uk-dropdown">
-                  <ul class="uk-nav uk-dropdown-nav">
-                      <li><a href="#">Register to Contribute</a></li>
-                      <li><a id="reportAJokeTrigger" data-bs-toggle="modal" data-bs-target="#reportJokeModal">Report a Joke To Be Reviewed</a></li>
-                  </ul>
-              </div>
-          </li>
-
-          <li><a href>The History of Yo' Mama Jokes<span uk-drop-parent-icon></span></a>
-          <div class="uk-dropdown">
-            <ul class="uk-nav uk-dropdown-nav">
-                <li><a href="#history-overview-modal" uk-toggle>Overview</a></li><br/>
-                <li><a href="#history-origins-modal" uk-toggle>Origins</a></li><br />
-                <li><a href="#history-practice-modal" uk-toggle>Purpose & Practice</a></li><br />
-                <li><a href="#history-ref-modal" uk-toggle>References</a></li><br />
-            </ul>
+  <nav uk-dropnav>
+    <ul class="uk-subnav navbar-main">
+      <li><img id="yo-mama-brand" class="navbar-brand"
+          src="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@9e332cf2c71dd4f7e75ccaef4520e2484ba10b30/images/1981605_1-removebg-preview%20(1).png"
+          alt="Yo Mama Logo" /></li>
+      <li><a href="https://www.brooksjr.com" target="_blank">About the Developer</a></li>
+      <li>
+        <a href>The API <span uk-drop-parent-icon></span></a>
+        <div class="uk-dropdown">
+          <ul class="uk-nav uk-dropdown-nav">
+            <li><a target="_blank" href="{% url 'swagger' %}">Swagger</a></li>
+            <li><a target="_blank" href="#">Postman</a></li>
+            <li><a target="_blank" href="/graphql">GraphQL</a></li>
+            <li><a href="#">Register to Contribute</a></li>
+            <li><a id="reportAJokeTrigger" data-bs-toggle="modal" data-bs-target="#reportJokeModal">Report a Joke To Be
+                Reviewed</a></li>
+          </ul>
         </div>
-    </li>
-      </ul>
-    </nav>
+      </li>
+
+      <li><a href>The History of Yo' Mama Jokes<span uk-drop-parent-icon></span></a>
+        <div class="uk-dropdown">
+          <ul class="uk-nav uk-dropdown-nav">
+            <li><a href="#history-overview-modal" uk-toggle>Overview</a></li><br />
+            <li><a href="#history-origins-modal" uk-toggle>Origins</a></li><br />
+            <li><a href="#history-practice-modal" uk-toggle>Purpose & Practice</a></li><br />
+            <li><a href="#history-ref-modal" uk-toggle>References</a></li><br />
+          </ul>
+        </div>
+      </li>
+    </ul>
+  </nav>
   <main>
     <div class="row" id="body-img-row">
-        <div class="col-6">
+        <div class="col-4">
       <img id="dozens-image" src="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@dab0dbeb8cccd8a35b669fcdd5f16443a7041240/images/Dozen-Word-brand.png" alt="body-typograpy"/>
     </div>
-    <div class="col-6">
-      <p>Introducing a powerful and versatile Yo Mama Jokes API, meticulously crafted using Python 3.0's exceptional web framework, Django, in conjunction with the Django REST framework. This robust REST API comes with built-in rate limiting to ensure fair usage and optimal performance.</p>
-    
-      <h2>Key Features</h2>
-      <ul>
-          <li><strong>Comprehensive Filtering:</strong> API consumers can effortlessly filter jokes based on specific categories and explicit content, allowing for a highly customized joke retrieval experience.</li>
-          <li><strong>Dual API Formats:</strong> In addition to the REST API, we offer a GraphQL API version, providing flexibility and convenience for developers who prefer this modern approach to querying data.</li>
-      </ul>
-  
-      <p>This Yo Mama Jokes API is designed to be scalable, secure, and user-friendly, making it the perfect tool for integrating humor into your applications. Whether you're building a fun app, adding some lightheartedness to a website, or conducting data analysis on humor, our API has you covered.</p>
-    </div>
 </div>
-
 <div class="row">
       <div class="col-6" id="video-row">
-        <video id="about-video" width="530" height="auto" src="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@52e60ba4815d8385dda1160487cf1761b3f166ca/images/black-ish%EA%9E%89%20Dre%20Explains%20%23TheDozens.mp4" class="object-fit-fill" controls></video>
+        <video id="about-video" width="530" height="auto"
+          src="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@52e60ba4815d8385dda1160487cf1761b3f166ca/images/black-ish%EA%9E%89%20Dre%20Explains%20%23TheDozens.mp4"
+          class="object-fit-fill" controls></video>
       </div>
     </div>
     <div id="copyright-container" class="row">
-        <div class="video-sub-copy">
-      <p>Clip from ABC's Hit Show <strong>black</strong>·<em>ish</em></p>
+      <div class="video-sub-copy">
+        <p>Clip from ABC's Hit Show <strong>black</strong>·<em>ish</em></p>
       </div>
       <div id="copy-right">
         <div class="copyright-text">
@@ -209,46 +218,51 @@
 
   <footer class="footer">
     <marquee>
-      Over 400 Side-Splitting Yo Mama Jokes · 10 Catagories to Choose From including Fat, Poor, Ugly and Dumb · Ability to filter out jokes based on explicitiy classification
+      Over 400 Side-Splitting Yo Mama Jokes · 10 Catagories to Choose From including Fat, Poor, Ugly and Dumb · Ability
+      to filter out jokes based on explicitiy classification
     </marquee>
   </footer>
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.3/jquery.min.js'></script>
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/fontawesome-iconpicker/3.2.0/js/fontawesome-iconpicker.min.js'></script>
+  <script src='{ static "js/fontAwesomeIconPicker.min"}'></script>
+  <script
+    src='https://cdnjs.cloudflare.com/ajax/libs/fontawesome-iconpicker/3.2.0/js/fontawesome-iconpicker.min.js'></script>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.min.js'></script>
   <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js'></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+    integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+    crossorigin="anonymous"></script>
   <script src='https://kit.fontawesome.com/58e27c88da.js'></script>
   <!-- UIkit JS -->
-<script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"></script>
   <script>
     // Inital Joke On Load
-$.getJSON("https://the-dozens.onrender.com/insult", response => {
-    $("#joke").text(
-      Object.values(response)[0]
-    );
-  });
-  // On-Demand Joke Load
-  const place_joke = () => {
     $.getJSON("https://the-dozens.onrender.com/insult", response => {
-    $("#joke").text(
-      Object.values(response)[0]
-    );
-  });
-  };
-  const modalNavButtons = document.querySelectorAll('.nav-bttn')
-
-  for (let i = 0; i < modalNavButtons.length; i++) {
-    modalNavButtons[i].addEventListener("mouseenter", function() {
-      modalNavButtons[i].classList.add("animate__animated animate__pulse");
+      $("#joke").text(
+        Object.values(response)[0]
+      );
     });
-}
-  const reportModalTrigger = document.getElementById("reportAJokeTrigger")
-  const reportAJokeModal = document.getElementById("reportJokeModal")
- console.log(modalNavButtons)
+    // On-Demand Joke Load
+    const place_joke = () => {
+      $.getJSON("https://the-dozens.onrender.com/insult", response => {
+        $("#joke").text(
+          Object.values(response)[0]
+        );
+      });
+    };
+    const modalNavButtons = document.querySelectorAll('.nav-bttn')
+
+    for (let i = 0; i < modalNavButtons.length; i++) {
+      modalNavButtons[i].addEventListener("mouseenter", function () {
+        modalNavButtons[i].classList.add("animate__animated animate__pulse");
+      });
+    }
+    const reportModalTrigger = document.getElementById("reportAJokeTrigger")
+    const reportAJokeModal = document.getElementById("reportJokeModal")
+    console.log(modalNavButtons)
   </script>
   <!-- Modal -->
-  <div class="modal fade" id="reportJokeModal" tabindex="-1" role="dialog" aria-labelledby="reportJokeModal" aria-hidden="true">
+  <div class="modal fade" id="reportJokeModal" tabindex="-1" role="dialog" aria-labelledby="reportJokeModal"
+    aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header">
@@ -259,10 +273,13 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
         </div>
         <div class="modal-body">
           <h3>Overview</h3>
-          <p>The Dozen's API intends to serve as a humorous, joyful piece of African-American culture where, as a community, good-hearted jokes are shared and enjoyed. To this end, please submit a joke for review if you feel its presence is a disservice to that end.</p>
+          <p>The Dozen's API intends to serve as a humorous, joyful piece of African-American culture where, as a
+            community, good-hearted jokes are shared and enjoyed. To this end, please submit a joke for review if you
+            feel its presence is a disservice to that end.</p>
           <h3>Review Process</h3>
-          <p>Depending on the reason for the review process, a contributor to the API will review the submitted joke  within seven working days.</p>
-            <br/>
+          <p>Depending on the reason for the review process, a contributor to the API will review the submitted joke
+            within seven working days.</p>
+          <br />
 
           <p>In the event of any submission reason other than 'Inappropriate,' a single contributor will review the
             joke's content
@@ -274,7 +291,7 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
             <li>Joke Recatagorizion - Changing the Catagory of the Joke to a more accurate category </li>
             <li>Joke Removal - Complete removal from the Joke Database</li>
           </ol>
-          {% crispy ReportForm %}
+          {% crispy form %}
 
         </div>
         <div class="modal-footer">
@@ -288,99 +305,141 @@ $.getJSON("https://the-dozens.onrender.com/insult", response => {
   <!-- History: Overview -->
   <div id="history-overview-modal" uk-modal>
     <div class="uk-modal-dialog">
-        <button class="uk-modal-close-default" type="button" uk-close></button>
-        <div class="uk-modal-header">
-            <h2 class="uk-modal-title">The Dozens</h2>
-            <hr/>
-            <p class="history-modal-sub-title"><em>An Overview</em></p>
-        </div>
-        <div class="uk-modal-body">
-            <p><em>The Dozens</em> is a game played between two contestants in which the participants insult each other until one of them gives up. Common in African-American communities, the Dozens is almost exclusively played in front of an audience, who encourage the participants to reply with increasingly severe insults in order to heighten the tension and consequently make the contest more interesting to watch.</p>
-
-              <p>Comments in the game may focus on the opposite player's intelligence, appearance, competency, social status, and financial situation. Disparaging remarks about the other player's family members are common, especially regarding their mother.[1] Commentary is often related to sexual issues, and this version of the game is referred to as the "Dirty Dozens".[2]</p>
-
-             <p> According to sociologist Harry Lefever and journalist John Leland, the game is played almost entirely by African-Americans; other ethnic groups often fail to understand how to play the game and can take remarks in the Dozens seriously.[note 1] Its popularity is higher among low-income and urban communities, but it is also found in middle-class and rural settings. Both men and women participate, but the game is more commonly played among men</p>
-        </div>
-        <div class="uk-modal-footer uk-text-center">
-            <button class="btn btn-info nav-bttn uk-modal-close" type="button">Exit</button>
-            <a href="#history-origins-modal" class="btn nav-bttn btn-success" uk-toggle>Origins <i class="fa-solid fa-forward"></i></a>
-        </div>
-    </div>
-</div>
-
-<div id="history-origins-modal" uk-modal>
-    <div class="uk-modal-dialog">
-        <button class="uk-modal-close-default" type="button" uk-close></button>
-        <div class="uk-modal-header">
-            <h2 class="uk-modal-title">Origins</h2>
-        </div>
-        <div class="uk-modal-body">
-          <p>The first academic treatment of the Dozens was made in 1939 by Yale-based psychologist and social theorist John Dollard, who described the importance of the game among African-American men, and how it is generally played. Dollard's description is considered pioneering and accurate.[7] Dollard originally wrote that he was unaware of how the term "Dozens" developed, although he suggested a popular twelve-part rhyme may have been the reason for its name. He only speculated on how the game itself grew to such prominence.</p>
-
-            <p>Other authors following Dollard have added their theories. Author John Leland describes an etymology, writing that the term is a modern survival of an English verb—<em>"to dozen"</em>—dating back at least to the fourteenth century and meaning <em>"to stun, stupefy, daze" </em>or <em>"to make insensible, torpid, powerless"</em>.[8]</p>
-
-            <p>Amuzie Chimezie, writing in the Journal of Black Studies in 1976, connects the Dozens to a Nigerian game called Ikocha Nkocha, literally translated as "making disparaging remarks". This form of the game is played by children and adolescents, and takes place in the evening, in the presence of parents and siblings. Commentary among the Igbo is more restrained: remarks about family members are rare, and are based more in fanciful imaginings than participants' actual traits. In contrast, during the game in Ghana, which is also commonly played in the evenings, insults are frequently directed at family members.[2]</p>
-
-            <p>Amiri Baraka independently concluded that the Dozens originated in Africa and states that they are a surviving adaptation of "African songs of recrimination."[9]</p>
-        </div>
-        <div class="uk-modal-footer uk-text-center">
-            <a href="#history-overview-modal" class="btn nav-bttn btn-danger" uk-toggle>Overview</a>
-            <button class="btn btn-info nav-bttn uk-modal-close" type="button">Exit</button>
-            <a href="#history-practice-modal" class="btn  nav-bttn btn-success" uk-toggle>Practice & Purpose </a>
-        </div>
-    </div>
-</div>
-
-<div id="history-practice-modal" uk-modal>
-  <div class="uk-modal-dialog">
       <button class="uk-modal-close-default" type="button" uk-close></button>
       <div class="uk-modal-header">
-          <h2 class="uk-modal-title">Purpose & Practice</h2>
+        <h2 class="uk-modal-title">The Dozens</h2>
+        <hr />
+        <p class="history-modal-sub-title"><em>An Overview</em></p>
       </div>
       <div class="uk-modal-body">
-        <p>The Dozens is a "pattern of interactive insult" evident among all classes of African Americans, among men and women, children and adults.[11] Usually two participants engage in banter, but always in front of others, who incite the participants to continue the game by making the insults worse. Frequently used topics among players who "play the Dozens" or are "put in the Dozens" are one's opponent's lack of intelligence, ugliness, alleged homosexuality, alleged incest, cowardice, poor hygiene, and exaggerations of physical defects, such as crossed eyes.[11]</p>
-        <img alt="Origin Image" src="{% static 'assets/img-origin.png' %}" class="warp-right" />
-        <p>Participants in the Dozens are required to exhibit mental acuity and proficiency with words. In his memoir <em> Die Nigger Die! </em> (1969), H. Rap Brown writes that the children he grew up with employed the Dozens to kill time and stave off boredom, in the way that whites might play Scrabble. Brown asserts playing the game is a form of mental exercise. Sociologist Harry Lefever states that verbal skill and wit is just as valued among African Americans as physical strength: <em>"Verbal facility is thus a criterion that is used to separate the men from the boys".</em>[3] According to author John Leland, the object of the game is to stupefy and daze one's opponents with swift and skillful speech. The meaning of the words, however, is lost in the game. The object of the game is the performance.[8]</p>
+        <p><em>The Dozens</em> is a game played between two contestants in which the participants insult each other
+          until one of them gives up. Common in African-American communities, the Dozens is almost exclusively played in
+          front of an audience, who encourage the participants to reply with increasingly severe insults in order to
+          heighten the tension and consequently make the contest more interesting to watch.</p>
+
+        <p>Comments in the game may focus on the opposite player's intelligence, appearance, competency, social status,
+          and financial situation. Disparaging remarks about the other player's family members are common, especially
+          regarding their mother.[1] Commentary is often related to sexual issues, and this version of the game is
+          referred to as the "Dirty Dozens".[2]</p>
+
+        <p> According to sociologist Harry Lefever and journalist John Leland, the game is played almost entirely by
+          African-Americans; other ethnic groups often fail to understand how to play the game and can take remarks in
+          the Dozens seriously.[note 1] Its popularity is higher among low-income and urban communities, but it is also
+          found in middle-class and rural settings. Both men and women participate, but the game is more commonly played
+          among men</p>
       </div>
       <div class="uk-modal-footer uk-text-center">
-          <a href="#history-origins-modal" class="nav-bttn btn btn-danger" uk-toggle>Origins</a>
-          <button class="btn btn-info nav-bttn uk-modal-close" type="button">Exit</button>
-          <a href="#history-ref-modal" class="btn nav-bttn btn-success" uk-toggle>References</a>
+        <button class="btn btn-info nav-bttn uk-modal-close" type="button">Exit</button>
+        <a href="#history-origins-modal" class="btn nav-bttn btn-success" uk-toggle>Origins <i
+            class="fa-solid fa-forward"></i></a>
       </div>
+    </div>
   </div>
-</div>
 
-<div id="history-ref-modal" uk-modal>
-  <div class="uk-modal-dialog">
+  <div id="history-origins-modal" uk-modal>
+    <div class="uk-modal-dialog">
       <button class="uk-modal-close-default" type="button" uk-close></button>
       <div class="uk-modal-header">
-          <h2 class="uk-modal-title">References</h2>
+        <h2 class="uk-modal-title">Origins</h2>
       </div>
       <div class="uk-modal-body">
-        <h3>Citations</h3>
+        <p>The first academic treatment of the Dozens was made in 1939 by Yale-based psychologist and social theorist
+          John Dollard, who described the importance of the game among African-American men, and how it is generally
+          played. Dollard's description is considered pioneering and accurate.[7] Dollard originally wrote that he was
+          unaware of how the term "Dozens" developed, although he suggested a popular twelve-part rhyme may have been
+          the reason for its name. He only speculated on how the game itself grew to such prominence.</p>
+
+        <p>Other authors following Dollard have added their theories. Author John Leland describes an etymology, writing
+          that the term is a modern survival of an English verb—<em>"to dozen"</em>—dating back at least to the
+          fourteenth century and meaning <em>"to stun, stupefy, daze" </em>or <em>"to make insensible, torpid,
+            powerless"</em>.[8]</p>
+
+        <p>Amuzie Chimezie, writing in the Journal of Black Studies in 1976, connects the Dozens to a Nigerian game
+          called Ikocha Nkocha, literally translated as "making disparaging remarks". This form of the game is played by
+          children and adolescents, and takes place in the evening, in the presence of parents and siblings. Commentary
+          among the Igbo is more restrained: remarks about family members are rare, and are based more in fanciful
+          imaginings than participants' actual traits. In contrast, during the game in Ghana, which is also commonly
+          played in the evenings, insults are frequently directed at family members.[2]</p>
+
+        <p>Amiri Baraka independently concluded that the Dozens originated in Africa and states that they are a
+          surviving adaptation of "African songs of recrimination."[9]</p>
+      </div>
+      <div class="uk-modal-footer uk-text-center">
+        <a href="#history-overview-modal" class="btn nav-bttn btn-danger" uk-toggle>Overview</a>
+        <button class="btn btn-info nav-bttn uk-modal-close" type="button">Exit</button>
+        <a href="#history-practice-modal" class="btn  nav-bttn btn-success" uk-toggle>Practice & Purpose </a>
+      </div>
+    </div>
+  </div>
+
+  <div id="history-practice-modal" uk-modal>
+    <div class="uk-modal-dialog">
+      <button class="uk-modal-close-default" type="button" uk-close></button>
+      <div class="uk-modal-header">
+        <h2 class="uk-modal-title">Purpose & Practice</h2>
+      </div>
+      <div class="uk-modal-body">
+        <p>The Dozens is a "pattern of interactive insult" evident among all classes of African Americans, among men and
+          women, children and adults.[11] Usually two participants engage in banter, but always in front of others, who
+          incite the participants to continue the game by making the insults worse. Frequently used topics among players
+          who "play the Dozens" or are "put in the Dozens" are one's opponent's lack of intelligence, ugliness, alleged
+          homosexuality, alleged incest, cowardice, poor hygiene, and exaggerations of physical defects, such as crossed
+          eyes.[11]</p>
+        <img alt="Origin Image" src="{% static 'assets/img-origin.png' %}" class="warp-right" />
+        <p>Participants in the Dozens are required to exhibit mental acuity and proficiency with words. In his memoir
+          <em> Die Nigger Die! </em> (1969), H. Rap Brown writes that the children he grew up with employed the Dozens
+          to kill time and stave off boredom, in the way that whites might play Scrabble. Brown asserts playing the game
+          is a form of mental exercise. Sociologist Harry Lefever states that verbal skill and wit is just as valued
+          among African Americans as physical strength: <em>"Verbal facility is thus a criterion that is used to
+            separate the men from the boys".</em>[3] According to author John Leland, the object of the game is to
+          stupefy and daze one's opponents with swift and skillful speech. The meaning of the words, however, is lost in
+          the game. The object of the game is the performance.[8]</p>
+      </div>
+      <div class="uk-modal-footer uk-text-center">
+        <a href="#history-origins-modal" class="nav-bttn btn btn-danger" uk-toggle>Origins</a>
+        <button class="btn btn-info nav-bttn uk-modal-close" type="button">Exit</button>
+        <a href="#history-ref-modal" class="btn nav-bttn btn-success" uk-toggle>References</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="history-ref-modal" uk-modal>
+    <div class="uk-modal-dialog">
+      <button class="uk-modal-close-default" type="button" uk-close></button>
+      <div class="uk-modal-header">
+        <h2 class="uk-modal-title">References</h2>
+      </div>
+      <div class="uk-modal-body">
         <ol>
- <li>Jeffries, Stuart (June 12, 2006). "The mother of all insults". The Guardian. London.</li>
- <li>Chimezie, Amuzie (June 1976). "The Dozens: An African-Heritage Theory", Journal of Black Studies, Vol. 6, No. 4, pp. 401–420.</li>
- <li>Lefever, Harry (Spring 1981). "Playing the Dozens": A Mechanism for Social Control, Phylon, Vol. 42, No. 1, pp. 73–85.</li>
-<li>Abrahams, Roger D. (July–September 1962). "Playing the Dozens". The Journal of American Folklore. Symposium on Obscenity in Folklore. 75 (297): 209–220. doi:10.2307/537723. JSTOR 537723.</li>
-  <li>Percelay, James, Stephan Dweck, and Monteria Ivey, Snaps: The Original Yo' Mama Joke Book, William Morrow Paperbacks, February 18, 1994, ISBN 0688128963. Amazon.com. Retrieved May 21, 2001.</li>
-    <li> Pimpdaddy's Yo Mama Snaps. Retrieved May 18, 2012.</li>
-      <li>Jordan, Larry (1983). "Social Construction as Tradition: A Review and Reconceptualization of the Dozens", Review of Research in Education, Vol. 10, pp. 79–101.</li>
-        <li>Leland, p. 173.</li>
-          <li>Baraka, Amiri (1999). Blues People: Negro Music in White America. Harper Perennial. p. 27. ISBN 978-0688184742.</li>
-            <li>Saloy, Mona Lisa, "African American Oral Traditions in Louisiana", Folklife in Louisiana (1998). Retrieved November 12, 2009.</li>
-              <li>Dollard, pp. 278–279.</li>
-                <li>Dollard, p. 283.</li>
-                  <li>Dollard, pp. 290–294.</li>
-                    <li>Dundes, pp. 295–297.</li>
+          <li>Jeffries, Stuart (June 12, 2006). "The mother of all insults". The Guardian. London.</li>
+          <li>Chimezie, Amuzie (June 1976). "The Dozens: An African-Heritage Theory", Journal of Black Studies, Vol. 6,
+            No. 4, pp. 401–420.</li>
+          <li>Lefever, Harry (Spring 1981). "Playing the Dozens": A Mechanism for Social Control, Phylon, Vol. 42, No.
+            1, pp. 73–85.</li>
+          <li>Abrahams, Roger D. (July–September 1962). "Playing the Dozens". The Journal of American Folklore.
+            Symposium on Obscenity in Folklore. 75 (297): 209–220. doi:10.2307/537723. JSTOR 537723.</li>
+          <li>Percelay, James, Stephan Dweck, and Monteria Ivey, Snaps: The Original Yo' Mama Joke Book, William Morrow
+            Paperbacks, February 18, 1994, ISBN 0688128963. Amazon.com. Retrieved May 21, 2001.</li>
+          <li> Pimpdaddy's Yo Mama Snaps. Retrieved May 18, 2012.</li>
+          <li>Jordan, Larry (1983). "Social Construction as Tradition: A Review and Reconceptualization of the Dozens",
+            Review of Research in Education, Vol. 10, pp. 79–101.</li>
+          <li>Leland, p. 173.</li>
+          <li>Baraka, Amiri (1999). Blues People: Negro Music in White America. Harper Perennial. p. 27. ISBN
+            978-0688184742.</li>
+          <li>Saloy, Mona Lisa, "African American Oral Traditions in Louisiana", Folklife in Louisiana (1998). Retrieved
+            November 12, 2009.</li>
+          <li>Dollard, pp. 278–279.</li>
+          <li>Dollard, p. 283.</li>
+          <li>Dollard, pp. 290–294.</li>
+          <li>Dundes, pp. 295–297.</li>
         </ol>
       </div>
       <div class="uk-modal-footer uk-text-center">
-          <a href="#history-origins-modal" class="btn nav-bttn btn-primary" uk-toggle>Practice and Purpose</a>
-          <button class="btn nav-bttn btn-info uk-modal-close" type="button">Exit</button>
-              </div>
+        <a href="#history-origins-modal" class="btn nav-bttn btn-primary" uk-toggle>Practice and Purpose</a>
+        <button class="btn nav-bttn btn-info uk-modal-close" type="button">Exit</button>
+      </div>
+    </div>
   </div>
-</div>
 </body>
 
 </html>

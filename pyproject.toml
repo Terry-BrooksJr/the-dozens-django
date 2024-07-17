@@ -26,9 +26,12 @@ django-crispy-forms = "^2.1"
 crispy-bootstrap5 = "^0.7"
 django-cacheops = "^7.0.1"
 ghapi = "^1.0.4"
-gunicorn = "^22.0.0"
+gunicorn = "^21.2.0"
 django-prometheus = "^2.3.1"
 django-redis = "^5.4.0"
+drf-spectacular = "^0.26.5"
+infisical = "^1.5.0"
+django-recaptcha = "^3.0.0"
 
 [tool.poetry.group.test.dependencies]
 pytest-django = "^4.5.2"
@@ -41,6 +44,12 @@ isort = "^5.12.0"
 mypy = "^1.6.1"
 pylint = "^3.0.2"
 pre-commit = "^3.5.0"
+kolo = "^2.16.3"
+autoflake = "^2.2.1"
+
+
+[tool.poetry.group.docs.dependencies]
+drf-spectacular = "^0.26.5"
 
 [build-system]
 requires = ["poetry-core"]
@@ -59,3 +68,12 @@ indent_size=5
 
 [tool.djlint.js]
 indent_size=5
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "thedozens.settings"
