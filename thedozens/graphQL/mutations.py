@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
-from graphene import Mutation, Enum, Argument
-from API.models import Insult
+# from API.models import Insult
+from graphene import Mutation  # , Argument, Enum
 
 
-class Mutation(Mutation):
+class Mutate(Mutation):
     def mutate(root, info, **kwargs):
         pass
 

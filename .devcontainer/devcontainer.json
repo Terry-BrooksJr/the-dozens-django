@@ -12,19 +12,16 @@
 		"ghcr.io/devcontainers-contrib/features/node-exporter:1": {},
 		"ghcr.io/itsmechlark/features/doppler:2": {}
 	},
-	"containerEnv": {
-        "DOPPLER_TOKEN": "dp.st.dev.zWkzKyV5QXw8rWcRdiCfEdbHYMEaTqAHBtE0iHhZSKl",
-        "DOPPLER_ENV": "1",
-        "DOPPLER_PROJECT": "yo-mama",
-        "DOPPLER_CONFIG": "dev"        
-    },
-	"customizations": {
+		"customizations": {
 		"vscode": {
 			"extensions": [
-				"ms-vscode.makefile-tools"
+				"ms-vscode.makefile-tools",
+				"ms-azuretools.vscode-docker",
+				"GitHub.vscode-pull-request-github",
+				"Blackboxapp.blackbox"
 			]
 		}
-	}
+	}, "postCreateCommand": "curl --create-dirs -o $HOME/.postgresql/root.crt 'https://cockroachlabs.cloud/clusters/86f3e1fa-ff5a-4b0a-bc98-216919d1bf21/cert'"
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},

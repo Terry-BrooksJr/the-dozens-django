@@ -1,13 +1,11 @@
-# -*- coding: utf-8 -*-
-import os
+import datetime
+import datetime
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from logtail import LogtailHandler
 from loguru import logger
-import datetime
 
 NOW = datetime.datetime.now()
 
@@ -20,24 +18,52 @@ class Insult(models.Model):
         verbose_name = "Insult/Joke"
         verbose_name_plural = "Insults/Jokes"
         managed = True
+        indexes = [
+            models.Index(fields=["category"], name="idx_category"),
+            models.Index(fields=["category", "explicit"], name="idx_explicit_category"),
+            models.Index(fields=["explicit"], name="idx_explicit"),
+            models.Index(fields=["added_by"], name="idx_added_by"),
+        ]
+        indexes = [
+            models.Index(fields=["category"], name="idx_category"),
+            models.Index(fields=["category", "explicit"], name="idx_explicit_category"),
+            models.Index(fields=["explicit"], name="idx_explicit"),
+            models.Index(fields=["added_by"], name="idx_added_by"),
+        ]
 
     class CATEGORY(models.TextChoices):
-        POOR = "P", _("Poor")
-        FAT = "F", _("Fat")
-        UGLY = "U", _("Ugly")
-        STUPID = "S", _("Stupid/Dumb")
-        SNOWFLAKE = "SNWF", _("Snowflake")
-        OLD = "O", _("Old")
-        DADDY_OLD = "DO", _("Old/Daddy")
-        DADDY_STUPID = "DS", _("Stupid/Daddy")
-        NASTY = "N", _("Nasty")
-        TALL = "T", _("Stupid/Dumb")
-        TESt_CATAGORY = "TEST", _("Testing")
-        SKINNY = "SKN", _("Skinny")
-        BALD = "B", _("Bald")
-        HAIRY = "H", _("Hairy")
-        LAZY = "L", _("Lazy")
-        SHORT = "SRT", _("Short")
+        POOR = "P", _("poor")
+        FAT = "F", _("fat")
+        UGLY = "U", _("ugly")
+        STUPID = "S", _("stupid")
+        SNOWFLAKE = "SNWF", _("snowflake")
+        OLD = "O", _("old")
+        DADDY_OLD = "DO", _("old_daddy")
+        DADDY_STUPID = "DS", _("stupid_daddy")
+        NASTY = "N", _("nasty")
+        TALL = "T", _("tall")
+        TEST_CATEGORY = "TEST", _("testing")
+        SKINNY = "SKN", _("skinny")
+        BALD = "B", _("bald")
+        HAIRY = "H", _("hairy")
+        LAZY = "L", _("lazy")
+        SHORT = "SRT", _("short")
+        POOR = "P", _("poor")
+        FAT = "F", _("fat")
+        UGLY = "U", _("ugly")
+        STUPID = "S", _("stupid")
+        SNOWFLAKE = "SNWF", _("snowflake")
+        OLD = "O", _("old")
+        DADDY_OLD = "DO", _("old_daddy")
+        DADDY_STUPID = "DS", _("stupid_daddy")
+        NASTY = "N", _("nasty")
+        TALL = "T", _("tall")
+        TEST_CATEGORY = "TEST", _("testing")
+        SKINNY = "SKN", _("skinny")
+        BALD = "B", _("bald")
+        HAIRY = "H", _("hairy")
+        LAZY = "L", _("lazy")
+        SHORT = "SRT", _("short")
 
     class STATUS(models.TextChoices):
         ACTIVE = "A", _("Active")
@@ -72,12 +98,11 @@ class Insult(models.Model):
         )
 
     def remove_insult(self):
-        """Removes insult visibilitty from the API.
-
+        """Removes insult visibility from the API. (Soft Delete)
         Logs:
             Success: Logs the PK of the modified Insult Instance
-            Exception: If the Insis unable top be removed.
-
+            Exception: If the Insult unable top be removed. 
+            Exception: If the Insult unable top be removed. 
         Returns:
             None
         """
@@ -124,7 +149,7 @@ class Insult(models.Model):
         except Exception as e:
             logger.error(f"Unable to Send For Review({self.pk}): {e}")
 
-    def re_catagorize(self, new_catagory):
+    def re_categorize(self, new_category):
         """Re-categorizes the object with a new category.
 
         Args:
@@ -140,13 +165,16 @@ class Insult(models.Model):
         """
 
         try:
-            self.category = new_catagory
-            logger.success(f"Successfully Re-Catagorized {self.pk} to {self.category}")
+            self.category = new_category
+            logger.success(f"Successfully Re-Categorized {self.pk} to {self.category}")
+            self.category = new_category
+            logger.success(f"Successfully Re-Categorized {self.pk} to {self.category}")
         except Exception as e:
-            logger.error(f"Unable to RE-Catagorized Insult {self.pk}: {e}")
+            logger.error(f"Unable to RE-Categorized Insult {self.pk}: {e}")
+            logger.error(f"Unable to RE-Categorized Insult {self.pk}: {e}")
 
-    def reclassify(self, explict_status):
-        """Changes the category of the insult
+    def reclassify(self, explicit_status):
+       """Changes the category of the insult
 
         Logs:
             Exception: If the Insult is unable top be removed.
@@ -154,24 +182,25 @@ class Insult(models.Model):
         Returns:
             None
         """
-
-        try:
-            self.explicit = explict_status
+       try:
+            self.explicit = explicit_status
+            self.explicit = explicit_status
             logger.success(f"Successfully reclassified {self.pk} to {self.explicit}")
-        except Exception as e:
+       except Exception as e:
             logger.error(f"Unable to ReClassify Insult {self.pk}: {e}")
 
 
 class InsultReview(models.Model):
     class REVIEW_TYPE(models.TextChoices):
         RECLASSIFY = "RE", _("Joke Reclassification")
-        RECATAGORIZE = "RC", _("Joke Recatagorizion")
+        RECATAGORIZE = "RC", _("Joke Recategorization")
+        RECATAGORIZE = "RC", _("Joke Recategorization")
         REMOVAL = "RX", _("Joke Removal")
 
     class STATUS(models.TextChoices):
         PENDING = "P", _("Pending")
-        NEW_CLASSIFICATION = "NCE", _("Completed - New Explicity Setting")
-        SAME_CLASSIFICATION = "SCE", _("Completed - No New Explicity Setting")
+        NEW_CLASSIFICATION = "NCE", _("Completed - New Explicitly Setting")
+        SAME_CLASSIFICATION = "SCE", _("Completed - No New Explicitly Setting")
         NEW_CATAGORY = "NJC", _("Completed - Assigned to New Catagory")
         SAME_CATAGORY = "SJC", _("Completed - No New Catagory Assigned")
         REMOVED = "X", _("Completed - Joke Removed")
@@ -217,7 +246,7 @@ class InsultReview(models.Model):
             logger.error(f"ERROR: Unable to Update {self.pk}: {str(e)}")
 
     def mark_review_recatagoized(self):
-        """Marks the review as recategorized.
+        """Marks the review as re-categorized.
 
         This method sets the status of the review to "NJC" (New Joke Category) and updates the `date_reviewed` attribute to the current date and time. It also logs a success message indicating that the review has been marked as reclassified.
 

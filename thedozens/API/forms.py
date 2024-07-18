@@ -1,30 +1,31 @@
 # -*- coding: utf-8 -*-
-from API.models import InsultReview
-from django.forms import ModelForm
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Column
-from crispy_forms.layout import HTML, Div
-from crispy_forms.layout import Layout, Button
-from crispy_forms.layout import Row, Field, Submit
-from django.urls import reverse
+from API.models import Insult, InsultReview
+from django_recaptcha.fields import ReCaptchaField 
 from crispy_forms.bootstrap import FormActions
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import HTML, Button, Column, Div, Field, Layout, Row, Submit
+from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.forms import ModelForm
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-
-1
+from loguru import logger
 
 
 class InsultReviewForm(ModelForm):
+    recaptha = ReCaptchaField()
+    ID_LIST = Insult.objects.filter(status="A").only("pk")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.form_id = "report-joke-form"
         self.helper.form_method = "post"
-        self.helper.form_action = reverse("Report-Joke")
+        self.helper.form_action = "/report"
         self.helper.layout = Layout(
             HTML(
                 """
-        <h3 class="application-text">About the Reporter</strong></h3>
+        <h3 class="application-text modal-title">Report Form</strong></h3>
         <br/>
         <hr class="border border-primary border-3 opacity-75"/>"""
             ),
@@ -50,6 +51,7 @@ class InsultReviewForm(ModelForm):
                 "rationale_for_review",
                 css_class="form-row",
             ),
+            Field("recaptha"),
             Row(
                 Div(
                     FormActions(
@@ -68,12 +70,18 @@ class InsultReviewForm(ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        anonymous = self.clean_data.get("anonymous")
-        reporter_first_name = self.clean_data.get("reporter_first_name")
-        reporter_last_name = self.clean_data.get("reporter_last_name")
-        post_review_contact_desired = self.clean_data.get("post_review_contact_desired")
-        reporter_email = self.clean_data.get("reporter_email")
-
+        anonymous = cleaned_data.get("anonymous")
+        reporter_first_name = cleaned_data.get("reporter_first_name")
+        reporter_last_name = cleaned_data.get("reporter_last_name")
+        post_review_contact_desired = cleaned_data.get("post_review_contact_desired")
+        reporter_email = cleaned_data.get("reporter_email")
+        insult_id = cleaned_data.get("insult_id")
+        
+        if insult_id not in ID_LIST:
+            raise ValidationError(
+                _("Invaild Insult ID - Please confirm Insult ID"),
+                code="invaild-insult-id",
+            )
         if anonymous is False:
             if reporter_first_name in [None, " ", ""]:
                 raise ValidationError(
@@ -90,7 +98,6 @@ class InsultReviewForm(ModelForm):
                     ),
                     code="invalid-last-name-not-provided",
                 )
-
         if post_review_contact_desired is True:
             if reporter_email in [None, " ", ""]:
                 raise ValidationError(
@@ -99,6 +106,7 @@ class InsultReviewForm(ModelForm):
                     ),
                     code="invalid-last-name-not-provided",
                 )
+        return clean_data
 
     class Meta:
         model = InsultReview
