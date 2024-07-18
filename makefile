@@ -1,4 +1,4 @@
-VENV := ${HOME}/the-dozens-django/.venv/
+VENV := .venv/
 BIN := $(VENV)/bin
 PYTHON := $(BIN)/python
 SHELL := /bin/bash
@@ -23,6 +23,8 @@ migrate: ## Make and run migrations
 
 .PHONY: run
 backup-services-up: ## Pull and start the Docker Postgres container in the background
+.PHONY: run
+backup-services-up: ## Pull and start the Docker Postgres container in the background
 	docker-compose up -d
 
 db-shell: ## Access the Postgres Docker database interactively with psql. Pass in DBNAME=<name>.
@@ -34,7 +36,7 @@ test: ## Run tests
 
 .PHONY: run
 run: ## Run the Django server
-	$(PYTHON) thedozens/manage.py runserver
+	doppler run -t $(DOPPLER_TOKEN) -- $(PYTHON) thedozens/manage.py runserver
 
 start:
 	install migrate run ## Install requirements, apply migrations, then start development server

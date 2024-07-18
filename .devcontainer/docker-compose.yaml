@@ -20,6 +20,8 @@ services:
       retries: 5
       start_period: 2m
       start_interval: 2m
+    enviornment:
+      - DOPP
 
   db:
     image: postgres:latest
@@ -27,8 +29,6 @@ services:
     restart: unless-stopped
     networks:
       - dozens-ecosystem
-    env_file:
-      - .env
     ports:
       - '3002:5432'
     working_dir: /data/db
@@ -39,6 +39,10 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
+    environment:
+      - DOPPLER_TOKEN
+      - DOPPLER_PROJECT=yo-mama
+      - DOPPLER_CONFIG=dev
 
   pgAdmin:
     image: dpage/pgadmin4:latest
