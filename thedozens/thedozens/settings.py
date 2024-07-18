@@ -41,7 +41,6 @@ INSTALLED_APPS = [
     "django_filters",
     "debug_toolbar",
     "graphene_django",
-    "rest_framework_swagger",
     "crispy_forms",
     "django_recaptcha",
     "crispy_bootstrap5",
@@ -53,15 +52,6 @@ INSTALLED_APPS = [
     "API",
     "graphQL",
 ]
-PRIMARY_LOG_FILE = os.path.join(BASE_DIR, "standup", "logs", "primary_ops.log")
-CRITICAL_LOG_FILE = os.path.join(BASE_DIR, "standup", "logs", "fatal.log")
-DEBUG_LOG_FILE = os.path.join(BASE_DIR, "standup", "logs", "utility.log")
-LOGTAIL_HANDLER = LogtailHandler(source_token=os.getenv("LOGTAIL_API_KEY"))
-
-logger.add(DEBUG_LOG_FILE, diagnose=True, catch=True, backtrace=True, level="DEBUG")
-logger.add(PRIMARY_LOG_FILE, diagnose=False, catch=True, backtrace=False, level="INFO")
-logger.add(LOGTAIL_HANDLER, diagnose=False, catch=True, backtrace=False, level="INFO")
-
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "America/Chicago"
 USE_I18N = True
@@ -94,29 +84,7 @@ DATABASES = {
         # "OPTIONS": {"sslmode": "require"},
     }
 }
-CACHEOPS_CLIENT_CLASS = "django_redis.client.DefaultClient"
 
-CACHEOPS_REDIS = os.getenv("REDIS_CACHE_URI")
-CACHEOPS = {
-    # Automatically cache any User.objects.get() calls for 15 minutes
-    # This also includes .first() and .last() calls,
-    # as well as request.user or post.author access,
-    # where Post.author is a foreign key to auth.User
-    "auth.user": {"ops": "get", "timeout": 60 * 15},
-    # Automatically cache all gets and queryset fetches
-    # to other django.contrib.auth models for an hour
-    "auth.*": {"ops": {"fetch", "get"}, "timeout": 60 * 60},
-    # Cache all queries to Permission
-    # 'all' is an alias for {'get', 'fetch', 'count', 'aggregate', 'exists'}
-    "auth.permission": {"ops": "all", "timeout": 60 * 60},
-    # And since ops is empty by default you can rewrite last line as:
-    # "Insult.objects.filter(status='A').cache(ops=['get'])": {'timeout': 60*60},
-    # NOTE: binding signals has its overhead, like preventing fast mass deletes,
-    #       you might want to only register whatever you cache and dependencies.
-    "API.*": {"ops": ("get"), "timeout": 60 * 60},
-    # Finally you can explicitely forbid even manual caching with:
-    "some_app.*": None,
-}
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
@@ -127,8 +95,7 @@ CACHES = {
     }
 }
 
-CACHEOPS_DEGRADE_ON_FAILURE = True
-CACHEOPS_ENABLED = True
+
 #!SECTION
 
 #  SECTION - Applicatiom Preformance Mointoring
