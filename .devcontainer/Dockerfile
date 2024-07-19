@@ -1,13 +1,19 @@
-FROM python:3.12-slim-bullseye as builder
+FROM mcr.microsoft.com/devcontainers/python:1-3.11-bullseye
 
-RUN apt-get update && apt-get install -y --no-install-recommends apt-transport-https ca-certificates libmagic1 curl libenchant-2-dev gnupg make git && \
-    curl -sLf --retry 3 --tlsv1.2 --proto "=https" 'https://packages.doppler.com/public/cli/gpg.DE2A7741A397C129.key' | gpg --dearmor -o /usr/share/keyrings/doppler-archive-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/doppler-archive-keyring.gpg] https://packages.doppler.com/public/cli/deb/debian any-version main" | tee /etc/apt/sources.list.d/doppler-cli.list && \
-    apt-get update && \
-    apt-get --no-install-recommends -y install doppler=3.68.0 build-essential  && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+ENV PYTHONUNBUFFERED 1
 
-RUN  ["doppler", "run", "--", "printenv"]
-ARG DOPPLER_TOKEN
-ARG DOPPLER_PROJECT
-ARG DOPPLER_CONFIG
+ENV DOPPLER_TOKEN=${YO_MAMA_DT}
+
+ENTRYPOINT ["doppler", "run","--watch", "--"]
+
+# [Optional] If your requirements rarely change, uncomment this section to add them to the image.
+# COPY requirements.txt /tmp/pip-tmp/
+# RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requirements.txt \
+#    && rm -rf /tmp/pip-tmp
+
+# [Optional] Uncomment this section to install additional OS packages.
+# RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+#     && apt-get -y install --no-install-recommends <your-package-list-here>
+
+
+
