@@ -1,217 +1,12 @@
 openapi: 3.0.3
 info:
-  title: The Yo Mama - Roast API
-  version: 2.0.0
-  description: DRF Based REST API
-paths:
-  /api/insult/{id}:
-    get:
-      operationId: insult_retrieve
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - insult
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Insult'
-          description: ''
-  /api/insult/create:
-    post:
-      operationId: insult_create_create
-      tags:
-      - insult
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Insult'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Insult'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Insult'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Insult'
-          description: ''
-  /api/insults/{category}:
-    get:
-      operationId: insults_list
-      parameters:
-      - in: path
-        name: category
-        schema:
-          type: string
-        required: true
-      - in: query
-        name: category
-        schema:
-          type: string
-          enum:
-          - B
-          - DO
-          - DS
-          - F
-          - H
-          - L
-          - N
-          - O
-          - P
-          - S
-          - SKN
-          - SNWF
-          - SRT
-          - T
-          - TEST
-          - U
-        description: |-
-          * `P` - Poor
-          * `F` - Fat
-          * `U` - Ugly
-          * `S` - Stupid/Dumb
-          * `SNWF` - Snowflake
-          * `O` - Old
-          * `DO` - Old/Daddy
-          * `DS` - Stupid/Daddy
-          * `N` - Nasty
-          * `T` - Stupid/Dumb
-          * `TEST` - Testing
-          * `SKN` - Skinny
-          * `B` - Bald
-          * `H` - Hairy
-          * `L` - Lazy
-          * `SRT` - Short
-      - in: query
-        name: explicit
-        schema:
-          type: boolean
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      tags:
-      - insults
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedInsultsCategoryList'
-          description: ''
-components:
-  schemas:
-    Insult:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        category:
-          type: string
-        status:
-          type: string
-        NSFW:
-          type: boolean
-        content:
-          type: string
-          maxLength: 65535
-        explicit:
-          type: boolean
-        added_on:
-          type: string
-          format: date
-          readOnly: true
-        last_modified:
-          type: string
-          format: date-time
-          readOnly: true
-          nullable: true
-        added_by:
-          type: integer
-      required:
-      - NSFW
-      - added_by
-      - added_on
-      - category
-      - content
-      - id
-      - last_modified
-      - status
-    InsultsCategory:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        content:
-          type: string
-          maxLength: 65535
-      required:
-      - content
-      - id
-    PaginatedInsultsCategoryList:
-      type: object
-      required:
-      - count
-      - results
-      properties:
-        count:
-          type: integer
-          example: 123
-        next:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=4
-        previous:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=2
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/InsultsCategory'
-  securitySchemes:
-    basicAuth:
-      type: http
-      scheme: basic
-    cookieAuth:
-      type: apiKey
-      in: cookie
-      name: sessionid
-
-openapi: 3.0.3
-info:
-  title: Yo' MaMa - The Roast API
-  version: 2.0.0
-  description: 'Robust REST API with rate limits for Yo Mama Jokes , that allows API
-    Consumers to filter jokes based on Category and/or Explicitly '
+  title: Yo' Mama - The Roast API - Swagger UI
+  version: 1.0.0
+  description: 'RESTful implementation of a light hearted Roast Insult API '
+  contact:
+    name: Terry A. Brooks, Jr.
+    url: https://brooksjr.com
+    email: terry@brooksjr.com
 paths:
   /api/insult/{id}:
     get:
@@ -235,9 +30,45 @@ paths:
               schema:
                 $ref: '#/components/schemas/Insult'
           description: ''
-  /api/insults/{category}:
+  /api/insults/categories:
     get:
-      operationId: api_insults_list
+      operationId: api_insults_categories_retrieve
+      description: A view to retrieve available insult categories.
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsultsCategory'
+              examples:
+                GettingAllJokesInACategory:
+                  value:
+                    count: 401
+                    next: http://127.0.0.1:8000/api/insults/P?page=2
+                    previous: 'null'
+                    results:
+                    - id: 979885544274460700
+                      content: Yo mama so bald, you can see what’s on her mind.
+                    - id: 979885544274657300
+                      content: Yo momma is so bald... you can see what's on her mind.
+                    - id: 979885544274690000
+                      content: Yo momma is so bald... even a wig wouldn't help!
+                    - id: 979885544274722800
+                      content: Yo momma is so bald... she had to braids her beard.
+                  summary: Paginated Listing of all active jokes in  a category
+                  description: This endpoint allows API Consumers to get a paginated
+                    list of all jokes in a given category i.e. "fat", "poor", "etc.
+          description: ''
+  /api/insults/categories/{category}:
+    get:
+      operationId: api_insults_categories_list
+      description: API Get Only Endpoint to provide a list of available insult categories
       parameters:
       - in: path
         name: category
@@ -245,47 +76,16 @@ paths:
           type: string
         required: true
       - in: query
-        name: category
+        name: nfsw
         schema:
-          type: string
-          enum:
-          - B
-          - DO
-          - DS
-          - F
-          - H
-          - L
-          - N
-          - O
-          - P
-          - S
-          - SKN
-          - SNWF
-          - SRT
-          - T
-          - TEST
-          - U
-        description: |-
-          * `P` - Poor
-          * `F` - Fat
-          * `U` - Ugly
-          * `S` - Stupid/Dumb
-          * `SNWF` - Snowflake
-          * `O` - Old
-          * `DO` - Old/Daddy
-          * `DS` - Stupid/Daddy
-          * `N` - Nasty
-          * `T` - Stupid/Dumb
-          * `TEST` - Testing
-          * `SKN` - Skinny
-          * `B` - Bald
-          * `H` - Hairy
-          * `L` - Lazy
-          * `SRT` - Short
-      - in: query
-        name: explicit
-        schema:
-          type: boolean
+          type: array
+          items:
+            type: boolean
+            enum:
+            - false
+            - true
+        description: Allows for the filtering of explicit or content Not Safe For
+          Work(NSFW) Defaults to None, Allowing for All types
       - name: page
         required: false
         in: query
@@ -300,33 +100,168 @@ paths:
       - {}
       responses:
         '200':
+          description: No response body
+  /api/schema:
+    get:
+      operationId: api_schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/user/insults/:
+    get:
+      operationId: api_user_insults_retrieve
+      description: A view to retrieve insults submitted by the authenticated use.
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedInsultsCategoryList'
-              examples:
-                GettingAllJokesInACategory:
-                  value:
-                    count: 123
-                    next: http://api.example.org/accounts/?page=4
-                    previous: http://api.example.org/accounts/?page=2
-                    results:
-                    - count: 401
-                      next: http://127.0.0.1:8000/api/insults/P?page=2
-                      previous: 'null'
-                      results:
-                      - id: 979885544274460700
-                        content: Yo mama so bald, you can see what’s on her mind.
-                      - id: 979885544274657300
-                        content: Yo momma is so bald... you can see what's on her
-                          mind.
-                      - id: 979885544274690000
-                        content: Yo momma is so bald... even a wig wouldn't help!
-                      - id: 979885544274722800
-                        content: Yo momma is so bald... she had to braids her beard.
-                  summary: Paginated Listing of all active jokes in  a category
-                  description: This endpoint allows API Consumers to get a paginated
-                    list of all jokes in a given category i.e. "fat", "poor", "etc.
+                $ref: '#/components/schemas/Insult'
           description: ''
   /auth/users/:
     get:
@@ -357,12 +292,6 @@ paths:
       requestBody:
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/UserCreate'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/UserCreate'
-          multipart/form-data:
             schema:
               $ref: '#/components/schemas/UserCreate'
         required: true
@@ -415,12 +344,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/User'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/User'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/User'
       security:
       - cookieAuth: []
       - basicAuth: []
@@ -445,12 +368,6 @@ paths:
       requestBody:
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedUser'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedUser'
-          multipart/form-data:
             schema:
               $ref: '#/components/schemas/PatchedUser'
       security:
@@ -490,12 +407,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Activation'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Activation'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Activation'
         required: true
       security:
       - cookieAuth: []
@@ -532,12 +443,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/User'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/User'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/User'
       security:
       - cookieAuth: []
       - basicAuth: []
@@ -555,12 +460,6 @@ paths:
       requestBody:
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedUser'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedUser'
-          multipart/form-data:
             schema:
               $ref: '#/components/schemas/PatchedUser'
       security:
@@ -593,12 +492,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SendEmailReset'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
         required: true
       security:
       - cookieAuth: []
@@ -619,12 +512,6 @@ paths:
       requestBody:
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-          multipart/form-data:
             schema:
               $ref: '#/components/schemas/SendEmailReset'
         required: true
@@ -649,12 +536,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PasswordResetConfirm'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PasswordResetConfirm'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PasswordResetConfirm'
         required: true
       security:
       - cookieAuth: []
@@ -675,12 +556,6 @@ paths:
       requestBody:
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-          multipart/form-data:
             schema:
               $ref: '#/components/schemas/SendEmailReset'
         required: true
@@ -705,12 +580,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UsernameResetConfirm'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/UsernameResetConfirm'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/UsernameResetConfirm'
         required: true
       security:
       - cookieAuth: []
@@ -731,12 +600,6 @@ paths:
       requestBody:
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/SetPassword'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SetPassword'
-          multipart/form-data:
             schema:
               $ref: '#/components/schemas/SetPassword'
         required: true
@@ -760,12 +623,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SetUsername'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SetUsername'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SetUsername'
         required: true
       security:
       - cookieAuth: []
@@ -776,125 +633,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetUsername'
-          description: ''
-  /auth/webauthn/login/:
-    post:
-      operationId: auth_webauthn_login_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WebauthnLogin'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/WebauthnLogin'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/WebauthnLogin'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WebauthnLogin'
-          description: ''
-  /auth/webauthn/login_request/:
-    post:
-      operationId: auth_webauthn_login_request_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WebauthnLogin'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/WebauthnLogin'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/WebauthnLogin'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WebauthnLogin'
-          description: ''
-  /auth/webauthn/signup/{ukey}/:
-    post:
-      operationId: auth_webauthn_signup_create
-      parameters:
-      - in: path
-        name: ukey
-        schema:
-          type: string
-          pattern: ^.+$
-        required: true
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WebauthnCreateUser'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/WebauthnCreateUser'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/WebauthnCreateUser'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WebauthnCreateUser'
-          description: ''
-  /auth/webauthn/signup_request/:
-    post:
-      operationId: auth_webauthn_signup_request_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WebauthnSignup'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/WebauthnSignup'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/WebauthnSignup'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WebauthnSignup'
           description: ''
 components:
   schemas:
@@ -910,30 +648,34 @@ components:
       - uid
     Insult:
       type: object
+      description: |-
+        Summary:
+        Serializer for Insult model to convert model instances to Python data types.
+
+        Explanation:
+        This serializer converts Insult model instances to Python data types for serialization. It includes fields like content, category, NSFW, added_on, and added_by. The `to_representation` method customizes the representation of the serialized data.
+
+        Args:
+            instance: The Insult model instance to be serialized.
+
+        Returns:
+            dict: A dictionary representing the serialized data.
+
+        Examples:
+            serializer = InsultSerializer()
+            data = serializer.to_representation(instance)
       properties:
-        id:
-          type: integer
-          readOnly: true
-        category:
-          type: string
-        status:
-          type: string
-        NSFW:
-          type: boolean
         content:
           type: string
           maxLength: 65535
-        explicit:
+        category:
+          type: string
+        NSFW:
           type: boolean
         added_on:
           type: string
           format: date
           readOnly: true
-        last_modified:
-          type: string
-          format: date-time
-          readOnly: true
-          nullable: true
         added_by:
           type: integer
       required:
@@ -942,9 +684,6 @@ components:
       - added_on
       - category
       - content
-      - id
-      - last_modified
-      - status
     InsultsCategory:
       type: object
       properties:
@@ -957,29 +696,6 @@ components:
       required:
       - content
       - id
-    PaginatedInsultsCategoryList:
-      type: object
-      required:
-      - count
-      - results
-      properties:
-        count:
-          type: integer
-          example: 123
-        next:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=4
-        previous:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=2
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/InsultsCategory'
     PaginatedUserList:
       type: object
       required:
@@ -1120,43 +836,6 @@ components:
           maxLength: 150
       required:
       - new_username
-    WebauthnCreateUser:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-          title: Email address
-          maxLength: 254
-        username:
-          type: string
-          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
-            only.
-          pattern: ^[\w.@+-]+$
-          maxLength: 150
-        id:
-          type: integer
-          readOnly: true
-      required:
-      - id
-      - username
-    WebauthnLogin:
-      type: object
-      properties:
-        username:
-          type: string
-      required:
-      - username
-    WebauthnSignup:
-      type: object
-      properties:
-        username:
-          type: string
-        display_name:
-          type: string
-      required:
-      - display_name
-      - username
   securitySchemes:
     basicAuth:
       type: http
@@ -1165,3 +844,6 @@ components:
       type: apiKey
       in: cookie
       name: sessionid
+externalDocs:
+  url: https://github.com/Terry-BrooksJr/the-dozens-django
+  description: GitHub Repository and full API documentation Hub

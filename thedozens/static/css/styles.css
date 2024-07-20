@@ -9,15 +9,15 @@
 }
 @font-face {
   font-family: YoMamaHeader;
-  src: url(https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@c6715b28123debb772de65c5c4b2d41ca63e775e/fonts/RubikVinyl-Regular.ttf);
+  src: url(https://cdn.yo-momma.net/staticfiles/fonts/RubikVinyl-Regular.ttf);
 }
 
 @font-face {
   font-family: YoMamaBody;
-  src: url(https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@1a2c14865a818cec1a0982dc0197d56106eb95a4/fonts/JuliusSansOne-Regular.ttf);
+  src: url(https://cdn.yo-momma.net/staticfiles/fonts/JuliusSansOne-Regular.ttf);
 }
 body {
- background-image: url("https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@5781529605d5e009fd1f740a25f5a105a35e450e/images/background%20(1).svg");
+ background-image: url("https:/cdn.yo-momma.net/staticfiles/assets/background.svg");
   background-repeat: no-repeat;
   background-size: cover;
   font-family: "YoMamaBody";

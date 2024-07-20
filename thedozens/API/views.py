@@ -1,9 +1,10 @@
 from API.filters import InsultFilter
 from API.models import Insult
 from API.serializers import (
-    InsultsCategorySerializer,
+    InsultsListSerializer,
     InsultSerializer,
     MyInsultSerializer,
+    AvailableCategoriesSerializer
 )
 from django_filters import rest_framework as filters
 from drf_spectacular.types import OpenApiTypes
@@ -12,45 +13,51 @@ from rest_framework.generics import (
     ListAPIView,
     RetrieveAPIView,
     RetrieveUpdateDestroyAPIView,
-)
+    GenericAPIView
+    )
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView, status
-
-class InsultMe(RetrieveAPIView):
+import random
+from thedozens.utils.category_resolver import Resolver
+class MyInsults(RetrieveUpdateDestroyAPIView):
     """
     A view to retrieve insults submitted by the authenticated use.
     """
-    serializer_class = InsultSerializer
+
+    serializer_class = InsultsListSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         """
         Get the queryset of insults added by the authenticated user.
         """
-        nsfw = self.request.get("")
-        category = None
-        if self.request.user.is_authenticated:
-            queryset = Insult.objects.filter(added_by=self.request.user)
+        return (
+            Insult.objects.filter(added_by=self.request.user)
+            if self.request.user.is_authenticated
+            else Insult.objects.none()
+        )
 
-        return queryset
 
-
-class InsultCategories(APIView):    
+class InsultCategories(GenericAPIView):
     """
     A view to retrieve available insult categories.
     """
+
     permission_classes = [AllowAny]
-    allowed_methods = ['GET']
+    allowed_methods = ["GET"]
+    serializer_class = AvailableCategoriesSerializer()
+
+    def get_queryset(self):
+        categories = Insult.CATEGORY.choices
+        display_name = [
+            category[1] for category in categories if category[0] != "TEST"
+        ]
+        return Response(display_name)
     
     def get(self, request):
-        categories = Insult.CATEGORY.choices
-        display_name = []
-        for category in categories:
-            if
-        display_name.append(category[1])
-        return Response(display_name)
+        return self.get_queryset()
 
 
 @extend_schema(
@@ -67,57 +74,83 @@ class InsultCategories(APIView):
             many=True,
             enum=[True, False],
         )
-    ]
+    ],
 )
 class InsultsCategoriesListView(ListAPIView):
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = InsultFilter
-    lookup_field = "category"
-    serializer_class = InsultsCategorySerializer
+    serializer_class = InsultsListSerializer(many=True)
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser]
 
-    def get_queryset(self):
-        category = self.kwargs["category"]
-        category = category.lower()
-        available_categories = dict((y, x) for x, y in Insult.CATEGORY.choices)
-        available_categories_list = [[cat.lower()] for cat in Insult.CATEGORY.choices]
+    def get_queryset(self, **kwargs):
+        category = self.kwargs['category']
+        available_categories = {y: x for x, y in Insult.CATEGORY.choices}
+        available_categories_list = tuple(sum(available_categories, []))
+        logger.debug(available_categories_list)
         if category not in available_categories_list:
             return Insult.objects.none()
-        else:
-            for key, value in available_categories.items():
-                if key == category:
-                    request_cat_code = available_categories[key]
-                return Insult.objects.filter(status="A").filter(
-                    category=request_cat_code
-                )
+        for request_cat_code in available_categories.values():
+            return Insult.objects.filter(status="A").filter(
+                category=request_cat_code
+            )
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        if len(queryset) <= 0 :
+            return Response(data="Invalid Category. Please Make Get Request to '/insults/categories' for a list of available categories ", status=status.HTTP_404_NOT_FOUND)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 @extend_schema(request=InsultSerializer, responses=InsultSerializer)
 class InsultSingleItem(RetrieveAPIView):
     queryset = Insult.objects.all()
     lookup_field = "id"
-    serializer_class = InsultSerializer
+    serializer_class = InsultSerializer(many=False)
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = InsultFilter
     permission_classes = [AllowAny]
 
 
 @extend_schema(request=InsultSerializer, responses=MyInsultSerializer)
-class MyInsultsView(RetrieveUpdateDestroyAPIView):
-    serializer_class = InsultSerializer
+class RandomInsultView(RetrieveAPIView):
+    queryset = Insult.objects.all()
+    serializer_class = InsultSerializer(many=False)
+    filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = InsultFilter
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+    
     def get_queryset(self):
+            """
+            Optionally restricts the returned purchases to a given user,
+            by filtering against a `username` query parameter in the URL.
+            """
+            queryset = Insult.objects.all()
+            nsfw_selection = self.request.query_params.get('nsfw') if self.request.query_params.get('nsfw') is not None else (self.request.data['nsfw'] if self.request.data['nsfw'] is not None else None )
+            category_selection = self.request.query_params.get('category') if self.request.query_params.get('category') is not None else (self.request.data['category'] if self.request.data['category'] is not None else None )
+
+            if category is not None:
+                resolved_cat = Resolver.resolve(category_selection)
+                queryset = queryset.filter(category=resolved_cat)
+
+            if nsfw_selection is not None:
+                queryset = queryset.filter(explicit=nsfw_selection)
+
+            return queryset
+    def get_object(self):
         """
-        This view returns a list of all insults created by the currently
-        authenticated user.
+        Returns the object the view is displaying.
 
-        Returns empty list if user Anonymous
+        You may want to override this if you need to provide non-standard
+        queryset lookups.  Eg if objects are referenced using multiple
+        keyword arguments in the url conf.
         """
-        user = self.request.user
-
-        if not user.is_anonymous:
-            return Insult.objects.filter(added_by=user)
-
-        return Insult.objects.none()
+        queryset = self.filter_queryset(self.get_queryset())
+        return random.choice(queryset)

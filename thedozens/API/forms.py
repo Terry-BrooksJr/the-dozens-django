@@ -1,30 +1,28 @@
 # -*- coding: utf-8 -*-
 from API.models import Insult, InsultReview
-from django_recaptcha.fields import ReCaptchaField 
 from crispy_forms.bootstrap import FormActions
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Button, Column, Div, Field, Layout, Row, Submit
-from django.conf import settings
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Button, Column, Div, Field, Layout, Row, Submit
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import ModelForm
-from django.urls import reverse
-from django.forms import ModelForm
+from django.forms.fields import ChoiceField,IntegerField
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from loguru import logger
 from loguru import logger
 
 
 class InsultReviewForm(ModelForm):
-    recaptha = ReCaptchaField()
-    ID_LIST = Insult.objects.filter(status="A").only("pk")
-
-    recaptha = ReCaptchaField()
-    ID_LIST = Insult.objects.filter(status="A").only("pk")
-
+    ID_QUERYSET = Insult.objects.filter(status="A")
+    # ID_LIST = len(ID_QUERYSET)
+    if ID_QUERYSET:
+        insult_choices = []
+        for id in ID_QUERYSET.values_list('pk'):
+            insult_choices.append((id[0], id[0]))
+        logger.debug(insult_choices)
+        insult_id = ChoiceField(choices=insult_choices,required=True, help_text="Please provide the Insult ID of the Insult. All API payloads provide the Insult ID.")       
+    else:
+        insult_id = IntegerField(required=True, help_text="Please provide the Insult ID of the Insult. All API payloads provide the Insult ID.")       
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
@@ -35,7 +33,6 @@ class InsultReviewForm(ModelForm):
         self.helper.layout = Layout(
             HTML(
                 """
-        <h3 class="application-text modal-title">Report Form</strong></h3>
         <h3 class="application-text modal-title">Report Form</strong></h3>
         <br/>
         <hr class="border border-primary border-3 opacity-75"/>"""
@@ -62,8 +59,6 @@ class InsultReviewForm(ModelForm):
                 "rationale_for_review",
                 css_class="form-row",
             ),
-            Field("recaptha"),
-            Field("recaptha"),
             Row(
                 Div(
                     FormActions(
@@ -88,7 +83,7 @@ class InsultReviewForm(ModelForm):
         post_review_contact_desired = cleaned_data.get("post_review_contact_desired")
         reporter_email = cleaned_data.get("reporter_email")
         insult_id = cleaned_data.get("insult_id")
-        
+
         if insult_id not in ID_LIST:
             raise ValidationError(
                 _("Invaild Insult ID - Please confirm Insult ID"),
@@ -100,7 +95,7 @@ class InsultReviewForm(ModelForm):
         post_review_contact_desired = cleaned_data.get("post_review_contact_desired")
         reporter_email = cleaned_data.get("reporter_email")
         insult_id = cleaned_data.get("insult_id")
-        
+
         if insult_id not in ID_LIST:
             raise ValidationError(
                 _("Invaild Insult ID - Please confirm Insult ID"),
@@ -118,19 +113,17 @@ class InsultReviewForm(ModelForm):
             if reporter_last_name in [None, " ", ""]:
                 raise ValidationError(
                     _(
-                        "Name Not Provided - You have selected that you do not wish submit this report anonymously, but have not provided a last name, or last inital. Please change your anonymity preference or enter a last name"
+                        "Name Not Provided - You have selected that you do not wish submit this report anonymously, but have not provided a last name, or last initial. Please change your anonymity preference or enter a last name"
                     ),
                     code="invalid-last-name-not-provided",
                 )
-        if post_review_contact_desired is True:
-            if reporter_email in [None, " ", ""]:
-                raise ValidationError(
-                    _(
-                        "Email Not Provided - You have selected that you wish to be contacted to know the desired outcome of the review, but have not provided an email address. Please change your results contact preference or enter a vaild email addrwss"
-                    ),
-                    code="invalid-last-name-not-provided",
-                )
-        return clean_data
+        if post_review_contact_desired is True and reporter_email in [None, " ", ""]:
+            raise ValidationError(
+                _(
+                    "Email Not Provided - You have selected that you wish to be contacted to know the desired outcome of the review, but have not provided an email address. Please change your results contact preference or enter a vaild email addrwss"
+                ),
+                code="invalid-last-name-not-provided",
+            )
         return clean_data
 
     class Meta:
@@ -146,9 +139,9 @@ class InsultReviewForm(ModelForm):
             "review_type",
         )
         labels = {
-            "post_review_contact_desired": "Do You Want The Reviewer to Contact You With the Reuslts of the Review?",
+            "post_review_contact_desired": "Do You Want The Reviewer to Contact You With the Results of the Review?",
             "anonymous": "Do You Want to Remain Anonymous?",
             "insult_id": "What is the ID number of the Insult?",
             "reporter_first_name": "First Name",
-            "reporter_last_name": "Last name or Last Inital",
+            "reporter_last_name": "Last name or Last Initial",
         }

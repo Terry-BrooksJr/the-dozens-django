@@ -3,7 +3,7 @@ from graphene import Mutation  # , Argument, Enum
 
 
 class Mutate(Mutation):
-    def mutate(root, info, **kwargs):
+    def mutate(self, info, **kwargs):
         pass
 
     # class JokeCategory(Enum):

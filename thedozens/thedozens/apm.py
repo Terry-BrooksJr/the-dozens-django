@@ -6,7 +6,7 @@ from statsd.defaults.django import statsd
 
 def stats_collector(sender, func, hit, **kwargs):
     event = "hit" if hit else "miss"
-    statsd.incr("cacheops.%s" % event)
+    statsd.incr(f"cacheops.{event}")
 
 
 cache_read.connect(stats_collector)

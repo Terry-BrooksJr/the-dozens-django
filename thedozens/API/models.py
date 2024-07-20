@@ -1,5 +1,4 @@
 import datetime
-import datetime
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -10,8 +9,22 @@ from loguru import logger
 NOW = datetime.datetime.now()
 
 
-
 class Insult(models.Model):
+    """
+    Summary:
+    Model representing an Insult with various attributes and methods for manipulation.
+
+    Explanation:
+    This model represents an Insult with fields like content, category, explicit, added_on, added_by, last_modified, and status. It includes methods for removing, approving, marking for review, re-categorizing, and reclassifying insults.
+
+    Methods:
+        - remove_insult(): Removes insult visibility from the API (Soft Delete).
+        - approve_insult(): Adds a Pending insult to the API.
+        - mark_insult_for_review(): Removes insult visibility from the API.
+        - re_categorize(new_category): Re-categorizes the object with a new category.
+        - reclassify(explicit_status): Changes the category of the insult.
+    """
+
     class Meta:
         db_table = "insults"
         ordering = ["explicit", "category"]
@@ -32,22 +45,6 @@ class Insult(models.Model):
         ]
 
     class CATEGORY(models.TextChoices):
-        POOR = "P", _("poor")
-        FAT = "F", _("fat")
-        UGLY = "U", _("ugly")
-        STUPID = "S", _("stupid")
-        SNOWFLAKE = "SNWF", _("snowflake")
-        OLD = "O", _("old")
-        DADDY_OLD = "DO", _("old_daddy")
-        DADDY_STUPID = "DS", _("stupid_daddy")
-        NASTY = "N", _("nasty")
-        TALL = "T", _("tall")
-        TEST_CATEGORY = "TEST", _("testing")
-        SKINNY = "SKN", _("skinny")
-        BALD = "B", _("bald")
-        HAIRY = "H", _("hairy")
-        LAZY = "L", _("lazy")
-        SHORT = "SRT", _("short")
         POOR = "P", _("poor")
         FAT = "F", _("fat")
         UGLY = "U", _("ugly")
@@ -101,8 +98,8 @@ class Insult(models.Model):
         """Removes insult visibility from the API. (Soft Delete)
         Logs:
             Success: Logs the PK of the modified Insult Instance
-            Exception: If the Insult unable top be removed. 
-            Exception: If the Insult unable top be removed. 
+            Exception: If the Insult unable top be removed.
+            Exception: If the Insult unable top be removed.
         Returns:
             None
         """
@@ -134,7 +131,7 @@ class Insult(models.Model):
             logger.error(f"Unable to Approve Insult({self.pk}): {e}")
 
     def mark_insult_for_review(self):
-        """Removes insult visibilitty from from the API.
+        """Removes insult visibility from from the API.
 
         Logs:
             Exception: If the Insult is unable top be removed.
@@ -174,7 +171,7 @@ class Insult(models.Model):
             logger.error(f"Unable to RE-Categorized Insult {self.pk}: {e}")
 
     def reclassify(self, explicit_status):
-       """Changes the category of the insult
+        """Changes the category of the insult
 
         Logs:
             Exception: If the Insult is unable top be removed.
@@ -182,18 +179,32 @@ class Insult(models.Model):
         Returns:
             None
         """
-       try:
+        try:
             self.explicit = explicit_status
             self.explicit = explicit_status
             logger.success(f"Successfully reclassified {self.pk} to {self.explicit}")
-       except Exception as e:
+        except Exception as e:
             logger.error(f"Unable to ReClassify Insult {self.pk}: {e}")
 
 
 class InsultReview(models.Model):
+    """
+    Summary:
+    Model representing an Insult Review with methods for marking different review types.
+
+    Explanation:
+    This model represents an Insult Review with fields like insult_id, anonymous, reporter_first_name, post_review_contact_desired, reporter_email, date_submitted, date_reviewed, rationale_for_review, review_type, and status. It includes methods for marking the review as reclassified, re-categorized, not reclassified, removed, and reclassified.
+
+    Methods:
+        - mark_review_not_reclassified(): Marks the review as Not reclassified.
+        - mark_review_recatagoized(): Marks the review as re-categorized.
+        - mark_review_not_recatagoized(): Marks the review as reclassified.
+        - mark_review_removed(): Marks the review as removed.
+        - mark_review_reclassified(): Marks the review as reclassified.
+    """
+
     class REVIEW_TYPE(models.TextChoices):
         RECLASSIFY = "RE", _("Joke Reclassification")
-        RECATAGORIZE = "RC", _("Joke Recategorization")
         RECATAGORIZE = "RC", _("Joke Recategorization")
         REMOVAL = "RX", _("Joke Removal")
 

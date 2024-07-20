@@ -11,7 +11,7 @@
   <meta name="keywords" content="API, Joke, Entertainment, Yo Mama Jokes, The Dozens " />
   <title>The Dozens - The Yo Mama Roast API</title>
   <link rel="icon" type="image/x-icon"
-    href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@94065f369600b5ac3fd17c56da7800c83bf356dd/images/yoyoo_400x400.jpg" />
+    href="https://cdn.yo-momma.net/staticfiles/assets/yoyoo_400x400.jpg" />
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
@@ -26,17 +26,18 @@
 `  <style>
     @font-face {
       font-family: YoMamaHeader;
-      src: url(https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@c6715b28123debb772de65c5c4b2d41ca63e775e/fonts/RubikVinyl-Regular.ttf);
+      src: url(https://cdn.yo-momma.net/staticfiles/fonts/RubikVinyl-Regular.ttf);
     }
 
     @font-face {
       font-family: YoMamaBody;
-      src: url(https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@1a2c14865a818cec1a0982dc0197d56106eb95a4/fonts/JuliusSansOne-Regular.ttf);
+      src: url(https://cdn.yo-momma.net/staticfiles/fonts/JuliusSansOne-Regular.ttf);
     }
 
     body {
-      background-image: url("https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@5781529605d5e009fd1f740a25f5a105a35e450e/images/background%20(1).svg");
+      background-image: url("https:/cdn.yo-momma.net/staticfiles/assets/background.svg");
       background-repeat: no-repeat;
+      background-color: #d1d937;
       background-size: cover;
       font-family: "YoMamaBody";
     }
@@ -46,6 +47,11 @@
       width: 100%;
     }
 
+  h2{
+          font-family: YoMamaHeader;
+    color: #770071;
+  }
+
     #copy-right {
       position: fixed;
       bottom: 225px;
@@ -53,17 +59,30 @@
     }
 
     .video-sub-copy {
-      position: fixed;
+      position: relative;
       bottom: 190px;
       left: 15px;
     }
+    #body-copy-row>div:nth-child(1) {
+      color : rgb(33, 37, 41);
+      background-color : rgba(0, 0, 0, 0);
+      border-top-color : rgb(33, 37, 41);
+      border-right-color : rgb(33, 37, 41);
+      border-bottom-color : rgb(33, 37, 41);
+      border-left-color : rgb(33, 37, 41);
+      box-shadow : rgb(0, 0, 0) 0px 0px 0px;
+      margin-left : 30px;
+      margin-top : 45px;
+      }
 
-    #dozens-image {
-      position: fixed;
-      left: -200px;
-      top: 3em;
+    #JokeOfDay{
+      background-color: #770071;
+      border-radius: 25px;
+      color: aliceblue;
+      height: auto;
+      width: 250px;
+      min-width: 85px;
     }
-
     #yo-mama-brand {
       height: 100px;
       width: auto;
@@ -71,11 +90,7 @@
       float: left;
     }
 
-    #about-video {
-      position: fixed;
-      left: 25px;
-      bottom: 275px;
-    }
+
 
     #yo-mama-dropdown {
       outline: 0;
@@ -165,7 +180,7 @@
   <nav uk-dropnav>
     <ul class="uk-subnav navbar-main">
       <li><img id="yo-mama-brand" class="navbar-brand"
-          src="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@9e332cf2c71dd4f7e75ccaef4520e2484ba10b30/images/1981605_1-removebg-preview%20(1).png"
+          src="https://cdn.yo-momma.net/dozens-logo.png"
           alt="Yo Mama Logo" /></li>
       <li><a href="https://www.brooksjr.com" target="_blank">About the Developer</a></li>
       <li>
@@ -196,14 +211,48 @@
   </nav>
   <main>
     <div class="row" id="body-img-row">
-        <div class="col-4">
-      <img id="dozens-image" src="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@dab0dbeb8cccd8a35b669fcdd5f16443a7041240/images/Dozen-Word-brand.png" alt="body-typograpy"/>
+        <div class=" ps-0 py-0 ms-5 mt-n3 col-4">
+      <img id="dozens-image" src="https://cdn.yo-momma.net/Dozen-Word-brand.png" alt="body-typograpy"/>
     </div>
+    <div id="JokeOfDay"></div>
+
 </div>
-<div class="row">
+    <div class="row" id="body-copy-row">
+            <div class="col-6">
+                <p>Introducing a powerful and versatile Yo Mama Jokes API, meticulously crafted using Python 3.0's exceptional web framework, Django, in conjunction with the Django REST framework.</p> 
+                <p>This robust REST API comes with built-in rate limiting to ensure fair usage and optimal performance.</p>
+    
+    <h2>Key Features</h2>
+    <div class="uk-child-width-1-3@m uk-grid-small uk-grid-match" uk-grid>
+      <div>
+          <div class="uk-card uk-card-default uk-card-body">
+              <h3 class="uk-card-title">Comprehensive Filtering</h3>
+              <p>API consumers can effortlessly filter jokes based on specific categories and explicit content, allowing for a highly customized joke retrieval experience.</p>
+          </div>
+      </div>
+      <div>
+          <div class="uk-card uk-card-primary uk-card-body">
+              <h3 class="uk-card-title">Primary</h3>
+              <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+          </div>
+      </div>
+      <div>
+          <div class="uk-card uk-card-secondary uk-card-body">
+              <h3 class="uk-card-title">Secondary</h3>
+              <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+          </div>
+      </div>
+  </div>
+    
+
+    <ul>
+        <li><strong></strong> </li>
+        <li><strong>Dual API Formats:</strong> In addition to the REST API, we offer a GraphQL API version, providing flexibility and convenience for developers who prefer this modern approach to querying data.</li>
+    </ul>
+              <div class="row">
       <div class="col-6" id="video-row">
         <video id="about-video" width="530" height="auto"
-          src="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/MindHealthCDN@52e60ba4815d8385dda1160487cf1761b3f166ca/images/black-ish%EA%9E%89%20Dre%20Explains%20%23TheDozens.mp4"
+          src="https://cdn.yo-momma.net/blackish_the_dozens_abc_broadcasting.mp4"
           class="object-fit-fill" controls></video>
       </div>
     </div>
@@ -217,12 +266,18 @@
         </div>
       </div>
     </div>
+
+    <p>This Yo Mama Jokes API is designed to be scalable, secure, and user-friendly, making it the perfect tool for integrating humor into your applications. Whether you're building a fun app, adding some lightheartedness to a website, or conducting data analysis on humor, our API has you covered.</p>
+            </div>
+        
+    </div>
+
   </main>
 
   <footer class="footer">
     <marquee>
       Over 400 Side-Splitting Yo Mama Jokes · 10 Catagories to Choose From including Fat, Poor, Ugly and Dumb · Ability
-      to filter out jokes based on explicitiy classification
+      to filter out jokes based on explicity classification
     </marquee>
   </footer>
   <script src='{ static "js/fontAwesomeIconPicker.min"}'></script>
