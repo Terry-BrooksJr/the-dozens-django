@@ -62,13 +62,26 @@ class InsultCategories(GenericAPIView):
 
 @extend_schema(
     description="API Get Only Endpoint to provide a list of available insult categories",
+    filters=True,
+    tags=["Insults"],
+
     parameters=[
         OpenApiParameter(
             name="nfsw",
             type=OpenApiTypes.BOOL,
             description="Allows for the filtering of explicit or content Not Safe For Work(NSFW) Defaults to None, Allowing for All types",
             required=False,
-            location="query",
+            location="object",
+            default=None,
+            allow_blank=True,
+            many=True,
+            enum=[True, False],
+        ), OpenApiParameter(
+            name="category",
+            type=OpenApiTypes.STR ,
+            description="Allows for the filtering of jokes based on their category. Use the `insults/categories` endpoint for a list of acceptable values. Defaults to None Allowing for All categories ",
+            required=False,
+            location="object",
             default=None,
             allow_blank=True,
             many=True,

@@ -1,5 +1,5 @@
 from API.models import Insult
-
+from typing import Dict
 class Resolver():
     @classmethod
     def _generate_insult_category_dict(cls) -> Dict[str, str]:
