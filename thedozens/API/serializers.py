@@ -106,7 +106,7 @@ class InsultSerializer(serializers.ModelSerializer):
     ]
 )
 class InsultsListSerializer(serializers.ModelSerializer):
-        class Meta:
+    class Meta:
         model = Insult
         fields = ("id", "content")
 

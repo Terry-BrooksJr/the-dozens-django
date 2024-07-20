@@ -24,7 +24,7 @@ migrate: ## Make and run migrations
 .PHONY: run
 backup-services-up: ## Pull and start the Docker Postgres container in the background
 .PHONY: run
-backup-services-up: ## Pull and start the Docker Postgres container in the background
+backup-services-up: ## Pull and start wthe Docker Postgres container in the background
 	docker-compose up -d
 
 db-shell: ## Access the Postgres Docker database interactively with psql. Pass in DBNAME=<name>.
