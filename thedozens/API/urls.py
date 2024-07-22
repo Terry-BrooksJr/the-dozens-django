@@ -1,6 +1,6 @@
 from API import views
 from django.urls import path
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 urlpatterns = [
     path(
@@ -18,4 +18,5 @@ urlpatterns = [
     path("insult", views.RandomInsultView.as_view(), name="Random-Unfiltered"),
     path("schema", SpectacularAPIView.as_view(), name="schema"),
     path("swagger", SpectacularSwaggerView.as_view(), name="swagger"),
+    path("docs", SpectacularRedocView.as_view(), name="redoc")
 ]

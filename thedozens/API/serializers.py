@@ -36,7 +36,7 @@ class InsultSerializer(serializers.ModelSerializer):
     """
 
     category = serializers.CharField(source="get_category_display")
-    NSFW = serializers.BooleanField(source="explicit")
+    NSFW = serializers.BooleanField(source="explicit" )
 
     class Meta:
         model = Insult
@@ -149,3 +149,9 @@ class JokeReportSerializer(serializers.ModelSerializer):
 ]},status_codes=[status.HTTP_200_OK])])
 class AvailableCategoriesSerializer(serializers.Serializer):
     pass
+    def to_representation(self, instance):
+        data["available_categories"] = []
+        for category in instance:
+            data["available_categories"].append(category)
+        return data
+

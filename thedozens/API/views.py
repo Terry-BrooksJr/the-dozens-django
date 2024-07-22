@@ -21,6 +21,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView, status
 import random
 from thedozens.utils.category_resolver import Resolver
+from rest_framework.parsers import JSONParser
+
 class MyInsults(RetrieveUpdateDestroyAPIView):
     """
     A view to retrieve insults submitted by the authenticated use.
@@ -76,6 +78,7 @@ class InsultCategories(GenericAPIView):
     permission_classes = [AllowAny]
     allowed_methods = ["GET"]
     serializer_class = AvailableCategoriesSerializer()
+
 
     def get_queryset(self):
         categories = Insult.CATEGORY.choices
