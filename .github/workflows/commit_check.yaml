@@ -43,8 +43,8 @@ jobs:
         - uses: syphar/restore-virtualenv@v1
           id: cache-virtualenv
 
-        - run: isort . --diff --check-only
-        - run: black --check --diff .
+        - run: python -m isort . --diff --check-only
+        - run: python -m black --check --diff .
 
   tests:
           needs: setup-virtualenv
