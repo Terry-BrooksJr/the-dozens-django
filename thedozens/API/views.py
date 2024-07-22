@@ -8,7 +8,7 @@ from API.serializers import (
 )
 from django_filters import rest_framework as filters
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema, OpenApiExample
 from rest_framework.generics import (
     ListAPIView,
     RetrieveAPIView,
@@ -39,7 +39,35 @@ class MyInsults(RetrieveUpdateDestroyAPIView):
             else Insult.objects.none()
         )
 
+@extend_schema(
+        description="API Get Only Endpoint to provide a list of available insult categories",
+    filters=True,
+    tags=["Insults"],
+    examples=[
+        OpenApiExample(name="Successful GET Request",
+        status_codes=[status.HTTP_200_OK],
+        value={
+        "categories" :[ 
+            "poor",
+            "fat",
+            "ugly",
+            "stupid",
+            "snowflake",
+            "old",
+            "old_daddy",
+            "stupid_daddy",
+            "nasty",
+            "tall",
+            '...'
+         ]
+        }), OpenApiExample(
+            name="UnSuccessful Request (PUT, POST, PATCH)",
+            value={    "detail": "Method \"POST\" not allowed."
 
+            }
+        )
+    ]
+)
 class InsultCategories(GenericAPIView):
     """
     A view to retrieve available insult categories.
@@ -61,9 +89,7 @@ class InsultCategories(GenericAPIView):
 
 
 @extend_schema(
-    description="API Get Only Endpoint to provide a list of available insult categories",
-    filters=True,
-    tags=["Insults"],
+
 
     parameters=[
         OpenApiParameter(
@@ -71,7 +97,7 @@ class InsultCategories(GenericAPIView):
             type=OpenApiTypes.BOOL,
             description="Allows for the filtering of explicit or content Not Safe For Work(NSFW) Defaults to None, Allowing for All types",
             required=False,
-            location="object",
+            location="query",
             default=None,
             allow_blank=True,
             many=True,
@@ -132,7 +158,7 @@ class InsultSingleItem(RetrieveAPIView):
     permission_classes = [AllowAny]
 
 
-@extend_schema(request=InsultSerializer, responses=MyInsultSerializer)
+@extend_schema(request=InsultSerializer, responses=InsultSerializer)
 class RandomInsultView(RetrieveAPIView):
     queryset = Insult.objects.all()
     serializer_class = InsultSerializer(many=False)

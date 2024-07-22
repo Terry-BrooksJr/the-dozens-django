@@ -23,7 +23,7 @@
   <script type="text/javascript" src="https://learnosity.b-cdn.net/loading-bar.min.js"></script>
   <script src="https://kit.fontawesome.com/58e27c88da.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
-`  <style>
+  <style>
     @font-face {
       font-family: YoMamaHeader;
       src: url(https://cdn.yo-momma.net/staticfiles/fonts/RubikVinyl-Regular.ttf);
@@ -35,13 +35,21 @@
     }
 
     body {
-      background-image: url("https:/cdn.yo-momma.net/staticfiles/assets/background.svg");
+      background-image: url("https://yo-mama.b-cdn.net/staticfiles/assets/background.svg");
       background-repeat: no-repeat;
       background-color: #d1d937;
       background-size: cover;
       font-family: "YoMamaBody";
-    }
+      background-attachment: fixed;
+      background-position: center;
 
+      height: 175vh;
+
+
+    }
+    html {
+      background-color: #d1d937;
+    }
     main {
       height: 780px;
       width: 100%;
@@ -59,7 +67,6 @@
     }
 
     .video-sub-copy {
-      position: relative;
       bottom: 190px;
       left: 15px;
     }
@@ -79,9 +86,9 @@
       background-color: #770071;
       border-radius: 25px;
       color: aliceblue;
-      height: auto;
-      width: 250px;
-      min-width: 85px;
+      height: 35px;
+      width: auto;
+      padding: 3rem;
     }
     #yo-mama-brand {
       height: 100px;
@@ -114,7 +121,11 @@
       color: white;
     }
 
-    .flex {
+    .uk-accordion-title	{
+      font-weight: bolder;
+      color: #770071;
+    }
+        .flex {
       display: flex;
       align-items: center;
       align-content: center;
@@ -160,7 +171,19 @@
         float: left;
         margin: 5px;
     }
+    #joke-of-day {
+      font-size: 20px;
+      font-weight: bolder;
+    }
+
+    #joke-of-day:hover{
+      content: "Click for a New Joke!"
+    }
+  .RandomJoke {
+    width: 33%;
+  }
   </style>
+  
 </head>
 
 <body>
@@ -207,42 +230,52 @@
           </ul>
         </div>
       </li>
+      <li>    
+        <div class="RandomJoke">
+          <h4>Joke of the Day</h4>
+        <p id="joke-content">Yo mama so bald, you can see what’s on her mind.</p>
+      </div>
+    </li>
     </ul>
+
   </nav>
+
   <main>
     <div class="row" id="body-img-row">
         <div class=" ps-0 py-0 ms-5 mt-n3 col-4">
       <img id="dozens-image" src="https://cdn.yo-momma.net/Dozen-Word-brand.png" alt="body-typograpy"/>
     </div>
-    <div id="JokeOfDay"></div>
 
 </div>
     <div class="row" id="body-copy-row">
             <div class="col-6">
                 <p>Introducing a powerful and versatile Yo Mama Jokes API, meticulously crafted using Python 3.0's exceptional web framework, Django, in conjunction with the Django REST framework.</p> 
-                <p>This robust REST API comes with built-in rate limiting to ensure fair usage and optimal performance.</p>
+                <p>This Yo Mama Jokes API is designed to be scalable, secure, and user-friendly, making it the perfect tool for integrating humor into your applications. Whether you're building a fun app, adding some lightheartedness to a website, or conducting data analysis on humor, our API has you covered.</p>
     
     <h1>Key Features</h1>
-    <div class="uk-child-width-1-3@m uk-grid-small uk-grid-match" uk-grid>
-      <div>
-          <div class="uk-card uk-card-default uk-card-body">
-              <h3 class="uk-card-title">Comprehensive Filtering</h3>
-              <p>API consumers can effortlessly filter jokes based on specific categories and explicit content, allowing for a highly customized joke retrieval experience.</p>
+    <ul uk-accordion>
+      <li class="uk-open">
+          <a class="uk-accordion-title" href>Comprehensive Filtering</a>
+          <div class="uk-accordion-content">
+            <p class="feature-text">API consumers can effortlessly filter jokes based on specific categories and explicit content, allowing for a highly customized joke retrieval experience.</p>
           </div>
-      </div>
-      <div>
-          <div class="uk-card uk-card-primary uk-card-body">
-              <h3 class="uk-card-title">Dual API Formats</h3>
-              <p>In addition to the REST API, we offer a GraphQL API version, providing flexibility and convenience for developers who prefer this modern approach to querying data.</p>
+      </li>
+      <li>
+          <a class="uk-accordion-title" href>Dual API Formats</a>
+          <div class="uk-accordion-content">
+            <p class="feature-text">In addition to the REST API, we offer a GraphQL API version, providing flexibility and convenience for developers who prefer this modern approach to querying data.</p>
           </div>
-      </div>
-      <div>
-          <div class="uk-card uk-card-secondary uk-card-body">
-              <h3 class="uk-card-title">Generous Rate Limiting</h3>
-              <p>Protects against abuse and ensures fair usage by implementing robust rate limiting, making sure your application's performance remains optimal even under high traffic.</p>
+      </li>
+      <li>
+          <a class="uk-accordion-title" href>Generous Rate Limiting</a>
+          <div class="uk-accordion-content">
+            <p>Protects against abuse and ensures fair usage by implementing robust rate limiting, making sure your application's performance remains optimal even under high traffic.</p>
           </div>
-      </div>
-  </div>              <div class="row">
+      </li>
+  </ul>
+  </div>
+  </div>              
+  <div class="row">
       <div class="col-6" id="video-row">
         <video id="about-video" width="530" height="auto"
           src="https://cdn.yo-momma.net/blackish_the_dozens_abc_broadcasting.mp4"
@@ -253,14 +286,11 @@
       <div class="video-sub-copy">
         <p>Clip from ABC's Hit Show <strong>black</strong>·<em>ish</em></p>
       </div>
-      <div id="copy-right">
-        <div class="copyright-text">
+       <div class="copyright-text">
           <p><i class="fa fa-copyright"></i> American Broadcasting Company (ABC)</p>
-        </div>
       </div>
     </div>
 
-    <p>This Yo Mama Jokes API is designed to be scalable, secure, and user-friendly, making it the perfect tool for integrating humor into your applications. Whether you're building a fun app, adding some lightheartedness to a website, or conducting data analysis on humor, our API has you covered.</p>
             </div>
         
     </div>
