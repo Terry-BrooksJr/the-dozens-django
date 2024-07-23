@@ -26,12 +26,14 @@
   <style>
     #page {
       align-items: center;
-      background: linear-gradient(to top right, #fc737a 10%, #ff7c9d 65%, #ffc01a 125%);
+      background: linear-gradient(to top right, #770071 10%, #bd00b4 65%, #BEDA00 125%);
       bottom: 0;
       display: flex;
       justify-content: center;
       left: 0;
       position: absolute;
+      height: 100%;
+      width: 100%;
       right: 0;
       top: 0;
       transition: opacity 1s; }
@@ -40,20 +42,14 @@
       display: flex;
       flex-flow: column;
       height: 150px;
-      overflow: hidden;
+      z-index: 2;
       width: 260px; }
     
     #phrases {
+      z-index: 3;
       animation: slide-phrases-upward 20s; }
     
-    #footer {
-      bottom: 30px;
-      color: white;
-      display: flex;
-      justify-content: center;
-      left: 0;
-      position: fixed;
-      right: 0; }
+
     
     @keyframes slide-phrases-upward {
       0% {
@@ -102,127 +98,127 @@
     #loadingCheckCircleSVG-0 {
       animation: fill-to-white 5000ms;
       animation-delay: -1.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-1 {
       animation: fill-to-white 5000ms;
       animation-delay: -0.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-2 {
       animation: fill-to-white 5000ms;
       animation-delay: 0.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-3 {
       animation: fill-to-white 5000ms;
       animation-delay: 1.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-4 {
       animation: fill-to-white 5000ms;
       animation-delay: 2.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-5 {
       animation: fill-to-white 5000ms;
       animation-delay: 3.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-6 {
       animation: fill-to-white 5000ms;
       animation-delay: 4.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-7 {
       animation: fill-to-white 5000ms;
       animation-delay: 5.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-8 {
       animation: fill-to-white 5000ms;
       animation-delay: 6.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-9 {
       animation: fill-to-white 5000ms;
       animation-delay: 7.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-10 {
       animation: fill-to-white 5000ms;
       animation-delay: 8.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-11 {
       animation: fill-to-white 5000ms;
       animation-delay: 9.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-12 {
       animation: fill-to-white 5000ms;
       animation-delay: 10.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-13 {
       animation: fill-to-white 5000ms;
       animation-delay: 11.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-14 {
       animation: fill-to-white 5000ms;
       animation-delay: 12.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-15 {
       animation: fill-to-white 5000ms;
       animation-delay: 13.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-16 {
       animation: fill-to-white 5000ms;
       animation-delay: 14.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-17 {
       animation: fill-to-white 5000ms;
       animation-delay: 15.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-18 {
       animation: fill-to-white 5000ms;
       animation-delay: 16.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-19 {
       animation: fill-to-white 5000ms;
       animation-delay: 17.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     #loadingCheckCircleSVG-20 {
       animation: fill-to-white 5000ms;
       animation-delay: 18.5s;
-      fill: white;
+      fill: #BEDA00;
       opacity: 0; }
     
     @keyframes fill-to-white {
@@ -319,19 +315,28 @@
     
     @keyframes fill-to-coral {
       0% {
-        fill: white; }
+        fill: #BEDA00; }
       10% {
-        fill: #FF6D92; }
+        fill: #770071; }
       100% {
-        fill: #FF6D92; } }
+        fill: #770071; } }
     @font-face {
       font-family: YoMamaHeader;
-      src: url(https://cdn.yo-momma.net/staticfiles/fonts/RubikVinyl-Regular.ttf);
+      src: url(https://cdn.yo-momma.net/staticfiles/fonts/JosefinSans-VariableFont_wght.ttf);
     }
 
     @font-face {
       font-family: YoMamaBody;
       src: url(https://cdn.yo-momma.net/staticfiles/fonts/JuliusSansOne-Regular.ttf);
+    }
+    
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-family: YoMamaHeader;
     }
 
     body {
@@ -339,6 +344,7 @@
       background-repeat: no-repeat;
       background-color: #d1d937;
       background-size: cover;
+    
       font-family: "YoMamaBody";
       background-attachment: fixed;
       background-position: center;
@@ -381,7 +387,9 @@
       margin-left : 30px;
       margin-top : 45px;
       }
-
+      #phrases{
+        z-index: 5;
+      }
     #JokeOfDay{
       background-color: #770071;
       border-radius: 25px;
@@ -393,7 +401,6 @@
     #yo-mama-brand {
       height: 100px;
       width: auto;
-      margin-left: 230px;
       float: left;
     }
 
@@ -424,6 +431,7 @@
     .uk-accordion-title	{
       font-weight: bolder;
       color: #770071;
+      font-family: YoMamaHeader;
     }
         .flex {
       display: flex;
@@ -455,7 +463,9 @@
       color: white;
       text-align: center
     }
-
+.scale-font{
+  font-size: calc(.55vw + .55vh);
+}
     #bb-py-logo {
       height: 5%;
       width: 5%;
@@ -466,6 +476,9 @@
       margin: 5px;
     }
 
+    .header-font{
+      font-family:YoMamaHeader;
+    }
 
       .wrap-left {
         float: left;
@@ -482,11 +495,21 @@
   .RandomJoke {
     width: 33%;
   }
+#joke-of-day-title-parent{
+  background-color: #BEDA00;
+  width: 85%;
+  max-width: 48rem;
+  margin: auto;
+  color: hsl(0, 0%, 20%);
+  border-top: 1px solid hsl(300, 50%, 35%);
+  border-bottom: 1px solid hsl(300, 50%, 5%);}
   </style>
   
 </head>
 
-<body>
+<body style="overflow: hidden;">
+  <div id="page"></div>
+
   <div id="phrase_box">
     <svg width="100%" height="100%">
       <defs>
@@ -513,7 +536,7 @@
 
   <nav uk-dropnav>
     <ul class="uk-subnav navbar-main">
-      <li><img id="yo-mama-brand" class="navbar-brand"
+      <li class="ps-0 ms-4 "><img id="yo-mama-brand" class="navbar-brand"
           src="https://cdn.yo-momma.net/dozens-logo.png"
           alt="Yo Mama Logo" /></li>
       <li><a href="https://www.brooksjr.com" target="_blank">About the Developer</a></li>
@@ -521,12 +544,11 @@
         <a href>The API <span uk-drop-parent-icon></span></a>
         <div class="uk-dropdown">
           <ul class="uk-nav uk-dropdown-nav">
-            <li><a target="_blank" href="{% url 'swagger' %}">Swagger</a></li>
+            <li><a target="_blank" class="header-font" href="{% url 'swagger' %}">Swagger</a></li>
             <li><a target="_blank" href="#">Postman</a></li>
             <li><a target="_blank" href="/graphql">GraphQL</a></li>
             <li><a href="#">Register to Contribute</a></li>
-            <li><a id="reportAJokeTrigger" data-bs-toggle="modal" data-bs-target="#reportJokeModal">Report a Joke To Be
-                Reviewed</a></li>
+            <li><a id="reportAJokeTrigger" data-bs-toggle="modal" data-bs-target="#reportJokeModal">Report a Joke To Be Reviewed</a></li>
           </ul>
         </div>
       </li>
@@ -542,9 +564,15 @@
         </div>
       </li>
       <li>    
-        <div class="RandomJoke">
-          <h4>Joke of the Day</h4>
-        <p id="joke-content">Yo mama so bald, you can see what’s on her mind.</p>
+        <div class="container px-2 text-center align-middle">
+          <div id="joke-of-day-title-parent" class="row gx-1">
+              <div  class="RandomJoke col">
+          <h4 class="-wrap scale-font text-light" id="joke-of-day-title">Joke of the Day</h4>
+              </div>
+              <div class=" joke-content-parent col">
+        <p class="p-0 text-wrap  text-light align-text-top scale-font" id="joke-content">Yo mama so bald, you can see what’s on her mind.</p>
+      </div>
+      </div>
       </div>
     </li>
     </ul>
@@ -554,16 +582,35 @@
   <main>
     <div class="row" id="body-img-row">
         <div class=" ps-0 py-0 ms-5 mt-n3 col-4">
-      <img id="dozens-image" src="https://cdn.yo-momma.net/Dozen-Word-brand.png" alt="body-typograpy"/>
+      <img id="dozens-image" src="https://cdn.yo-momma.net/Dozen-Word-brand.png" alt="body-typography"/>
     </div>
 
 </div>
-    <div class="row" id="body-copy-row">
-            <div class="col-6">
+    <div class="row" id="body-copy">
+            <div class="col-6 text-center">
                 <p>Introducing a powerful and versatile Yo Mama Jokes API, meticulously crafted using Python 3.0's exceptional web framework, Django, in conjunction with the Django REST framework.</p> 
                 <p>This Yo Mama Jokes API is designed to be scalable, secure, and user-friendly, making it the perfect tool for integrating humor into your applications. Whether you're building a fun app, adding some lightheartedness to a website, or conducting data analysis on humor, our API has you covered.</p>
-    
-    <h1>Key Features</h1>
+    </div>
+    </div>
+    <div class="row">
+      <div class="col-6 ms-5" id="video">
+        <video id="about-video" width="530" height="auto"
+          src="https://cdn.yo-momma.net/blackish_the_dozens_abc_broadcasting.mp4"
+          class="object-fit-fill" controls></video>
+      </div>
+    </div>
+    <div id="copyright-container" class="row ms-5">
+      <div class="video-sub-copy">
+        <sub>Clip from ABC's Hit Show <strong>black</strong>·<em>ish</em></sub>
+      </div>
+       <div class="copyright-text">
+          <sub><i class="fa fa-copyright"></i> American Broadcasting Company (ABC)</sub>
+      </div>
+    </div>
+    <div id="key-features" class="row">
+      <div class="col-6"></div>
+    </div>
+    <h1 class="ms-5">Key Features</h1>
     <ul uk-accordion>
       <li class="uk-open">
           <a class="uk-accordion-title" href>Comprehensive Filtering</a>
@@ -584,23 +631,8 @@
           </div>
       </li>
   </ul>
-  </div>
-  </div>              
-  <div class="row">
-      <div class="col-6" id="video-row">
-        <video id="about-video" width="530" height="auto"
-          src="https://cdn.yo-momma.net/blackish_the_dozens_abc_broadcasting.mp4"
-          class="object-fit-fill" controls></video>
-      </div>
-    </div>
-    <div id="copyright-container" class="row">
-      <div class="video-sub-copy">
-        <p>Clip from ABC's Hit Show <strong>black</strong>·<em>ish</em></p>
-      </div>
-       <div class="copyright-text">
-          <p><i class="fa fa-copyright"></i> American Broadcasting Company (ABC)</p>
-      </div>
-    </div>
+ 
+
 
         
 
@@ -626,7 +658,7 @@
   <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"></script>
   <script>
-    // Inital Joke On Load
+    // Initial Joke On Load
     $.getJSON("https://the-dozens.onrender.com/insult", response => {
       $("#joke").text(
         Object.values(response)[0]
@@ -725,8 +757,7 @@ function easeInOut(t) {
 }
 
 document.addEventListener("DOMContentLoaded", function(event) {
-  var phrases = shuffleArray(["Generating witty dialog", "Prepping Insults", "Offending Mothers", "Debasing Fathers", "Irritating Aunts", "Annoying Grandmothers", "Shuffling bits", "Celebrating moments", "Generating phrases", "Simulating workflow", "Empowering humanity", "Being aspirational", "Doing the hokey pokey", "Bueller", "Cracking jokes", "Slacking off"]);
-  addPhrasesToDocument(phrases);
+  var phrases = shuffleArray(["Generating witty dialog", "Prepping Insults", "Offending Mothers", "Debasing Fathers", "Irritating Aunts", "Annoying Grandmothers", "Disparaging Grandfathers", "Frustrating Matriarchs",  "Cracking jokes", "Slacking off"]);  addPhrasesToDocument(phrases);
   var start_time = new Date().getTime();
   var upward_moving_group = document.getElementById("phrases");
   upward_moving_group.currentY = 0;
@@ -759,17 +790,33 @@ document.addEventListener("DOMContentLoaded", function(event) {
         setTimeout(() => {
             hideLoader();
             showContent();
-        }, 10000);
-
-        function hideLoader() {
-            $('#phrase-box').fadeOut(1800);
+        }, 3000);
+});     
+function hideLoader() {
+            $('#phrase_box').fadeOut(900);
+            $('#phrases').fadeOut(300)
+            $('#phrase_box').css('display', 'none')
+            $('#page').fadeOut(1800);
         }
 
         function showContent() {
             $('#body-hide').fadeIn(1600);
-        }
-    });
+            $('body').css('overflow', 'visible')
+          };
 
+    function animateJokeOfDayTitle(){
+    $('#joke-of-day-title').addClass(' animate__animated animate__rubberBand animate__infinite')
+     $('#joke-of-day-title').text('Click For Another Joke!')
+    }
+
+    function unanimateJokeOfDayTitle(){
+      setTimeout(() => {
+    $('#joke-of-day-title').remove('animate__animated animate__rubberBand animate__infinite')
+    $('#joke-of-day-title').text('Joke of the Day')
+    }, 300)}
+
+     $('#joke-of-day-title-parent').on( "mouseenter", animateJokeOfDayTitle ).on( "mouseleave", unanimateJokeOfDayTitle )
+      $('#joke-of-day-title-parent').on( "click", place_joke )
   </script>
   <!-- Modal -->
   <div class="modal fade" id="reportJokeModal" tabindex="-1" role="dialog" aria-labelledby="reportJokeModal"
@@ -799,7 +846,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
               limited to the following: </strong></p>
           <ol>
             <li>Joke Reclassification - Changing the Joke from explicit or inexplicit</li>
-            <li>Joke Recatagorizion - Changing the Catagory of the Joke to a more accurate category </li>
+            <li>Joke Recategorization - Changing the Category of the Joke to a more accurate category </li>
             <li>Joke Removal - Complete removal from the Joke Database</li>
           </ol>
           {% crispy form %}
