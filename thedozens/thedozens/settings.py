@@ -12,10 +12,42 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from loguru import logger
+import highlight_io
+from highlight_io.integrations.django import DjangoIntegration
 
 GLOBAL_NOW = datetime.now()
 
 LOGGING_CONFIG = None
+
+
+
+# `instrument_logging=True` sets up logging instrumentation.
+# if you do not want to send logs or are using `loguru`, pass `instrument_logging=False`
+# H = highlight_io.H(
+# 	"<YOUR_PROJECT_ID>",
+# 	integrations=[DjangoIntegration()],
+# 	instrument_logging=False,
+# 	service_name="yo-mama-api",
+# 	service_version="git-sha",
+# 	environment="DEVELOPMENT",
+# )
+# H.init("<YOUR_PROJECT_ID>", {
+#   tracingOrigins: ['localhost', 'yo-momma.net'],
+#   networkRecording: {
+#     enabled: true,
+#     recordHeadersAndBody: true,
+#   },
+# });
+
+
+
+# logger.add(
+# 	H.logging_handler,
+# 	format="{message}",
+# 	level="DEBUG",
+# 	backtrace=True,
+# 	serialize=True,
+# )
 
 
 LOGGING = {
@@ -73,6 +105,7 @@ TIME_ZONE = "America/Chicago"
 USE_I18N = True
 USE_TZ = True
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.cache.UpdateCacheMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -83,6 +116,7 @@ MIDDLEWARE = [
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.cache.FetchFromCacheMiddleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware"
 
 ]
 if DEBUG:
@@ -108,7 +142,7 @@ DATABASES = {
 
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
         "LOCATION": os.getenv("REDIS_CACHE_URI"),
 
     }
@@ -157,6 +191,7 @@ PROMETHEUS_LATENCY_BUCKETS = (
     30.0,
     float("inf"),
 )
+PROMETHEUS_METRIC_NAMESPACE = "dozens_api"
 
 
 # !SECTION

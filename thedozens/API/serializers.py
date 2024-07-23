@@ -116,7 +116,12 @@ class MyInsultSerializer(serializers.ModelSerializer):
     class Meta:
         model = Insult
         fields = "__all__"
-
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret["category"] = ret["category"].capitalize()
+        ret["added_by"] = f"{ instance.added_by.first_name} {instance.added_by.last_name[0]}"
+        
+    
 
 class JokeReportSerializer(serializers.ModelSerializer):
     class Meta:

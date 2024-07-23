@@ -23,12 +23,12 @@ import random
 from thedozens.utils.category_resolver import Resolver
 from rest_framework.parsers import JSONParser
 
-class MyInsults(RetrieveUpdateDestroyAPIView):
+class MyInsults(ListAPIView):
     """
     A view to retrieve insults submitted by the authenticated use.
     """
 
-    serializer_class = InsultsListSerializer
+    serializer_class = MyInsultSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -40,6 +40,10 @@ class MyInsults(RetrieveUpdateDestroyAPIView):
             if self.request.user.is_authenticated
             else Insult.objects.none()
         )
+    def list(self, request):
+        queryset = self.get_queryset()
+        serializer = MyInsultSerializer(queryset, many=True)
+        return Response(data=f"'{str(request.user.username)}':{ 'submitted_insults': [{serializer.data}]}")
 
 @extend_schema(
         description="API Get Only Endpoint to provide a list of available insult categories",

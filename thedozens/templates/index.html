@@ -23,6 +23,29 @@
   <script type="text/javascript" src="https://learnosity.b-cdn.net/loading-bar.min.js"></script>
   <script src="https://kit.fontawesome.com/58e27c88da.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <script src="https://unpkg.com/highlight.run"></script>
+  <script>        H.init('5g5kvvlg', { // Get your project ID from https://app.highlight.io/setup
+    environment: 'production',
+    version: 'commit:abcdefg12345',
+    networkRecording: {
+        enabled: true,
+        recordHeadersAndBody: true,
+        urlBlocklist: [
+ 
+        ],
+    },
+});
+import { H } from 'highlight.run';
+
+function Login(username: string, password: string) {
+
+	H.identify({{ request.user.email }}, {
+		id: {{ request.user.pk}},
+	});
+}
+
+
+</script>
   <style>
     #page {
       align-items: center;

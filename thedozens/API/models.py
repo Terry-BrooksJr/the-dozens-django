@@ -5,11 +5,12 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from loguru import logger
+from django_prometheus.models import ExportModelOperationsMixin
 
 NOW = datetime.datetime.now()
 
 
-class Insult(models.Model):
+class Insult(ExportModelOperationsMixin('insult'),models.Model):
     """
     Summary:
     Model representing an Insult with various attributes and methods for manipulation.
@@ -187,7 +188,7 @@ class Insult(models.Model):
             logger.error(f"Unable to ReClassify Insult {self.pk}: {e}")
 
 
-class InsultReview(models.Model):
+class InsultReview(ExportModelOperationsMixin('jokeReview'),models.Model):
     """
     Summary:
     Model representing an Insult Review with methods for marking different review types.
