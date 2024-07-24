@@ -24,5 +24,6 @@
         "Reconceptualization",
         "Saloy",
         "unanimate"
-    ]
+    ],
+    "eslint.enable": false
 }

@@ -40,6 +40,9 @@ djangorestframework-simplejwt = "^5.3.1"
 poetry-plugin-export = "^1.8.0"
 drf-spectacular-sidecar = "^2024.7.1"
 highlight-io = {extras = ["django"], version = "^0.8.5"}
+whitenoise = "^6.7.0"
+django-bunny = "^1.1.6"
+django-storages = "^1.14.4"
 
 [tool.poetry.group.test.dependencies]
 pytest-django = "^4.5.2"

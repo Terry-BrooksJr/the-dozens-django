@@ -14,6 +14,7 @@ from pathlib import Path
 from loguru import logger
 import highlight_io
 from highlight_io.integrations.django import DjangoIntegration
+from django_bunny.storage import BunnyStorage
 
 GLOBAL_NOW = datetime.now()
 
@@ -108,6 +109,7 @@ MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.cache.UpdateCacheMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -151,6 +153,21 @@ CACHES = {
 
 #!SECTION
 
+# SECTION - CDN and Static Assests 
+
+
+BUNNY_USERNAME = os.environ["BUNNY_USERNAME"]
+BUNNY_PASSWORD = os.environ["BUNNY_PASSWORD"]
+BUNNY_REGION = os.environ["BUNNY_REGION"]
+BUNNY_BASE_DIR = os.environ["BUNNY_BASE_DIR"]
+STATIC_LOCATION = "staticfiles/"
+STATIC_URL = f"https://cdn.yo-momma.net/{STATIC_LOCATION}/"
+STATIC_ROOT = STATIC_URL
+STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
+STATICFILES_STORAGE =  "thedozens.backends.storage.StaticStorage"
+BUNNY_HOSTNAME = STATIC_URL 
+
+#! 
 #  SECTION - Applicatiom Preformance Mointoring
 PROMETHEUS_LATENCY_BUCKETS = (
     0.01,
@@ -221,9 +238,8 @@ AUTHENTICATION_BACKENDS = [
 
 
 # SECTION - Static files & Templates
-logger.debug(BASE_DIR)
 template_dir = [
-    os.path.join(BASE_DIR, "templates"),
+    os.path.join(BASE_DIR, 'thedozens', "templates"),
 ]
 INTERNAL_IPS = [
     "127.0.0.1",
