@@ -16,11 +16,9 @@
   display: flex;
   flex-flow: column;
   height: 150px;
-  z-index: 2;
   width: 260px; }
 
 #phrases {
-  z-index: 3;
   animation: slide-phrases-upward 20s; }
 
 
@@ -313,6 +311,9 @@ h6 {
   font-family: YoMamaHeader;
 }
 
+video#about-video {
+  margin-left: 21%;
+}
 body {
   background-image: url("https://yo-mama.b-cdn.net/staticfiles/assets/background.svg");
   background-repeat: no-repeat;
@@ -326,6 +327,9 @@ body {
   height: 135vh;
 
 
+}
+#key-feature-list > * {
+  margin-left: 5em;
 }
 html {
   background-color: #d1d937;
@@ -361,9 +365,7 @@ color: #770071;
   margin-left : 30px;
   margin-top : 45px;
   }
-  #phrases{
-    z-index: 5;
-  }
+
 #JokeOfDay{
   background-color: #770071;
   border-radius: 25px;

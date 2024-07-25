@@ -2,28 +2,43 @@
     "cSpell.words": [
         "Abrahams",
         "Amuzie",
+        "Applicatiom",
+        "Assests",
         "Baraka",
         "bttn",
         "Chimezie",
+        "cockroachdb",
+        "corsheaders",
         "Dollard",
         "dropnav",
         "Dundes",
         "Dweck",
         "Folklife",
+        "graphene",
+        "Graphene",
+        "GRAPHENE",
         "Ikocha",
         "Ivey",
         "Jeffries",
         "JSTOR",
         "Lefever",
+        "Mointoring",
         "Monteria",
         "Nkocha",
+        "OTHERTINGS",
         "Percelay",
         "Phylon",
         "Pimpdaddy's",
+        "Preformance",
         "recaptha",
         "Reconceptualization",
         "Saloy",
-        "unanimate"
+        "thedozens",
+        "unanimate",
+        "validatio"
     ],
-    "eslint.enable": false
+    "eslint.enable": false,
+    "cSpell.ignoreWords": [
+        "kvvlg"
+    ]
 }

@@ -75,6 +75,8 @@ WSGI_APPLICATION = "thedozens.wsgi.application"
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = True
+CORS_ALLOW_ALL_ORIGINS = True
+CSRF_TRUSTED_ORIGINS = ["https://*.yo-momma.net", "https://*.b-cdn.net"]
 ADMINS = [("Terry Brooks", "Terry@BrooksJr.com")]
 ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
@@ -90,6 +92,8 @@ INSTALLED_APPS = [
     "kolo",
     "rest_framework",
     "django_filters",
+    "corsheaders",
+
     "debug_toolbar",
     "graphene_django",
     "crispy_forms",
@@ -111,6 +115,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -161,7 +166,7 @@ BUNNY_PASSWORD = os.environ["BUNNY_PASSWORD"]
 BUNNY_REGION = os.environ["BUNNY_REGION"]
 BUNNY_BASE_DIR = os.environ["BUNNY_BASE_DIR"]
 STATIC_LOCATION = "staticfiles/"
-STATIC_URL = f"https://cdn.yo-momma.net/{STATIC_LOCATION}/"
+STATIC_URL = "https://cdn.yo-momma.net/"
 STATIC_ROOT = STATIC_URL
 STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
 STATICFILES_STORAGE =  "thedozens.backends.storage.StaticStorage"
@@ -260,11 +265,7 @@ TEMPLATES = [
     },
 ]
 
-STATIC_URL = "static/"
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
-STATIC_ROOT = BASE_DIR / "staticfiles/"
+
 #!SECTION
 
 # SECTION - DRF Settings
@@ -273,7 +274,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 15,
+    "PAGE_SIZE": 10,
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
