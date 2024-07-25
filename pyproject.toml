@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "the-dozens-django"
-version = "0.1.0"
+version = "1.0.0"
 description = "Conversion of the Dozens Roast API from Flask RestX to Django DRF framework"
 authors = ["Terry Brooks"]
 license = "MIT"
@@ -12,7 +12,6 @@ django = "^5.0"
 markdown = "^3.5"
 djangorestframework = "^3.15.2"
 django-filter = "^23.3"
-python-dotenv = "^1.0.0"
 loguru = "^0.7.2"
 django-debug-toolbar = "^4.2.0"
 logtail-python = "^0.2.7"
@@ -21,20 +20,15 @@ redis = {extras = ["hiredis"], version = "^5.0.1"}
 django-mailer = "^2.3"
 graphene-django = "^3.1.5"
 uritemplate = "^4.1.1"
-django-rest-swagger = "^2.2.0"
 django-crispy-forms = "^2.1"
 crispy-bootstrap5 = "^0.7"
-django-cacheops = "^7.0.1"
 ghapi = "^1.0.4"
 gunicorn = "^21.2.0"
 django-prometheus = "^2.3.1"
 django-redis = "^5.4.0"
 drf-spectacular = "^0.26.5"
-infisical = "^1.5.0"
 django-recaptcha = "^3.0.0"
 django-cockroachdb = "^5.0"
-django-stubs = "^5.0.2"
-django-stubs-ext = "^5.0.2"
 djoser = "^2.2.3"
 djangorestframework-simplejwt = "^5.3.1"
 poetry-plugin-export = "^1.8.0"
@@ -43,9 +37,10 @@ highlight-io = {extras = ["django"], version = "^0.8.5"}
 whitenoise = "^6.7.0"
 django-bunny = "^1.1.6"
 django-storages = "^1.14.4"
+django-cors-headers = "^4.4.0"
 
 [tool.poetry.group.test.dependencies]
-pytest-django = "^4.5.2"
+pytest-django = "^4.8.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.3.0"
@@ -56,7 +51,9 @@ pylint = "^3.0.2"
 pre-commit = "^3.5.0"
 kolo = "^2.32.2"
 autoflake = "^2.2.1"
-
+django-stubs = "^5.0.2"
+django-stubs-ext = "^5.0.2"
+sourcery = "^1.21.0"
 
 [tool.poetry.group.docs.dependencies]
 drf-spectacular = "^0.26.5"

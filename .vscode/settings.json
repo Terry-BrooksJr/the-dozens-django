@@ -40,5 +40,17 @@
     "eslint.enable": false,
     "cSpell.ignoreWords": [
         "kvvlg"
-    ]
+    ],
+    "redisXplorer.config": {
+        "profiles": [
+            {
+                "name": "Cache",
+                "host": "dragonfly.yo-momma.net",
+                "accessKey": "M0th3rFuck3r",
+                "filter": "*",
+                "port": "6379"
+            }
+        ],
+        "scanLimit": 200
+    }
 }

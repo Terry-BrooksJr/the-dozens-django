@@ -160,3 +160,6 @@ class AvailableCategoriesSerializer(serializers.Serializer):
             data["available_categories"].append(category)
         return data
 
+class InsultReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InsultReview

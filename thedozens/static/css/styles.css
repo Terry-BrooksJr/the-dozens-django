@@ -294,7 +294,7 @@
     fill: #770071; } }
 @font-face {
   font-family: YoMamaHeader;
-  src: url(https://cdn.yo-momma.net/staticfiles/fonts/JosefinSans-VariableFont_wght.ttf);
+  src: url(https://cdn.yo-momma.net/staticfiles/fonts/caloriesuitDEMO.otf);
 }
 
 @font-face {
@@ -315,7 +315,7 @@ video#about-video {
   margin-left: 21%;
 }
 body {
-  background-image: url("https://yo-mama.b-cdn.net/staticfiles/assets/background.svg");
+  background-image: url("https://cdn.yo-momma.net/staticfiles/assets/background.svg");
   background-repeat: no-repeat;
   background-color: #d1d937;
   background-size: cover;

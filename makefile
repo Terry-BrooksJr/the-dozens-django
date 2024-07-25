@@ -49,3 +49,8 @@ schema-check:
 
 schema: schema-check
 	doppler run -- $(PYTHON) $(PATH_PREFIX)the-dozens-django/thedozens/manage.py spectacular --file schema.yaml 
+
+
+.PHONY:
+production-server:
+	doppler run -t $(DOPPLER_TOKEN) -- $(PYTHON) -m gunicorn --workers=2 --threads=2 thedozens.thedozens.wsgi:application -b :9090

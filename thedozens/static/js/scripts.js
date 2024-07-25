@@ -164,14 +164,14 @@ function showContent() {
 function animateJokeOfDayTitle() {
   const jokeTitle = $('#joke-of-day-title');
   jokeTitle.addClass('animate__animated animate__rubberBand animate__infinite');
-  jokeTitle.text('Click For Another Joke!');
+  jokeTitle.html('Click <br> For <br> Another Joke!');
 }
 
 function unanimateJokeOfDayTitle() {
   setTimeout(() => {
     const jokeTitle = $('#joke-of-day-title');
     jokeTitle.removeClass('animate__animated animate__rubberBand animate__infinite');
-    jokeTitle.text('Joke of the Day');
+    jokeTitle.html('Joke <br> of the <br> Day');
   }, 300);
 }
 

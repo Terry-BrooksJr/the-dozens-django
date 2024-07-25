@@ -18,8 +18,6 @@
     integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
     crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/css/uikit.min.css" />
-  <link rel="stylesheet" type="text/css" href="https://learnosity.b-cdn.net/loading-bar.css" />
-  <script type="text/javascript" src="https://learnosity.b-cdn.net/loading-bar.min.js"></script>
   <script src="https://kit.fontawesome.com/58e27c88da.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
   <script src="https://unpkg.com/highlight.run"></script>
@@ -53,25 +51,25 @@
   <div id="body-hide" class="animate__animated animate__slower animate__fadeIn" style="display:none;">
 
     <nav uk-dropnav>
-      <ul class="uk-subnav navbar-main">
+      <ul class="uk-subnav justify-content-between navbar-main">
         <li class="ps-0 ms-4 "><img id="yo-mama-brand" class="navbar-brand"
             src="{% static 'assets/dozens-logo.png' %}" alt="Yo Mama Logo" /></li>
-        <li><a href="https://www.brooksjr.com" target="_blank">About the Developer</a></li>
+        <li><a class="header-font" href="https://www.brooksjr.com" target="_blank">About the Developer</a></li>
         <li>
-          <a href>The API <span uk-drop-parent-icon></span></a>
+          <a class="header-font" href>The API <span uk-drop-parent-icon></span></a>
           <div class="uk-dropdown">
             <ul class="uk-nav uk-dropdown-nav">
               <li><a target="_blank" class="header-font" href="{% url 'swagger' %}">Swagger</a></li>
-              <li><a target="_blank" href="#">Postman</a></li>
-              <li><a target="_blank" href="/graphql">GraphQL</a></li>
-              <li><a href="#">Register to Contribute</a></li>
-              <li><a id="reportAJokeTrigger" data-bs-toggle="modal" data-bs-target="#reportJokeModal">Report a Joke To
+              <li><a target="_blank" class="header-font" href="#">Postman</a></li>
+              <li><a target="_blank" class="header-font" href="/graphql">GraphQL</a></li>
+              <li><a href="#" class="header-font">Register to Contribute</a></li>
+              <li><a id="reportAJokeTrigger" class="header-font" data-bs-toggle="modal" data-bs-target="#reportJokeModal">Report a Joke To
                   Be Reviewed</a></li>
             </ul>
           </div>
         </li>
 
-        <li><a href>The History of Yo' Mama Jokes<span uk-drop-parent-icon></span></a>
+        <li><a class="header-font" href>The History of Yo' Mama Jokes<span uk-drop-parent-icon></span></a>
           <div class="uk-dropdown">
             <ul class="uk-nav uk-dropdown-nav">
               <li><a href="#history-overview-modal" uk-toggle>Overview</a></li><br />
@@ -85,10 +83,10 @@
           <div class="container px-2 text-center align-middle">
             <div id="joke-of-day-title-parent" class="row gx-1">
               <div class="RandomJoke col">
-                <h4 class="-wrap scale-font text-dark" id="joke-of-day-title">Joke of the Day</h4>
+                <h4 class="text-wrap mt-3 scale-font text-dark" id="joke-of-day-title">Joke <br> of the <br> Day</h4>
               </div>
               <div class=" joke-content-parent col">
-                <p class="p-0 text-wrap  text-dark align-text-top scale-font" id="joke-content">Yo mama so bald, you can
+                <p class="p-0 text-wrap mt-3 text-dark align-text-top scale-font" id="joke-content">Yo mama so bald, you can
                   see what’s on her mind.</p>
               </div>
             </div>
@@ -132,25 +130,25 @@
         <div class="col-6">
 
           <h1 class="ms-5">Key Features</h1>
-          <ul uk-accordion>
+          <ul id="key-feature-list" uk-accordion>
             <li class="uk-open">
               <a class="uk-accordion-title" href>Comprehensive Filtering</a>
               <div class="uk-accordion-content">
-                <p class="feature-text">API consumers can effortlessly filter jokes based on specific categories and
+                <p class=" text-center feature-text">API consumers can effortlessly filter jokes based on specific categories and
                   explicit content, allowing for a highly customized joke retrieval experience.</p>
               </div>
             </li>
             <li>
               <a class="uk-accordion-title" href>Dual API Formats</a>
               <div class="uk-accordion-content">
-                <p class="feature-text">In addition to the REST API, we offer a GraphQL API version, providing
+                <p class="text-center feature-text">In addition to the REST API, we offer a GraphQL API version, providing
                   flexibility and convenience for developers who prefer this modern approach to querying data.</p>
               </div>
             </li>
             <li>
               <a class="uk-accordion-title" href>Generous Rate Limiting</a>
               <div class="uk-accordion-content">
-                <p>Protects against abuse and ensures fair usage by implementing robust rate limiting, making sure your
+                <p class="text-center feature-text">Protects against abuse and ensures fair usage by implementing robust rate limiting, making sure your
                   application's performance remains optimal even under high traffic.</p>
               </div>
             </li>
