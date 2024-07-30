@@ -1,6 +1,26 @@
+@property --yo-mama-lime-green {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #BEDA00;
+
+}
+
+@property --yo-mama-purple {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #770071;
+
+}
+
+@property --yo-mama-purple-highlight {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #bd00b4;
+
+}
 #page {
   align-items: center;
-  background: linear-gradient(to top right, #770071 10%, #bd00b4 65%, #BEDA00 125%);
+  background: linear-gradient(to top right, #770071 10%, #bd00b4 65%, var(--yo-mama-lime-green) 125%);
   bottom: 0;
   display: flex;
   justify-content: center;
@@ -21,8 +41,13 @@
 #phrases {
   animation: slide-phrases-upward 20s; }
 
+.uk-dropdown-nav>li>a:hover{
+  color: var(--yo-mama-lime-green);
 
-
+  }
+.uk-dropdown-nav>li>a {
+  color: #770071;
+}
 @keyframes slide-phrases-upward {
   0% {
     transform: translateY(0px); }
@@ -70,127 +95,127 @@
 #loadingCheckCircleSVG-0 {
   animation: fill-to-white 5000ms;
   animation-delay: -1.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-1 {
   animation: fill-to-white 5000ms;
   animation-delay: -0.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-2 {
   animation: fill-to-white 5000ms;
   animation-delay: 0.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-3 {
   animation: fill-to-white 5000ms;
   animation-delay: 1.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-4 {
   animation: fill-to-white 5000ms;
   animation-delay: 2.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-5 {
   animation: fill-to-white 5000ms;
   animation-delay: 3.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-6 {
   animation: fill-to-white 5000ms;
   animation-delay: 4.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-7 {
   animation: fill-to-white 5000ms;
   animation-delay: 5.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-8 {
   animation: fill-to-white 5000ms;
   animation-delay: 6.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-9 {
   animation: fill-to-white 5000ms;
   animation-delay: 7.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-10 {
   animation: fill-to-white 5000ms;
   animation-delay: 8.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-11 {
   animation: fill-to-white 5000ms;
   animation-delay: 9.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-12 {
   animation: fill-to-white 5000ms;
   animation-delay: 10.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-13 {
   animation: fill-to-white 5000ms;
   animation-delay: 11.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-14 {
   animation: fill-to-white 5000ms;
   animation-delay: 12.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-15 {
   animation: fill-to-white 5000ms;
   animation-delay: 13.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-16 {
   animation: fill-to-white 5000ms;
   animation-delay: 14.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-17 {
   animation: fill-to-white 5000ms;
   animation-delay: 15.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-18 {
   animation: fill-to-white 5000ms;
   animation-delay: 16.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-19 {
   animation: fill-to-white 5000ms;
   animation-delay: 17.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 #loadingCheckCircleSVG-20 {
   animation: fill-to-white 5000ms;
   animation-delay: 18.5s;
-  fill: #BEDA00;
+  fill: var(--yo-mama-lime-green);
   opacity: 0; }
 
 @keyframes fill-to-white {
@@ -287,7 +312,7 @@
 
 @keyframes fill-to-coral {
   0% {
-    fill: #BEDA00; }
+    fill: var(--yo-mama-lime-green); }
   10% {
     fill: #770071; }
   100% {
@@ -312,7 +337,7 @@ h6 {
 }
 
 video#about-video {
-  margin-left: 21%;
+  margin-left: 10rem;
 }
 body {
   background-image: url("https://cdn.yo-momma.net/staticfiles/assets/background.svg");
@@ -423,7 +448,7 @@ nav {
 .btn-primary:hover,
 .btn-primary:active,
 .btn-primary:visited {
-  background-color: #BEDA00 !important
+  background-color: var(--yo-mama-lime-green) !important
 }
 
 #dozens-image {
@@ -472,7 +497,7 @@ font-size: calc(.55vw + .55vh);
 width: 33%;
 }
 #joke-of-day-title-parent{
-background-color: #BEDA00;
+background-color: var(--yo-mama-lime-green);
 width: 85%;
 max-width: 48rem;
 margin: auto;

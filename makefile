@@ -1,13 +1,13 @@
-VENV := .venv
-BIN := $(VENV)/bin
-PYTHON := $(BIN)/python
-SHELL := /bin/bash
+
 ifeq ($(RUNNING_IN_CONTAINER), 'true')
 PATH_PREFIX := /workspaces/
+VENV := ""
 else
 PATH_PREFIX := /Users/terry-brooks/GitHub/
+VENV := .venv
 endif
-
+BIN := $(VENV)/bin
+PYTHON := $(BIN)/python
 .PHONY: help
 help: ## Show this 
 	@egrep -h '\s##\s' $(MAKE`FILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'

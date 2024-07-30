@@ -32,11 +32,11 @@ class Query(ObjectType):
 
     def resolve_insults(root, info, **kwargs):
         # sourcery skip: instance-method-first-arg-name
-        return Insult.objects.fiter(status="A")
+        return Insult.objects.filter(status="A")
 
     def resolve_insult_by_category(root, info, category):
         # sourcery skip: instance-method-first-arg-name
-        return Insult.objects.fiter(status="A").filter(category=category)
+        return Insult.objects.filter(status="A").filter(category=category)
 
     def resolve_insults_by_status(root, info, status):
         # sourcery skip: instance-method-first-arg-name
