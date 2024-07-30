@@ -1,4 +1,4 @@
-name: General Test and Deploy
+name: Commit Push Check 
 on: push
 jobs:
   setup-virtualenv:
