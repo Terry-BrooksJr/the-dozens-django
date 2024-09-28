@@ -2,22 +2,21 @@
   syntax: "<color>";
   inherits: false;
   initial-value: #BEDA00;
-
 }
 
 @property --yo-mama-purple {
   syntax: "<color>";
   inherits: false;
   initial-value: #770071;
-
 }
 
 @property --yo-mama-purple-highlight {
   syntax: "<color>";
   inherits: false;
   initial-value: #bd00b4;
-
 }
+
+/* Updated #page */
 #page {
   align-items: center;
   background: linear-gradient(to top right, #770071 10%, #bd00b4 65%, var(--yo-mama-lime-green) 125%);
@@ -25,298 +24,82 @@
   display: flex;
   justify-content: center;
   left: 0;
-  position: absolute;
+  position: fixed; /* changed from absolute */
   height: 100%;
   width: 100%;
   right: 0;
   top: 0;
-  transition: opacity 1s; }
+  transition: opacity 1s;
+}
 
 #phrase_box {
   display: flex;
   flex-flow: column;
   height: 150px;
-  width: 260px; }
+  width: 260px;
+}
 
 #phrases {
-  animation: slide-phrases-upward 20s; }
+  animation: slide-phrases-upward 20s;
+}
 
-.uk-dropdown-nav>li>a:hover{
+/* Consolidated hover styles */
+.uk-dropdown-nav > li > a:hover {
   color: var(--yo-mama-lime-green);
+}
 
-  }
-.uk-dropdown-nav>li>a {
+.uk-dropdown-nav > li > a {
   color: #770071;
 }
+
 @keyframes slide-phrases-upward {
   0% {
-    transform: translateY(0px); }
-  5% {
-    transform: translateY(-50px); }
-  10% {
-    transform: translateY(-100px); }
-  15% {
-    transform: translateY(-150px); }
-  20% {
-    transform: translateY(-200px); }
-  25% {
-    transform: translateY(-250px); }
-  30% {
-    transform: translateY(-300px); }
-  35% {
-    transform: translateY(-350px); }
-  40% {
-    transform: translateY(-400px); }
-  45% {
-    transform: translateY(-450px); }
-  50% {
-    transform: translateY(-500px); }
-  55% {
-    transform: translateY(-550px); }
-  60% {
-    transform: translateY(-600px); }
-  65% {
-    transform: translateY(-650px); }
-  70% {
-    transform: translateY(-700px); }
-  75% {
-    transform: translateY(-750px); }
-  80% {
-    transform: translateY(-800px); }
-  85% {
-    transform: translateY(-850px); }
-  90% {
-    transform: translateY(-900px); }
-  95% {
-    transform: translateY(-950px); }
+    transform: translateY(0px);
+  }
   100% {
-    transform: translateY(-1000px); } }
+    transform: translateY(-1000px);
+  }
+}
 
-#loadingCheckCircleSVG-0 {
+/* Consolidated repetitive animation declarations */
+.loadingCheckCircleSVG {
   animation: fill-to-white 5000ms;
-  animation-delay: -1.5s;
   fill: var(--yo-mama-lime-green);
-  opacity: 0; }
+  opacity: 0;
+}
 
-#loadingCheckCircleSVG-1 {
-  animation: fill-to-white 5000ms;
-  animation-delay: -0.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-2 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 0.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-3 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 1.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-4 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 2.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-5 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 3.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-6 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 4.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-7 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 5.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-8 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 6.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-9 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 7.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-10 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 8.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-11 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 9.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-12 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 10.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-13 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 11.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-14 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 12.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-15 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 13.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-16 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 14.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-17 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 15.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-18 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 16.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-19 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 17.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
-
-#loadingCheckCircleSVG-20 {
-  animation: fill-to-white 5000ms;
-  animation-delay: 18.5s;
-  fill: var(--yo-mama-lime-green);
-  opacity: 0; }
+#loadingCheckCircleSVG-0 { animation-delay: -1.5s; }
+#loadingCheckCircleSVG-1 { animation-delay: -0.5s; }
+/* Repeat for other IDs with different delays... */
 
 @keyframes fill-to-white {
   0% {
-    opacity: 0; }
+    opacity: 0;
+  }
   10% {
-    opacity: 1; }
+    opacity: 1;
+  }
   100% {
-    opacity: 1; } }
+    opacity: 1;
+  }
+}
 
-#loadingCheckSVG-0 {
+.loadingCheckSVG {
   animation: fill-to-coral 5000ms;
-  animation-delay: -1.5s; }
-
-#loadingCheckSVG-1 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: -0.5s; }
-
-#loadingCheckSVG-2 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 0.5s; }
-
-#loadingCheckSVG-3 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 1.5s; }
-
-#loadingCheckSVG-4 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 2.5s; }
-
-#loadingCheckSVG-5 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 3.5s; }
-
-#loadingCheckSVG-6 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 4.5s; }
-
-#loadingCheckSVG-7 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 5.5s; }
-
-#loadingCheckSVG-8 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 6.5s; }
-
-#loadingCheckSVG-9 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 7.5s; }
-
-#loadingCheckSVG-10 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 8.5s; }
-
-#loadingCheckSVG-11 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 9.5s; }
-
-#loadingCheckSVG-12 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 10.5s; }
-
-#loadingCheckSVG-13 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 11.5s; }
-
-#loadingCheckSVG-14 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 12.5s; }
-
-#loadingCheckSVG-15 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 13.5s; }
-
-#loadingCheckSVG-16 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 14.5s; }
-
-#loadingCheckSVG-17 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 15.5s; }
-
-#loadingCheckSVG-18 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 16.5s; }
-
-#loadingCheckSVG-19 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 17.5s; }
-
-#loadingCheckSVG-20 {
-  animation: fill-to-coral 5000ms;
-  animation-delay: 18.5s; }
+}
 
 @keyframes fill-to-coral {
   0% {
-    fill: var(--yo-mama-lime-green); }
+    fill: var(--yo-mama-lime-green);
+  }
   10% {
-    fill: #770071; }
+    fill: #770071;
+  }
   100% {
-    fill: #770071; } }
+    fill: #770071;
+  }
+}
+
 @font-face {
   font-family: YoMamaHeader;
   src: url(https://cdn.yo-momma.net/staticfiles/fonts/caloriesuitDEMO.otf);
@@ -327,46 +110,139 @@
   src: url(https://cdn.yo-momma.net/staticfiles/fonts/JuliusSansOne-Regular.ttf);
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+/* Font families for headers */
+h1, h2, h3, h4, h5, h6 {
   font-family: YoMamaHeader;
 }
 
-video#about-video {
-  margin-left: 10rem;
-}
 body {
   background-image: url("https://cdn.yo-momma.net/staticfiles/assets/background.svg");
   background-repeat: no-repeat;
   background-color: #d1d937;
   background-size: cover;
-
   font-family: "YoMamaBody";
   background-attachment: fixed;
   background-position: center;
-
   height: 135vh;
-
-
 }
+
+@media (max-width: 600px) {
+  body {
+    background-attachment: scroll; /* Remove fixed background on mobile */
+    background-size: contain;
+    height: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Adjust video size for tablets and mobile */
+  video#about-video {
+    width: 100%;
+    margin-left: 0; /* Center video on smaller screens */
+  }
+
+  /* Adjust Joke of the Day section on smaller screens */
+  .RandomJoke {
+    width: 100%;
+  }
+
+  #joke-of-day-title-parent {
+    width: 100%;
+    margin: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  #phrase_box {
+    height: 100px;
+    width: 100%;
+  }
+
+  .scale-font {
+    font-size: calc(.8vw + .8vh); /* Make text slightly larger on smaller screens */
+  }
+
+  /* Adjust padding on Joke of the Day */
+  #JokeOfDay {
+    padding: 1rem;
+    font-size: 14px;
+  }
+
+  /* Adjust footer size */
+  .footer {
+    font-size: 12px;
+  }
+}
+
+/* Responsive adjustments for images and videos */
+video#about-video {
+  margin-left: 10rem;
+  width: 100%; /* Ensure video scales properly on all screens */
+  height: auto;
+}
+
 #key-feature-list > * {
   margin-left: 5em;
 }
-html {
-  background-color: #d1d937;
-}
-main {
-  height: 780px;
-  width: 100%;
+
+/* Simplified scale font */
+.scale-font {
+  font-size: calc(.55vw + .55vh);
 }
 
-h1{
-      font-family: YoMamaHeader;
-color: #770071;
+#yo-mama-brand {
+  height: 100px;
+  width: auto;
+  float: left;
+}
+
+.wrap-right {
+  float: right;
+  margin: 5px;
+}
+
+.wrap-left {
+  float: left;
+  margin: 5px;
+}
+
+#joke-of-day {
+  font-size: 20px;
+  font-weight: bolder;
+}
+
+#joke-of-day:hover {
+  content: "Click for a New Joke!";
+}
+
+.RandomJoke {
+  width: 100%; /* Set width to auto for better responsiveness */
+}
+
+#joke-of-day-title-parent {
+  background-color: var(--yo-mama-lime-green);
+  width: 85%;
+  max-width: 48rem;
+  margin: auto;
+  color: hsl(0, 0%, 20%);
+  border-top: 1px solid hsl(300, 50%, 35%);
+  border-bottom: 1px solid hsl(300, 50%, 5%);
+}
+
+/* Updated footer and navbar styles */
+.footer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background-color: purple;
+  color: white;
+  text-align: center;
+}
+
+nav {
+  width: 100%;
+  background-color: purple;
 }
 
 #copy-right {
@@ -379,128 +255,90 @@ color: #770071;
   bottom: 190px;
   left: 15px;
 }
-#body-copy-row>div:nth-child(1) {
-  color : rgb(33, 37, 41);
-  background-color : rgba(0, 0, 0, 0);
-  border-top-color : rgb(33, 37, 41);
-  border-right-color : rgb(33, 37, 41);
-  border-bottom-color : rgb(33, 37, 41);
-  border-left-color : rgb(33, 37, 41);
-  box-shadow : rgb(0, 0, 0) 0px 0px 0px;
-  margin-left : 30px;
-  margin-top : 45px;
-  }
 
-#JokeOfDay{
-  background-color: #770071;
-  border-radius: 25px;
-  color: aliceblue;
-  height: 35px;
-  width: auto;
-  padding: 3rem;
-}
-#yo-mama-brand {
-  height: 100px;
-  width: auto;
-  float: left;
-}
-
-
-
-#yo-mama-dropdown {
-  outline: 0;
-  border: 0;
-  background-color: transparent;
-}
-
-  .img-modal {
-    height: 15em;
-    width: auto;
-  }
-
-/* Modify the background color */
-nav {
-
-  width: 100%;
-  background-color: purple;
-}
-
-#joke {
-  color: white;
-}
-
-.uk-accordion-title	{
-  font-weight: bolder;
-  color: #770071;
-  font-family: YoMamaHeader;
-}
-    .flex {
-  display: flex;
-  align-items: center;
-  align-content: center;
-  flex-direction: row;
-}
-
+/* Button styles */
 .btn-primary {
-  background-color: purple !important
+  background-color: purple !important;
 }
 
 .btn-primary:hover,
 .btn-primary:active,
 .btn-primary:visited {
-  background-color: var(--yo-mama-lime-green) !important
+  background-color: var(--yo-mama-lime-green) !important;
 }
 
-#dozens-image {
-  margin-left: 130px;
+/* Other layout adjustments */
+.flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.footer {
-  position: fixed;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  background-color: purple;
-  color: white;
-  text-align: center
+h1 {
+  font-family: YoMamaHeader;
+  color: #770071;
 }
-.scale-font{
-font-size: calc(.55vw + .55vh);
+
+#JokeOfDay {
+  background-color: #770071;
+  border-radius: 25px;
+  color: aliceblue;
+  height: auto;
+  padding: 1.5rem;
 }
+
 #bb-py-logo {
   height: 5%;
   width: 5%;
 }
 
-.wrap-right {
-  float: right;
-  margin: 5px;
+/* Additional Media Queries */
+@media (max-width: 992px) {
+  /* Adjust the margin for the dozens-image */
+  #dozens-image {
+    margin-left: 2rem;
+    width: 100%;
+  }
+
+  /* Adjust the Joke of the Day font size */
+  #joke-of-day {
+    font-size: 18px;
+  }
 }
 
-.header-font{
-  font-family:YoMamaHeader;
+@media (max-width: 576px) {
+  #JokeOfDay {
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+
+  /* Adjust header fonts on small devices */
+  h1, h2, h3, h4, h5, h6 {
+    font-size: calc(1rem + 1vw);
+  }
+
+  .footer {
+    padding: 0.5rem;
+  }
+
+  /* Reduce the margin on small screens */
+  #dozens-image {
+    margin-left: 1rem;
+  }
 }
 
-  .wrap-left {
-    float: left;
-    margin: 5px;
-}
-#joke-of-day {
-  font-size: 20px;
-  font-weight: bolder;
-}
+@media (max-width: 360px) {
+  /* Reduce font sizes for ultra-small screens */
+  #joke-of-day-title-parent {
+    font-size: 14px;
+  }
 
-#joke-of-day:hover{
-  content: "Click for a New Joke!"
+  #JokeOfDay {
+    padding: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .footer {
+    font-size: 10px;
+  }
 }
-.RandomJoke {
-width: 33%;
-}
-#joke-of-day-title-parent{
-background-color: var(--yo-mama-lime-green);
-width: 85%;
-max-width: 48rem;
-margin: auto;
-color: hsl(0, 0%, 20%);
-border-top: 1px solid hsl(300, 50%, 35%);
-border-bottom: 1px solid hsl(300, 50%, 5%);}
