@@ -8,9 +8,25 @@ info:
     url: https://brooksjr.com
     email: terry@brooksjr.com
 paths:
-  /api/insult/{id}:
+  /api/insult:
     get:
       operationId: api_insult_retrieve
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Insult'
+          description: ''
+  /api/insults/{id}:
+    get:
+      operationId: api_insults_retrieve
       parameters:
       - in: path
         name: id
@@ -33,42 +49,20 @@ paths:
   /api/insults/categories:
     get:
       operationId: api_insults_categories_retrieve
-      description: A view to retrieve available insult categories.
+      description: 'API GET Endpoint returning all the Insults Submitted by the Authenticated
+        User. Will Return '
       tags:
-      - api
+      - Insults
       security:
       - cookieAuth: []
       - basicAuth: []
       - {}
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InsultsCategory'
-              examples:
-                GettingAllJokesInACategory:
-                  value:
-                    count: 401
-                    next: http://127.0.0.1:8000/api/insults/P?page=2
-                    previous: 'null'
-                    results:
-                    - id: 979885544274460700
-                      content: Yo mama so bald, you can see what’s on her mind.
-                    - id: 979885544274657300
-                      content: Yo momma is so bald... you can see what's on her mind.
-                    - id: 979885544274690000
-                      content: Yo momma is so bald... even a wig wouldn't help!
-                    - id: 979885544274722800
-                      content: Yo momma is so bald... she had to braids her beard.
-                  summary: Paginated Listing of all active jokes in  a category
-                  description: This endpoint allows API Consumers to get a paginated
-                    list of all jokes in a given category i.e. "fat", "poor", "etc.
-          description: ''
-  /api/insults/categories/{category}:
+          description: No response body
+  /api/insults/category/{category}:
     get:
-      operationId: api_insults_categories_list
-      description: API Get Only Endpoint to provide a list of available insult categories
+      operationId: api_insults_category_list
       parameters:
       - in: path
         name: category
@@ -76,16 +70,47 @@ paths:
           type: string
         required: true
       - in: query
-        name: nfsw
+        name: category
         schema:
-          type: array
-          items:
-            type: boolean
-            enum:
-            - false
-            - true
-        description: Allows for the filtering of explicit or content Not Safe For
-          Work(NSFW) Defaults to None, Allowing for All types
+          type: string
+          enum:
+          - B
+          - DO
+          - DS
+          - F
+          - H
+          - L
+          - N
+          - O
+          - P
+          - S
+          - SKN
+          - SNWF
+          - SRT
+          - T
+          - TEST
+          - U
+        description: |-
+          * `P` - poor
+          * `F` - fat
+          * `U` - ugly
+          * `S` - stupid
+          * `SNWF` - snowflake
+          * `O` - old
+          * `DO` - old_daddy
+          * `DS` - stupid_daddy
+          * `N` - nasty
+          * `T` - tall
+          * `TEST` - testing
+          * `SKN` - skinny
+          * `B` - bald
+          * `H` - hairy
+          * `L` - lazy
+          * `SRT` - short
+      - in: query
+        name: explicit
+        schema:
+          type: boolean
       - name: page
         required: false
         in: query
@@ -100,7 +125,34 @@ paths:
       - {}
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInsultList'
+              examples:
+                GettingAllJokesInACategory:
+                  value:
+                    count: 123
+                    next: http://api.example.org/accounts/?page=4
+                    previous: http://api.example.org/accounts/?page=2
+                    results:
+                    - count: 401
+                      next: http://127.0.0.1:8000/api/insults/P?page=2
+                      previous: 'null'
+                      results:
+                      - id: 979885544274460700
+                        content: Yo mama so bald, you can see what’s on her mind.
+                      - id: 979885544274657300
+                        content: Yo momma is so bald... you can see what's on her
+                          mind.
+                      - id: 979885544274690000
+                        content: Yo momma is so bald... even a wig wouldn't help!
+                      - id: 979885544274722800
+                        content: Yo momma is so bald... she had to braids her beard.
+                  summary: Paginated Listing of all active jokes in  a category
+                  description: This endpoint allows API Consumers to get a paginated
+                    list of all jokes in a given category i.e. "fat", "poor", "etc.
+          description: ''
   /api/schema:
     get:
       operationId: api_schema_retrieve
@@ -248,11 +300,16 @@ paths:
                 additionalProperties: {}
           description: ''
   /api/user/insults/:
-    get:
-      operationId: api_user_insults_retrieve
-      description: A view to retrieve insults submitted by the authenticated use.
+    post:
+      operationId: api_user_insults_create
       tags:
       - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MyInsult'
+        required: true
       security:
       - cookieAuth: []
       - basicAuth: []
@@ -261,8 +318,38 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Insult'
+                $ref: '#/components/schemas/MyInsult'
           description: ''
+    put:
+      operationId: api_user_insults_update
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MyInsult'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyInsult'
+          description: ''
+    delete:
+      operationId: api_user_insults_destroy
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '204':
+          description: No response body
   /auth/users/:
     get:
       operationId: auth_users_list
@@ -646,36 +733,101 @@ components:
       required:
       - token
       - uid
+    CategoryEnum:
+      enum:
+      - P
+      - F
+      - U
+      - S
+      - SNWF
+      - O
+      - DO
+      - DS
+      - N
+      - T
+      - TEST
+      - SKN
+      - B
+      - H
+      - L
+      - SRT
+      type: string
+      description: |-
+        * `P` - POOR
+        * `F` - FAT
+        * `U` - UGLY
+        * `S` - STUPID
+        * `SNWF` - SNOWFLAKE
+        * `O` - OLD
+        * `DO` - DADDY_OLD
+        * `DS` - DADDY_STUPID
+        * `N` - NASTY
+        * `T` - TALL
+        * `TEST` - TEST_CATEGORY
+        * `SKN` - SKINNY
+        * `B` - BALD
+        * `H` - HAIRY
+        * `L` - LAZY
+        * `SRT` - SHORT
     Insult:
       type: object
       description: |-
         Summary:
         Serializer for Insult model to convert model instances to Python data types.
-
         Explanation:
         This serializer converts Insult model instances to Python data types for serialization. It includes fields like content, category, NSFW, added_on, and added_by. The `to_representation` method customizes the representation of the serialized data.
-
         Args:
             instance: The Insult model instance to be serialized.
-
         Returns:
             dict: A dictionary representing the serialized data.
-
         Examples:
             serializer = InsultSerializer()
             data = serializer.to_representation(instance)
       properties:
         content:
           type: string
-          maxLength: 65535
         category:
-          type: string
+          $ref: '#/components/schemas/CategoryEnum'
         NSFW:
           type: boolean
         added_on:
           type: string
           format: date
+        added_by:
+          type: integer
           readOnly: true
+      required:
+      - NSFW
+      - added_by
+      - added_on
+      - category
+      - content
+    MyInsult:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          type: string
+        status:
+          type: string
+        NSFW:
+          type: boolean
+        content:
+          type: string
+          maxLength: 65535
+        explicit:
+          type: boolean
+        added_on:
+          type: string
+          format: date
+          readOnly: true
+        last_modified:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
         added_by:
           type: integer
       required:
@@ -684,18 +836,32 @@ components:
       - added_on
       - category
       - content
-    InsultsCategory:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        content:
-          type: string
-          maxLength: 65535
-      required:
-      - content
       - id
+      - last_modified
+      - status
+    PaginatedInsultList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Insult'
     PaginatedUserList:
       type: object
       required:

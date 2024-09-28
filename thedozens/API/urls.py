@@ -9,7 +9,7 @@ urlpatterns = [
         name="insult-categories",
     ),
     path(
-        "insults/categories/<str:category>",
+        "insults/category/<str:category>",
         views.InsultsCategoriesListView.as_view(),
         name="List_View",
     ),

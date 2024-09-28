@@ -53,4 +53,4 @@ schema: schema-check
 
 .PHONY:
 production-server:
-	doppler run -t $(DOPPLER_TOKEN) -- $(PYTHON) -m gunicorn --workers=2 --threads=2 thedozens.thedozens.wsgi:application -b :9090
+	doppler run -t $(DOPPLER_TOKEN) -- $(PYTHON) -m gunicorn --workers=2 --threads=2 thedozens.thedozens.wsgi:application -b :9090:

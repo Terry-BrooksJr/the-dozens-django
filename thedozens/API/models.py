@@ -82,9 +82,7 @@ class Insult(ExportModelOperationsMixin('insult'),models.Model):
         default=STATUS.PENDING,
         choices=STATUS.choices,
     )
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-    
+
     def __str__(self):
         return (
             f"({self.category}) - NSFW: {self.explicit} - {self.pk} ({self.added_by}) "

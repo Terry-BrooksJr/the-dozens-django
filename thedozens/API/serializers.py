@@ -4,7 +4,6 @@ from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
 from rest_framework import serializers
 from rest_framework.views import  status
 from django.contrib.auth.models import User
-from rest_framework_dataclasses.serializers import DataclassSerializer
 from rest_framework_dataclasses.fields import EnumField
 # @extend_schema_serializer(
 #     exclude_fields=('single','last_modified'),
@@ -40,7 +39,7 @@ class InsultSerializer(serializers.ModelSerializer):
     content = serializers.CharField()
     added_on = serializers.DateField()
     added_by = serializers.PrimaryKeyRelatedField(read_only=True, many=False)
-    category = EnumField(Insult.CATEGORY)
+    category = serializers.ChoiceField(choices=Insult.CATEGORY.choices)
     NSFW = serializers.BooleanField(source="explicit" )
 
     class Meta:
@@ -49,68 +48,41 @@ class InsultSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "pk",
         ]
-        fields = ["content", "category", "NSFW", "added_on", "added_by"]
-
+        fields = ["pk","content", "category", "NSFW", "added_on", "added_by"]
+    def get_category_display(self):
+        return self.get_category(self.instance.category)
     def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data["added_by"] = (
-            f"{ instance.added_by.first_name} {instance.added_by.last_name[0]}. "
-        )
-        data["added_by"] = (
-            f"{ instance.added_by.first_name} {instance.added_by.last_name[0]}. "
-        )
-        return data
+        representation = super().to_representation(instance)
+        representation["category"] = instance.get_category_display()
+        if instance.added_by.first_name and instance.added_by.last_name:
+            representation["added_by"] = f"{ instance.added_by.first_name} {instance.added_by.last_name[0]}. "
+        elif instance.added_by.first_name: 
+            representation["added_by"] = f"{instance.added_by.first_name}. "
+        else:
+            representation["added_by"] = instance.added_by.username
+        return representation
 
 
 @extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            "Getting All Jokes In A Category",
-            status_codes=[status.HTTP_200_OK,],
-            summary="Paginated Listing of all active jokes in  a category",
-            description='This endpoint allows API Consumers to get a paginated list of all jokes in a given category i.e. "fat", "poor", "etc.',
-            value={
-                "count": 401,
-                "next": "http://127.0.0.1:8000/api/insults/P?page=2",
-                "previous": "null",
-                "results": [
-                    {
-                        "id": 979885544274460700,
-                        "content": "Yo mama so bald, you can see what’s on her mind.",
-                    },
-                    {
-                        "id": 979885544274657300,
-                        "content": "Yo momma is so bald... you can see what's on her mind.",
-                    },
-                    {
-                        "id": 979885544274690000,
-                        "content": "Yo momma is so bald... even a wig wouldn't help!",
-                    },
-                    {
-                        "id": 979885544274722800,
-                        "content": "Yo momma is so bald... she had to braids her beard.",
-                    },
-                ],
-            },
-            request_only=False,  # signal that example only applies to requests
-            response_only=True,  # signal that example only applies to responses
-        ),OpenApiExample(
-            "Submitting An Invalid Category",
-            status_codes=[status.HTTP_404_NOT_FOUND,],
-            description='This endpoint allows API Consumers to get a paginated list of all jokes in a given category i.e. "fat", "poor", "etc.',
-            value={
-                "data": "Invalid Category. Please Make Get Request to '/insults/categories' for a list of available categories"
-            },
-            request_only=False,  # signal that example only applies to requests
-            response_only=True,  # signal that example only applies to responses
-        ),
-    ]
-)
-class InsultsListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Insult
-        fields = ("id", "content")
 
+)
+        # class InsultsListSerializer(serializers.ModelSerializer):
+        #     category = serializers.CharField(source="get_category_display")
+        #     NSFW = serializers.BooleanField(source="explicit" )
+
+        #     class Meta:
+        #         model = Insult
+        #         fields = ("content", "category", "NSFW", "added_on", "added_by")
+
+        #     def to_representation(self, instance):
+        #         representation = super().to_representation(instance)
+        #         representation["added_by"] = (
+        #             f"{ instance.added_by.first_name} {instance.added_by.last_name[0]}. "
+        #         )
+        #         representation["added_by"] = (
+        #             f"{ instance.added_by.first_name} {instance.added_by.last_name[0]}. "
+        #         )
+        #         return representation
 
 
 
@@ -123,9 +95,9 @@ class MyInsultSerializer(serializers.ModelSerializer):
         model = Insult
         fields = "__all__"
     def to_representation(self, instance):
-        ret = super().to_representation(instance)
-        ret["category"] = ret["category"].capitalize()
-        ret["added_by"] = f"{ instance.added_by.first_name} {instance.added_by.last_name[0]}"
+        representation = super().to_representation(instance)
+        representation["category"] = representation["category"].capitalize()
+        representation["added_by"] = f"{ instance.added_by.first_name} {instance.added_by.last_name[0]}"
         
     
 
@@ -161,10 +133,11 @@ class JokeReportSerializer(serializers.ModelSerializer):
 class AvailableCategoriesSerializer(serializers.Serializer):
     pass
     def to_representation(self, instance):
-        data["available_categories"] = []
+        representation = super().to_representation(instance)
+        representation["available_categories"] = []
         for category in instance:
-            data["available_categories"].append(category)
-        return data
+            representation["available_categories"].append(category)
+        return representation
 
 class InsultReviewSerializer(serializers.ModelSerializer):
     class Meta:
