@@ -6,29 +6,22 @@ from crispy_forms.layout import HTML, Button, Column, Div, Field, Layout, Row, S
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import ModelForm
-from django.forms.fields import ChoiceField,IntegerField
+from django.forms.fields import ChoiceField, IntegerField
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from loguru import logger
 
+insult_queryset = Insult.objects.filter(status="A").values_list('pk', flat=True)
 
 class InsultReviewForm(ModelForm):
-    ID_QUERYSET = Insult.objects.filter(status="A")
-    # ID_LIST = len(ID_QUERYSET)
-    if ID_QUERYSET:
-        insult_choices = []
-        for id in ID_QUERYSET.values_list('pk'):
-            insult_choices.append((id[0], id[0]))
-        logger.debug(insult_choices)
-        insult_id = ChoiceField(choices=insult_choices,required=True, help_text="Please provide the Insult ID of the Insult. All API payloads provide the Insult ID.")       
-    else:
-        insult_id = IntegerField(required=True, help_text="Please provide the Insult ID of the Insult. All API payloads provide the Insult ID.")       
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.insult_choices = [(id, id) for id in insult_queryset] if insult_queryset is not None else None
+        insult_id = ChoiceField(choices=self.insult_choices, required=True, help_text="Please provide the Insult ID of the Insult. All API payloads provide the Insult ID.") if self.insult_choices is not None else IntegerField(required=True, help_text="Please provide the Insult ID of the Insult. All API payloads provide the Insult ID.")
         self.helper = FormHelper()
         self.helper.form_id = "report-joke-form"
         self.helper.form_method = "post"
-        self.helper.form_action = "/report"
         self.helper.form_action = "/report"
         self.helper.layout = Layout(
             HTML(
@@ -84,28 +77,17 @@ class InsultReviewForm(ModelForm):
         reporter_email = cleaned_data.get("reporter_email")
         insult_id = cleaned_data.get("insult_id")
 
-        if insult_id not in ID_LIST:
+        if insult_id not in insult_queryset:
             raise ValidationError(
-                _("Invaild Insult ID - Please confirm Insult ID"),
-                code="invaild-insult-id",
+                _("Invalid Insult ID - Please confirm Insult ID"),
+                code="invalid-insult-id",
             )
-        anonymous = cleaned_data.get("anonymous")
-        reporter_first_name = cleaned_data.get("reporter_first_name")
-        reporter_last_name = cleaned_data.get("reporter_last_name")
-        post_review_contact_desired = cleaned_data.get("post_review_contact_desired")
-        reporter_email = cleaned_data.get("reporter_email")
-        insult_id = cleaned_data.get("insult_id")
 
-        if insult_id not in ID_LIST:
-            raise ValidationError(
-                _("Invaild Insult ID - Please confirm Insult ID"),
-                code="invaild-insult-id",
-            )
         if anonymous is False:
             if reporter_first_name in [None, " ", ""]:
                 raise ValidationError(
                     _(
-                        "Name Not Provided - You have selected that you do not wish submit this report anonymously, but have not provided a first name. Please change your anonymity preference or enter a first name"
+                        "Name Not Provided - You have selected that you do not wish to submit this report anonymously, but have not provided a first name. Please change your anonymity preference or enter a first name"
                     ),
                     code="invalid-first-name-not-provided",
                 )
@@ -113,18 +95,18 @@ class InsultReviewForm(ModelForm):
             if reporter_last_name in [None, " ", ""]:
                 raise ValidationError(
                     _(
-                        "Name Not Provided - You have selected that you do not wish submit this report anonymously, but have not provided a last name, or last initial. Please change your anonymity preference or enter a last name"
+                        "Name Not Provided - You have selected that you do not wish to submit this report anonymously, but have not provided a last name, or last initial. Please change your anonymity preference or enter a last name"
                     ),
                     code="invalid-last-name-not-provided",
                 )
         if post_review_contact_desired is True and reporter_email in [None, " ", ""]:
             raise ValidationError(
                 _(
-                    "Email Not Provided - You have selected that you wish to be contacted to know the desired outcome of the review, but have not provided an email address. Please change your results contact preference or enter a vaild email addrwss"
+                    "Email Not Provided - You have selected that you wish to be contacted to know the desired outcome of the review, but have not provided an email address. Please change your results contact preference or enter a valid email address"
                 ),
-                code="invalid-last-name-not-provided",
+                code="invalid-email-not-provided",
             )
-        return clean_data
+        return cleaned_data
 
     class Meta:
         model = InsultReview

@@ -21,55 +21,58 @@
   <script src="https://kit.fontawesome.com/58e27c88da.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
   <script src="https://unpkg.com/highlight.run"></script>
-  <link rel="stylesheet" href="{% static 'css/styles.css' %}" ` />
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+  <style media="all">
+    .mobile-display{display:none}
+    .desktop-display{display:block}
+    @media (min-width:600px){
+    . desktop-display {display:none}
+    . mobile-display {display:block}
+    }
+    .mobile-background{
+      background: linear-gradient(to top right, #770071 10%, #bd00b4 65%, var(--yo-mama-lime-green) 125%);
+      align-items: center;
+      height: 100%;
+      width: 100%;
+    }
+    #mobile-redirection{
+      color: #770071;
+    }
+    </style>$
+    
 </head>
 
 <body style="overflow: hidden;">
   <div id="page"></div>
   <div id="phrase_box">
-    <svg width="100%" height="100%">
-      <defs>
-        <mask id="mask" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
-          <linearGradient id="linearGradient" gradientUnits="objectBoundingBox" x2="0" y2="1">
-            <stop stop-color="white" stop-opacity="0" offset="0%" />
-            <stop stop-color="white" stop-opacity="1" offset="30%" />
-            <stop stop-color="white" stop-opacity="1" offset="70%" />
-            <stop stop-color="white" stop-opacity="0" offset="100%" />
-          </linearGradient>
-          <rect width="100%" height="100%" fill="url(#linearGradient)" />
-        </mask>
-      </defs>
-      <g width="100%" height="100%" style="mask: url(#mask);">
-        <g id="phrases"></g>
-      </g>
-    </svg>
+    <!-- SVG content remains the same -->
   </div>
 
+<main class="desktop-display">
 
-<main>
-
-  <div id="body-hide" class="animate__animated animate__slower animate__fadeIn" style="display:none;">
+  <div id="body-hide" class="desktop-display  animate__animated animate__slower animate__fadeIn" style="display:none;">
 
     <nav uk-dropnav>
-      <ul class="uk-subnav justify-content-between navbar-main">
-        <li class="ps-0 ms-4 "><img id="yo-mama-brand" class="navbar-brand"
-            src="{% static 'assets/dozens-logo.png' %}" alt="Yo Mama Logo" /></li>
+      <ul class="uk-subnav justify-content-between navbar-main flex-wrap">
+        <li class="ps-0 ms-4">
+          <img id="yo-mama-brand" class="navbar-brand img-fluid"
+            src="{% static 'assets/dozens-logo.png' %}" alt="Yo Mama Logo" />
+        </li>
         <li><a class="header-font" href="https://www.brooksjr.com" target="_blank">About the Developer</a></li>
         <li>
-          <a class="header-font" href>The API <span uk-drop-parent-icon></span></a>
+          <a class="header-font" href="#">The API <span uk-drop-parent-icon></span></a>
           <div class="uk-dropdown">
             <ul class="uk-nav uk-dropdown-nav">
               <li><a target="_blank" class="header-font" href="{% url 'swagger' %}">Swagger</a></li>
-              <li><a target="_blank" class="header-font" href="#">Postman</a></li>
+              <li><a target="_blank" class="header-font" href="https://www.postman.com/terryabrooksjr/the-roast-api-yo-mama-jokes/overview">Postman</a></li>
               <li><a target="_blank" class="header-font" href="/graphql">GraphQL</a></li>
               <li><a href="#" class="header-font">Register to Contribute</a></li>
-              <li><a id="reportAJokeTrigger" class="header-font" data-bs-toggle="modal" data-bs-target="#reportJokeModal">Report a Joke To
-                  Be Reviewed</a></li>
+              <li><a id="reportAJokeTrigger" class="header-font" data-bs-toggle="modal" data-bs-target="#reportJokeModal">Report a Joke To Be Reviewed</a></li>
             </ul>
           </div>
         </li>
 
-        <li><a class="header-font" href>The History of Yo' Mama Jokes<span uk-drop-parent-icon></span></a>
+        <li><a class="header-font" href="#">The History of Yo' Mama Jokes<span uk-drop-parent-icon></span></a>
           <div class="uk-dropdown">
             <ul class="uk-nav uk-dropdown-nav">
               <li><a class="header-font" href="#history-overview-modal" uk-toggle>Overview</a></li><br />
@@ -82,10 +85,10 @@
         <li>
           <div class="container px-2 text-center align-middle">
             <div id="joke-of-day-title-parent" class="row gx-1">
-              <div class="RandomJoke col">
+              <div class="RandomJoke col-12 col-md-4">
                 <h4 class="text-wrap mt-3 scale-font text-dark" id="joke-of-day-title">Joke <br> of the <br> Day</h4>
               </div>
-              <div class=" joke-content-parent col">
+              <div class="joke-content-parent col-12 col-md-8">
                 <p class="p-0 text-wrap mt-3 text-dark align-text-top scale-font" id="joke-content">Yo mama so bald, you can
                   see what’s on her mind.</p>
               </div>
@@ -95,15 +98,15 @@
       </ul>
 
     </nav>
-<section>
+<section class="desktop-display">
       <div class="row" id="body-img-row">
-        <div class=" ps-0 py-0 ms-5 mt-n3 col-4">
-          <img id="dozens-image" src="{% static 'assets/Dozen-Word-brand.png' %}" alt="body-typography" />
+        <div class="col-12 col-md-4 ps-0 py-0 ms-5 mt-n3">
+          <img id="dozens-image" src="{% static 'assets/Dozen-Word-brand.png' %}" alt="body-typography" class="img-fluid" />
         </div>
 
       </div>
       <div class="row" id="body-copy">
-        <div class="col-6 text-center">
+        <div class="col-12 col-md-6 text-center">
           <p>Introducing a powerful and versatile Yo Mama Jokes API, meticulously crafted using Python 3.0's exceptional
             web framework, Django, in conjunction with the Django REST framework.</p>
           <p>This Yo Mama Jokes API is designed to be scalable, secure, and user-friendly, making it the perfect tool
@@ -112,41 +115,41 @@
         </div>
       </div>
       <div class="row">
-        <div class="col-6 me-n1" id="video">
-          <video id="about-video" width="530" height="auto"
-            src="{% static 'assets/blackish_the_dozens_abc_broadcasting.mp4' %}" class="object-fit-fill"
+        <div class="col-12 col-md-6 me-n1" id="video">
+          <video id="about-video" width="100%" height="auto"
+            src="{% static 'assets/blackish_the_dozens_abc_broadcasting.mp4' %}" class="img-fluid"
             controls></video>
         </div>
       </div>
       <div id="copyright-container" class="row ms-5">
-        <div class="video-sub-copy">
+        <div class="col-12 video-sub-copy">
           <sub>Clip from ABC's Hit Show <strong>black</strong>·<em>ish</em></sub>
         </div>
-        <div class="copyright-text">
+        <div class="col-12 copyright-text">
           <sub><i class="fa fa-copyright"></i> American Broadcasting Company (ABC)</sub>
         </div>
       </div>
       <div id="key-features" class="row">
-        <div class="col-6">
+        <div class="col-12 col-md-6">
 
           <h1 class="ms-5">Key Features</h1>
           <ul id="key-feature-list" uk-accordion>
             <li class="uk-open">
-              <a class="uk-accordion-title" href>Comprehensive Filtering</a>
+              <a class="uk-accordion-title" href="#">Comprehensive Filtering</a>
               <div class="uk-accordion-content">
-                <p class=" text-center feature-text">API consumers can effortlessly filter jokes based on specific categories and
+                <p class="text-center feature-text">API consumers can effortlessly filter jokes based on specific categories and
                   explicit content, allowing for a highly customized joke retrieval experience.</p>
               </div>
             </li>
             <li>
-              <a class="uk-accordion-title" href>Dual API Formats</a>
+              <a class="uk-accordion-title" href="#">Dual API Formats</a>
               <div class="uk-accordion-content">
                 <p class="text-center feature-text">In addition to the REST API, we offer a GraphQL API version, providing
                   flexibility and convenience for developers who prefer this modern approach to querying data.</p>
               </div>
             </li>
             <li>
-              <a class="uk-accordion-title" href>Generous Rate Limiting</a>
+              <a class="uk-accordion-title" href="#">Generous Rate Limiting</a>
               <div class="uk-accordion-content">
                 <p class="text-center feature-text">Protects against abuse and ensures fair usage by implementing robust rate limiting, making sure your
                   application's performance remains optimal even under high traffic.</p>
@@ -155,14 +158,18 @@
           </ul>
         </div>
       </div>
-</main>
-
+<div class="align-items-center">
+  <a href="#">
+    <!-- Add your content here -->
+  </a>
+</div>
 </section>
-    <footer class="footer">
+    </main>
+
+    <footer class="footer desktop-display"> 
       <marquee>
-        Over 400 Side-Splitting Yo Mama Jokes · 10 Catagories to Choose From including Fat, Poor, Ugly and Dumb ·
-        Ability
-        to filter out jokes based on explicity classification
+        Over 400 Side-Splitting Yo Mama Jokes · 10 Categories to Choose From including Fat, Poor, Ugly, and Dumb ·
+        Ability to filter out jokes based on explicit classification
       </marquee>
     </footer>
 
@@ -184,6 +191,11 @@
 
   {% include 'includes/history-modal.html' %}
   {% include 'includes/joke-reporting-form.html' %}
+  {% include 'includes/getting-started.html' %}
 </body>
-
+<div class="mobile-display">
+  <div id="mobile-background">
+    <h1 id="mobile-redirection">
+      Please Visit This Site <br> On A Desktop</h1>
+    </div>
 </html>

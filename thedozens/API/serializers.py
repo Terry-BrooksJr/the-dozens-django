@@ -1,8 +1,11 @@
 from API.models import Insult, InsultReview
+from API.dataclasses import InsultDataType
 from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
 from rest_framework import serializers
 from rest_framework.views import  status
-
+from django.contrib.auth.models import User
+from rest_framework_dataclasses.serializers import DataclassSerializer
+from rest_framework_dataclasses.fields import EnumField
 # @extend_schema_serializer(
 #     exclude_fields=('single','last_modified'),
 #     examples = [
@@ -34,11 +37,14 @@ class InsultSerializer(serializers.ModelSerializer):
         serializer = InsultSerializer()
         data = serializer.to_representation(instance)
     """
-
-    category = serializers.CharField(source="get_category_display")
+    content = serializers.CharField()
+    added_on = serializers.DateField()
+    added_by = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
+    category = EnumField(Insult.CATEGORY)
     NSFW = serializers.BooleanField(source="explicit" )
 
     class Meta:
+        dataclass = InsultDataType
         model = Insult
         read_only_fields = [
             "pk",

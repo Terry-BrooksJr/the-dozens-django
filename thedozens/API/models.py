@@ -1,5 +1,5 @@
 import datetime
-
+from dataclasses import dataclass
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
@@ -8,7 +8,6 @@ from loguru import logger
 from django_prometheus.models import ExportModelOperationsMixin
 
 NOW = datetime.datetime.now()
-
 
 class Insult(ExportModelOperationsMixin('insult'),models.Model):
     """
@@ -25,19 +24,13 @@ class Insult(ExportModelOperationsMixin('insult'),models.Model):
         - re_categorize(new_category): Re-categorizes the object with a new category.
         - reclassify(explicit_status): Changes the category of the insult.
     """
-
+    
     class Meta:
         db_table = "insults"
         ordering = ["explicit", "category"]
         verbose_name = "Insult/Joke"
         verbose_name_plural = "Insults/Jokes"
         managed = True
-        indexes = [
-            models.Index(fields=["category"], name="idx_category"),
-            models.Index(fields=["category", "explicit"], name="idx_explicit_category"),
-            models.Index(fields=["explicit"], name="idx_explicit"),
-            models.Index(fields=["added_by"], name="idx_added_by"),
-        ]
         indexes = [
             models.Index(fields=["category"], name="idx_category"),
             models.Index(fields=["category", "explicit"], name="idx_explicit_category"),
@@ -89,7 +82,9 @@ class Insult(ExportModelOperationsMixin('insult'),models.Model):
         default=STATUS.PENDING,
         choices=STATUS.choices,
     )
-
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
     def __str__(self):
         return (
             f"({self.category}) - NSFW: {self.explicit} - {self.pk} ({self.added_by}) "
@@ -206,15 +201,15 @@ class InsultReview(ExportModelOperationsMixin('jokeReview'),models.Model):
 
     class REVIEW_TYPE(models.TextChoices):
         RECLASSIFY = "RE", _("Joke Reclassification")
-        RECATAGORIZE = "RC", _("Joke Recategorization")
+        RECATEGORIZE = "RC", _("Joke Recategorization")
         REMOVAL = "RX", _("Joke Removal")
 
     class STATUS(models.TextChoices):
         PENDING = "P", _("Pending")
         NEW_CLASSIFICATION = "NCE", _("Completed - New Explicitly Setting")
         SAME_CLASSIFICATION = "SCE", _("Completed - No New Explicitly Setting")
-        NEW_CATAGORY = "NJC", _("Completed - Assigned to New Catagory")
-        SAME_CATAGORY = "SJC", _("Completed - No New Catagory Assigned")
+        NEW_CATEGORY = "NJC", _("Completed - Assigned to New Category")
+        SAME_CATEGORY = "SJC", _("Completed - No New Category Assigned")
         REMOVED = "X", _("Completed - Joke Removed")
 
     insult_id = models.ForeignKey(Insult, on_delete=models.CASCADE)
