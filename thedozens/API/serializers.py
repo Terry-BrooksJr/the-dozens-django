@@ -39,7 +39,7 @@ class InsultSerializer(serializers.ModelSerializer):
     """
     content = serializers.CharField()
     added_on = serializers.DateField()
-    added_by = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
+    added_by = serializers.PrimaryKeyRelatedField(read_only=True, many=False)
     category = EnumField(Insult.CATEGORY)
     NSFW = serializers.BooleanField(source="explicit" )
 
