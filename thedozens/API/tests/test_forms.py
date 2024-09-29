@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
-from django.test import TestCase
 import pytest
-from django.core.exceptions import ValidationError
 from API.forms import InsultReviewForm
 from API.models import Insult, InsultReview
-
-import pytest
 from django.core.exceptions import ValidationError
-from API.forms import InsultReviewForm
+from django.test import TestCase
 
 ID_LIST = [1, 2, 3]  # Example ID list for testing
 

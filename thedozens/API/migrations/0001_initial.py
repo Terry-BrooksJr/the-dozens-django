@@ -56,7 +56,7 @@ class Migration(migrations.Migration):
                         max_length=5,
                     ),
                 ),
-                ("explicit", models.BooleanField(default=False)),
+                ("nsfw", models.BooleanField(default=False)),
                 ("added_on", models.DateField(auto_now_add=True)),
                 ("last_modified", models.DateTimeField(auto_now=True, null=True)),
                 (
@@ -84,7 +84,7 @@ class Migration(migrations.Migration):
                 "verbose_name": "Insult/Joke",
                 "verbose_name_plural": "Insults/Jokes",
                 "db_table": "insults",
-                "ordering": ["explicit", "category"],
+                "ordering": ["nsfw", "category"],
                 "managed": True,
             },
         ),
@@ -133,8 +133,8 @@ class Migration(migrations.Migration):
                         blank=True,
                         choices=[
                             ("P", "Pending"),
-                            ("NCE", "Completed - New Explicitly Setting"),
-                            ("SCE", "Completed - No New Explicitly Setting"),
+                            ("NCE", "Completed - New nsfwly Setting"),
+                            ("SCE", "Completed - No New nsfwly Setting"),
                             ("NJC", "Completed - Assigned to New Catagory"),
                             ("SJC", "Completed - No New Catagory Assigned"),
                             ("X", "Completed - Joke Removed"),
@@ -165,12 +165,12 @@ class Migration(migrations.Migration):
         migrations.AddIndex(
             model_name="insult",
             index=models.Index(
-                fields=["category", "explicit"], name="idx_explicit_category"
+                fields=["category", "nsfw"], name="idx_nsfw_category"
             ),
         ),
         migrations.AddIndex(
             model_name="insult",
-            index=models.Index(fields=["explicit"], name="idx_explicit"),
+            index=models.Index(fields=["nsfw"], name="idx_nsfw"),
         ),
         migrations.AddIndex(
             model_name="insult",

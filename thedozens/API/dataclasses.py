@@ -1,14 +1,16 @@
-import typing
 from dataclasses import dataclass
-from enum import Enum
 from datetime import date, datetime
+from enum import Enum
+
+from API.models import Insult
+
 
 @dataclass
 class InsultDataType:
     content: str
-    category: Enum
-    explicit: bool
+    category: Insult.CATEGORY
+    nsfw: bool
     added_on: date
     added_by: int
     last_modified: datetime
-    status: Enum
+    status: Insult.STATUS

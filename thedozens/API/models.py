@@ -1,11 +1,12 @@
 import datetime
 from dataclasses import dataclass
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from loguru import logger
 from django_prometheus.models import ExportModelOperationsMixin
+from loguru import logger
 
 NOW = datetime.datetime.now()
 
@@ -15,26 +16,26 @@ class Insult(ExportModelOperationsMixin('insult'),models.Model):
     Model representing an Insult with various attributes and methods for manipulation.
 
     Explanation:
-    This model represents an Insult with fields like content, category, explicit, added_on, added_by, last_modified, and status. It includes methods for removing, approving, marking for review, re-categorizing, and reclassifying insults.
+    This model represents an Insult with fields like content, category, nsfw, added_on, added_by, last_modified, and status. It includes methods for removing, approving, marking for review, re-categorizing, and reclassifying insults.
 
     Methods:
         - remove_insult(): Removes insult visibility from the API (Soft Delete).
         - approve_insult(): Adds a Pending insult to the API.
         - mark_insult_for_review(): Removes insult visibility from the API.
         - re_categorize(new_category): Re-categorizes the object with a new category.
-        - reclassify(explicit_status): Changes the category of the insult.
+        - reclassify(nsfw_status): Changes the category of the insult.
     """
     
     class Meta:
         db_table = "insults"
-        ordering = ["explicit", "category"]
+        ordering = ["nsfw", "category"]
         verbose_name = "Insult/Joke"
         verbose_name_plural = "Insults/Jokes"
         managed = True
         indexes = [
             models.Index(fields=["category"], name="idx_category"),
-            models.Index(fields=["category", "explicit"], name="idx_explicit_category"),
-            models.Index(fields=["explicit"], name="idx_explicit"),
+            models.Index(fields=["category", "nsfw"], name="idx_nsfw_category"),
+            models.Index(fields=["nsfw"], name="idx_nsfw"),
             models.Index(fields=["added_by"], name="idx_added_by"),
         ]
 
@@ -71,7 +72,7 @@ class Insult(ExportModelOperationsMixin('insult'),models.Model):
     category = models.CharField(
         null=False, blank=False, max_length=5, choices=CATEGORY.choices
     )
-    explicit = models.BooleanField(default=False)
+    nsfw = models.BooleanField(default=False)
     added_on = models.DateField(null=False, blank=False, auto_now_add=True)
     added_by = models.ForeignKey(User, on_delete=models.PROTECT)
     last_modified = models.DateTimeField(auto_now=True, blank=True, null=True)
@@ -85,7 +86,7 @@ class Insult(ExportModelOperationsMixin('insult'),models.Model):
 
     def __str__(self):
         return (
-            f"({self.category}) - NSFW: {self.explicit} - {self.pk} ({self.added_by}) "
+            f"({self.category}) - NSFW: {self.nsfw} - {self.pk} ({self.added_by}) "
         )
 
     def remove_insult(self):
@@ -164,7 +165,7 @@ class Insult(ExportModelOperationsMixin('insult'),models.Model):
             logger.error(f"Unable to RE-Categorized Insult {self.pk}: {e}")
             logger.error(f"Unable to RE-Categorized Insult {self.pk}: {e}")
 
-    def reclassify(self, explicit_status):
+    def reclassify(self, nsfw_status):
         """Changes the category of the insult
 
         Logs:
@@ -174,9 +175,8 @@ class Insult(ExportModelOperationsMixin('insult'),models.Model):
             None
         """
         try:
-            self.explicit = explicit_status
-            self.explicit = explicit_status
-            logger.success(f"Successfully reclassified {self.pk} to {self.explicit}")
+            self.nsfw = nsfw_status
+            logger.success(f"Successfully reclassified {self.pk} to {self.nsfw}")
         except Exception as e:
             logger.error(f"Unable to ReClassify Insult {self.pk}: {e}")
 
@@ -237,7 +237,7 @@ class InsultReview(ExportModelOperationsMixin('jokeReview'),models.Model):
     def mark_review_not_reclassified(self):
         """Marks the review as Not reclassified.
 
-        This method sets the status of the review to "SCE" (Same Classification - Explicit) and updates the date_reviewed field to the current date and time. It also logs a success message indicating that the review has been marked as reclassified.
+        This method sets the status of the review to "SCE" (Same Classification - nsfw) and updates the date_reviewed field to the current date and time. It also logs a success message indicating that the review has been marked as reclassified.
 
         Logs:
             Exception: If there is an error updating the review.
@@ -302,7 +302,7 @@ class InsultReview(ExportModelOperationsMixin('jokeReview'),models.Model):
     def mark_review_reclassified(self):
         """Marks the review as reclassified.
 
-        This method sets the status of the review to "NCE" (New Classification - Explicit) and updates the date_reviewed field to the current date and time. It also logs a success message indicating that the review has been marked as reclassified.
+        This method sets the status of the review to "NCE" (New Classification - nsfw) and updates the date_reviewed field to the current date and time. It also logs a success message indicating that the review has been marked as reclassified.
 
         Logs:
             Exception: If there is an error updating the review.

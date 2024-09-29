@@ -18,37 +18,29 @@ from django_bunny.storage import BunnyStorage
 
 GLOBAL_NOW = datetime.now()
 
-LOGGING_CONFIG = None
 
 
 
 # `instrument_logging=True` sets up logging instrumentation.
 # if you do not want to send logs or are using `loguru`, pass `instrument_logging=False`
-# H = highlight_io.H(
-# 	"<YOUR_PROJECT_ID>",
-# 	integrations=[DjangoIntegration()],
-# 	instrument_logging=False,
-# 	service_name="yo-mama-api",
-# 	service_version="git-sha",
-# 	environment="DEVELOPMENT",
-# )
-# H.init("<YOUR_PROJECT_ID>", {
-#   tracingOrigins: ['localhost', 'yo-momma.net'],
-#   networkRecording: {
-#     enabled: true,
-#     recordHeadersAndBody: true,
-#   },
-# });
+H = highlight_io.H(
+	"5g5kvvlg",
+	instrument_logging=False,
+	service_name="my-app",
+	service_version="git-sha",
+	environment="production",
+)
+
+logger.add(
+	H.logging_handler,
+	format="{message}",
+	level="DEBUG",
+	backtrace=True,
+	serialize=True,
+)
 
 
 
-# logger.add(
-# 	H.logging_handler,
-# 	format="{message}",
-# 	level="DEBUG",
-# 	backtrace=True,
-# 	serialize=True,
-# )
 
 
 LOGGING = {
@@ -75,6 +67,7 @@ WSGI_APPLICATION = "thedozens.wsgi.application"
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = True
+SITE_ID = int(os.environ["SITE_ID"])
 CORS_ALLOW_ALL_ORIGINS = True
 CSRF_TRUSTED_ORIGINS = ["https://*.yo-momma.net", "https://*.b-cdn.net"]
 ADMINS = [("Terry Brooks", "Terry@BrooksJr.com")]
@@ -89,11 +82,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Third-Party Apps
-    "kolo",
     "rest_framework",
     "django_filters",
     "corsheaders",
-
     "debug_toolbar",
     "graphene_django",
     "crispy_forms",
@@ -128,6 +119,7 @@ MIDDLEWARE = [
 ]
 if DEBUG:
     MIDDLEWARE.insert(0, 'kolo.middleware.KoloMiddleware')
+    INSTALLED_APPS.insert(0, "kolo")
 RECAPTCHA_PRIVATE_KEY = str(os.getenv("RECAPTCHA_PRIVATE_KEY"))
 RECAPTCHA_PUBLIC_KEY = str(os.getenv("RECAPTCHA_PUBLIC_KEY"))
 
@@ -277,6 +269,9 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 10,
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
+        'rest_framework.renderers.BrowsableAPIRenderer',
+
+
     ],
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",

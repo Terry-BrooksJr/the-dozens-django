@@ -2,7 +2,6 @@
 import os
 
 from django.conf import settings
-
 from django_bunny.storage import BunnyStorage
 
 

@@ -175,7 +175,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "explicit",
+                  "name": "nsfw",
                   "type": {
                     "kind": "SCALAR",
                     "name": "Boolean",
@@ -280,7 +280,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "explicit",
+              "name": "nsfw",
               "type": {
                 "kind": "NON_NULL",
                 "name": null,

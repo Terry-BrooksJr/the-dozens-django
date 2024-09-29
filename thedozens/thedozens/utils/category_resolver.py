@@ -1,7 +1,9 @@
-from API.models import Insult
 from typing import Dict
+
+from API.models import Insult
 from loguru import logger
 from prometheus_client import Histogram
+
 
 class Resolver:
     cat_resolver_metric= Histogram("category_resolver", "Metric of the Duration of categories in request")

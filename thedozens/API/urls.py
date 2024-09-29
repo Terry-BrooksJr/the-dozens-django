@@ -1,6 +1,10 @@
 from API import views
 from django.urls import path
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 
 urlpatterns = [
     path(
@@ -17,6 +21,6 @@ urlpatterns = [
     path("insults/<int:id>", views.InsultSingleItem.as_view(), name="Single_View"),
     path("insult", views.RandomInsultView.as_view(), name="Random-Unfiltered"),
     path("schema", SpectacularAPIView.as_view(), name="schema"),
-    path("swagger", SpectacularSwaggerView.as_view(), name="swagger"),
-    path("docs", SpectacularRedocView.as_view(), name="redoc")
+    path("swagger", SpectacularSwaggerView.as_view(url_name='schema'), name="swagger"),
+    path("docs", SpectacularRedocView.as_view(url_name='schema'), name="redoc")
 ]

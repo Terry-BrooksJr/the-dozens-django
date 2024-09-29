@@ -23,6 +23,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Insult'
+              examples:
+                ExampleInsult:
+                  value:
+                    pk: 1
+                    content: You're so slow, it takes you an hour to cook minute rice.
+                    category: stupid
+                    NSFW: false
+                    added_on: '2024-09-25'
+                    added_by: john_doe
+                  summary: Example of an Insult
+                  description: This example represents an insult, categorized and
+                    created by a user.
           description: ''
   /api/insults/{id}:
     get:
@@ -45,6 +57,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Insult'
+              examples:
+                ExampleInsult:
+                  value:
+                    pk: 1
+                    content: You're so slow, it takes you an hour to cook minute rice.
+                    category: stupid
+                    NSFW: false
+                    added_on: '2024-09-25'
+                    added_by: john_doe
+                  summary: Example of an Insult
+                  description: This example represents an insult, categorized and
+                    created by a user.
           description: ''
   /api/insults/categories:
     get:
@@ -108,7 +132,7 @@ paths:
           * `L` - lazy
           * `SRT` - short
       - in: query
-        name: explicit
+        name: nsfw
         schema:
           type: boolean
       - name: page
@@ -309,6 +333,15 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MyInsult'
+            examples:
+              SimplifiedInsultExample:
+                value:
+                  category: stupid
+                  content: You bring everyone so much joy, when you leave the room.
+                  status: approved
+                summary: Simplified Insult Serializer Example
+                description: This example represents a simplified version of an insult
+                  for specific API views.
         required: true
       security:
       - cookieAuth: []
@@ -319,6 +352,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyInsult'
+              examples:
+                SimplifiedInsultExample:
+                  value:
+                    category: stupid
+                    content: You bring everyone so much joy, when you leave the room.
+                    status: approved
+                  summary: Simplified Insult Serializer Example
+                  description: This example represents a simplified version of an
+                    insult for specific API views.
           description: ''
     put:
       operationId: api_user_insults_update
@@ -329,6 +371,15 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MyInsult'
+            examples:
+              SimplifiedInsultExample:
+                value:
+                  category: stupid
+                  content: You bring everyone so much joy, when you leave the room.
+                  status: approved
+                summary: Simplified Insult Serializer Example
+                description: This example represents a simplified version of an insult
+                  for specific API views.
         required: true
       security:
       - cookieAuth: []
@@ -339,6 +390,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyInsult'
+              examples:
+                SimplifiedInsultExample:
+                  value:
+                    category: stupid
+                    content: You bring everyone so much joy, when you leave the room.
+                    status: approved
+                  summary: Simplified Insult Serializer Example
+                  description: This example represents a simplified version of an
+                    insult for specific API views.
           description: ''
     delete:
       operationId: api_user_insults_destroy
@@ -721,6 +781,47 @@ paths:
               schema:
                 $ref: '#/components/schemas/SetUsername'
           description: ''
+  /report-joke:
+    post:
+      operationId: report_joke_create
+      tags:
+      - report-joke
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JokeReport'
+            examples:
+              JokeReportExample:
+                value:
+                  id: 1
+                  insult: 5
+                  reviewer: admin
+                  review_comment: This insult is a bit too harsh.
+                  reviewed_on: '2024-09-27'
+                summary: Joke Report Serializer Example
+                description: An example report for an insult that was reviewed.
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JokeReport'
+              examples:
+                JokeReportExample:
+                  value:
+                    id: 1
+                    insult: 5
+                    reviewer: admin
+                    review_comment: This insult is a bit too harsh.
+                    reviewed_on: '2024-09-27'
+                  summary: Joke Report Serializer Example
+                  description: An example report for an insult that was reviewed.
+          description: ''
 components:
   schemas:
     Activation:
@@ -733,6 +834,9 @@ components:
       required:
       - token
       - uid
+    BlankEnum:
+      enum:
+      - ''
     CategoryEnum:
       enum:
       - P
@@ -753,37 +857,31 @@ components:
       - SRT
       type: string
       description: |-
-        * `P` - POOR
-        * `F` - FAT
-        * `U` - UGLY
-        * `S` - STUPID
-        * `SNWF` - SNOWFLAKE
-        * `O` - OLD
-        * `DO` - DADDY_OLD
-        * `DS` - DADDY_STUPID
-        * `N` - NASTY
-        * `T` - TALL
-        * `TEST` - TEST_CATEGORY
-        * `SKN` - SKINNY
-        * `B` - BALD
-        * `H` - HAIRY
-        * `L` - LAZY
-        * `SRT` - SHORT
+        * `P` - poor
+        * `F` - fat
+        * `U` - ugly
+        * `S` - stupid
+        * `SNWF` - snowflake
+        * `O` - old
+        * `DO` - old_daddy
+        * `DS` - stupid_daddy
+        * `N` - nasty
+        * `T` - tall
+        * `TEST` - testing
+        * `SKN` - skinny
+        * `B` - bald
+        * `H` - hairy
+        * `L` - lazy
+        * `SRT` - short
     Insult:
       type: object
-      description: |-
-        Summary:
-        Serializer for Insult model to convert model instances to Python data types.
-        Explanation:
-        This serializer converts Insult model instances to Python data types for serialization. It includes fields like content, category, NSFW, added_on, and added_by. The `to_representation` method customizes the representation of the serialized data.
-        Args:
-            instance: The Insult model instance to be serialized.
-        Returns:
-            dict: A dictionary representing the serialized data.
-        Examples:
-            serializer = InsultSerializer()
-            data = serializer.to_representation(instance)
+      description: Serializer for Insult model to convert model instances to Python
+        data types.
       properties:
+        pk:
+          type: integer
+          readOnly: true
+          title: ID
         content:
           type: string
         category:
@@ -794,7 +892,7 @@ components:
           type: string
           format: date
         added_by:
-          type: integer
+          type: string
           readOnly: true
       required:
       - NSFW
@@ -802,43 +900,76 @@ components:
       - added_on
       - category
       - content
-    MyInsult:
+      - pk
+    JokeReport:
       type: object
+      description: Serializer for InsultReview model.
       properties:
         id:
           type: integer
           readOnly: true
-        category:
-          type: string
-        status:
-          type: string
-        NSFW:
+        anonymous:
           type: boolean
-        content:
+        reporter_first_name:
           type: string
-          maxLength: 65535
-        explicit:
+          nullable: true
+          maxLength: 80
+        reporter_last_name:
+          type: string
+          nullable: true
+          maxLength: 80
+        post_review_contact_desired:
           type: boolean
-        added_on:
+        reporter_email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 254
+        date_submitted:
           type: string
           format: date
           readOnly: true
-        last_modified:
+        date_reviewed:
           type: string
-          format: date-time
-          readOnly: true
+          format: date
           nullable: true
-        added_by:
+        rationale_for_review:
+          type: string
+        review_type:
+          $ref: '#/components/schemas/ReviewTypeEnum'
+        status:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        insult_id:
           type: integer
       required:
-      - NSFW
-      - added_by
-      - added_on
+      - date_submitted
+      - id
+      - insult_id
+      - rationale_for_review
+      - review_type
+    MyInsult:
+      type: object
+      description: Serializer for simplified Insult representation.
+      properties:
+        category:
+          type: string
+        content:
+          type: string
+          maxLength: 65535
+        status:
+          type: string
+          readOnly: true
+      required:
       - category
       - content
-      - id
-      - last_modified
       - status
+    NullEnum:
+      enum:
+      - null
     PaginatedInsultList:
       type: object
       required:
@@ -914,6 +1045,16 @@ components:
           readOnly: true
           description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
             only.
+    ReviewTypeEnum:
+      enum:
+      - RE
+      - RC
+      - RX
+      type: string
+      description: |-
+        * `RE` - Joke Reclassification
+        * `RC` - Joke Recategorization
+        * `RX` - Joke Removal
     SendEmailReset:
       type: object
       properties:
@@ -947,6 +1088,22 @@ components:
       required:
       - current_password
       - new_username
+    StatusEnum:
+      enum:
+      - P
+      - NCE
+      - SCE
+      - NJC
+      - SJC
+      - X
+      type: string
+      description: |-
+        * `P` - Pending
+        * `NCE` - Completed - New Explicitly Setting
+        * `SCE` - Completed - No New Explicitly Setting
+        * `NJC` - Completed - Assigned to New Category
+        * `SJC` - Completed - No New Category Assigned
+        * `X` - Completed - Joke Removed
     User:
       type: object
       properties:

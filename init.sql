@@ -1,6 +1,6 @@
--- Inital Data Load For `public.insult` table. Contaims all the initial jokes.
--- In Produdction - This will be replade with a routine backup snapshot of the database, that should be used for recovery efforts
-INSERT INTO "insults"(explicit,added_by_id,category,added_on, content, status)   VALUES
+-- Initial Data Load For `public.insult` table. Contains all the initial jokes.
+-- In Production - This will be replade with a routine backup snapshot of the database, that should be used for recovery efforts
+INSERT INTO "insults"(nsfw,added_by_id,category,added_on, content, status)   VALUES
 ('FALSE','2','DO','2022-12-14','Yo daddy so old, his Social Security number is 4.','A'),
 ('FALSE','2','DS','2022-12-14','Yo daddy is so dumb he turned down a blowjob because he thought it would mess up his unemployment check.','A'),
 ('FALSE','2','DS','2022-12-14','Yo daddy so dumb, somebody said it was chilly outside so he went to get a bowl.','A'),
@@ -349,8 +349,8 @@ INSERT INTO "insults"(explicit,added_by_id,category,added_on, content, status)  
 ('FALSE','2','T','2022-12-14','Yo momma is so tall... she tripped in Denver and hit her head in New York.','A'),
 ('FALSE','2','T','2022-12-14','Yo momma is so tall... she did a cartwheel and kicked the gates of Heaven.','A'),
 ('FALSE','2','TEST','2022-12-14','TEST - This Document Shoulds be Found by Catagory: ''Test''','A'),
-('FALSE','2','TEST','2022-12-19','TEST - Document Should Be Found By explicit: True and Status: ''Deleted''','X'),
-('TRUE','2','TEST','2022-12-14','TEST - This Document Shoulds be Found by explicit: true','A'),
+('FALSE','2','TEST','2022-12-19','TEST - Document Should Be Found By nsfw: True and Status: ''Deleted''','X'),
+('TRUE','2','TEST','2022-12-14','TEST - This Document Shoulds be Found by nsfw: true','A'),
 ('FALSE','2','TEST','2022-12-14','TEST - This Document Shoulds be Found by Catagory: ''Test''','A'),
 ('FALSE','2','U','2022-12-14','Yo momma is so ugly... even Rice Krispies won''t talk to her!','A'),
 ('FALSE','2','U','2022-12-14','Yo momma is so ugly... she tried to take a bath and the water jumped out!','A'),

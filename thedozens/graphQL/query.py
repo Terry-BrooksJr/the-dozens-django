@@ -14,7 +14,7 @@ class InsultType(DjangoObjectType):
         field = (
             "content",
             "category",
-            "explicit",
+            "nsfw",
             "added_on",
             "added_by",
             "last_modified",
@@ -27,7 +27,7 @@ class Query(ObjectType):
     random_insult = Field(InsultType)
     insult_by_category = List(InsultType, category=String())
     insults_by_status = Field(InsultType, status=String())
-    insults_by_classification = Field(InsultType, explicit=Boolean())
+    insults_by_classification = Field(InsultType, nsfw=Boolean())
     insult_by_id = Field(InsultType, id=ID())
 
     def resolve_insults(root, info, **kwargs):
@@ -42,9 +42,9 @@ class Query(ObjectType):
         # sourcery skip: instance-method-first-arg-name
         return Insult.objects.filter(status=status)
 
-    def resolve_insults_by_classification(root, info, explicit):
+    def resolve_insults_by_classification(root, info, nsfw):
         # sourcery skip: instance-method-first-arg-name
-        return Insult.objects.filter(explicit=explicit)
+        return Insult.objects.filter(nsfw=nsfw)
 
     def resolve_insult_by_id(root, info, pk):
         # sourcery skip: instance-method-first-arg-name
