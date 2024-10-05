@@ -11,14 +11,21 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from loguru import logger
 
-insult_queryset = Insult.objects.filter(status="A").values_list('pk', flat=True)
+insult_queryset = Insult.objects.filter(status="A").values_list("pk", flat=True)
+
 
 class InsultReviewForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.insult_choices = [(id, id) for id in insult_queryset] if insult_queryset is not None else None
-        insult_id = ChoiceField(choices=self.insult_choices, required=True, help_text="Please provide the Insult ID of the Insult. All API payloads provide the Insult ID.") if self.insult_choices is not None else IntegerField(required=True, help_text="Please provide the Insult ID of the Insult. All API payloads provide the Insult ID.")
+        self.insult_choices = (
+            [(id, id) for id in insult_queryset]
+            if insult_queryset is not None
+            else IntegerField(
+                required=True,
+                help_text="Please provide the Insult ID of the Insult. All API payloads provide the Insult ID.",
+            )
+        )
         self.helper = FormHelper()
         self.helper.form_id = "report-joke-form"
         self.helper.form_method = "post"

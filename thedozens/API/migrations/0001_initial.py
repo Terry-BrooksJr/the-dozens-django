@@ -164,9 +164,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="insult",
-            index=models.Index(
-                fields=["category", "nsfw"], name="idx_nsfw_category"
-            ),
+            index=models.Index(fields=["category", "nsfw"], name="idx_nsfw_category"),
         ),
         migrations.AddIndex(
             model_name="insult",

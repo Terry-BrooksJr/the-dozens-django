@@ -26,7 +26,7 @@ class HomePage(TemplateView):
 class GitHubCreateIssueEndPoint(APIView):
     serializer_class = JokeReportSerializer
 
-    def post(self, request:HttpRequest, *args, **kwargs) -> HttpResponse:
+    def post(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
         form = InsultReviewForm(request.POST)
         if form.is_valid():
             try:
@@ -36,7 +36,8 @@ class GitHubCreateIssueEndPoint(APIView):
                     f"Unable to Submit {form.cleaned_data['insult_id']} For Review: {str(e)}"
                 )
                 return Response(
-                    data={"status": "FAILED"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
+                    data={"status": "FAILED"},
+                    status=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )
 
     def format_issue(self, form):

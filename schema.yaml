@@ -1,1172 +1,1645 @@
-openapi: 3.0.3
-info:
-  title: Yo' Mama - The Roast API - Swagger UI
-  version: 1.0.0
-  description: 'RESTful implementation of a light hearted Roast Insult API '
-  contact:
-    name: Terry A. Brooks, Jr.
-    url: https://brooksjr.com
-    email: terry@brooksjr.com
-paths:
-  /api/insult:
-    get:
-      operationId: api_insult_retrieve
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Insult'
-              examples:
-                ExampleInsult:
-                  value:
-                    pk: 1
-                    content: You're so slow, it takes you an hour to cook minute rice.
-                    category: stupid
-                    NSFW: false
-                    added_on: '2024-09-25'
-                    added_by: john_doe
-                  summary: Example of an Insult
-                  description: This example represents an insult, categorized and
-                    created by a user.
-          description: ''
-  /api/insults/{id}:
-    get:
-      operationId: api_insults_retrieve
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Insult'
-              examples:
-                ExampleInsult:
-                  value:
-                    pk: 1
-                    content: You're so slow, it takes you an hour to cook minute rice.
-                    category: stupid
-                    NSFW: false
-                    added_on: '2024-09-25'
-                    added_by: john_doe
-                  summary: Example of an Insult
-                  description: This example represents an insult, categorized and
-                    created by a user.
-          description: ''
-  /api/insults/categories:
-    get:
-      operationId: api_insults_categories_retrieve
-      description: 'API GET Endpoint returning all the Insults Submitted by the Authenticated
-        User. Will Return '
-      tags:
-      - Insults
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /api/insults/category/{category}:
-    get:
-      operationId: api_insults_category_list
-      parameters:
-      - in: path
-        name: category
-        schema:
-          type: string
-        required: true
-      - in: query
-        name: category
-        schema:
-          type: string
-          enum:
-          - B
-          - DO
-          - DS
-          - F
-          - H
-          - L
-          - N
-          - O
-          - P
-          - S
-          - SKN
-          - SNWF
-          - SRT
-          - T
-          - TEST
-          - U
-        description: |-
-          * `P` - poor
-          * `F` - fat
-          * `U` - ugly
-          * `S` - stupid
-          * `SNWF` - snowflake
-          * `O` - old
-          * `DO` - old_daddy
-          * `DS` - stupid_daddy
-          * `N` - nasty
-          * `T` - tall
-          * `TEST` - testing
-          * `SKN` - skinny
-          * `B` - bald
-          * `H` - hairy
-          * `L` - lazy
-          * `SRT` - short
-      - in: query
-        name: nsfw
-        schema:
-          type: boolean
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedInsultList'
-              examples:
-                GettingAllJokesInACategory:
-                  value:
-                    count: 123
-                    next: http://api.example.org/accounts/?page=4
-                    previous: http://api.example.org/accounts/?page=2
-                    results:
-                    - count: 401
-                      next: http://127.0.0.1:8000/api/insults/P?page=2
-                      previous: 'null'
-                      results:
-                      - id: 979885544274460700
-                        content: Yo mama so bald, you can see what’s on her mind.
-                      - id: 979885544274657300
-                        content: Yo momma is so bald... you can see what's on her
-                          mind.
-                      - id: 979885544274690000
-                        content: Yo momma is so bald... even a wig wouldn't help!
-                      - id: 979885544274722800
-                        content: Yo momma is so bald... she had to braids her beard.
-                  summary: Paginated Listing of all active jokes in  a category
-                  description: This endpoint allows API Consumers to get a paginated
-                    list of all jokes in a given category i.e. "fat", "poor", "etc.
-          description: ''
-  /api/schema:
-    get:
-      operationId: api_schema_retrieve
-      description: |-
-        OpenApi3 schema for this API. Format can be selected via content negotiation.
-
-        - YAML: application/vnd.oai.openapi
-        - JSON: application/vnd.oai.openapi+json
-      parameters:
-      - in: query
-        name: format
-        schema:
-          type: string
-          enum:
-          - json
-          - yaml
-      - in: query
-        name: lang
-        schema:
-          type: string
-          enum:
-          - af
-          - ar
-          - ar-dz
-          - ast
-          - az
-          - be
-          - bg
-          - bn
-          - br
-          - bs
-          - ca
-          - ckb
-          - cs
-          - cy
-          - da
-          - de
-          - dsb
-          - el
-          - en
-          - en-au
-          - en-gb
-          - eo
-          - es
-          - es-ar
-          - es-co
-          - es-mx
-          - es-ni
-          - es-ve
-          - et
-          - eu
-          - fa
-          - fi
-          - fr
-          - fy
-          - ga
-          - gd
-          - gl
-          - he
-          - hi
-          - hr
-          - hsb
-          - hu
-          - hy
-          - ia
-          - id
-          - ig
-          - io
-          - is
-          - it
-          - ja
-          - ka
-          - kab
-          - kk
-          - km
-          - kn
-          - ko
-          - ky
-          - lb
-          - lt
-          - lv
-          - mk
-          - ml
-          - mn
-          - mr
-          - ms
-          - my
-          - nb
-          - ne
-          - nl
-          - nn
-          - os
-          - pa
-          - pl
-          - pt
-          - pt-br
-          - ro
-          - ru
-          - sk
-          - sl
-          - sq
-          - sr
-          - sr-latn
-          - sv
-          - sw
-          - ta
-          - te
-          - tg
-          - th
-          - tk
-          - tr
-          - tt
-          - udm
-          - ug
-          - uk
-          - ur
-          - uz
-          - vi
-          - zh-hans
-          - zh-hant
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/vnd.oai.openapi:
-              schema:
-                type: object
-                additionalProperties: {}
-            application/yaml:
-              schema:
-                type: object
-                additionalProperties: {}
-            application/vnd.oai.openapi+json:
-              schema:
-                type: object
-                additionalProperties: {}
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-  /api/user/insults/:
-    post:
-      operationId: api_user_insults_create
-      tags:
-      - api
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MyInsult'
-            examples:
-              SimplifiedInsultExample:
-                value:
-                  category: stupid
-                  content: You bring everyone so much joy, when you leave the room.
-                  status: approved
-                summary: Simplified Insult Serializer Example
-                description: This example represents a simplified version of an insult
-                  for specific API views.
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MyInsult'
-              examples:
-                SimplifiedInsultExample:
-                  value:
-                    category: stupid
-                    content: You bring everyone so much joy, when you leave the room.
-                    status: approved
-                  summary: Simplified Insult Serializer Example
-                  description: This example represents a simplified version of an
-                    insult for specific API views.
-          description: ''
-    put:
-      operationId: api_user_insults_update
-      tags:
-      - api
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MyInsult'
-            examples:
-              SimplifiedInsultExample:
-                value:
-                  category: stupid
-                  content: You bring everyone so much joy, when you leave the room.
-                  status: approved
-                summary: Simplified Insult Serializer Example
-                description: This example represents a simplified version of an insult
-                  for specific API views.
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MyInsult'
-              examples:
-                SimplifiedInsultExample:
-                  value:
-                    category: stupid
-                    content: You bring everyone so much joy, when you leave the room.
-                    status: approved
-                  summary: Simplified Insult Serializer Example
-                  description: This example represents a simplified version of an
-                    insult for specific API views.
-          description: ''
-    delete:
-      operationId: api_user_insults_destroy
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '204':
-          description: No response body
-  /auth/users/:
-    get:
-      operationId: auth_users_list
-      parameters:
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      tags:
-      - auth
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedUserList'
-          description: ''
-    post:
-      operationId: auth_users_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserCreate'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserCreate'
-          description: ''
-  /auth/users/{id}/:
-    get:
-      operationId: auth_users_retrieve
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this user.
-        required: true
-      tags:
-      - auth
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: ''
-    put:
-      operationId: auth_users_update
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this user.
-        required: true
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: ''
-    patch:
-      operationId: auth_users_partial_update
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this user.
-        required: true
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedUser'
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: ''
-    delete:
-      operationId: auth_users_destroy
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this user.
-        required: true
-      tags:
-      - auth
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '204':
-          description: No response body
-  /auth/users/activation/:
-    post:
-      operationId: auth_users_activation_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Activation'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Activation'
-          description: ''
-  /auth/users/me/:
-    get:
-      operationId: auth_users_me_retrieve
-      tags:
-      - auth
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: ''
-    put:
-      operationId: auth_users_me_update
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: ''
-    patch:
-      operationId: auth_users_me_partial_update
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedUser'
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: ''
-    delete:
-      operationId: auth_users_me_destroy
-      tags:
-      - auth
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '204':
-          description: No response body
-  /auth/users/resend_activation/:
-    post:
-      operationId: auth_users_resend_activation_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SendEmailReset'
-          description: ''
-  /auth/users/reset_password/:
-    post:
-      operationId: auth_users_reset_password_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SendEmailReset'
-          description: ''
-  /auth/users/reset_password_confirm/:
-    post:
-      operationId: auth_users_reset_password_confirm_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PasswordResetConfirm'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PasswordResetConfirm'
-          description: ''
-  /auth/users/reset_username/:
-    post:
-      operationId: auth_users_reset_username_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SendEmailReset'
-          description: ''
-  /auth/users/reset_username_confirm/:
-    post:
-      operationId: auth_users_reset_username_confirm_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UsernameResetConfirm'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsernameResetConfirm'
-          description: ''
-  /auth/users/set_password/:
-    post:
-      operationId: auth_users_set_password_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetPassword'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SetPassword'
-          description: ''
-  /auth/users/set_username/:
-    post:
-      operationId: auth_users_set_username_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetUsername'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SetUsername'
-          description: ''
-  /report-joke:
-    post:
-      operationId: report_joke_create
-      tags:
-      - report-joke
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/JokeReport'
-            examples:
-              JokeReportExample:
-                value:
-                  id: 1
-                  insult: 5
-                  reviewer: admin
-                  review_comment: This insult is a bit too harsh.
-                  reviewed_on: '2024-09-27'
-                summary: Joke Report Serializer Example
-                description: An example report for an insult that was reviewed.
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/JokeReport'
-              examples:
-                JokeReportExample:
-                  value:
-                    id: 1
-                    insult: 5
-                    reviewer: admin
-                    review_comment: This insult is a bit too harsh.
-                    reviewed_on: '2024-09-27'
-                  summary: Joke Report Serializer Example
-                  description: An example report for an insult that was reviewed.
-          description: ''
-components:
-  schemas:
-    Activation:
-      type: object
-      properties:
-        uid:
-          type: string
-        token:
-          type: string
-      required:
-      - token
-      - uid
-    BlankEnum:
-      enum:
-      - ''
-    CategoryEnum:
-      enum:
-      - P
-      - F
-      - U
-      - S
-      - SNWF
-      - O
-      - DO
-      - DS
-      - N
-      - T
-      - TEST
-      - SKN
-      - B
-      - H
-      - L
-      - SRT
-      type: string
-      description: |-
-        * `P` - poor
-        * `F` - fat
-        * `U` - ugly
-        * `S` - stupid
-        * `SNWF` - snowflake
-        * `O` - old
-        * `DO` - old_daddy
-        * `DS` - stupid_daddy
-        * `N` - nasty
-        * `T` - tall
-        * `TEST` - testing
-        * `SKN` - skinny
-        * `B` - bald
-        * `H` - hairy
-        * `L` - lazy
-        * `SRT` - short
-    Insult:
-      type: object
-      description: Serializer for Insult model to convert model instances to Python
-        data types.
-      properties:
-        pk:
-          type: integer
-          readOnly: true
-          title: ID
-        content:
-          type: string
-        category:
-          $ref: '#/components/schemas/CategoryEnum'
-        NSFW:
-          type: boolean
-        added_on:
-          type: string
-          format: date
-        added_by:
-          type: string
-          readOnly: true
-      required:
-      - NSFW
-      - added_by
-      - added_on
-      - category
-      - content
-      - pk
-    JokeReport:
-      type: object
-      description: Serializer for InsultReview model.
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        anonymous:
-          type: boolean
-        reporter_first_name:
-          type: string
-          nullable: true
-          maxLength: 80
-        reporter_last_name:
-          type: string
-          nullable: true
-          maxLength: 80
-        post_review_contact_desired:
-          type: boolean
-        reporter_email:
-          type: string
-          format: email
-          nullable: true
-          maxLength: 254
-        date_submitted:
-          type: string
-          format: date
-          readOnly: true
-        date_reviewed:
-          type: string
-          format: date
-          nullable: true
-        rationale_for_review:
-          type: string
-        review_type:
-          $ref: '#/components/schemas/ReviewTypeEnum'
-        status:
-          nullable: true
-          oneOf:
-          - $ref: '#/components/schemas/StatusEnum'
-          - $ref: '#/components/schemas/BlankEnum'
-          - $ref: '#/components/schemas/NullEnum'
-        insult_id:
-          type: integer
-      required:
-      - date_submitted
-      - id
-      - insult_id
-      - rationale_for_review
-      - review_type
-    MyInsult:
-      type: object
-      description: Serializer for simplified Insult representation.
-      properties:
-        category:
-          type: string
-        content:
-          type: string
-          maxLength: 65535
-        status:
-          type: string
-          readOnly: true
-      required:
-      - category
-      - content
-      - status
-    NullEnum:
-      enum:
-      - null
-    PaginatedInsultList:
-      type: object
-      required:
-      - count
-      - results
-      properties:
-        count:
-          type: integer
-          example: 123
-        next:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=4
-        previous:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=2
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/Insult'
-    PaginatedUserList:
-      type: object
-      required:
-      - count
-      - results
-      properties:
-        count:
-          type: integer
-          example: 123
-        next:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=4
-        previous:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=2
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
-    PasswordResetConfirm:
-      type: object
-      properties:
-        uid:
-          type: string
-        token:
-          type: string
-        new_password:
-          type: string
-      required:
-      - new_password
-      - token
-      - uid
-    PatchedUser:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-          title: Email address
-          maxLength: 254
-        id:
-          type: integer
-          readOnly: true
-        username:
-          type: string
-          readOnly: true
-          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
-            only.
-    ReviewTypeEnum:
-      enum:
-      - RE
-      - RC
-      - RX
-      type: string
-      description: |-
-        * `RE` - Joke Reclassification
-        * `RC` - Joke Recategorization
-        * `RX` - Joke Removal
-    SendEmailReset:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-      required:
-      - email
-    SetPassword:
-      type: object
-      properties:
-        new_password:
-          type: string
-        current_password:
-          type: string
-      required:
-      - current_password
-      - new_password
-    SetUsername:
-      type: object
-      properties:
-        current_password:
-          type: string
-        new_username:
-          type: string
-          title: Username
-          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
-            only.
-          pattern: ^[\w.@+-]+$
-          maxLength: 150
-      required:
-      - current_password
-      - new_username
-    StatusEnum:
-      enum:
-      - P
-      - NCE
-      - SCE
-      - NJC
-      - SJC
-      - X
-      type: string
-      description: |-
-        * `P` - Pending
-        * `NCE` - Completed - New Explicitly Setting
-        * `SCE` - Completed - No New Explicitly Setting
-        * `NJC` - Completed - Assigned to New Category
-        * `SJC` - Completed - No New Category Assigned
-        * `X` - Completed - Joke Removed
-    User:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-          title: Email address
-          maxLength: 254
-        id:
-          type: integer
-          readOnly: true
-        username:
-          type: string
-          readOnly: true
-          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
-            only.
-      required:
-      - id
-      - username
-    UserCreate:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-          title: Email address
-          maxLength: 254
-        username:
-          type: string
-          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
-            only.
-          pattern: ^[\w.@+-]+$
-          maxLength: 150
-        id:
-          type: integer
-          readOnly: true
-        password:
-          type: string
-          writeOnly: true
-      required:
-      - id
-      - password
-      - username
-    UsernameResetConfirm:
-      type: object
-      properties:
-        new_username:
-          type: string
-          title: Username
-          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
-            only.
-          pattern: ^[\w.@+-]+$
-          maxLength: 150
-      required:
-      - new_username
-  securitySchemes:
-    basicAuth:
-      type: http
-      scheme: basic
-    cookieAuth:
-      type: apiKey
-      in: cookie
-      name: sessionid
-externalDocs:
-  url: https://github.com/Terry-BrooksJr/the-dozens-django
-  description: GitHub Repository and full API documentation Hub
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "The Dozens  - The Yo Momma Joke",
+    "description": "",
+    "version": "1.0.0",
+    "contact": {
+      "name": "TerryBrooksJr",
+      "email": "Terry.Arthur@brooksjr.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://echo.paw.cloud/",
+      "description": ""
+    }
+  ],
+  "paths": {
+    "/{baseURL}/api/insult/": {
+      "get": {
+        "summary": "Get Single Random Joke",
+        "description": "The GET request for the Yo Mama Jokes API retrieves a random, uncategorized, and unfiltered joke, offering spontaneous humor without any predefined constraints or classifications.",
+        "operationId": "6de66a6b-dc8e-4161-8731-cb66080a76b4",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {},
+          "required": false
+        },
+        "responses": {
+          "404": {
+            "description": "",
+            "content": {
+              "text/html": {
+                "example": {
+                  "value": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">\n  <title>Page not found at /api/insult/</title>\n  <meta name=\"robots\" content=\"NONE,NOARCHIVE\">\n  <style type=\"text/css\">\n    html * { padding:0; margin:0; }\n    body * { padding:10px 20px; }\n    body * * { padding:0; }\n    body { font:small sans-serif; background:#eee; color:#000; }\n    body>div { border-bottom:1px solid #ddd; }\n    h1 { font-weight:normal; margin-bottom:.4em; }\n    h1 span { font-size:60%; color:#666; font-weight:normal; }\n    table { border:none; border-collapse: collapse; width:100%; }\n    td, th { vertical-align:top; padding:2px 3px; }\n    th { width:12em; text-align:right; color:#666; padding-right:.5em; }\n    #info { background:#f6f6f6; }\n    #info ol { margin: 0.5em 4em; }\n    #info ol li { font-family: monospace; }\n    #summary { background: #ffc; }\n    #explanation { background:#eee; border-bottom: 0px none; }\n    pre.exception_value { font-family: sans-serif; color: #575757; font-size: 1.5em; margin: 10px 0 10px 0; }\n  </style>\n</head>\n<body>\n  <div id=\"summary\">\n    <h1>Page not found <span>(404)</span></h1>\n    \n    <table class=\"meta\">\n      <tr>\n        <th>Request Method:</th>\n        <td>GET</td>\n      </tr>\n      <tr>\n        <th>Request URL:</th>\n        <td>http://localhost:8000/api/insult/</td>\n      </tr>\n      \n    </table>\n  </div>\n  <div id=\"info\">\n    \n      <p>\n      Using the URLconf defined in <code>thedozens.urls</code>,\n      Django tried these URL patterns, in this order:\n      </p>\n      <ol>\n        \n          <li>\n            \n                graphql\n                \n            \n          </li>\n        \n          <li>\n            \n                admin/\n                \n            \n          </li>\n        \n          <li>\n            \n                ^auth/\n                \n            \n          </li>\n        \n          <li>\n            \n                __debug__/\n                \n            \n          </li>\n        \n          <li>\n            \n                api-auth/\n                \n            \n          </li>\n        \n          <li>\n            \n                \n                \n            \n                metrics\n                [name='prometheus-django-metrics']\n            \n          </li>\n        \n          <li>\n            \n                api/\n                \n            \n                insults/categories\n                [name='insult-categories']\n            \n          </li>\n        \n          <li>\n            \n                api/\n                \n            \n                insults/category/&lt;str:category&gt;\n                [name='List_View']\n            \n          </li>\n        \n          <li>\n            \n                api/\n                \n            \n                user/insults/\n                [name='users_submitted_jokes']\n            \n          </li>\n        \n          <li>\n            \n                api/\n                \n            \n                insults/&lt;int:id&gt;\n                [name='Single_View']\n            \n          </li>\n        \n          <li>\n            \n                api/\n                \n            \n                insult\n                [name='Random-Unfiltered']\n            \n          </li>\n        \n          <li>\n            \n                api/\n                \n            \n                schema\n                [name='schema']\n            \n          </li>\n        \n          <li>\n            \n                api/\n                \n            \n                swagger\n                [name='swagger']\n            \n          </li>\n        \n          <li>\n            \n                api/\n                \n            \n                docs\n                [name='redoc']\n            \n          </li>\n        \n          <li>\n            \n                ^$\n                [name='home-page']\n            \n          </li>\n        \n          <li>\n            \n                report-joke\n                [name='Report-Joke']\n            \n          </li>\n        \n      </ol>\n      <p>\n        \n          The current path, <code>api/insult/</code>,\n        \n        didn’t match any of these.\n      </p>\n    \n  </div>\n\n  <div id=\"explanation\">\n    <p>\n      You’re seeing this error because you have <code>DEBUG = True</code> in\n      your Django settings file. Change that to <code>False</code>, and Django\n      will display a standard 404 page.\n    </p>\n  </div>\n</body>\n</html>\n"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/api/insults/{id}/": {
+      "get": {
+        "summary": "Get Specific Joke",
+        "description": "The GET request for the Yo Mama Jokes API retrieves a specific joke based on a numeric unique identifier (ID).\n",
+        "operationId": "30b1240b-46b8-4aef-b229-c22955156827",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": "Unique Numeric identifier "
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The GET request for the Yo Mama Jokes API retrieves a specific joke based on a numeric unique identifier (ID).\n",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/api/insults/categories/": {
+      "get": {
+        "summary": "Get All Insult Categories ",
+        "description": "The GET request for the Yo Mama Jokes API retrieves all available catagories for use in retrieving a categorized joke retrieval.   ",
+        "operationId": "f5b0ece9-7afe-4b73-bdcc-fd06237018dc",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "*",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The GET request for the Yo Mama Jokes API retrieves all available catagories for use in retrieving a categorized joke retrieval.   ",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/api/insults/category/{category}/": {
+      "get": {
+        "summary": "Get All Jokes From A Single Category",
+        "description": "",
+        "operationId": "65f61188-a2fa-4123-baca-634fefa0b88d",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json; charset=utf-8",
+              "description": ""
+            }
+          },
+          {
+            "name": "category",
+            "in": "path",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "B",
+              "description": "* `P` - poor\n* `F` - fat\n* `U` - ugly\n* `S` - stupid\n* `SNWF` - snowflake\n* `O` - old\n* `DO` - old_daddy\n* `DS` - stupid_daddy\n* `N` - nasty\n* `T` - tall\n* `TEST` - testing\n* `SKN` - skinny\n* `B` - bald\n* `H` - hairy\n* `L` - lazy\n* `SRT` - short"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "example": "* `P` - poor\n* `F` - fat\n* `U` - ugly\n* `S` - stupid\n* `SNWF` - snowflake\n* `O` - old\n* `DO` - old_daddy"
+                  },
+                  "nsfw": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/api/schema/": {
+      "get": {
+        "summary": "/api/schema",
+        "description": "OpenApi3 schema for this API. Format can be selected via content negotiation.\n\n- YAML: application/vnd.oai.openapi\n- JSON: application/vnd.oai.openapi+json",
+        "operationId": "676963a4-9526-48e9-a541-094dbdd655d6",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "json",
+              "description": ""
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "af",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/vnd.oai.openapi",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "OpenApi3 schema for this API. Format can be selected via content negotiation.\n\n- YAML: application/vnd.oai.openapi\n- JSON: application/vnd.oai.openapi+json",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/api/user/insults/": {
+      "post": {
+        "summary": "/api/user/insults/",
+        "description": "",
+        "operationId": "7150614b-5263-4350-9342-f95dc0abfa85",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "category": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "status": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "put": {
+        "summary": "/api/user/insults/",
+        "description": "",
+        "operationId": "9540704a-50cb-44c2-9eb3-5383439102d9",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "category": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "status": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "summary": "/api/user/insults/",
+        "description": "",
+        "operationId": "0283b989-3175-4ea7-b43f-9d53f7a0eeb9",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "*",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/": {
+      "get": {
+        "summary": "/auth/users/",
+        "description": "",
+        "operationId": "4bddcf05-3287-4cd9-8fc4-e60087f0c3ff",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "summary": "/auth/users/",
+        "description": "",
+        "operationId": "50fe202b-0fd3-4e3f-95b5-e6af1b9e7913",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "username": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/{id}/": {
+      "get": {
+        "summary": "/auth/users/{id}/",
+        "description": "",
+        "operationId": "bf7e4148-1fff-412e-9ab6-08eabbde0dcf",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": "A unique integer value identifying this user."
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "put": {
+        "summary": "/auth/users/{id}/",
+        "description": "",
+        "operationId": "a49fa4ff-3ce7-4bf6-a3b5-94d0e9389e20",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": "A unique integer value identifying this user."
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "username": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "patch": {
+        "summary": "/auth/users/{id}/",
+        "description": "",
+        "operationId": "f5a19549-ba15-4eca-b325-4a0b3052d2f1",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": "A unique integer value identifying this user."
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "username": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "summary": "/auth/users/{id}/",
+        "description": "",
+        "operationId": "e40b8830-992f-4794-9f2f-3c0211417d85",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "*",
+              "description": ""
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": "A unique integer value identifying this user."
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/activation/": {
+      "post": {
+        "summary": "/auth/users/activation/",
+        "description": "",
+        "operationId": "94d231aa-b226-426f-90d9-01d3eeb9b8d0",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "uid": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "token": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/me/": {
+      "get": {
+        "summary": "/auth/users/me/",
+        "description": "",
+        "operationId": "19d597c3-5aff-41a0-86d6-1bc78eb3f0b7",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "put": {
+        "summary": "/auth/users/me/",
+        "description": "",
+        "operationId": "012b44e7-3c76-43c5-8ae6-20a978e87c7f",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "username": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "patch": {
+        "summary": "/auth/users/me/",
+        "description": "",
+        "operationId": "07048ea1-538f-48c3-ab8f-2523048501ab",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "username": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "summary": "/auth/users/me/",
+        "description": "",
+        "operationId": "0bc04bc8-2771-49ac-8b89-b76ba4b55d2e",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "*",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/resend_activation/": {
+      "post": {
+        "summary": "/auth/users/resend_activation/",
+        "description": "",
+        "operationId": "7c5274d8-04e3-4b8e-b713-1439add3e987",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/reset_password/": {
+      "post": {
+        "summary": "/auth/users/reset_password/",
+        "description": "",
+        "operationId": "e84da829-72a1-43e0-ac3e-9d471dbb7b12",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/reset_password_confirm/": {
+      "post": {
+        "summary": "/auth/users/reset_password_confirm/",
+        "description": "",
+        "operationId": "27718a9f-a87a-4ec6-96e0-125b89d94455",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "uid": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "token": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "new_password": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/reset_username/": {
+      "post": {
+        "summary": "/auth/users/reset_username/",
+        "description": "",
+        "operationId": "d09d4db7-b42b-4490-9c54-fbb6b124ba11",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/reset_username_confirm/": {
+      "post": {
+        "summary": "/auth/users/reset_username_confirm/",
+        "description": "",
+        "operationId": "c76fe4a4-c799-48b3-bed2-f49b32565373",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "new_username": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/set_password/": {
+      "post": {
+        "summary": "/auth/users/set_password/",
+        "description": "",
+        "operationId": "55214855-1e14-4ed8-826d-5ef944c4f31e",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "current_password": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "new_password": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/set_username/": {
+      "post": {
+        "summary": "/auth/users/set_username/",
+        "description": "",
+        "operationId": "3cb6bea2-d17b-4c5e-afc0-b83fd6148010",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "new_username": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "current_password": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/report-joke/": {
+      "post": {
+        "summary": "/report-joke",
+        "description": "",
+        "operationId": "940af861-27db-4320-a686-93070c0b9784",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "review_type": {
+                    "type": "string",
+                    "example": "RE"
+                  },
+                  "post_review_contact_desired": {
+                    "type": "boolean"
+                  },
+                  "reporter_email": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "insult_id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "anonymous": {
+                    "type": "boolean"
+                  },
+                  "date_reviewed": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "date_submitted": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "reporter_first_name": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "rationale_for_review": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "reporter_last_name": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/`/": {
+      "get": {
+        "summary": "Request",
+        "description": "",
+        "operationId": "25a9990f-5590-4abe-b5c2-5862c0a03d9d",
+        "parameters": [],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {}
+}

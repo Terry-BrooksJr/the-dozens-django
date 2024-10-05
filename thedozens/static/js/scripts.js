@@ -1,7 +1,7 @@
 /* ------------------
       Highlight.io Monitoring
   --------------------*/
-H.init('5g5kvvlg', { // Get your project ID from https://app.highlight.io/setup
+H.init('5g5kvvlg', { 
   environment: 'production',
   version: 'commit:abcdefg12345',
   networkRecording: {
@@ -15,11 +15,11 @@ H.init('5g5kvvlg', { // Get your project ID from https://app.highlight.io/setup
   --------------------*/
 
 const modalNavButtons = document.querySelectorAll('.nav-bttn');
-modalNavButtons.forEach(button => {
-  button.addEventListener("mouseenter", () => {
-    button.classList.add("animate__animated animate__pulse");
-  });
-});
+modalNavButtons.forEach(button => 
+  button.addEventListener("mouseenter", () => 
+    button.classList.add("animate__animated animate__pulse")
+  )
+);
 
 const reportModalTrigger = document.getElementById("reportAJokeTrigger");
 const reportAJokeModal = document.getElementById("reportJokeModal");
@@ -30,28 +30,22 @@ const checkmarkIdPrefix = "loadingCheckSVG-";
 const checkmarkCircleIdPrefix = "loadingCheckCircleSVG-";
 const verticalSpacing = 50;
 
-function shuffleArray(array) {
+const shuffleArray = array => {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [array[i], array[j]] = [array[j], array[i]];
   }
   return array;
-}
+};
 
-function createSVG(tag, properties, opt_children) {
+const createSVG = (tag, properties, opt_children) => {
   const newElement = document.createElementNS("http://www.w3.org/2000/svg", tag);
-  for (const prop in properties) {
-    newElement.setAttribute(prop, properties[prop]);
-  }
-  if (opt_children) {
-    opt_children.forEach(child => {
-      newElement.appendChild(child);
-    });
-  }
+  Object.entries(properties).forEach(([prop, value]) => newElement.setAttribute(prop, value));
+  opt_children?.forEach(child => newElement.appendChild(child));
   return newElement;
-}
+};
 
-function createPhraseSvg(phrase, yOffset) {
+const createPhraseSvg = (phrase, yOffset) => {
   const text = createSVG("text", {
     fill: "white",
     x: 50,
@@ -61,9 +55,9 @@ function createPhraseSvg(phrase, yOffset) {
   });
   text.appendChild(document.createTextNode(phrase + "..."));
   return text;
-}
+};
 
-function createCheckSvg(yOffset, index) {
+const createCheckSvg = (yOffset, index) => {
   const check = createSVG("polygon", {
     points: "21.661,7.643 13.396,19.328 9.429,15.361 7.075,17.714 13.745,24.384 24.345,9.708 ",
     fill: "rgba(255,255,255,1)",
@@ -83,9 +77,9 @@ function createCheckSvg(yOffset, index) {
   return createSVG("g", {
       transform: `translate(10 ${yOffset - 20}) scale(.9)`
     }, [circle, check, circle_outline]);
-}
+};
 
-function addPhrasesToDocument(phrases) {
+const addPhrasesToDocument = phrases => {
   const phrasesContainer = document.getElementById("phrases");
   const fragment = document.createDocumentFragment();
   phrases.forEach((phrase, index) => {
@@ -94,12 +88,9 @@ function addPhrasesToDocument(phrases) {
     fragment.appendChild(createCheckSvg(yOffset, index));
   });
   phrasesContainer.appendChild(fragment);
-}
+};
 
-function easeInOut(t) {
-  const period = 200;
-  return (Math.sin(t / period + 100) + 1) / 2;
-}
+const easeInOut = t => (Math.sin(t / 200 + 100) + 1) / 2;
 
 document.addEventListener("DOMContentLoaded", () => {
   const phrases = shuffleArray([
@@ -116,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
     circle: document.getElementById(checkmarkCircleIdPrefix + i)
   }));
 
-  function animateLoading() {
+  const animateLoading = () => {
     const now = new Date().getTime();
     upward_moving_group.setAttribute("transform", `translate(0 ${upward_moving_group.currentY})`);
     upward_moving_group.currentY -= 1.35 * easeInOut(now);
@@ -146,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 3000);
 });
 
-function hideLoader() {
+const hideLoader = () => {
   const phraseBox = $('#phrase_box');
   const phrases = $('#phrases');
   const page = $('#page');
@@ -154,26 +145,26 @@ function hideLoader() {
   // phrases.fadeOut(300);
   phraseBox.css('display', 'none');
   page.fadeOut(1800);
-}
+};
 
-function showContent() {
+const showContent = () => {
   $('#body-hide').fadeIn(1600);
   $('body').css('overflow', 'visible');
-}
+};
 
-function animateJokeOfDayTitle() {
+const animateJokeOfDayTitle = () => {
   const jokeTitle = $('#joke-of-day-title');
   jokeTitle.addClass('animate__animated animate__rubberBand animate__infinite');
   jokeTitle.html('Click <br> For <br> Another Joke!');
-}
+};
 
-function unanimateJokeOfDayTitle() {
+const unanimateJokeOfDayTitle = () => {
   setTimeout(() => {
     const jokeTitle = $('#joke-of-day-title');
     jokeTitle.removeClass('animate__animated animate__rubberBand animate__infinite');
     jokeTitle.html('Joke <br> of the <br> Day');
   }, 300);
-}
+};
 
 /* ------------------
      END of Preloader - Logic
@@ -195,8 +186,9 @@ const placeInsult = () => {
   });
 };
 const jokeTitleParent = $('#joke-of-day-title-parent');
-jokeTitleParent.on("mouseenter", animateJokeOfDayTitle).on("mouseleave", unanimateJokeOfDayTitle);
-jokeTitleParent.on("click", placeInsult);
+jokeTitleParent.on("mouseenter", animateJokeOfDayTitle)
+               .on("mouseleave", unanimateJokeOfDayTitle)
+               .on("click", placeInsult);
 
 /* ------------------
       END of Joke of Day Jquery Request

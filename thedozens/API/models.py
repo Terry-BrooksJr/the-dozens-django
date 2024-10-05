@@ -10,7 +10,8 @@ from loguru import logger
 
 NOW = datetime.datetime.now()
 
-class Insult(ExportModelOperationsMixin('insult'),models.Model):
+
+class Insult(ExportModelOperationsMixin("insult"), models.Model):
     """
     Summary:
     Model representing an Insult with various attributes and methods for manipulation.
@@ -25,7 +26,7 @@ class Insult(ExportModelOperationsMixin('insult'),models.Model):
         - re_categorize(new_category): Re-categorizes the object with a new category.
         - reclassify(nsfw_status): Changes the category of the insult.
     """
-    
+
     class Meta:
         db_table = "insults"
         ordering = ["nsfw", "category"]
@@ -85,9 +86,7 @@ class Insult(ExportModelOperationsMixin('insult'),models.Model):
     )
 
     def __str__(self):
-        return (
-            f"({self.category}) - NSFW: {self.nsfw} - {self.pk} ({self.added_by}) "
-        )
+        return f"({self.category}) - NSFW: {self.nsfw} - {self.pk} ({self.added_by}) "
 
     def remove_insult(self):
         """Removes insult visibility from the API. (Soft Delete)
@@ -181,7 +180,7 @@ class Insult(ExportModelOperationsMixin('insult'),models.Model):
             logger.error(f"Unable to ReClassify Insult {self.pk}: {e}")
 
 
-class InsultReview(ExportModelOperationsMixin('jokeReview'),models.Model):
+class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
     """
     Summary:
     Model representing an Insult Review with methods for marking different review types.

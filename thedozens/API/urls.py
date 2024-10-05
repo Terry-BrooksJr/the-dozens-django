@@ -1,26 +1,41 @@
-from API import views
-from django.urls import path
+from API.views import InsultsCategoriesViewSet, MyInsultsViewSet, RandomInsultViewSet
+from django.urls import re_path
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from rest_framework.routers import DefaultRouter
 
-urlpatterns = [
-    path(
-        "insults/categories",
-        views.InsultCategories.as_view(),
-        name="insult-categories",
+router = DefaultRouter()
+router.register(r"my-insults", MyInsultsViewSet, basename="my-insults")
+router.register(
+    r"insults/categories", InsultsCategoriesViewSet, basename="insult-categories"
+)
+router.register(r"insults", InsultsCategoriesViewSet, basename="insults")
+router.register(r"insults/random", RandomInsultViewSet, basename="random-insult")
+
+urlpatterns = router.urls
+# from API import views
+
+urlpatterns += [
+    re_path(r"^schema$", SpectacularAPIView.as_view(), name="schema"),
+    re_path(
+        r"^swagger$", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger"
     ),
-    path(
-        "insults/category/<str:category>",
-        views.InsultsCategoriesListView.as_view(),
-        name="List_View",
-    ),
-    path("user/insults/", views.MyInsults.as_view(),name="users_submitted_jokes"),
-    path("insults/<int:id>", views.InsultSingleItem.as_view(), name="Single_View"),
-    path("insult", views.RandomInsultView.as_view(), name="Random-Unfiltered"),
-    path("schema", SpectacularAPIView.as_view(), name="schema"),
-    path("swagger", SpectacularSwaggerView.as_view(url_name='schema'), name="swagger"),
-    path("docs", SpectacularRedocView.as_view(url_name='schema'), name="redoc")
+    re_path(r"^docs$", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 ]
+# urlpatterns = [
+#     re_path(
+#         r"^insults/categories$",
+#         views.InsultCategories.as_view(),
+#         name="insult-categories",
+#     ),
+#     re_path(
+#         r"^insults/category/<str:category>$",
+#         views.InsultsCategoriesListView.as_view(),
+#         name="List_View",
+#     ),
+#     re_path(r"^user/insults$", views.MyInsults.as_view(), name="users_submitted_jokes"),
+#     re_path(r"^insults/<int:id>", views.InsultSingleItem.as_view(), name="Single_View"),
+#     re_path(r"^insult$", views.RandomInsultView.as_view(), name="Random-Unfiltered"),

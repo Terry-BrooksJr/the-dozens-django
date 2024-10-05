@@ -6,13 +6,15 @@ from prometheus_client import Histogram
 
 
 class Resolver:
-    cat_resolver_metric= Histogram("category_resolver", "Metric of the Duration of categories in request")
+    cat_resolver_metric = Histogram(
+        "category_resolver", "Metric of the Duration of categories in request"
+    )
 
     @classmethod
     def _generate_insult_category_dict(cls) -> Dict[str, str]:
         insult_tuples = Insult.CATEGORY.choices
         return dict(insult_tuples)
-    
+
     # @cat_resolver_metric.time()
     @staticmethod
     def resolve(category_selection: str) -> str:
@@ -37,5 +39,5 @@ class Resolver:
         elif category_selection in reverse_insult_category_dict:
             return reverse_insult_category_dict[category_selection]
         else:
-            logger.error(f'ERROR: Unable to Resolve {category_selection}')
+            logger.error(f"ERROR: Unable to Resolve {category_selection}")
             raise ValueError(f"{category_selection} is not a valid Insult Category")

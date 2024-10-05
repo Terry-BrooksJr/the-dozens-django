@@ -10,11 +10,9 @@ class InsultFilter(filters.FilterSet):
             "nsfw": ["exact"],
             "category": ["exact"],
         }
-class MyInsultFilter(filter.FilterSet):
+
+
+class MyInsultFilter(filters.FilterSet):
     class Meta:
         model = Insult
-        fields = {
-            "nsfw": ["exact"],
-            "category": ["exact"],
-            "status":["exact"]
-        }
+        fields = {"nsfw": ["exact"], "category": ["exact"], "status": ["exact"]}

@@ -1,4 +1,3 @@
-
 import os
 
 from django.conf import settings
@@ -14,5 +13,3 @@ class StaticStorage(BunnyStorage):
 
     location = "staticfiles"
     default_acl = "public-read"
-
-
