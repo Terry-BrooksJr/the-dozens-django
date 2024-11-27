@@ -1,55 +1,78 @@
-from API.dataclasses import InsultDataType
+# -*- coding: utf-8 -*-
 from API.models import Insult, InsultReview
-from arrow import get
 from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
 from rest_framework import serializers
-from rest_framework.views import status
 
 
+# @extend_schema_serializer(
+#     exclude_fields=('single','last_modified'),
+#     examples = [
+#          OpenApiExample(
+#             'Valid example 1',
+#             summary='short summary',
+#             description='longer description',
+#             value={
+#                 'songs': {'top10': True},
+#                 'single': {'top10': True}
+#             },
+#             request_only=True, # signal that example only applies to requests
+#             response_only=True, # signal that example only applies to responses
+#         ),
+#     ]
+# )
+# @extend_schema_serializer(
+#     exclude_fields=('single','last_modified'),
+#     examples = [
+#          OpenApiExample(
+#             'Valid example 1',
+#             summary='short summary',
+#             description='longer description',
+#             value={
+#                 'songs': {'top10': True},
+#                 'single': {'top10': True}
+#             },
+#             request_only=True, # signal that example only applies to requests
+#             response_only=True, # signal that example only applies to responses
+#         ),
+#     ]
+# )
 @extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            "Example Insult",
-            summary="Example of an Insult",
-            description="This example represents an insult, categorized and created by a user.",
-            value={
-                "pk": 1,
-                "content": "You're so slow, it takes you an hour to cook minute rice.",
-                "category": "stupid",
-                "NSFW": False,
-                "added_on": "2024-09-25",
-                "added_by": "john_doe",
-            },
-            status_codes=[status.HTTP_200_OK],
-        )
-    ]
-)
+        examples=[
+            OpenApiExample(
+                name="NSFW Insult",
+                value={
+                    "pk": 1,
+                    "content": "Yo Mama so Dumb, She thought a quarterback was a refund",
+                    "category": "Poor",
+                    "status": "Approved",
+                    "NSFW": True,
+                    "added_by": "love_laughing23",
+                },
+                description="Example of an NSFW humorous insult approved for use."
+            ),
+            OpenApiExample(
+                name="Safe Insult",
+                value={
+                    "pk": 2,
+                    "content": "Your coding style is like a Picasso painting—hard to interpret!",
+                    "category": "Fat",
+                    "status": "Pending",
+                    "NSFW": False,
+                    "added_by": "Jane S.",
+                },
+                description="Example of a safe sarcastic insult pending approval."
+            ),
+        ]
+    )
 class InsultSerializer(serializers.ModelSerializer):
-    """
-    Serializer for Insult model to convert model instances to Python data types.
-    """
-
-    content = serializers.CharField()
-    added_on = serializers.DateField()
-    added_by = serializers.SerializerMethodField()
-    category = serializers.ChoiceField(choices=Insult.CATEGORY.choices)
-    NSFW = serializers.BooleanField(source="nsfw")
+    category = serializers.CharField(source="get_category_display")
+    status = serializers.CharField(source="get_status_display")
+    NSFW = serializers.BooleanField(source="explicit")
+    pk = serializers.ReadOnlyField()
 
     class Meta:
         model = Insult
-        read_only_fields = ["pk"]
-        fields = ["pk", "content", "category", "NSFW", "added_on", "added_by"]
-
-    def get_added_by(self, instance) -> str:
-        if instance.added_by.first_name:
-            if instance.added_by.last_name:
-                return (
-                    f"{instance.added_by.first_name} {instance.added_by.last_name[0]}."
-                )
-
-            else:
-                return f"{instance.added_by.first_name}."
-        return instance.added_by.username
+        fields = "__all__"
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)

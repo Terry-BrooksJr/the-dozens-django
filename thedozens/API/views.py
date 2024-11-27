@@ -2,25 +2,56 @@ import random
 from enum import Enum
 
 from API.filters import InsultFilter
+
 from API.models import Insult
-from API.serializers import CategorySerializer, InsultSerializer, MyInsultSerializer
-from django.shortcuts import get_object_or_404
+from API.serializers import (
+    InsultsCategorySerializer,
+    InsultSerializer,
+    MyInsultSerializer,
+    serializers
+)
 from django_filters import rest_framework as filters
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import (
-    OpenApiExample,
-    OpenApiParameter,
-    extend_schema,
-    inline_serializer,
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer, OpenApiResponse, extend_schema_view, OpenApiExample
+from rest_framework.generics import (
+    ListAPIView,
+    RetrieveAPIView,
+    RetrieveUpdateDestroyAPIView,
 )
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import status
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.views import APIView, status
 
-from thedozens.utils.category_resolver import Resolver
-
+@extend_schema_view(
+    retrieve=extend_schema(
+        tags=["Insults"],
+        description="Retrieve a list of insults added by the authenticated user.",
+        responses={
+            200: OpenApiResponse(
+                description="A list of insults contributed by the user.",
+                examples=[
+                    OpenApiExample(
+                        name="Successful Response",
+                        value={
+                            "jokester": "johndoe",
+                            "jokes_contributed": 3,
+                            "jokes": [
+                                {"id": 1, "content": "Your code looks like spaghetti."},
+                                {"id": 2, "content": "You're debugging your own mess again?"},
+                                {"id": 3, "content": "Your CSS skills are truly groundbreaking—breaking everything!"},
+                            ],
+                        },
+                    )
+                ],
+            ),
+            401: OpenApiResponse(
+                response={"detail": "Authentication credentials were not provided."},
+                description="User is not authenticated.",
+            ),
+        },
+    )
+)
 
 class MyInsultsViewSet(ModelViewSet):
     """
@@ -121,193 +152,137 @@ class InsultsCategoriesViewSet(ReadOnlyModelViewSet):
         }
         return Response(resp, status=status.HTTP_200_OK)
 
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="category",
-                description="Category of the insult",
-                required=False,
-                type=OpenApiTypes.STR,
-                enum=[x for x, y in Insult.CATEGORY.choices],
-                location="query",
-            ),
-            OpenApiParameter(
-                name="nsfw",
-                description="Explicity content filter to out mature, graphic or violence themed content. <sub>NOTE: While all efforts to eswure this is as accurate as possible, this is an API that con have content contributed that are inaccurate. If this occurs, please report the joke/",
-                required=False,
-                type=OpenApiTypes.BOOL,
-                location="query",
-            ),
-        ],
-        methods=["GET"],
-        responses={200: CategorySerializer},
-        examples=[
-            OpenApiExample(
-                "Getting All Jokes In A Category",
-                status_codes=[
-                    status.HTTP_200_OK,
-                ],
-                summary="Paginated Listing of all active jokes in  a category",
-                description='This endpoint allows API Consumers to get a paginated list of all jokes in a given category i.e. "fat", "poor", "etc.',
-                value={
-                    "count": 401,
-                    "category": "Bald",
-                    "results": [
-                        {
-                            "id": 979885544274460700,
-                            "nsfw": False,
-                            "content": "Yo mama so bald, you can see what’s on her mind.",
-                        },
-                        {
-                            "id": 979885544274657300,
-                            "nsfw": False,
-                            "content": "Yo momma is so bald... you can see what's on her mind.",
-                        },
-                        {
-                            "id": 979885544274690000,
-                            "nsfw": False,
-                            "content": "Yo momma is so bald... even a wig wouldn't help!",
-                        },
-                        {
-                            "id": 979885544274722800,
-                            "nsfw": False,
-                            "content": "Yo momma is so bald... she had to braids her beard.",
-                        },
-                    ],
-                },
-                request_only=False,  # signal that example only applies to requests
-                response_only=True,  # signal that example only applies to responses
-            ),
-            OpenApiExample(
-                "Submitting An Invalid Category",
-                status_codes=[
-                    status.HTTP_404_NOT_FOUND,
-                ],
-                description='This endpoint allows API Consumers to get a paginated list of all jokes in a given category i.e. "fat", "poor", "etc.',
-                value={
-                    "data": "Invalid Category. Please Make Get Request to '/insults/categories' for a list of available categories"
-                },
-                request_only=False,  # signal that example only applies to requests
-                response_only=True,  # signal that example only applies to responses
-            ),
-        ],
-    )
-    def get_queryset(self):
-        category_selection = self.request.query_params.get(
-            "category"
-        ) or self.request.data.get("category")
-        available_categories = {y: x for x, y in Insult.CATEGORY.choices}
-        if category_selection not in available_categories:
-            return Insult.objects.none()
-        return Insult.objects.filter(
-            status="A", category=available_categories[category_selection]
-        )
-
-
-class RandomInsultViewSet(ReadOnlyModelViewSet):
+@extend_schema(
+    tags=["Insults"],
+    description="Retrieve a list of insults filtered by category. Each category corresponds to a predefined list of available insults.",
+    parameters=[
+        OpenApiParameter(
+            name="category",
+            description="The category code to filter insults by. Should match one of the available categories.",
+            required=True,
+            type=str,
+            examples=[
+                OpenApiExample(
+                    name="Example Category",
+                    value="fat",
+                    description="Filter insults under the 'fat' category."
+                )
+            ]
+        ),
+    ],
+    responses={
+        200: InsultsCategorySerializer(many=True),
+        404: {"description": "Category not found or no insults available in the specified category."},
+    }
+)
+class InsultsCategoriesListView(ListAPIView):
     """
-    RandomInsultViewSet is a viewset for retrieving a random insult from a collection of available insults. It allows users to filter insults based on categories and NSFW (not safe for work) content.
+    Retrieve insults filtered by category.
 
-    This viewset provides a method to fetch a random insult and handles cases where no insults are available. It also includes a method to retrieve a queryset of insults, applying filters based on user-specified parameters for category and NSFW content.
+    This view provides insults that belong to a specific category, filtered by the
+    `category` path parameter. If the category is invalid or no insults exist in the
+    specified category, an empty result set is returned.
+    """
 
-    Args:
-        request: The HTTP request object.
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = InsultFilter
+    lookup_field = "category"
+    serializer_class = InsultsCategorySerializer
+    permission_classes = [AllowAny]
+    parser_classes = [MultiPartParser]
 
-    Returns:
-        Response: A response object containing the serialized random insult data or an error message if no insults are available.
+    def get_queryset(self):
+        category = self.kwargs.get("category", "").lower()
+        available_categories = {y.lower(): x for x, y in Insult.CATEGORY.choices}
 
-    Examples:
-        To retrieve a random insult:
-            GET /api/insults/random/
+        if category not in available_categories:
+            return Insult.objects.none()
 
-        To retrieve a random insult in a specific category:
-            GET /api/insults/random/?category=funny
+        return Insult.objects.filter(
+            status="A",
+            category=available_categories[category]
+        )
+    
+class InsultSingleItem(RetrieveAPIView):
+    queryset = Insult.objects.all()
+    lookup_field = "id"
+    serializer_class = InsultSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = InsultFilter
+    permission_classes = [AllowAny]
 
-        To retrieve a random insult with NSFW content:
-            GET /api/insults/random/?nsfw=true`
+
+@extend_schema_view(
+    retrieve=extend_schema(
+        tags=["My Insults"],
+        description="Retrieve a specific insult created by the authenticated user.",
+        responses={
+            200: InsultSerializer,
+            404: OpenApiResponse(
+                description="The requested insult does not exist or does not belong to the user."
+            ),
+        },
+    ),
+    update=extend_schema(
+        tags=["My Insults"],
+        description="Update a specific insult created by the authenticated user.",
+        responses={
+            200: InsultSerializer,
+            400: OpenApiResponse(
+                description="Bad request. The provided data is invalid."
+            ),
+            404: OpenApiResponse(
+                description="The requested insult does not exist or does not belong to the user."
+            ),
+        },
+    ),
+    partial_update=extend_schema(
+        tags=["My Insults"],
+        description="Partially update a specific insult created by the authenticated user.",
+        responses={
+            200: InsultSerializer,
+            400: OpenApiResponse(
+                description="Bad request. The provided data is invalid."
+            ),
+            404: OpenApiResponse(
+                description="The requested insult does not exist or does not belong to the user."
+            ),
+        },
+    ),
+    destroy=extend_schema(
+        tags=["My Insults"],
+        description="Delete a specific insult created by the authenticated user.",
+        responses={
+            204: OpenApiResponse(
+                description="The insult was successfully deleted."
+            ),
+            404: OpenApiResponse(
+                description="The requested insult does not exist or does not belong to the user."
+            ),
+        },
+    ),
+)
+class MyInsultsView(RetrieveUpdateDestroyAPIView):
+    """
+    Manage insults created by the currently authenticated user.
+
+    Allows retrieving, updating, partially updating, or deleting a specific insult.
     """
 
     serializer_class = InsultSerializer
-
-    @action(detail=False, methods=["get"])
-    def random(self, request):
-        queryset = self.get_queryset()
-        if not queryset.exists():
-            return Response(
-                {"error": "No insults available"}, status=status.HTTP_404_NOT_FOUND
-            )
-        random_insult = random.choice(queryset)
-        serializer = self.get_serializer(random_insult)
-        return Response(serializer.data)
+    filterset_class = InsultFilter
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        nsfw_selection = self.request.query_params.get("nsfw")
-        category_selection = self.request.query_params.get("category")
+        """
+        Returns a queryset of insults created by the authenticated user.
 
-        queryset = Insult.objects.all()
-        if category_selection:
-            resolved_cat = Resolver.resolve(category_selection)
-            queryset = queryset.filter(category=resolved_cat)
-        if nsfw_selection is not None:
-            queryset = queryset.filter(nsfw=nsfw_selection)
-        return queryset
+        If the user is anonymous, returns an empty queryset.
+        """
+        user = self.request.user
+        if not user.is_anonymous:
+            return Insult.objects.filter(added_by=user)
+        return Insult.objects.none()
+    
+    def update(self, request, *args, **kwargs):
 
-
-# class InsultsCategoriesListView(ListAPIView):
-#     filterset_class = InsultFilter
-#     serializer_class = InsultSerializer
-
-#     def get_queryset(self):
-#         try:
-#             category_selection = self.request.query_params.get('category') or self.request.data.get('category')
-#             available_categories = {y: x for x, y in Insult.CATEGORY.choices}
-#             if category_selection not in available_categories:
-#                 return Insult.objects.none()
-#             return Insult.objects.filter(status="A", category=available_categories[category_selection])
-#         except Exception as e:
-#             logger.error(f"ERROR: Unable to Get Categories List: {e} ")
-
-
-#     def list(self, request, *args, **kwargs):
-#         queryset = self.filter_queryset(self.get_queryset())
-#         if not queryset.exists():
-#             return Response(data="Invalid Category. Please Make Get Request to '/insults/categories' for a list of available categories", status=status.HTTP_404_NOT_FOUND)
-#         page = self.paginate_queryset(queryset)
-#         if page is not None:
-#             serializer = self.get_serializer(page, many=True)
-#             return self.get_paginated_response(serializer.data)
-#         serializer = self.get_serializer(queryset, many=True)
-#         return Response(serializer.data)
-
-# @extend_schema(request=InsultSerializer, responses=InsultSerializer)
-# class InsultSingleItem(RetrieveAPIView):
-#     queryset = Insult.objects.all()
-#     lookup_field = "id"
-#     serializer_class =   InsultSerializer
-#     filterset_class = InsultFilter
-#     permission_classes = [AllowAny]
-
-
-# @extend_schema(request=InsultSerializer, responses=InsultSerializer)
-# class RandomInsultView(RetrieveAPIView):
-#     queryset = Insult.objects.all()
-#     serializer_class = InsultSerializer
-#     filterset_class = InsultFilter
-#     permission_classes = [AllowAny]
-
-
-#     def get_queryset(self):
-#         nsfw_selection = self.request.query_params.get('nsfw')
-#         category_selection = self.request.query_params.get('category') or self.request.data.get('category')
-
-#         queryset = Insult.objects.all()
-#         if category_selection:
-#             resolved_cat = Resolver.resolve(category_selection)
-#             queryset = queryset.filter(category=resolved_cat)
-#         if nsfw_selection is not None:
-#             queryset = queryset.filter(nsfw=nsfw_selection)
-#         return queryset
-
-#     def get_object(self):
-#         queryset = self.filter_queryset(self.get_queryset())
-#         return random.choice(queryset)

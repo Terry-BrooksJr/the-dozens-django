@@ -57,7 +57,6 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         HAIRY = "H", _("hairy")
         LAZY = "L", _("lazy")
         SHORT = "SRT", _("short")
-
     class STATUS(models.TextChoices):
         ACTIVE = "A", _("Active")
         REMOVED = "X", _("Inactive/Removed")

@@ -1,11 +1,4 @@
-
-ifeq ($(RUNNING_IN_CONTAINER), 'true')
-PATH_PREFIX := /workspaces/
-VENV := ""
-else
-PATH_PREFIX := /Users/terry-brooks/GitHub/
 VENV := .venv
-endif
 BIN := $(VENV)/bin
 PYTHON := $(BIN)/python
 .PHONY: help
@@ -38,7 +31,7 @@ test: ## Run tests
 
 .PHONY: run
 run: ## Run the Django server
-	doppler run -t $(DOPPLER_TOKEN) -- $(PYTHON) thedozens/manage.py runserver
+	doppler run  -- python  thedozens/manage.py runserver
 
 start:
 	install migrate run ## Install requirements, apply migrations, then start development server

@@ -146,3 +146,5 @@ GitHub.sublime-settings
 !.vscode/extensions.json
 .history
 *.log
+.postgresql/ca-certificate.crt
+.postgresql/do_cert.crt

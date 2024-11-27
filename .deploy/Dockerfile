@@ -16,7 +16,7 @@ WORKDIR /src/app
 EXPOSE 9090
 
 RUN useradd --shell /bin/bash --create-home api
-RUN chown -R api:api /src
+RUN chown -R api:api /src &&  curl --create-dirs -o $HOME/.postgresql/root.crt 'https://cockroachlabs.cloud/clusters/86f3e1fa-ff5a-4b0a-bc98-216919d1bf21/cert'
 COPY --chown=api:api ./requirements.txt ./requirements.txt
 COPY --chown=api:api  makefile /src/Makefile
 

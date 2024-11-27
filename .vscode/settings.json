@@ -35,6 +35,9 @@
         "Saloy",
         "thedozens",
         "unanimate",
+        "recaptha",
+        "sniffio",
+        "sqlglot",
         "validatio"
     ],
     "eslint.enable": false,
@@ -44,4 +47,6 @@
     "doppler.autocomplete.enable": true,
     "doppler.hover.enable": true,
    
+        
+    
 }
