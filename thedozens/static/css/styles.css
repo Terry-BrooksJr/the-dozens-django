@@ -1,3 +1,4 @@
+ /* Define reusable custom properties using @property */
 @property --yo-mama-lime-green {
   syntax: "<color>";
   inherits: false;
@@ -16,249 +17,102 @@
   initial-value: #bd00b4;
 }
 
-/* Updated #page */
+@property --transition-duration {
+  syntax: "<time>";
+  inherits: false;
+  initial-value: 1s;
+}
+
+@property --font-scale-factor {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0.55;
+}
+
+/* General Styles */
+body {
+  background: url("https://cdn.yo-momma.net/staticfiles/assets/background.svg") no-repeat center fixed;
+  background-color: #d1d937;
+  background-size: cover;
+  font-family: "YoMamaBody";
+  height: 135vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: YoMamaHeader;
+  color: var(--yo-mama-purple);
+}
+
+.scale-font {
+  font-size: calc(var(--font-scale-factor) * 1vw + var(--font-scale-factor) * 1vh);
+}
+
+/* Page Layout */
 #page {
-  align-items: center;
-  background: linear-gradient(to top right, #770071 10%, #bd00b4 65%, var(--yo-mama-lime-green) 125%);
-  bottom: 0;
   display: flex;
   justify-content: center;
-  left: 0;
-  position: fixed; /* changed from absolute */
-  height: 100%;
+  align-items: center;
+  position: fixed;
   width: 100%;
-  right: 0;
+  height: 100%;
   top: 0;
-  transition: opacity 1s;
+  left: 0;
+  background: linear-gradient(
+    to top right, 
+    var(--yo-mama-purple) 10%, 
+    var(--yo-mama-purple-highlight) 65%, 
+    var(--yo-mama-lime-green) 125%
+  );
+  transition: opacity var(--transition-duration);
 }
 
-#phrase_box {
-  display: flex;
-  flex-flow: column;
-  height: 150px;
-  width: 260px;
+/* Joke of the Day Section */
+#joke-of-day {
+  font-size: 20px;
+  font-weight: bold;
+  background-color: var(--yo-mama-purple);
+  color: aliceblue;
+  border-radius: 25px;
+  padding: 1.5rem;
 }
 
-#phrases {
-  animation: slide-phrases-upward 20s;
+#joke-of-day-title-parent {
+  background-color: var(--yo-mama-lime-green);
+  color: hsl(0, 0%, 20%);
+  border-top: 1px solid hsl(300, 50%, 35%);
+  border-bottom: 1px solid hsl(300, 50%, 5%);
+  width: 85%;
+  max-width: 48rem;
+  margin: auto;
 }
 
-/* Consolidated hover styles */
-.uk-dropdown-nav > li > a:hover {
-  color: var(--yo-mama-lime-green);
-}
-
-.uk-dropdown-nav > li > a {
-  color: #770071;
-}
-
-@keyframes slide-phrases-upward {
-  0% {
-    transform: translateY(0px);
-  }
-  100% {
-    transform: translateY(-1000px);
-  }
-}
-
-/* Consolidated repetitive animation declarations */
+/* Animations */
 .loadingCheckCircleSVG {
   animation: fill-to-white 5000ms;
   fill: var(--yo-mama-lime-green);
   opacity: 0;
 }
 
-#loadingCheckCircleSVG-0 { animation-delay: -1.5s; }
-#loadingCheckCircleSVG-1 { animation-delay: -0.5s; }
-/* Repeat for other IDs with different delays... */
-
-@keyframes fill-to-white {
-  0% {
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
 .loadingCheckSVG {
   animation: fill-to-coral 5000ms;
 }
 
+@keyframes fill-to-white {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
 @keyframes fill-to-coral {
-  0% {
-    fill: var(--yo-mama-lime-green);
-  }
-  10% {
-    fill: #770071;
-  }
-  100% {
-    fill: #770071;
-  }
+  0% { fill: var(--yo-mama-lime-green); }
+  10% { fill: var(--yo-mama-purple); }
+  100% { fill: var(--yo-mama-purple); }
 }
 
-@font-face {
-  font-family: YoMamaHeader;
-  src: url(https://cdn.yo-momma.net/staticfiles/fonts/caloriesuitDEMO.otf);
-}
-
-@font-face {
-  font-family: YoMamaBody;
-  src: url(https://cdn.yo-momma.net/staticfiles/fonts/JuliusSansOne-Regular.ttf);
-}
-
-/* Font families for headers */
-h1, h2, h3, h4, h5, h6 {
-  font-family: YoMamaHeader;
-}
-
-body {
-  background-image: url("https://cdn.yo-momma.net/staticfiles/assets/background.svg");
-  background-repeat: no-repeat;
-  background-color: #d1d937;
-  background-size: cover;
-  font-family: "YoMamaBody";
-  background-attachment: fixed;
-  background-position: center;
-  height: 135vh;
-}
-
-@media (max-width: 600px) {
-  body {
-    background-attachment: scroll; /* Remove fixed background on mobile */
-    background-size: contain;
-    height: auto;
-  }
-}
-
-@media (max-width: 768px) {
-  /* Adjust video size for tablets and mobile */
-  video#about-video {
-    width: 100%;
-    margin-left: 0; /* Center video on smaller screens */
-  }
-
-  /* Adjust Joke of the Day section on smaller screens */
-  .RandomJoke {
-    width: 100%;
-  }
-
-  #joke-of-day-title-parent {
-    width: 100%;
-    margin: auto;
-  }
-}
-
-@media (max-width: 480px) {
-  #phrase_box {
-    height: 100px;
-    width: 100%;
-  }
-
-  .scale-font {
-    font-size: calc(.8vw + .8vh); /* Make text slightly larger on smaller screens */
-  }
-
-  /* Adjust padding on Joke of the Day */
-  #JokeOfDay {
-    padding: 1rem;
-    font-size: 14px;
-  }
-
-  /* Adjust footer size */
-  .footer {
-    font-size: 12px;
-  }
-}
-
-/* Responsive adjustments for images and videos */
-video#about-video {
-  margin-left: 10rem;
-  width: 100%; /* Ensure video scales properly on all screens */
-  height: auto;
-}
-
-#key-feature-list > * {
-  margin-left: 5em;
-}
-
-/* Simplified scale font */
-.scale-font {
-  font-size: calc(.55vw + .55vh);
-}
-
-#yo-mama-brand {
-  height: 100px;
-  width: auto;
-  float: left;
-}
-
-.wrap-right {
-  float: right;
-  margin: 5px;
-}
-
-.wrap-left {
-  float: left;
-  margin: 5px;
-}
-
-#joke-of-day {
-  font-size: 20px;
-  font-weight: bolder;
-}
-
-#joke-of-day:hover {
-  content: "Click for a New Joke!";
-}
-
-.RandomJoke {
-  width: 100%; /* Set width to auto for better responsiveness */
-}
-
-#joke-of-day-title-parent {
-  background-color: var(--yo-mama-lime-green);
-  width: 85%;
-  max-width: 48rem;
-  margin: auto;
-  color: hsl(0, 0%, 20%);
-  border-top: 1px solid hsl(300, 50%, 35%);
-  border-bottom: 1px solid hsl(300, 50%, 5%);
-}
-
-/* Updated footer and navbar styles */
-.footer {
-  position: fixed;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  background-color: purple;
-  color: white;
-  text-align: center;
-}
-
-nav {
-  width: 100%;
-  background-color: purple;
-}
-
-#copy-right {
-  position: fixed;
-  bottom: 225px;
-  left: 15px;
-}
-
-.video-sub-copy {
-  bottom: 190px;
-  left: 15px;
-}
-
-/* Button styles */
+/* Buttons */
 .btn-primary {
-  background-color: purple !important;
+  background-color: var(--yo-mama-purple) !important;
+  color: white;
 }
 
 .btn-primary:hover,
@@ -267,77 +121,40 @@ nav {
   background-color: var(--yo-mama-lime-green) !important;
 }
 
-/* Other layout adjustments */
-.flex {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-h1 {
-  font-family: YoMamaHeader;
-  color: #770071;
-}
-
-#JokeOfDay {
-  background-color: #770071;
-  border-radius: 25px;
-  color: aliceblue;
-  height: auto;
-  padding: 1.5rem;
-}
-
-#bb-py-logo {
-  height: 5%;
-  width: 5%;
-}
-
-/* Additional Media Queries */
-@media (max-width: 992px) {
-  /* Adjust the margin for the dozens-image */
-  #dozens-image {
-    margin-left: 2rem;
+/* Responsive Design */
+@media (max-width: 600px) {
+  body {
+    background-attachment: scroll;
+    background-size: contain;
+    height: auto;
+  }
+  #phrase_box {
+    height: 100px;
     width: 100%;
   }
-
-  /* Adjust the Joke of the Day font size */
-  #joke-of-day {
-    font-size: 18px;
-  }
-}
-
-@media (max-width: 576px) {
-  #JokeOfDay {
-    padding: 0.75rem;
-    font-size: 1rem;
-  }
-
-  /* Adjust header fonts on small devices */
-  h1, h2, h3, h4, h5, h6 {
-    font-size: calc(1rem + 1vw);
-  }
-
   .footer {
-    padding: 0.5rem;
-  }
-
-  /* Reduce the margin on small screens */
-  #dozens-image {
-    margin-left: 1rem;
+    font-size: 12px;
   }
 }
 
-@media (max-width: 360px) {
-  /* Reduce font sizes for ultra-small screens */
+@media (max-width: 768px) {
+  video#about-video {
+    width: 100%;
+    margin-left: 0;
+  }
+  .RandomJoke {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  #JokeOfDay {
+    padding: 1rem;
+    font-size: 14px;
+  }
   #joke-of-day-title-parent {
     font-size: 14px;
   }
-
-  #JokeOfDay {
-    padding: 0.5rem;
-    font-size: 0.85rem;
-  }
-
   .footer {
     font-size: 10px;
   }

@@ -148,3 +148,4 @@ GitHub.sublime-settings
 *.log
 .postgresql/ca-certificate.crt
 .postgresql/do_cert.crt
+logs

@@ -22,6 +22,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView, status
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 @extend_schema_view(
     retrieve=extend_schema(
@@ -218,7 +219,7 @@ class InsultSingleItem(RetrieveAPIView):
         description="Retrieve a specific insult created by the authenticated user.",
         responses={
             200: InsultSerializer,
-            404: OpenApiResponse(
+            403: OpenApiResponse(
                 description="The requested insult does not exist or does not belong to the user."
             ),
         },
@@ -231,7 +232,7 @@ class InsultSingleItem(RetrieveAPIView):
             400: OpenApiResponse(
                 description="Bad request. The provided data is invalid."
             ),
-            404: OpenApiResponse(
+            403: OpenApiResponse(
                 description="The requested insult does not exist or does not belong to the user."
             ),
         },
@@ -244,8 +245,8 @@ class InsultSingleItem(RetrieveAPIView):
             400: OpenApiResponse(
                 description="Bad request. The provided data is invalid."
             ),
-            404: OpenApiResponse(
-                description="The requested insult does not exist or does not belong to the user."
+            403: OpenApiResponse(
+                description= "The requested insult does not exist or does not belong to the user."
             ),
         },
     ),
@@ -256,7 +257,7 @@ class InsultSingleItem(RetrieveAPIView):
             204: OpenApiResponse(
                 description="The insult was successfully deleted."
             ),
-            404: OpenApiResponse(
+            403: OpenApiResponse(
                 description="The requested insult does not exist or does not belong to the user."
             ),
         },
@@ -285,4 +286,7 @@ class MyInsultsView(RetrieveUpdateDestroyAPIView):
         return Insult.objects.none()
     
     def update(self, request, *args, **kwargs):
-
+        user = self.request.user
+        joke = self.get_object()
+        if user != joke.added_by:
+            return Response(data=f"Insult {joke.insult_id} does not belong to user {user.username},",. status=40344444O444)
