@@ -1,0 +1,79 @@
+version: '3'
+
+vars:
+  BIN: '{{.VENV}}/bin'
+  PYTHON: '{{.BIN}}/python'
+  PATH_PREFIX: the-dozens-django/thedozens/
+
+tasks:
+  default:
+    cmds:
+      - task -l
+    silent: true
+
+  venv:
+    desc: Make a new virtual environment
+    cmds:
+      - python3 -m venv .venv --prompt="ACTIVE_VENV_DJANGO_DOZENS"
+      - source {{.TASKFILE_DIR}}/.venv/bin/activate
+
+  install:
+    desc: Make venv and install requirements
+    deps: [venv]
+    cmds:
+      - pip install poetry 
+      - poetry install 
+    
+
+  freeze:
+    desc: Pin current dependencies
+    cmds:
+      - doppler run  -- poetry sync
+      - doppler run  -- poetry export --without dev,test --without-hashes -without-urls > ./requirements/base.txt
+      - doppler run  -- poetry export --only dev,test --without-hashes -without-urls > ./requirements/dev.txt
+    generates:
+      - ./requirements/dev.txt
+      - ./requirements/base.txt
+      - ./poetry.lock
+    sources:
+      - ./poetry.lock``
+
+  migrate:
+    desc: Make and run migrations
+    cmds:
+      - doppler run -- {{.PYTHON}} {{.PATH_PREFIX}}manage.py makemigrations
+      - doppler run -- {{.PYTHON}} {{.PATH_PREFIX}}manage.py migrate
+
+  collect:
+    cmds:
+      - doppler run -- {{.PYTHON}} {{.PATH_PREFIX}}manage.py collectstatic --no-input
+
+  test:
+    desc: Run tests
+    cmds:
+      - doppler run -- {{.PYTHON}} manage.py test application --verbosity=0 --parallel --failfast
+
+  run:
+    desc: Run the Django server
+    cmds:
+      - doppler run -- python thedozens/manage.py runserver
+
+  start:
+    desc: Install requirements, apply migrations, then start development server
+    deps: [install, migrate, run]
+
+  schema-check:
+    desc: Check Models and Seralizers for schema compliance with OpenAPI .0 Standards and fail on warnings
+    cmds:
+      - doppler run -- {{.PYTHON}} {{.PATH_PREFIX}}manage.py spectacular  --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml --validate --fail-on-warn
+
+  schema:
+    deps: [schema-check]
+    desc: Genererate OpenAPI 3.0 schema.yaml file from models and serializers
+    cmds:
+      - doppler run -- {{.PYTHON}} {{.PATH_PREFIX}}manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
+
+  production-server:
+    desc: Run the Django server in production mode
+    cmds:
+      - doppler run -- {{.PYTHON}} -m gunicorn --workers=2 --threads=2 thedozens.thedozens.wsgi:application -b :9090
