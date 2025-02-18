@@ -1,10 +1,10 @@
 version: '3'
 
-vars:
-  BIN: '{{.VENV}}/bin'
-  PYTHON: '{{.BIN}}/python'
-  PATH_PREFIX: the-dozens-django/thedozens/
-
+env:
+    PYTHONPATH: "."
+    DJANGO_SETTINGS_MODULE: 'core.settings'
+    DJANGO_CONFIGURATION: '{{or .CLI_ARGS  "Development"}}'
+silent: true 
 tasks:
   default:
     cmds:
@@ -16,64 +16,118 @@ tasks:
     cmds:
       - python3 -m venv .venv --prompt="ACTIVE_VENV_DJANGO_DOZENS"
       - source {{.TASKFILE_DIR}}/.venv/bin/activate
+    internal: true
 
   install:
     desc: Make venv and install requirements
     deps: [venv]
     cmds:
       - pip install poetry 
-      - poetry install 
-    
+      - poetry lock
+      - poetry install --no-root
+    silent: false
 
   freeze:
     desc: Pin current dependencies
     cmds:
-      - doppler run  -- poetry sync
-      - doppler run  -- poetry export --without dev,test --without-hashes -without-urls > ./requirements/base.txt
-      - doppler run  -- poetry export --only dev,test --without-hashes -without-urls > ./requirements/dev.txt
+      - doppler run  -- poetry sync 
+      - doppler run  -- poetry export --without dev,test --without-hashes --without-urls > ./requirements/base.txt
+      - doppler run  -- poetry export  --without-hashes --without-urls > ./requirements/dev.txt
     generates:
       - ./requirements/dev.txt
       - ./requirements/base.txt
       - ./poetry.lock
     sources:
-      - ./poetry.lock``
+      - ./poetry.lock
+      - ./requirements/dev.txt
+      - ./requirements/base.txt
+    silent: false
 
-  migrate:
+  db_sync:
     desc: Make and run migrations
+    dir: ./thedozens
     cmds:
-      - doppler run -- {{.PYTHON}} {{.PATH_PREFIX}}manage.py makemigrations
-      - doppler run -- {{.PYTHON}} {{.PATH_PREFIX}}manage.py migrate
+      - doppler run --  python run/manage.py makemigrations
+      - doppler run --  python run/manage.py migrate
+    generates:
+      - ./thedozens/application/migrations/*.py
+    sources:
+      - ./thedozens/application/migrations/*.py
+    requires:
+      vars:
+        - DOPPLER_TOKEN
+        - PATH_TO_DB_ROOT_CERT
 
   collect:
+    dir: ./thedozens
+    desc: Collect static files in to single directory for production
     cmds:
-      - doppler run -- {{.PYTHON}} {{.PATH_PREFIX}}manage.py collectstatic --no-input
+      - doppler run --  python run/manage.py collectstatic --no-input
 
   test:
+    dir: ./thedozens
     desc: Run tests
     cmds:
-      - doppler run -- {{.PYTHON}} manage.py test application --verbosity=0 --parallel --failfast
+      - doppler run --  python run/manage.py test application --verbosity=0 --parallel --failfast
+    requires:
+      vars:
+        - DOPPLER_TOKEN
+        - PATH_TO_DB_ROOT_CERT
 
   run:
-    desc: Run the Django server
+    desc: Starts a Gunicorn Based Development Server that Reloads on Changes
+    dir: ./thedozens
     cmds:
-      - doppler run -- python thedozens/manage.py runserver
+      - doppler run -- python run/manage.py runserver #--workers=2 --threads=2 core.wsgi:application -b :{{or .CLI_ARGS 8000}} --reload
+    requires:
+      vars: 
+        - DOPPLER_TOKEN
+        - PATH_TO_DB_ROOT_CERT
+
 
   start:
-    desc: Install requirements, apply migrations, then start development server
-    deps: [install, migrate, run]
+    dir: ./thedozens
+    desc: Command to Start Production Level Services including Install requirements, apply migrations, then start development server
+    cmds:
+      - echo 'Starting Production Level Services...'
+      - echo 'Installing dependencies'
+      - task: install
+        ignore_error: true
+      - echo 'Applying migrations...'
+      - task: db_sync
+        ignore_error: true
+      - echo 'Starting server...'
+      - doppler run -- python -m gunicorn --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}}
 
   schema-check:
-    desc: Check Models and Seralizers for schema compliance with OpenAPI .0 Standards and fail on warnings
+    dir: ./thedozens
+    desc: Check Models and Serializers for schema compliance with OpenAPI .0 Standards and fail on warnings
     cmds:
-      - doppler run -- {{.PYTHON}} {{.PATH_PREFIX}}manage.py spectacular  --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml --validate --fail-on-warn
+      - doppler run --  python run/manage.py spectacular  --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml --validate --fail-on-warn
+    internal: true
 
   schema:
     deps: [schema-check]
-    desc: Genererate OpenAPI 3.0 schema.yaml file from models and serializers
+    dir: ./thedozens
+    desc: Generate OpenAPI 3.0 schema.yaml file from models and serializers
     cmds:
-      - doppler run -- {{.PYTHON}} {{.PATH_PREFIX}}manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
+      - doppler run --  python run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
 
-  production-server:
-    desc: Run the Django server in production mode
+  build-image:
+    desc: Build Docker Image
+    dir: .deploy
     cmds:
-      - doppler run -- {{.PYTHON}} -m gunicorn --workers=2 --threads=2 thedozens.thedozens.wsgi:application -b :9090
+      - docker build buildx --platform --push linux/amd64,linux/arm64  --env DOPPLER_TOKEN=$DOPPLER_TOKEN -t thedozens:latest .
+    requires:
+      vars: 
+        - DOPPLER_TOKEN
+        - PATH_TO_DB_ROOT_CERT
+  
+  lint:
+    desc: Run linters
+    dir: ./thedozens
+    cmds:
+      - python -m black . 
+      - python -m isort --profile black .
+      - python -m autoflake --remove-all-unused-imports --recursive --remove-unused-variables --in-place .
+  

@@ -12,7 +12,8 @@ node_modules
 __pycache__
 db.sqlite3
 media
-
+.venv/
+.task/
 # Backup files #
 *.bak
 
@@ -149,3 +150,8 @@ GitHub.sublime-settings
 .postgresql/ca-certificate.crt
 .postgresql/do_cert.crt
 logs
+data
+.task
+COCKROACH_DB_SSL.crt
+thedozens/https:/cdn.yo-momma.net/staticfiles
+.kolo

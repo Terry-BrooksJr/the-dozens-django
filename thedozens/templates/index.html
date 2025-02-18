@@ -1,0 +1,521 @@
+{% load static %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="keywords" content="API, Joke, Entertainment, Yo Mama Jokes, The Dozens " />
+  <title>The Dozens - The Yo Mama Roast API</title>
+  <link rel="icon" type="image/x-icon" href="https://cdn.yo-momma.net/staticfiles/assets/yoyoo_400x400.jpg" />
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+    crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/css/uikit.min.css" />
+  <script src="https://kit.fontawesome.com/58e27c88da.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <script src="https://unpkg.com/highlight.run"></script>
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+  <style>
+    :root {
+      --color-primary: #770071;
+      --color-secondary: #bd00b4;
+      --color-accent: #beda00;
+      --color-white: #ffffff;
+      --z-preloader: 9999;
+      --transition-standard: 300ms ease;
+  }
+
+  * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+  }
+    </style>
+    <style>
+      #preloader {  
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background-image: url('https://source.unsplash.com/random/1920x1080');
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+  }
+
+  body {
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+  }
+
+      #preloader {
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: var(--z-preloader);
+        opacity: 1;
+        transition: opacity var(--transition-standard);
+    }
+
+    .loading-container {
+        text-align: center;
+        color: var(--color-white);
+    }
+
+    #loading-message {
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    #phrases {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .phrase-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        color: var(--color-white);
+        opacity: 0.7;
+        transition: all 0.3s ease;
+    }
+
+    .phrase-item.completed {
+        opacity: 1;
+    }
+
+    .checkmark {
+        width: 24px;
+        height: 24px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .phrase-item.completed .checkmark {
+        opacity: 1;
+    }
+
+    .fade-out {
+        opacity: 0 !important;
+    }
+
+    /* Content Styles */
+    .content-wrapper {
+        position: relative;
+        z-index: 1;
+        opacity: 0;
+        transition: opacity var(--transition-standard);
+        min-height: 100vh;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+    }
+
+    .content-wrapper.show {
+        opacity: 1;
+    }
+
+    /* Yo Mama Specific Styles */
+    .joke-of-day {
+        background-color: var(--color-primary);
+        color: var(--color-white);
+        border-radius: 25px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .joke-title {
+        background-color: var(--color-accent);
+        color: #333;
+        border-radius: 15px;
+        padding: 1rem;
+        transition: background-color 0.3s ease;
+    }
+
+    .joke-title:hover {
+        background-color: var(--color-secondary);
+        color: var(--color-white);
+    }
+
+    .scale-font {
+        font-size: clamp(1rem, 2vw, 1.5rem);
+    }
+
+    .main-content {
+        padding: 2rem;
+    }
+
+    .features-section {
+        background: white;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-top: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .site-footer {
+        background: var(--color-primary);
+        color: var(--color-white);
+        padding: 1rem;
+        margin-top: 2rem;
+    }
+
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+        .mobile-redirect {
+            display: block;
+        }
+        .responsive-wrapper:not(.mobile-redirect) {
+            display: none;
+        }
+    }
+
+    @media (min-width: 769px) {
+        .mobile-redirect {
+            display: none;
+        }
+    }
+
+    /* Scrollbar Styles */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--color-primary);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--color-secondary);
+    }
+    </style>
+</head>
+<body>
+   <!-- Fixed Background -->
+   <div class="background-con tainer"></div>
+
+   <!-- Preloader -->
+   <div id="preloader">
+       <div class="loading-container">
+           <div id="loading-message">Loading awesome jokes...</div>
+           <div id="phrases"></div>
+       </div>
+   </div>
+   <div class="layout-container">
+
+
+   <div class="content-wrapper">
+    <!-- Paste the provided content here -->
+    <div class="responsive-wrapper fade-in">
+
+    <nav uk-dropnav>
+      <ul class="uk-subnav justify-content-between navbar-main flex-wrap">
+        <li class="ps-0 ms-4">
+          <img id="yo-mama-brand" class="navbar-brand img-fluid"
+            src="{% static 'assets/dozens-logo.png' %}" alt="Yo Mama Logo" />
+        </li>
+        <li><a class="header-font" href="https://www.brooksjr.com" target="_blank">About the Developer</a></li>
+        <li>
+          <a class="header-font" href="#">The API <span uk-drop-parent-icon></span></a>
+          <div class="uk-dropdown">
+            <ul class="uk-nav uk-dropdown-nav">
+              <li><a target="_blank" class="header-font" href="{% url 'swagger' %}">Swagger</a></li>
+              <li><a target="_blank" class="header-font" href="https://www.postman.com/terryabrooksjr/the-roast-api-yo-mama-jokes/overview">Postman</a></li>
+              <li><a target="_blank" class="header-font" href="/graphql">GraphQL</a></li>
+              <li><a href="#" class="header-font">Register to Contribute</a></li>
+              <li><a id="reportAJokeTrigger" class="header-font" data-bs-toggle="modal" data-bs-target="#reportJokeModal">Report a Joke To Be Reviewed</a></li>
+            </ul>
+          </div>
+        </li>
+
+        <li><a class="header-font" href="#">The History of Yo' Mama Jokes<span uk-drop-parent-icon></span></a>
+          <div class="uk-dropdown">
+            <ul class="uk-nav uk-dropdown-nav">
+              <li><a class="header-font" href="#history-overview-modal" uk-toggle>Overview</a></li><br />
+              <li><a class="header-font" href="#history-origins-modal" uk-toggle>Origins</a></li><br />
+              <li><a class="header-font" href="#history-practice-modal" uk-toggle>Purpose & Practice</a></li><br />
+              <li><a class="header-font"  href="#history-ref-modal" uk-toggle>References</a></li><br />
+            </ul>
+          </div>
+        </li>
+        <li>
+        <div class="hidden">
+          <form>
+            <span id="csrf_token">
+             {% csrf_token %}
+            </span>
+          </form>
+        </div>
+          <div class="showHide container px-2 text-center align-middle">
+            <div id="joke-of-day-title-parent" class="row gx-1">
+              <div class="RandomJoke col-12 col-md-4">
+                <h4 class="text-wrap mt-3 scale-font text-dark" id="joke-of-day-title">Joke <br> of the <br> Day</h4>
+              </div>
+              <div class="joke-content-parent col-12 col-md-8">
+                <p class="p-0 text-wrap mt-3 text-dark align-text-top scale-font" id="joke-content">Yo mama so bald, you can
+                  see what’s on her mind.</p>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+    </nav>
+<section class="desktop-display">
+      <div class="row" id="body-img-row">
+        <div class="col-12 col-md-4 ps-0 py-0 ms-5 mt-n3">
+          <img id="dozens-image" src="{% static 'assets/Dozen-Word-brand.png' %}" alt="body-typography" class="img-fluid" />
+        </div>
+
+      </div>
+      <div class="row" id="body-copy">
+        <div class="col-12 col-md-6 text-center">
+          <p>Introducing a powerful and versatile Yo Mama Jokes API, meticulously crafted using Python 3.0's exceptional
+            web framework, Django, in conjunction with the Django REST framework.</p>
+          <p>This Yo Mama Jokes API is designed to be scalable, secure, and user-friendly, making it the perfect tool
+            for integrating humor into your applications. Whether you're building a fun app, adding some
+            lightheartedness to a website, or conducting data analysis on humor, our API has you covered.</p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-12 col-md-6 me-n1" id="video">
+          <video id="about-video" width="100%" height="auto"
+            src="{% static 'assets/blackish_the_dozens_abc_broadcasting.mp4' %}" class="img-fluid"
+            controls></video>
+        </div>
+      </div>
+      <div id="copyright-container" class="row ms-5">
+        <div class="col-12 video-sub-copy">
+          <sub>Clip from ABC's Hit Show <strong>black</strong>·<em>ish</em></sub>
+        </div>
+        <div class="col-12 copyright-text">
+          <sub><i class="fa fa-copyright"></i> American Broadcasting Company (ABC)</sub>
+        </div>
+      </div>
+      <div id="key-features" class="row">
+        <div class="col-12 col-md-6">
+
+          <h1 class="ms-5">Key Features</h1>
+          <ul id="key-feature-list" uk-accordion>
+            <li class="uk-open">
+              <a class="uk-accordion-title" href="#">Comprehensive Filtering</a>
+              <div class="uk-accordion-content">
+                <p class="text-center feature-text">API consumers can effortlessly filter jokes based on specific categories and
+                  nsfw content, allowing for a highly customized joke retrieval experience.</p>
+              </div>
+            </li>
+            <li>
+              <a class="uk-accordion-title" href="#">Dual API Formats</a>
+              <div class="uk-accordion-content">
+                <p class="text-center feature-text">In addition to the REST API, we offer a GraphQL API version, providing
+                  flexibility and convenience for developers who prefer this modern approach to querying data.</p>
+              </div>
+            </li>
+            <li>
+              <a class="uk-accordion-title" href="#">Generous Rate Limiting</a>
+              <div class="uk-accordion-content">
+                <p class="text-center feature-text">Protects against abuse and ensures fair usage by implementing robust rate limiting, making sure your
+                  application's performance remains optimal even under high traffic.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+<div class="align-items-center">
+  <a href="#">
+    <!-- Add your content here -->
+  </a>
+</div>
+</section>
+    </main>
+
+    <footer class="footer desktop-display"> 
+      <marquee>
+        Over 400 Side-Splitting Yo Mama Jokes · 10 Categories to Choose From including Fat, Poor, Ugly, and Dumb ·
+        Ability to filter out jokes based on explicit classification
+      </marquee>
+    </footer>
+
+
+  </div>
+  <script type="text/javascript" src="{% static 'js/fontAwesomeIconPicker.min.js' %}"></script>
+  <script
+    src='https://cdnjs.cloudflare.com/ajax/libs/fontawesome-iconpicker/3.2.0/js/fontawesome-iconpicker.min.js'></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js'></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+    integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+    crossorigin="anonymous"></script>
+  <script src='https://kit.fontawesome.com/58e27c88da.js'></script>
+  <!-- UIkit JS -->
+  <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"></script>
+  <script>
+      class PreloaderAnimation {
+          constructor() {
+              this.config = {
+                  animationDuration: 3000,
+                  messageInterval: 1000,
+                  fadeOutDuration: 500,
+                  verticalSpacing: 50
+              };
+      
+              this.phrases = [
+                  "Loading jokes", "Preparing insults", "Getting ready to roast", 
+                  "Warming up the comebacks", "Almost there", "Final touches",
+                  "Loading your mama jokes", "Preparing the dozens", "Setting up the fun"
+              ];
+      
+              this.state = {
+                  isAnimating: false,
+                  startTime: Date.now(),
+                  currentPhraseIndex: 0
+              };
+      
+              this.elements = {
+                  preloader: document.getElementById('preloader'),
+                  phrasesContainer: document.getElementById('phrases'),
+                  messageElement: document.getElementById('loading-message'),
+                  contentWrapper: document.querySelector('.content-wrapper')
+              };
+      
+              // Bind methods
+              this.animate = this.animate.bind(this);
+              this.updateMessage = this.updateMessage.bind(this);
+          }
+      
+          initialize() {
+              if (!this.validateElements()) return;
+              
+              this.setupPhrases();
+              this.start();
+          }
+      
+          validateElements() {
+              const missingElements = Object.entries(this.elements)
+                  .filter(([key, element]) => !element)
+                  .map(([key]) => key);
+      
+              if (missingElements.length > 0) {
+                  console.error('Missing required elements:', missingElements);
+                  return false;
+              }
+              return true;
+          }
+      
+          setupPhrases() {
+              this.phrases = this.shuffleArray(this.phrases);
+              this.elements.phrasesContainer.innerHTML = this.createPhrasesHTML();
+          }
+      
+          createPhrasesHTML() {
+              return this.phrases.map((phrase, index) => `
+                  <div class="phrase-item" style="transform: translateY(${index * this.config.verticalSpacing}px)">
+                      <span class="phrase-text">${phrase}...</span>
+                      <svg class="checkmark" viewBox="0 0 32 32">
+                          <circle cx="16" cy="16" r="15" fill="none" stroke="white" stroke-width="2"/>
+                          <path d="M9 16l5 5 9-9" fill="none" stroke="white" stroke-width="2"/>
+                      </svg>
+                  </div>
+              `).join('');
+          }
+      
+          shuffleArray(array) {
+              const newArray = [...array];
+              for (let i = newArray.length - 1; i > 0; i--) {
+                  const j = Math.floor(Math.random() * (i + 1));
+                  [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+              }
+              return newArray;
+          }
+      
+          start() {
+              this.state.isAnimating = true;
+              this.state.startTime = Date.now();
+              this.messageInterval = setInterval(this.updateMessage, this.config.messageInterval);
+              this.animate();
+          }
+      
+          animate() {
+              if (!this.state.isAnimating) return;
+      
+              const elapsed = Date.now() - this.state.startTime;
+              const progress = Math.min(elapsed / this.config.animationDuration, 1);
+      
+              if (progress < 1) {
+                  this.updateAnimation(progress);
+                  requestAnimationFrame(this.animate);
+              } else {
+                  this.stop();
+              }
+          }
+      
+          updateAnimation(progress) {
+              const translateY = -progress * (this.phrases.length * this.config.verticalSpacing);
+              this.elements.phrasesContainer.style.transform = `translateY(${translateY}px)`;
+              
+              document.querySelectorAll('.phrase-item').forEach((item, index) => {
+                  const itemProgress = (progress * this.phrases.length) - index;
+                  if (itemProgress > 0) {
+                      item.classList.add('completed');
+                  }
+              });
+          }
+      
+          updateMessage() {
+              this.state.currentPhraseIndex = (this.state.currentPhraseIndex + 1) % this.phrases.length;
+              this.elements.messageElement.textContent = 
+                  `${this.phrases[this.state.currentPhraseIndex]}...`;
+          }
+      
+          stop() {
+              this.state.isAnimating = false;
+              clearInterval(this.messageInterval);
+              
+              this.elements.preloader.classList.add('fade-out');
+              setTimeout(() => {
+                  this.elements.preloader.style.display = 'none';
+                  this.elements.contentWrapper.classList.add('show');
+                  document.body.style.overflow = 'visible';
+              }, this.config.fadeOutDuration);
+          }
+      }
+      
+      // Initialize when DOM is ready
+      document.addEventListener('DOMContentLoaded', () => {
+          const preloader = new PreloaderAnimation();
+          preloader.initialize();
+      });
+  </script>
+
+  {% include 'includes/history-modal.html' %}
+  {% include 'includes/joke-reporting-form.html' %}
+  {% include 'includes/getting-started.html' %}
+</body>
+<div class="mobile-display">
+  <div id="mobile-background">
+    <h1 id="mobile-redirection">
+      Please Visit This Site <br> On A Desktop</h1>
+    </div>
+</html>
