@@ -40,7 +40,7 @@ pycodestyle:
     - E71
     - W292
     - W391
- options:
+  options:
     max-line-length: 300
 
 pydocstyle:
@@ -97,6 +97,7 @@ pyright:
   options:
     level: warning
     pythonversion: 3.7
+    # noinspection SpellCheckingInspection
     skipunannotated: true
 
 mypy:

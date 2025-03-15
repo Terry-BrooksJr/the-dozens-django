@@ -153,5 +153,7 @@ logs
 data
 .task
 COCKROACH_DB_SSL.crt
-thedozens/https:/cdn.yo-momma.net/staticfiles
+https:/cdn.yo-momma.net/staticfiles
 .kolo
+https:
+/AIVIN_SSL_CERT.pem
