@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 
-from tutorial.settings import BASE_DIR
 
 """
 Django settings for thedozens project.
@@ -29,6 +28,10 @@ def log_warning(message, category, filename, lineno, file=None, line=None):
 
 GLOBAL_NOW = datetime.now()
 
+BASE_DIR = values.PathValue(
+    Path(__file__).resolve().parent.parent.parent, environ=False
+)
+
 
 class Base(Configuration):
     # SECTION Start - Application definition
@@ -38,71 +41,25 @@ class Base(Configuration):
     SITE_ID = values.PositiveIntegerValue(
         environ=True, environ_prefix=None, environ_name="SITE_ID"
     )
+
+
+
     ROOT_URLCONF = values.Value("core.urls", environ=False)
     WSGI_APPLICATION = values.Value("core.wsgi.application", environ=False)
-    BASE_DIR = values.PathValue(
-        Path(__file__).resolve().parent.parent.parent, environ=False
-    )
+
     ADMINS = values.ListValue([("Terry Brooks", "Terry@BrooksJr.com")], environ=False)
     LANGUAGE_CODE = values.Value("en-us", environ=False)
     APPEND_SLASH = values.BooleanValue(True, environ=False)
     VIEW_CACHE_TTL = values.PositiveIntegerValue(
-        environ=True, environ_prefix=None, environ_name="CACHE_TTL"
-    )
+    environ=True, environ_prefix=None, environ_name="CACHE_TTL"
+)
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
     SESSION_CACHE_ALIAS = "default"
     TIME_ZONE = values.Value("America/Chicago", environ=False)
     USE_I18N = values.BooleanValue(True, environ=False)
     USE_TZ = values.BooleanValue(True, environ=False)
     DEFAULT_AUTO_FIELD = values.Value("django.db.models.BigAutoField", environ=False)
-    INSTALLED_APPS = values.ListValue(
-        [
-            # Django-Installed Apps
-            "django.contrib.admin",
-            "django.contrib.auth",
-            "django.contrib.contenttypes",
-            "django.contrib.sessions",
-            "django.contrib.sites",
-            "django.contrib.messages",
-            "django.contrib.staticfiles",
-            # Third-Party Apps
-            "rest_framework",
-            "rest_framework.authtoken",
-            "django_filters",
-            "corsheaders",
-            "django_nose",
-            "djoser",
-            "graphene_django",
-            "crispy_forms",
-            "crispy_bootstrap5",
-            "django_prometheus",
-            "drf_spectacular",
-            # Project Apps
-            "applications.API",
-            "applications.graphQL",
-            "drf_spectacular_sidecar",
-        ],
-        environ=False,
-    )
 
-    MIDDLEWARE = values.ListValue(
-        [
-            "django_prometheus.middleware.PrometheusBeforeMiddleware",
-            # "django.middleware.cache.UpdateCacheMiddleware",
-            "django.middleware.security.SecurityMiddleware",
-            "whitenoise.middleware.WhiteNoiseMiddleware",
-            "django.contrib.sessions.middleware.SessionMiddleware",
-            "corsheaders.middleware.CorsMiddleware",
-            "django.middleware.common.CommonMiddleware",
-            "django.middleware.csrf.CsrfViewMiddleware",
-            "django.contrib.auth.middleware.AuthenticationMiddleware",
-            "django.contrib.messages.middleware.MessageMiddleware",
-            "django.middleware.clickjacking.XFrameOptionsMiddleware",
-            # "django.middleware.cache.FetchFromCacheMiddleware",
-            "django_prometheus.middleware.PrometheusAfterMiddleware",
-        ],
-        environ=False,
-    )
     RECAPTCHA_PRIVATE_KEY = values.SecretValue(
         environ=True, environ_prefix=None, environ_name="RECAPTCHA_PRIVATE_KEY"
     )
@@ -117,30 +74,13 @@ class Base(Configuration):
     )
     CRISPY_TEMPLATE_PACK = "bootstrap5"
     #!SECTION END - Application definition
-    TEST_RUNNER = "django_nose.NoseTestSuiteRunner"
-    NOSE_ARGS = [
-        "--with-coverage",
-        "--cover-html",
-        "--detailed-error",
-        "--cover-package=applications",
-        "--with-xunit",
-        "--xunit-file=xunittest.xml",
-    ]
+
     # SECTION Start - Media, Files and Static Assests Storage
-    BUNNY_USERNAME = os.environ["BUNNY_USERNAME"]
-    BUNNY_PASSWORD = os.environ["BUNNY_PASSWORD"]
-    BUNNY_REGION = os.environ["BUNNY_REGION"]
-    BUNNY_BASE_DIR = os.environ["BUNNY_BASE_DIR"]
-    STATIC_LOCATION = "staticfiles/"
-    STATIC_URL = "https://cdn.yo-momma.net/staticfiles/"
-    STATIC_ROOT = STATIC_URL
-    STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
-    STATICFILES_STORAGE = "common.backends.storage.StaticStorage"
-    BUNNY_HOSTNAME = STATIC_URL
+
     #!SECTION End - Media, Files and Static Assests Storage
 
     # SECTION Start- Logging
-    LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <magenta>{name}</magenta>:<cyan>Function: {function}</cyan>:<white>File: {file}</white>:<blue> Line: {line}</blue> - <level>{message}</level>'"
+    LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <bold><level>{message}</level></bold>"
     DEFAULT_LOGGER_CONFIG = {
         "format": LOG_FORMAT,
         "diagnose": False,
@@ -181,34 +121,75 @@ class Base(Configuration):
             }
         }
     )
-    # SECTION Start - Static files & Templates
+# SECTION Start - Static files & Templates
+    AWS_ACCESS_KEY_ID = values.SecretValue(environ=True, environ_prefix=None, environ_name="DO_SPACES_KEY")
+    AWS_SECRET_ACCESS_KEY = values.SecretValue(environ=True, environ_prefix=None, environ_name="DO_SPACES_SECRET")
+    AWS_STORAGE_BUCKET_NAME = values.SecretValue(environ=True, environ_prefix=None, environ_name="DO_SPACES_BUCKET")
+    AWS_S3_ENDPOINT_URL = "https://nyc3.digitaloceanspaces.com"
+    AWS_REGION_NAME = "nyc3"
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+    }
+    AWS_LOCATION = "static"
+    STATIC_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_LOCATION}/"
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR,"the-dozens-django", "static"),
+    ]
+    STATIC_ROOT = "/tmp/staticfiles"
     template_dir = values.ListValue(
-        [
-            "/Users/terry-brooks./Github/the-dozens-django/templates"
-        ],
-        environ=False,
-    )
-
+    [
+        "/Users/terry-brooks./Github/the-dozens-django/templates"
+    ],
+    environ=False,
+)
+    STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {        },
+    },
+    'staticfiles': {
+        'BACKEND': 'core.storage_backends.StaticStorage',
+        'LOCATION': AWS_LOCATION,
+        'AWS_S3_OBJECT_PARAMETERS': {
+            'CacheControl': 'max-age=86400',
+        },
+        'AWS_S3_FILE_OVERWRITE': False,
+        'AWS_DEFAULT_ACL': 'public-read',
+        'AWS_REGION_NAME': AWS_REGION_NAME,
+        'AWS_S3_ENDPOINT_URL': AWS_S3_ENDPOINT_URL,
+    }, 
+    'media': {  
+        'BACKEND': 'core.storage_backends.MediaStorage',
+        'LOCATION': 'media',
+        'AWS_S3_OBJECT_PARAMETERS': {
+            'CacheControl': 'max-age=86400',
+        }, 
+        'AWS_S3_FILE_OVERWRITE': False,
+        'AWS_DEFAULT_ACL': 'private',
+        'AWS_REGION_NAME': AWS_REGION_NAME,
+        'AWS_S3_ENDPOINT_URL': AWS_S3_ENDPOINT_URL,
+    },
+}
     TEMPLATES = values.ListValue(
-        [
-            {
-                "BACKEND": "django.template.backends.django.DjangoTemplates",
-                "DIRS": template_dir,
-                "APP_DIRS": True,
-                "OPTIONS": {
-                    "context_processors": [
-                        "django.template.context_processors.debug",
-                        "django.template.context_processors.request",
-                        "django.contrib.auth.context_processors.auth",
-                        "django.contrib.messages.context_processors.messages",
-                    ],
-                },
+    [
+        {
+            "BACKEND": "django.template.backends.django.DjangoTemplates",
+            "DIRS": template_dir,
+            "APP_DIRS": True,
+            "OPTIONS": {
+                "context_processors": [
+                    "django.template.context_processors.debug",
+                    "django.template.context_processors.request",
+                    "django.contrib.auth.context_processors.auth",
+                    "django.contrib.messages.context_processors.messages",
+                ],
             },
-        ],
-        environ=False,
-    )
+        },
+    ],
+    environ=False,
+)
 
-    #!SECTION End - Static files & Templates
+#!SECTION End - Static files & Templates
 
     #  SECTION  Start - Application Preformance Mointoring
     PROMETHEUS_LATENCY_BUCKETS = values.TupleValue(
@@ -334,14 +315,61 @@ class Base(Configuration):
         environ=True, environ_prefix=None, environ_name="EMAIL_ACCT_PASSWORD"
     )
     MAILER_EMPTY_QUEUE_SLEEP = os.environ["MAILER_EMPTY_QUEUE_SLEEP"]
-    #!SECTION End - Email Settings (Django-Mailer)
-
-
 class Production(Base):
     ALLOWED_HOSTS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_HOSTS"
     )
-    # ALLOWED_HOSTS = ["0.0.0.0"]
+    ALLOWED_HOSTS = ["0.0.0.0"]
+    INSTALLED_APPS = values.ListValue(
+    [
+        # Django-Installed Apps
+        "django.contrib.admin",
+        "django.contrib.auth",
+        "django.contrib.contenttypes",
+        "django.contrib.sessions",
+        "django.contrib.sites",
+        "django.contrib.messages",
+        "django.contrib.staticfiles",
+        # Third-Party Apps
+        "rest_framework",
+        "rest_framework.authtoken",
+        "django_filters",
+        "corsheaders",
+            'storages',
+
+        "djoser",
+        "graphene_django",
+        "crispy_forms",
+        "crispy_bootstrap5",
+        "django_prometheus",
+        "drf_spectacular",
+        # Project Apps
+        "applications.API",
+        "applications.graphQL",
+        "drf_spectacular_sidecar",
+        
+    ],
+    environ=False,
+)
+
+    MIDDLEWARE = values.ListValue(
+    [
+        "django_prometheus.middleware.PrometheusBeforeMiddleware",
+        # "django.middleware.cache.UpdateCacheMiddleware",
+        "django.middleware.security.SecurityMiddleware",
+        "whitenoise.middleware.WhiteNoiseMiddleware",
+        "django.contrib.sessions.middleware.SessionMiddleware",
+        "corsheaders.middleware.CorsMiddleware",
+        "django.middleware.common.CommonMiddleware",
+        "django.middleware.csrf.CsrfViewMiddleware",
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+        "django.contrib.messages.middleware.MessageMiddleware",
+        "django.middleware.clickjacking.XFrameOptionsMiddleware",
+        # "django.middleware.cache.FetchFromCacheMiddleware",
+        "django_prometheus.middleware.PrometheusAfterMiddleware",
+    ],
+    environ=False,
+)
     DEBUG = values.BooleanValue(True, environ=False)
     CSRF_TRUSTED_ORIGINS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_ORIGINS"
@@ -403,15 +431,58 @@ class Development(Base):
     CORS_ALLOW_ALL_ORIGINS = values.BooleanValue(True, environ=False)
     CSRF_TRUSTED_ORIGINS = ["https://*", "http://*"]
     DEBUG = values.BooleanValue(True, environ=False)
+    INSTALLED_APPS = values.ListValue(
+    [
+        # Django-Installed Apps
+        "django.contrib.admin",
+        "django.contrib.auth",
+        "django.contrib.contenttypes",
+        "django.contrib.sessions",
+        "django.contrib.sites",
+        "django.contrib.messages",
+        "django.contrib.staticfiles",
+        # Third-Party Apps
+        "rest_framework",
+        "rest_framework.authtoken",
+        "django_filters",
+        "corsheaders",
+        "debug_toolbar",
+            'storages',
 
-    @classmethod
-    def setup(cls):
-        super().setup()
-        if cls.DEBUG:
-            cls.INSTALLED_APPS.insert(9, "debug_toolbar")
-            # cls.INSTALLED_APPS.insert(0, "kolo")
-            cls.MIDDLEWARE.insert(-4, "debug_toolbar.middleware.DebugToolbarMiddleware")
-            # cls.MIDDLEWARE.insert(-7, "kolo.middleware.KoloMiddleware")
+        "djoser",
+        "graphene_django",
+        "crispy_forms",
+        "crispy_bootstrap5",
+        "django_prometheus",
+        "drf_spectacular",
+        # Project Apps
+        "applications.API",
+        "applications.graphQL",
+        "drf_spectacular_sidecar",
+    
+    ],
+    environ=False,
+)
+
+    MIDDLEWARE = values.ListValue(
+    [
+        "django_prometheus.middleware.PrometheusBeforeMiddleware",
+        # "django.middleware.cache.UpdateCacheMiddleware",
+        "django.middleware.security.SecurityMiddleware",
+        "whitenoise.middleware.WhiteNoiseMiddleware",
+        "django.contrib.sessions.middleware.SessionMiddleware",
+        "corsheaders.middleware.CorsMiddleware",
+        "django.middleware.common.CommonMiddleware",
+        "debug_toolbar.middleware.DebugToolbarMiddleware",
+        "django.middleware.csrf.CsrfViewMiddleware",
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+        "django.contrib.messages.middleware.MessageMiddleware",
+        "django.middleware.clickjacking.XFrameOptionsMiddleware",
+        # "django.middleware.cache.FetchFromCacheMiddleware",
+        "django_prometheus.middleware.PrometheusAfterMiddleware",
+    ],
+    environ=False,
+)
 
     #!SECTION End - Database and Caching
 
