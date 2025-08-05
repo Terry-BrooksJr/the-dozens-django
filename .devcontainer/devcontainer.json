@@ -6,7 +6,10 @@
 		"ghcr.io/devcontainers-contrib/features/black:2": {},
 		"ghcr.io/devcontainers-contrib/features/curl-apt-get:1": {},
 		"ghcr.io/devcontainers-contrib/features/node-exporter:1": {},
-		"ghcr.io/itsmechlark/features/doppler:2": {}
+		"ghcr.io/itsmechlark/features/doppler:2": {},
+		"ghcr.io/devcontainers-extra/features/go-task:1"	: {},
+		"ghcr.io/devcontainers-extra/features/direnv:1"	: {},
+		"ghcr.io/dhoeric/features/act:1"	: {}
 	},
 		"customizations": {
 		"vscode": {
@@ -14,9 +17,25 @@
 				"ms-vscode.makefile-tools",
 				"ms-azuretools.vscode-docker",
 				"GitHub.vscode-pull-request-github",
-				"Blackboxapp.blackbox"
+				"ms-python.mypy-type-checker",
+				"doppler.doppler-vscode",
+				"DhavalVira.django-import-libraries",
+				"bibhasdn.django-html",
+				"jitdev.copy-django-model-fields",
+				"yardensachs.copy-python-path",
+				"junstyle.vscode-django-support",
+				"mkhl.direnv",
+				"github.vscode-github-actions",
+				"MohammedAbidNafi.gitwit",
+				"stpn.vscode-graphql",
+				"anteprimorac.html-end-tag-labels",
+				"franneck94.vscode-python-config",
+				"sourcery.sourcery",
+				"task.vscode-task",
+				"redhat.vscode-yaml",
+				"GraphQL.vscode-graphql"
 			]
 		}
-	}, "postCreateCommand": "curl --create-dirs -o $HOME/.postgresql/root.crt 'https://cockroachlabs.cloud/clusters/86f3e1fa-ff5a-4b0a-bc98-216919d1bf21/cert'"
+	}, "postCreateCommand": "curl --create-dirs -o $HOME/.postgresql/root.crt 'https://yo-mama.b-cdn.net/AIVIN_SSL_CERT.crt'"
 
 }
