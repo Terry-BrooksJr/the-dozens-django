@@ -1,7 +1,6 @@
 import hashlib
 from typing import Union
 
-from common.metrics import metrics
 from django.conf import settings
 from django.core.cache import cache
 from django.db.models.signals import post_delete, post_save
@@ -14,6 +13,8 @@ from django.views.generic import TemplateView
 from loguru import logger
 from rest_framework import status
 from rest_framework.response import Response
+
+from common.metrics import metrics
 
 
 class CachedTemplateView(TemplateView):

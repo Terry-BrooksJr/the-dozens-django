@@ -17,19 +17,18 @@ tasks:
       - python3 -m venv .venv --prompt="ACTIVE_VENV_DJANGO_DOZENS"
       - source {{.TASKFILE_DIR}}/.venv/bin/activate
     internal: true
-  
+
   develop:
     desc: Starts the Django Application, and background workers in a debug state
     dir: .
     cmds:
       - echo "Completing Pre-Start Environment Check For Development..."
-      - source .envrc && PYTHONPATH="./core:$(pwd)/applications/API:$(pwd)/applications/graphQL:$(pwd)/applications/frontend:$(pwd)/common:$(pwd)/run:$(pwd)" doppler run  -- python3 .venv/bin/gunicorn -t 30 -w 3 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{.CLI_ARGS}} --reload
+      - source .envrc && PYTHONPATH="./core:$(pwd)/applications/API:$(pwd)/applications/graphQL:$(pwd)/applications/frontend:$(pwd)/common:$(pwd)/run:$(pwd)" doppler run  -- python3 .venv/bin/gunicorn -t 1 -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{.CLI_ARGS}} --reload
     interactive: false
     silent: false
 
-
   install:
-    deps: [venv]
+    deps: [ venv ]
     cmds:
       - pip install poetry
       - poetry lock
@@ -95,7 +94,6 @@ tasks:
         - DOPPLER_TOKEN
         - PATH_TO_DB_ROOT_CERT
 
-
   start:
     dir: .
 
@@ -112,7 +110,7 @@ tasks:
       - doppler run -- python3 -m gunicorn --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}} --reload --sync
 
   schema-check:
-    dir: /Users/terry-brooks./Github/the-dozens-django
+    dir: "{{.TASKFILE_DIR}}"
 
     desc: Check Models and Serializers for schema compliance with OpenAPI .0 Standards and fail on warnings
     cmds:
@@ -120,8 +118,8 @@ tasks:
     internal: true
 
   schema:
-    deps: [schema-check]
-    dir: /Users/terry-brooks./Github/the-dozens-django
+    deps: [ schema-check ]
+    dir: "{{.TASKFILE_DIR}}"
 
     desc: Generate OpenAPI 3.0 schema.yaml file from models and serializers
     cmds:
@@ -129,20 +127,63 @@ tasks:
 
   build-image:
     desc: Build Docker Image
-    dir: /Users/terry-brooks./Github/the-dozens-django/.deploy
+    dir: "{{.TASKFILE_DIR}}/.deploy"
     cmds:
       - docker build buildx --platform --push linux/amd64,linux/arm64  --env DOPPLER_TOKEN=$DOPPLER_TOKEN -t thedozens:latest .
     requires:
       vars:
         - DOPPLER_TOKEN
         - PATH_TO_DB_ROOT_CERT
-
   lint:
-    desc: Run linters
-    dir: /Users/terry-brooks./Github/the-dozens-django
-
+    desc: Run all linting and formatting tools
+    dir: .
     cmds:
-      - python3 -m black .
-      - python3 -m isort --profile black .
-      - python3 -m autoflake --remove-all-unused-imports --recursive --remove-unused-variables --in-place .
-
+      - echo "🔍 Running Python linting and formatting..."
+      - echo "🧹 Running autoflake (unused imports/variables check)..."
+      - doppler run -- .venv/bin/autoflake --check --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
+      - echo "📋 Running isort (import sorting)..."
+      - doppler run -- .venv/bin/isort . --check-only --diff
+      - echo "⚫ Running black (code formatting)..."
+      - doppler run -- .venv/bin/black . --check --diff
+      - echo "🚀 Running ruff (fast linting)..."
+      - doppler run -- .venv/bin/ruff check .
+      - echo "🔧 Running pylint (comprehensive linting)..."
+      - doppler run -- .venv/bin/pylint **/*.py --load-plugins=pylint_django,pylint_celery --django-settings-module=core.settings
+      - echo "🔒 Running bandit (security linting)..."
+      - doppler run -- .venv/bin/bandit -r . -f json --exclude=./tests,./venv,./.venv
+      - echo "🎯 Running mypy (type checking)..."
+      - doppler run -- .venv/bin/mypy .
+      - echo "🌟 Running djlint (Django template linting)..."
+      - doppler run -- .venv/bin/djlint --check templates/**/*.html
+      - echo "✅ All linting checks completed!"
+    silent: false
+    interactive: false
+  lint:fix:
+    desc: Automatically fix linting and formatting issues
+    dir: .
+    cmds:
+      - echo "🔧 Auto-fixing Python linting and formatting issues..."
+      - echo "🧹 Running autoflake (removing unused imports/variables)..."
+      - cmd: doppler run -- .venv/bin/autoflake --in-place --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
+        ignore_error: true
+      - echo "📋 Running isort (import sorting)..."
+      - cmd: doppler run -- .venv/bin/isort .
+        ignore_error: true
+      - echo "⚫ Running black (code formatting)..."
+      - cmd: doppler run -- .venv/bin/black .
+        ignore_error: true
+      - echo "🚀 Running ruff (auto-fix)..."
+      - cmd: doppler run -- .venv/bin/ruff check . --fix
+        ignore_error: true
+      - echo "🌟 Running djlint (Django template auto-fix)..."
+      - cmd: doppler run -- .venv/bin/djlint --reformat templates/**/*.html
+      - echo "✅ Auto-fix completed! Run 'task lint' to check remaining issues."
+    silent: false
+    interactive: false
+  django:
+    desc: "Wrapper command to simpltify the use of Django management commands. Example Usage: task django -- runserver"
+    dir: "{{.TASKFILE_DIR}}"
+    cmds:
+      - doppler run -- python3 run/manage.py {{.CLI_ARGS}}
+    silent: false
+    interactive: true

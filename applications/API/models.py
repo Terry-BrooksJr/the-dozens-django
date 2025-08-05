@@ -1,31 +1,72 @@
+"""
+module: applications.API.models
+
+
+This module defines the Insult and InsultReview models, which are used to manage insults and their reviews in the , as well as the  InsultCategory model to for insult resource  categorize. Each model contains  methods for manipulating of the asssocited resource. 
+    
+For instance, the Insult model's methods allow for removing, approving, and re-categorizing task. The models and their methods are designed to work with Django's ORM and include various fields and methods for managing the data effectively.
+"""
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from django_prometheus.models import ExportModelOperationsMixin
+import graphene
 from loguru import logger
+import string
+import random
+from typing import Optional
+from django.db import IntegrityError
 
+    
+insult_reference_id_prefix_options = ['GIGGLE','CHUCKLE','SNORT','SNICKER','CACKLE']
+class Base36DecoderException(Exception):
+    """Custom exception for base36 decoding errors."""
 
-class InsultCategory(models.Model):
+def encode_base36(number):
+    """Convert number to base36 (0-9, A-Z)"""
+    alphabet = string.digits + string.ascii_uppercase
+    if number == 0:
+        return alphabet[0]
+    
+    result = ""
+    while number:
+        number, remainder = divmod(number, 36)
+        result = alphabet[remainder] + result
+    return result
+
+class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Model):
+    """
+    Model representing a"{} category for insults. This model defines an insult category with a unique key and name. It is used to organize insults into different categories for easier management and retrieval.
+    """
+
     category_key = models.CharField(max_length=5, unique=True, primary_key=True)
     name = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.category_key} - {self.name}"
 
     class Meta:
+        db_table = "insult_categories"
         verbose_name = _("Insult Category")
         verbose_name_plural = _("Insult Categories")
+        managed = True
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(fields=["category_key", "name"], name="unique_category_key_name"),
+        ]
+        indexes = [
+            models.Index(fields=["category_key"], name="idx_category_key"),
+            models.Index(fields=["name"], name="idx_name"),
+        ]
 
 
 class Insult(ExportModelOperationsMixin("insult"), models.Model):
     """
-    Summary:
-    Model representing an Insult with various attributes and methods for manipulation.
-
-    Explanation:
-    This model represents an Insult with fields like content, category, nsfw, added_on, added_by, last_modified, and status. It includes methods for removing, approving, marking for review, re-categorizing, and reclassifying insults.
+    Model representing an Insult with various attributes and methods for manipulation. This model represents an Insult with fields like content, category, nsfw, added_on, added_by, last_modified, and status. It includes methods for removing, approving, marking for review, re-categorizing, and reclassifying insults.
 
     Methods:
         - remove_insult(): Removes insult visibility from the API (Soft Delete).
@@ -46,9 +87,21 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             models.Index(fields=["category", "nsfw"], name="idx_nsfw_category"),
             models.Index(fields=["nsfw"], name="idx_nsfw"),
             models.Index(fields=["added_by"], name="idx_added_by"),
+            models.Index(fields=["reference_id"], name="idx_reference_id"),
+            models.Index(fields=["reference_id", "pk"], name="idx_reference_id_pk"),
         ]
 
     class STATUS(models.TextChoices):
+        """
+        Enumeration of possible statuses for an Insult instance. This class defines the available status choices for insults, such as active, removed, pending, and rejected. These statuses are used to manage the visibility and workflow state of each insult in the system.
+
+        Statuses:
+            ACTIVE: The insult is currently active and visible.
+            REMOVED: The insult has been removed from visibility (soft delete).
+            PENDING: The insult is awaiting review or approval.(Default for new insults)
+            REJECTED: The insult has been rejected during review.
+        """
+
         ACTIVE = "A", _("Active")
         REMOVED = "X", _("Inactive/Removed")
         PENDING = "P", _("Pending")
@@ -63,6 +116,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
     category = models.ForeignKey(InsultCategory, on_delete=models.PROTECT)
     nsfw = models.BooleanField(default=False)
     added_on = models.DateField(null=False, blank=False, auto_now_add=True)
+    reports_count = models.PositiveIntegerField(default=0, editable=False)
     added_by = models.ForeignKey(User, on_delete=models.PROTECT)
     last_modified = models.DateTimeField(auto_now=True, blank=True, null=True)
     status = models.CharField(
@@ -71,27 +125,50 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         max_length=2,
         default=STATUS.PENDING,
         choices=STATUS.choices,
-    )
-
-    def __str__(self):
-        return f"({self.category}) - NSFW: {self.nsfw} - {self.pk} ({self.added_by}) "
-
+        db_index=True,
+    ) 
+      
+    @property
+    def reference_id(self) -> str:
+        """Generate human-readable reference ID from PK"""
+        return f"{random.choice(insult_reference_id_prefix_options)}_{encode_base36(self.pk)}"
+    
+    def __str__(self) -> str:
+        return f"{self.reference_id} - ({self.category}) - NSFW: {self.nsfw}"
+    @classmethod
+    def get_by_reference_id(cls, reference_id: str) -> Optional[Insult]:
+        """Get insult by reference ID"""
+        for prefix in insult_reference_id_prefix_options:
+            if reference_id.startswith(prefix):
+                # Extract base36 part and decode to PK
+                base36_part = reference_id.replace(f'{prefix}_', '')
+                try:
+                    pk = int(base36_part, 36)  # Convert base36 to decimal
+                except ValueError:
+                    logger.warning(f"Invalid base36 part: {base36_part}")
+                    return None
+                try:
+                    return cls.objects.get(pk=pk)
+                except cls.DoesNotExist:
+                    logger.warning(f"Insult with PK {pk} does not exist.")
+                    return None
+                
+    
     def remove_insult(self):
         """Removes insult visibility from the API. (Soft Delete)
         Logs:
             Success: Logs the PK of the modified Insult Instance
-            Exception: If the Insult unable top be removed.
             Exception: If the Insult unable top be removed.
         Returns:
             None
         """
 
         try:
-            self.status = "X"
+            self.status = Insult.STATUS.REMOVED  # Set status to REMOVED
             self.last_modified = settings.GLOBAL_NOW
-            logger.success(f"Successfully Removed {self.pk}")
+            logger.success(f"Successfully Removed {self.reference_id}")
         except Exception as e:
-            logger.error(f"Unable to Remove Insult ({self.pk}): {e}")
+            logger.error(f"Unable to Remove Insult ({self.reference_id}): {e}")
 
     def approve_insult(self):
         """Adds a Pending insult to the API.
@@ -106,11 +183,12 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         """
 
         try:
-            self.status = "A"
+            self.status = Insult.STATUS.ACTIVE  # Set status to ACTIVE
             self.last_modified = settings.settings.GLOBAL_NOW
-            logger.success(f"Successfully Approved {self.pk}")
+            self.save(update_fields=["status", "last_modified"])
+            logger.success(f"Successfully Approved {self.reference_id}")
         except Exception as e:
-            logger.error(f"Unable to Approve Insult({self.pk}): {e}")
+            logger.error(f"Unable to Approve Insult({self.reference_id}): {e}")
 
     def mark_insult_for_review(self):
         """Removes insult visibility from the API.
@@ -123,10 +201,12 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         """
 
         try:
-            self.status = "P"
-            logger.warning(f"Successfully Sent to Review {self.pk}")
+            self.status = Insult.STATUS.PENDING  # Set status to PENDING
+            self.last_modified = settings.GLOBAL_NOW
+            self.save(update_fields=["status", "last_modified"])
+            logger.warning(f"Successfully Sent to Review {self.reference_id}")
         except Exception as e:
-            logger.error(f"Unable to Send For Review({self.pk}): {e}")
+            logger.error(f"Unable to Send For Review({self.reference_id}): {e}")
 
     def re_categorize(self, new_category):
         """Re-categorizes the object with a new category.
@@ -145,12 +225,11 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
 
         try:
             self.category = new_category
-            logger.success(f"Successfully Re-Categorized {self.pk} to {self.category}")
-            self.category = new_category
-            logger.success(f"Successfully Re-Categorized {self.pk} to {self.category}")
-        except Exception as e:
-            logger.error(f"Unable to RE-Categorized Insult {self.pk}: {e}")
-            logger.error(f"Unable to RE-Categorized Insult {self.pk}: {e}")
+            self.last_modified = settings.GLOBAL_NOW
+            self.save(update_fields=["category", "last_modified"]) 
+            logger.success(f"Successfully Re-Categorized {self.reference_id} to {self.category}")
+=        except Exception as e:
+            logger.error(f"Unable to RE-Categorized Insult {self.reference_id}: {e}")
 
     def reclassify(self, nsfw_status):
         """Changes the category of the insult
@@ -163,9 +242,11 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         """
         try:
             self.nsfw = nsfw_status
-            logger.success(f"Successfully reclassified {self.pk} to {self.nsfw}")
+            self.last_modified = settings.GLOBAL_NOW
+            self.save(update_fields=["nsfw", "last_modified"])
+            logger.success(f"Successfully reclassified {self.reference_id} to {self.nsfw}")
         except Exception as e:
-            logger.error(f"Unable to ReClassify Insult {self.pk}: {e}")
+            logger.error(f"Unable to ReClassify Insult {self.reference_id}: {e}")
 
 
 class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
@@ -197,7 +278,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         SAME_CATEGORY = "SJC", _("Completed - No New Category Assigned")
         REMOVED = "X", _("Completed - Joke Removed")
 
-    insult = models.ForeignKey(Insult, on_delete=models.CASCADE)
+    insult_reference_id = models.models.CharField(max_length=50)
     anonymous = models.BooleanField(default=False)
     reporter_first_name = models.CharField(max_length=80, null=True, blank=True)
     reporter_last_name = models.CharField(max_length=80, null=True, blank=True)
@@ -221,12 +302,41 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
     def __str__(self):
         return f"Joke: {self.insult.pk} - Review Type: {self.review_type} - Submitted: {self.date_submitted}({self.status})"
 
+
+    @property
+    def insult(self) -> Optional[Insult]:
+        """Get the associated Insult instance."""
+        try:
+            return Insult.get_by_reference_id(self.insult_reference_id)
+        except Insult.DoesNotExist as e:
+            logger.warning(f"Insult with reference ID {self.insult_reference_id} does not exist.")
+            raise IntegrityError(
+                f"Reviews Must Be Associated with a VAILD Insult. Insult with reference ID {self.insult_reference_id} does not exist."
+            ) from e
+        except Base36DecoderException as base36_error:
+            logger.Warning(f"Base36 decoding error for reference ID {self.insult_reference_id}: {base36_error}")
+            raise IntegrityError(
+                f"Reviews Must include a valid insult reference id that conforms to a pre-fixed Base36 format. Either value after the prefix is invalid  for 
+                Insult Reference ID: {self.insult_reference_id}"
+            ) from base36_error
+    
     class Meta:
         db_table = "reported_jokes"
         ordering = ["status", "-date_submitted"]
         verbose_name = "Joke Needing Review"
         verbose_name_plural = "Jokes Needing Review"
         get_latest_by = ["-date_submitted"]
+        Indexes = [
+            models.Index(fields=["insult_reference_id"], name="idx_insult_reference_id"),
+            models.Index(fields=["review_type"], name="idx_review_type"),
+            models.Index(fields=["status"], name="idx_status"),
+            models.Index(fields=["date_submitted"], name="idx_date_submitted"),
+            models.Index(fields=["date_reviewed"], name="idx_date_reviewed"),
+            models.Index(fields=["reviewer"], name="idx_reviewer"), 
+            models.Index(fields=["insult_reference_id", "pk"], name="idx_insult_reference_id_pk"),  
+            models.Index(fields=["insult_reference_id", "status"], name="idx_insult_reference_id_status"),
+            models.Index(fields=["insult", "pk", "insult_reference_id"], name="idx_insult_reference_id_pk_insult"),
+        ]
 
     def mark_review_not_reclassified(self, reviewer: User):
         """Marks the review as Not reclassified.
@@ -244,9 +354,9 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             self.status = "SCE"
             self.reviewer = reviewer
             self.date_reviewed = settings.GLOBAL_NOW
-            logger.success(f"Marked {self.pk} as Not Reclassified")
+            logger.success(f"Marked {self.reference_id} as Not Reclassified")
         except Exception as e:
-            logger.error(f"ERROR: Unable to Update {self.pk}: {str(e)}")
+            logger.error(f"ERROR: Unable to Update {self.reference_id}: {str(e)}")
 
     def mark_review_recategorized(self, reviewer: User):
         try:
@@ -255,10 +365,10 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             self.date_reviewed = (
                 settings.settings.GLOBAL_NOW
             )  # Use settings.settings.GLOBAL_NOW consistently
-            logger.success(f"Marked {self.pk} as Recategorized")
+            logger.success(f"Marked {self.reference_id} as Recategorized")
             self.save()  # Add save() call which was missing
         except Exception as e:
-            logger.error(f"ERROR: Unable to Update {self.pk}: {str(e)}")
+            logger.error(f"ERROR: Unable to Update {self.reference_id}: {str(e)}")
 
     def mark_review_not_recatagoized(self):
         """Marks the review as reclassified.
@@ -275,9 +385,10 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         try:
             self.status = "SJC"
             self.date_reviewed = settings.GLOBAL_NOW
-            logger.success(f"Marked {self.pk} as Reclassified")
+            self.save(update_fields=["status", "date_reviewed"])q
+            logger.success(f"Marked {self.reference_id} as Reclassified")
         except Exception as e:
-            logger.error(f"ERROR: Unable to Update {self.pk}: {str(e)}")
+            logger.error(f"ERROR: Unable to Update {self.reference_id}: {str(e)}")
 
     def mark_review_removed(self):
         """Marks the review as removed.
@@ -291,11 +402,12 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         """
 
         try:
-            self.status = "x"
+            self.status = InsultReview.STATUS.REMOVED
             self.date_reviewed = settings.GLOBAL_NOW
-            logger.success(f"Marked {self.pk} as Reclassified")
+            self.3.
+            logger.success(f"Marked {self.reference_id} as Reclassified")
         except Exception as e:
-            logger.error(f"ERROR: Unable to Update {self.pk}: {str(e)}")
+            logger.error(f"ERROR: Unable to Update {self.reference_id}: {str(e)}")
 
     def mark_review_reclassified(self, reviewer: User):
         """Marks the review as reclassified.
@@ -312,6 +424,52 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             self.status = "NCE"
             self.reviewer = reviewer
             self.date_reviewed = settings.GLOBAL_NOW
-            logger.success(f"Marked {self.pk} as Reclassified")
+            logger.success(f"Marked {self.reference_id} as Reclassified")
         except Exception as e:
-            logger.error(f"ERROR: Unable to Update {self.pk}: {str(e)}")
+            logger.error(f"ERROR: Unable to Update {self.reference_id}: {str(e)}")
+
+
+@receiver(post_save, sender=InsultReview)
+def increment_report_count(sender, instance, created, **kwargs):
+    """
+    Increments the report count for an insult when a new InsultReview is created.
+
+    This signal handler updates the reports_count field of the related Insult instance
+    whenever a new InsultReview is saved. It ensures the report count reflects the
+    current number of reviews associated with the insult.
+
+    Args:
+        sender: The model class sending the signal.
+        instance: The instance of InsultReview being saved.
+        created: Boolean indicating if a new record was created.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        None
+    """
+    if created:
+        instance.insult.reports_count = instance.insult.insultreview_set.count()
+        instance.insult.save(update_fields=["reports_count"])
+
+
+
+
+@receiver(post_delete, sender=InsultReview)
+def decrement_report_count(sender, instance, **kwargs):
+    """
+    Decrements the report count for an insult when an InsultReview is deleted.
+
+    This signal handler updates the reports_count field of the related Insult instance
+    whenever an InsultReview is deleted. It ensures the report count reflects the
+    current number of reviews associated with the insult.
+
+    Args:
+        sender: The model class sending the signal.
+        instance: The instance of InsultReview being deleted.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        None
+    """
+    instance.insult.reports_count = instance.insult.insultreview_set.count()
+    instance.insult.save(update_fields=['reports_count'])

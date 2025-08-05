@@ -1,4 +1,3 @@
-from applications.API import views
 from django.urls import path
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -6,6 +5,8 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 from rest_framework.routers import DefaultRouter
+
+from applications.API import views
 
 router = DefaultRouter()
 router.register(r"insults", views.InsultViewSet, basename="insult")

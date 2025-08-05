@@ -1,39 +1,48 @@
 {% load crispy_forms_tags %}
 {% load crispy_forms_filters %}
 <!-- Modal -->
-<div class="modal fade" id="reportJokeModal" tabindex="-1" role="dialog" aria-labelledby="reportJokeModal"
-aria-hidden="true">
-<div class="modal-dialog modal-dialog-centered" role="document">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h5 class="modal-title" id="reportJokeModalTitle">Report A Joke</h5>
-      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-        <span aria-hidden="true"></span>
-      </button>
+<div class="modal fade"
+     id="reportJokeModal"
+     tabindex="-1"
+     role="dialog"
+     aria-labelledby="reportJokeModal"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reportJokeModalTitle">Report A Joke</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h3>Overview</h3>
+                <p>
+                    The Dozen's API intends to serve as a humorous, joyful piece of African-American culture where, as a
+                    community, good-hearted jokes are shared and enjoyed. To this end, please submit a joke for review if you
+                    feel its presence is a disservice to that end.
+                </p>
+                <h3>Review Process</h3>
+                <p>
+                    Depending on the reason for the review process, a contributor to the API will review the submitted joke
+                    within seven working days.
+                </p>
+                <br />
+                <p>
+                    In the event of any submission reason other than 'Inappropriate,' a single contributor will review the
+                    joke's content
+                    and comments provided in this submission and take appropriate action. <strong>Appropriate actions include
+                    but are not
+                limited to the following: </strong>
+            </p>
+            <ol>
+                <li>Joke Reclassification - Changing the Joke from explicit or inexplicit</li>
+                <li>Joke Recategorization - Changing the Category of the Joke to a more accurate category</li>
+                <li>Joke Removal - Complete removal from the Joke Database</li>
+            </ol>
+            {% crispy form %}
+            {{ form.media.js }} 
+        </div>
     </div>
-    <div class="modal-body">
-      <h3>Overview</h3>
-      <p>The Dozen's API intends to serve as a humorous, joyful piece of African-American culture where, as a
-        community, good-hearted jokes are shared and enjoyed. To this end, please submit a joke for review if you
-        feel its presence is a disservice to that end.</p>
-      <h3>Review Process</h3>
-      <p>Depending on the reason for the review process, a contributor to the API will review the submitted joke
-        within seven working days.</p>
-      <br />
-
-      <p>In the event of any submission reason other than 'Inappropriate,' a single contributor will review the
-        joke's content
-        and comments provided in this submission and take appropriate action. <strong>Appropriate actions include
-          but are not
-          limited to the following: </strong></p>
-      <ol>
-        <li>Joke Reclassification - Changing the Joke from explicit or inexplicit</li>
-        <li>Joke Recategorization - Changing the Category of the Joke to a more accurate category </li>
-        <li>Joke Removal - Complete removal from the Joke Database</li>
-      </ol>
-      {% crispy form %}
-
-    </div>
-  </div>
 </div>
 </div>

@@ -1,3 +1,9 @@
+"""
+applications.API.permissions
+#TODO - WRITE MODULE DOCSTRING
+
+"""
+
 from rest_framework import permissions
 
 

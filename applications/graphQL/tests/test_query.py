@@ -1,7 +1,8 @@
-from applications.graphQL.schema import schema
-from common.utils.helpers import BaseTestCase
 from graphql import GraphQLError
 from rest_framework.test import APIClient
+
+from applications.graphQL.schema import schema
+from common.utils.helpers import BaseTestCase
 
 
 class GraphQLInsultTestCase(BaseTestCase):

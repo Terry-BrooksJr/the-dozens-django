@@ -254,8 +254,6 @@
 #         model = InsultCategory
 #         fields = ['key', 'name']
 
-from applications.API.models import Insult, InsultCategory
-from django.utils.text import capfirst
 from drf_spectacular.utils import (
     OpenApiExample,
     extend_schema_field,
@@ -264,13 +262,17 @@ from drf_spectacular.utils import (
 from humanize import naturaltime
 from rest_framework import serializers
 
+from applications.API.models import Insult, InsultCategory
+
 
 class BaseInsultSerializer(serializers.ModelSerializer):
     """
     Base serializer for Insult model containing common functionality.
     """
 
-    category = serializers.PrimaryKeyRelatedField(queryset=InsultCategory.objects.all(), pk_field=serializers.CharField())
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=InsultCategory.objects.all(), pk_field=serializers.CharField()
+    )
 
     def format_date(self, date):
         """Format date using humanize library."""
@@ -282,14 +284,12 @@ class BaseInsultSerializer(serializers.ModelSerializer):
         if cache_key and cache_key in self._formatted_dates:
             return self._formatted_dates[cache_key]
 
-
         formatted = naturaltime(date, future=False, minimum_unit="minutes", months=True)
 
         if cache_key:
             self._formatted_dates[cache_key] = formatted
 
         return formatted
-
 
 
 @extend_schema_serializer(

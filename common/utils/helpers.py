@@ -1,8 +1,9 @@
-from applications.API.models import Insult, InsultCategory
 from django.contrib.auth.models import User
 from django.test import TestCase
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.test import APIRequestFactory
+
+from applications.API.models import Insult, InsultCategory
 
 
 def _check_ownership(self, obj, user):

@@ -1,11 +1,5 @@
 import random
 
-from applications.API.filters import InsultFilter
-from applications.API.models import Insult, InsultCategory
-from applications.API.permissions import IsOwnerOrReadOnly
-from applications.API.serializers import CategorySerializer, InsultSerializer
-from common.cache import CachedResponseMixin
-from common.utils.helpers import _check_ownership
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import (
@@ -20,6 +14,13 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import PaginateByMaxMixin
+
+from applications.API.filters import InsultFilter
+from applications.API.models import Insult, InsultCategory
+from applications.API.permissions import IsOwnerOrReadOnly
+from applications.API.serializers import CategorySerializer, InsultSerializer
+from common.cache import CachedResponseMixin
+from common.utils.helpers import _check_ownership
 
 
 @extend_schema_view(
@@ -278,8 +279,8 @@ class InsultViewSet(PaginateByMaxMixin, CachedResponseMixin, viewsets.ModelViewS
     def random(self, request):
         """Get a random insult."""
         queryset = self.get_queryset()
-    
-    # Filter by explicity level (NSFW) if provided
+
+        # Filter by explicity level (NSFW) if provided
         nsfw_param = request.query_params.get("nsfw")
         if nsfw_param is not None:
             nsfw = nsfw_param.lower() in ["true", "1", "yes"]
@@ -340,7 +341,9 @@ class InsultViewSet(PaginateByMaxMixin, CachedResponseMixin, viewsets.ModelViewS
         },
     ),
 )
-class CategoryViewSet(CachedResponseMixin, PaginateByMaxMixin, viewsets.ReadOnlyModelViewSet):
+class CategoryViewSet(
+    CachedResponseMixin, PaginateByMaxMixin, viewsets.ReadOnlyModelViewSet
+):
     """
     ViewSet for viewing insult categories. Provides read-only operations.
 
@@ -359,7 +362,8 @@ class CategoryViewSet(CachedResponseMixin, PaginateByMaxMixin, viewsets.ReadOnly
     def list(self, request, *args, **kwargs):
         """Override list to return categories in the desired format."""
         available_categories = {
-            cat['category_key']: cat['name'] for cat in self.get_queryset().values("category_key", "name")
+            cat["category_key"]: cat["name"]
+            for cat in self.get_queryset().values("category_key", "name")
         }
 
         return Response(

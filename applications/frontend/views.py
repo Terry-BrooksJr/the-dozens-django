@@ -2,7 +2,6 @@
 
 import os
 
-from applications.API.forms import InsultReviewForm
 from django.http import HttpRequest
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
@@ -10,6 +9,8 @@ from ghapi.all import GhApi
 from loguru import logger
 from rest_framework import status
 from rest_framework.response import Response
+
+from applications.API.forms import InsultReviewForm
 
 
 class HomePage(TemplateView):
