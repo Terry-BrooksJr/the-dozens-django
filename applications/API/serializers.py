@@ -1,9 +1,8 @@
 from asyncio.log import logger
+from datetime import datetime
 from functools import lru_cache
 from typing import Any, Dict, Optional
-from datetime import datetime
 
-from humanize import naturaltime
 from django.core.cache import cache
 from django.utils.text import capfirst
 from drf_spectacular.utils import (
@@ -11,6 +10,7 @@ from drf_spectacular.utils import (
     extend_schema_field,
     extend_schema_serializer,
 )
+from humanize import naturaltime
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
@@ -47,7 +47,7 @@ class BulkSerializationMixin:
 
         # Add extra metadata if provided
         if extra_data:
-            response_data |= extra_data   
+            response_data |= extra_data
 
         return Response(response_data, status=status.HTTP_200_OK)
 
@@ -113,9 +113,10 @@ class CachedBulkSerializer(serializers.ModelSerializer):
     select_related_fields = []  # e.g., ['added_by', 'category']
     prefetch_related_fields = []  # e.g., ['reviews']
     cached_fields = []  # Fields to cache individually
-    
-    
-    def set_cached_field_value(self, obj, field_name: str, value, cache_timeout: int = 300):
+
+    def set_cached_field_value(
+        self, obj, field_name: str, value, cache_timeout: int = 300
+    ):
         """
         Set a cached value for an expensive field computation.
         """
@@ -123,6 +124,7 @@ class CachedBulkSerializer(serializers.ModelSerializer):
             return
         cache_key = f"field:{self.__class__.__name__}:{field_name}:{obj.pk}"
         cache.set(cache_key, value, cache_timeout)
+
     class Meta:
         list_serializer_class = OptimizedListSerializer
 
@@ -156,8 +158,8 @@ class BaseInsultSerializer(CachedBulkSerializer):
     """
 
     category = serializers.CharField(source="get_category_display")
-    added_on = serializers.SerializerMethodField(method_name="added_on_display")  
-    
+    added_on = serializers.SerializerMethodField(method_name="added_on_display")
+
     def get_category_by_key(self, category_key: str) -> Dict[str, str]:
         """
         Get category info by key with caching.
@@ -166,9 +168,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         if not category_key:
             return {"category_key": "", "category_name": "Uncategorized"}
 
-        if category_name := CategoryCacheManager.get_category_name_by_key(
-            category_key
-        ):
+        if category_name := CategoryCacheManager.get_category_name_by_key(category_key):
             return {
                 "category_key": category_key,
                 "category_name": category_name,
@@ -184,7 +184,9 @@ class BaseInsultSerializer(CachedBulkSerializer):
                 "category_name": category.name,
             }
         except InsultCategory.DoesNotExist as e:
-            raise serializers.ValidationError(f"Category with key '{category_key}' does not exist.") from e
+            raise serializers.ValidationError(
+                f"Category with key '{category_key}' does not exist."
+            ) from e
 
     def get_category_by_name(self, category_name: str) -> Dict[str, str]:
         """
@@ -208,14 +210,19 @@ class BaseInsultSerializer(CachedBulkSerializer):
         try:
             category = InsultCategory.objects.get(name=normalized_name)
             # Update cache for future requests
-            CategoryCacheManager.set_category_name_mapping(category.category_key, category.name)
+            CategoryCacheManager.set_category_name_mapping(
+                category.category_key, category.name
+            )
             return {
                 "category_key": category.category_key,
                 "category_name": category.name,
             }
-        except InsultCategory.DoesNotExist .add(element):
+        except InsultCategory.DoesNotExist as e:
             logger.error(f'Category "{category_name}" does not exist.')
-            raise serializers.ValidationError(f"Category '{category_name}' does not exist.") from e
+            raise serializers.ValidationError(
+                f"Category '{category_name}' does not exist."
+            ) from e
+
     def validate_category(self, value: str) -> Dict[str, str]:
         """
         Validate category by key or name and return complete category info.
@@ -223,8 +230,8 @@ class BaseInsultSerializer(CachedBulkSerializer):
         """
         if not value:
             return {"category_key": "", "category_name": "Uncategorized"}
-        
-        # First try as category key (keys are typically hyphenated/underscored)
+
+        # First try as category key (keys are typically hyphenated/underscored) 
         try:
             return self.get_category_by_key(value)
         except serializers.ValidationError:
@@ -242,7 +249,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         """Get formatted category name by key."""
         category_info = self.get_category_by_key(category_key)
         return BaseInsultSerializer.format_category(category_info["category_name"])
-        
+
     @staticmethod
     @lru_cache(maxsize=128)
     def _format_date(date_iso: str) -> str:
@@ -260,20 +267,20 @@ class BaseInsultSerializer(CachedBulkSerializer):
         """Ensure consistent category formatting with caching."""
         return capfirst(category) if category else "Uncategorized"
 
-
     def get_added_on_display(self, obj):
         """Cached date formatting."""
         cached_value = self.get_cached_field_value(obj, "added_on_display")
         if cached_value is not None:
             return cached_value
-        
+
         if not obj.added_on:
             display_date = ""
         else:
             display_date = self._format_date(obj.added_on.isoformat())
-        
+
         self.set_cached_field_value(obj, "added_on_display", display_date)
         return display_date
+
     def to_internal_value(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Override to handle category name to key conversion.
@@ -286,7 +293,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
         return super().to_internal_value(data)
 
-    def to_representation(self, instance) -> Dict[str, Any]: #pyrefly: ignore
+    def to_representation(self, instance) -> Dict[str, Any]:  # pyrefly: ignore
         """
         Transform the outgoing data with optimized category lookup.
         """
@@ -294,19 +301,19 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
         # Use cached category lookup instead of additional DB query
         if representation.get("category"):
-            representation["category"] =  self.validate_category(
+            representation["category"] = self.validate_category(
                 representation["category"]
             )["category_name"]
 
         return representation
-    
+
     @extend_schema_field(serializers.CharField())
     def get_added_by(self, obj) -> Optional[str]:
         """Optimized added_by formatter matching InsultSerializer logic."""
         cached_value = self.get_cached_field_value(obj, "added_by_name")
         if cached_value is not None:
-            return cached_value         
-        
+            return cached_value
+
         if not obj.added_by:
             return None
 
@@ -318,6 +325,8 @@ class BaseInsultSerializer(CachedBulkSerializer):
             else:
                 return user.first_name
         return user.username or "Unknown User"
+
+
 class MyInsultSerializer(BaseInsultSerializer):
     """
     Simplified serializer for user's own insults.
@@ -326,7 +335,6 @@ class MyInsultSerializer(BaseInsultSerializer):
 
     status = serializers.CharField(source="get_status_display", read_only=True)
     added_by = serializers.SerializerMethodField()
-
 
     class Meta:
         model = Insult
@@ -346,11 +354,27 @@ class MyInsultSerializer(BaseInsultSerializer):
                 {"category_key": "F", "name": "Fat"},
                 {"category_key": "L", "name": "Lazy"},
             ],
+            "Category List Example",
+            summary="Available Categories",
+            description="List of all available insult categories",
+            value=[
+                {"category_key": "P", "name": "Poor"},
+                {"category_key": "S", "name": "Stupid"},
+                {"category_key": "F", "name": "Fat"},
+                {"category_key": "L", "name": "Lazy"},
+            ],
             response_only=True,
         )
     ]
 )
 class CategorySerializer(serializers.ModelSerializer):
+        )
+    ]
+)
+class CategorySerializer(serializers.ModelSerializer):
+    """
+    Serializer for InsultCategory model.
+    Simple and efficient category representation.
     """
     Serializer for InsultCategory model.
     Simple and efficient category representation.
@@ -367,9 +391,21 @@ class BulkInsultSerializer(serializers.ListSerializer):
     Custom ListSerializer for bulk operations.
     Optimizes database queries when handling multiple insults.
     """
+        model = InsultCategory
+        fields = ["category_key", "name"]
+
+
+# Bulk operations serializer for better performance with multiple insults
+class BulkInsultSerializer(serializers.ListSerializer):
+    """
+    Custom ListSerializer for bulk operations.
+    Optimizes database queries when handling multiple insults.
+    """
 
     def to_representation(self, data):
+    def to_representation(self, data):
         """
+        Optimize bulk serialization by prefetching related data.
         Optimize bulk serialization by prefetching related data.
         """
         # Prefetch related data to avoid N+1 queries
@@ -379,7 +415,6 @@ class BulkInsultSerializer(serializers.ListSerializer):
             # For querysets, prefetch related objects
             [obj.insult_id for obj in data if hasattr(obj, "insult_id")]
         return super().to_representation(data)
-
 
 
 @extend_schema_serializer(
@@ -393,14 +428,21 @@ class BulkInsultSerializer(serializers.ListSerializer):
                     "reference_id": "GIGGLE_Nzk1",
                     "category": "One-Off/Unique",
                     "content": "Yo momma is so bald... you can see what''s on her mind.",
+                    "reference_id": "GIGGLE_Nzk1",
+                    "category": "One-Off/Unique",
+                    "content": "Yo momma is so bald... you can see what''s on her mind.",
                     "status": "Active",
+                    "reports_count": 0,
                     "reports_count": 0,
                 },
                 {
                     "reference_id": "GIGGLE_Nzk1",
+                    "reference_id": "GIGGLE_Nzk1",
                     "category": "Stupid",
                     "content": "Yo momma so stupid, she went to the dentist to get Bluetooth.",
+                    "content": "Yo momma so stupid, she went to the dentist to get Bluetooth.",
                     "status": "Pending",
+                    "reports_count": 2,
                     "reports_count": 2,
                 },
             ],
@@ -414,11 +456,13 @@ class BulkInsultSerializer(serializers.ListSerializer):
                 "category": "Poor",
                 "content": "Your code is like a maze - confusing and full of dead ends",
                 "nsfw": False,
+                "nsfw": False,
             },
             request_only=True,
         ),
     ]
 )
+class OptimizedInsultSerializer(BaseInsultSerializer):
 class OptimizedInsultSerializer(BaseInsultSerializer):
     """
     Version of InsultSerializer optimized for bulk operations.
@@ -427,7 +471,7 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
     # Optimization settings
     select_related_fields = ["added_by", "category"]
     prefetch_related_fields = ["reviews"]
-    cached_fields = ["added_by", "added_on"]    # Cache expensive fields
+    cached_fields = ["added_by", "added_on"]  # Cache expensive fields
 
     status = serializers.CharField(source="get_status_display", read_only=True)
     nsfw = serializers.BooleanField()
@@ -435,9 +479,9 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
     added_by = serializers.SerializerMethodField(method_name="get_added_by")
     added_on = serializers.SerializerMethodField(method_name="get_added_on_display")
     category = serializers.CharField(source="get_category_display")
-    
-    
+
     class Meta:
+        list_serializer_class = BulkInsultSerializer
         list_serializer_class = BulkInsultSerializer
         model = Insult
         fields = [

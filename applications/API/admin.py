@@ -79,8 +79,6 @@ class InsultAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         invalidate_insult_cache(reason="admin_save")
 
- 
-
     def view_reports_link(self, obj):
         """
         Returns an HTML link to the admin changelist for all reports associated with a specific insult.
