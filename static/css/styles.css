@@ -1,0 +1,273 @@
+    @font-face {
+      font-family: YoMamaHeader;
+      src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/caloriesuitDEMO.woff2') format('woff2');
+    }
+
+    @font-face {
+      font-family: YoMamaBody;
+      src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2') format('woff2');
+    }
+
+    :root {
+      --color-primary: #770071;
+      --color-secondary: #bd00b4;
+      --color-accent: #beda00;
+      --color-white: #ffffff;
+      --z-preloader: 9999;
+      --transition-standard: 300ms ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+
+    body {
+      background-image: url("https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/assets/background.svg");
+      background-repeat: no-repeat;
+      background-color: #d1d937;
+      background-size: cover;
+
+      font-family: "YoMamaBody";
+      background-attachment: fixed;
+      background-position: center;
+
+      height: 135vh;
+
+
+    }
+
+    #preloader {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: var(--z-preloader);
+      opacity: 1;
+      transition: opacity var(--transition-standard);
+    }
+      
+    .loading-container {
+      text-align: center;
+      color: var(--color-white);
+    }
+
+    #loading-message {
+      font-size: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    #phrases {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .phrase-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      color: var(--color-white);
+      opacity: 0.7;
+      transition: all 0.3s ease;
+    }
+
+    .phrase-item.completed {
+      opacity: 1;
+    }
+
+    .checkmark {
+      width: 24px;
+      height: 24px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .phrase-item.completed .checkmark {
+      opacity: 1;
+    }
+
+    .fade-out {
+      opacity: 0 !important;
+    }
+
+    /* Content Styles */
+    .content-wrapper {
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      transition: opacity var(--transition-standard);
+      min-height: 100vh;
+    }
+
+    .content-wrapper.show {
+      opacity: 1;
+    }
+
+    /* Yo Mama Specific Styles */
+    .joke-of-day {
+      background-color: var(--color-primary);
+      color: var(--color-white);
+      border-radius: 25px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .joke-title {
+      background-color: var(--color-accent);
+      color: #333;
+      border-radius: 15px;
+      padding: 1rem;
+      transition: background-color 0.3s ease;
+    }
+
+    .joke-title:hover {
+      background-color: var(--color-secondary);
+      color: var(--color-white);
+    }
+
+    .scale-font {
+      font-size: clamp(1rem, 2vw, 1.5rem);
+    }
+
+    .main-content {
+      padding: 2rem;
+        height: 780px;
+  width: 100%;
+    }
+
+    .features-section {
+      background: white;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-top: 2rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+#copy-right{
+  position: fixed;
+  bottom: 225px;
+  left: 15px;
+}
+.video-sub-copy{
+  position: fixed;
+  bottom: 190px;
+  left: 15px;
+}
+#dozens-image{
+
+}
+.nav-bar-parent {
+  font-weight: 900;
+  font-size: medium;
+  letter-spacing: .15em;
+}
+
+.nav-bar-parent:hover {
+  font-weight: 900;
+  font-size: large;
+  letter-spacing: .10em;
+  color: white;
+  text-decoration: underline;
+
+}
+#yo-mama-brand {
+  height: 100px;
+  width: auto;
+  margin-right: 60px;
+  float: left;
+}
+.nav-bar-parent-li{
+  margin-right: 3em;
+  margin-left: 3em;
+}
+
+#about-video {
+  left: 25px;
+  bottom: 275px;
+}
+
+#yo-mama-dropdown{
+  outline:0;
+  border:0;
+  background-color: transparent;
+}
+
+.img-modal {
+  height: 15em;
+  width: auto;
+}
+/* Modify the background color */
+nav {
+  width: 100%;
+  background-color: var(--color-primary); /* was --primary-purple-color */
+}
+
+.btn-primary {
+  background-color: var(--color-primary) !important; /* was --primary-purple-color */
+}
+.btn-primary:hover,
+.btn-primary:active,
+.btn-primary:visited {
+  background-color: var(--color-accent) !important; /* was --primary-lime-color */
+}
+
+/* Consolidate duplicate #dozens-image rules */
+#dozens-image {
+  position: fixed;
+  left: -205px;
+  top: 3em;
+  margin-left: 130px; /* if you still want this offset, keep it here */
+}
+
+/* MOBILE-FIRST VISIBILITY ------------------------------ */
+
+/* Default: assume desktop/tablet layout is visible */
+.mobile-redirect,
+.mobile-background {
+  display: none !important;
+}
+
+/* Hide “mobile-only” helpers on wide screens if needed */
+@media (min-width: 769px) {
+  /* desktop rules */
+  .mobile-display { display: block !important; }
+  .responsive-wrapper { display: block !important; }
+}
+
+/* Actual mobile rules */
+@media (max-width: 768px) {
+  /* Show the mobile redirect UI on mobile */
+  .mobile-redirect {
+    display: block !important;
+  }
+
+  .mobile-background {
+    display: block !important;
+    background-image: linear-gradient(315deg, #770071 0%, #620062 74%);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 100vh;
+    width: 100%;
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+  }
+
+  /* Hide desktop wrappers on mobile */
+  .mobile-display {
+    display: none !important;
+  }
+  .responsive-wrapper {
+    display: none !important;
+  }
+}
+@media (max-width: 768px) {
+  body { background-attachment: scroll; height: auto; }
+}

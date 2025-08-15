@@ -5,7 +5,6 @@ Django settings for thedozens project.
 
 """
 
-import json
 import os
 import sys
 import warnings
@@ -16,6 +15,7 @@ import highlight_io
 from configurations import Configuration, values
 from highlight_io.integrations.django import DjangoIntegration
 from loguru import logger
+from django.templatetags.static import static
 
 
 def log_warning(message, category, filename, lineno, file=None, line=None):
@@ -139,14 +139,14 @@ class Base(Configuration):
     ]
     STATIC_ROOT = "/tmp/staticfiles"
     template_dir = values.ListValue(
-        [Path(os.path.join(BASE_DIR, "the-dozens-django","templates"))],
+        [Path(os.path.join(BASE_DIR, "the-dozens-django", "templates"))],
         environ=False,
     )
     STORAGES = {
         "default": {
             "BACKEND": "storages.backends.s3.S3Storage",
             "OPTIONS": {},
-        },  
+        },
         "staticfiles": {
             "BACKEND": "core.storage_backends.StaticStorage",
             "LOCATION": AWS_LOCATION,
@@ -258,7 +258,7 @@ class Base(Configuration):
             "displayOperationId": False,
         },
         "SWAGGER_UI_DIST": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest",
-        "SWAGGER_UI_FAVICON_HREF": "https://cdn.yo-momma.net/staticfiles/assets/yoyoo_400x400.jpg",
+        "SWAGGER_UI_FAVICON_HREF": "https://nyc3.digitaloceanspaces.com/yo-momma/static/assets/favicon.ico",
         "CONTACT": {
             "name": "Terry A. Brooks, Jr.",
             "url": "https://brooksjr.com",
@@ -296,15 +296,27 @@ class Base(Configuration):
                 "LOCATION": os.getenv("REDIS_CACHE_TOKEN"),
                 "OPTIONS": {
                     "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                    "SOCKET_CONNECT_TIMEOUT": 5,
+                    "SOCKET_TIMEOUT": 5,
+                    "CONNECTION_POOL_KWARGS": {
+                        "max_connections": 100,
+                        "retry_on_timeout": True,
+                    },
                 },
             },
             "select2": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"{os.getenv("REDIS_CACHE_TOKEN")}/2",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
-    }
+                "BACKEND": "django_redis.cache.RedisCache",
+                "LOCATION": f"{os.getenv('REDIS_CACHE_TOKEN')}/2",
+                "OPTIONS": {
+                    "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                    "SOCKET_CONNECT_TIMEOUT": 5,
+                    "SOCKET_TIMEOUT": 5,
+                    "CONNECTION_POOL_KWARGS": {
+                        "max_connections": 100,
+                        "retry_on_timeout": True,
+                    },
+                },
+            },
         }
     )
     SELECT2_CACHE_BACKEND = "select2"
@@ -382,7 +394,15 @@ class Production(Base):
     CSRF_TRUSTED_ORIGINS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_ORIGINS"
     )
-    CORS_ALLOWED_ORIGINS = json.loads(os.getenv("ALLOWED_ORIGINS"))
+    CORS_ALLOWED_ORIGINS = [
+        "https://yo-momma.net",
+        "http://yo-momma.net",
+        "https://www.yo-momma.net",
+        "http://www.yo-momma.net",
+        "https://yo-mama.b-cdn.net",
+        "http://yo-mama.b-cdn.net",
+        "http://cdn.yo-momma.net",
+    ]  # os.getenv("ALLOWED_ORIGINS")
     # SECTION Start - Production Database
 
     #!SECTION End - Database and Caching
@@ -461,7 +481,6 @@ class Offline(Base):
             "django_prometheus",
             "drf_spectacular",
             "django_select2",
-
             # Project Apps
             "applications.API",
             "applications.graphQL",
@@ -567,7 +586,6 @@ class Development(Base):
             "django_prometheus",
             "drf_spectacular",
             "django_select2",
-
             # Project Apps
             "applications.API",
             "applications.graphQL",

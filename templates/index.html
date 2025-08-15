@@ -21,16 +21,21 @@
   <script src="https://kit.fontawesome.com/58e27c88da.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
   <script src="https://unpkg.com/highlight.run"></script>
-  <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+  {% comment %} <link rel="stylesheet" href="{% static 'css/styles.css' %}" /> {% endcomment %}
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    @font-face {
+    h1, h2, h3, h4, h5, h6, .uk-accordion-title, .phrase-item, .header-font {
+      font-family: 'YoMamaHeader';
+    } 
+        @font-face {
       font-family: YoMamaHeader;
-      src: url({% static 'fonts/caloriesuitDEMO.woff2' %}) format('woff2');
+      src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/caloriesuitDEMO.woff2') format('woff2');
     }
 
     @font-face {
       font-family: YoMamaBody;
-      src: url({% static 'fonts/JuliusSansOne-Regular.woff2' %}) format('woff2');
+      src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2') format('woff2');
     }
 
     :root {
@@ -48,21 +53,9 @@
       box-sizing: border-box;
     }
 
-    #preloader {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      background-image: url('https://source.unsplash.com/random/1920x1080');
-      background-position: center;
-      background-repeat: no-repeat;
-      background-size: cover;
-    }
 
     body {
-      background-image: url("{% static 'assets/background.svg' %}");
+      background-image: url("https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/assets/background.svg");
       background-repeat: no-repeat;
       background-color: #d1d937;
       background-size: cover;
@@ -97,6 +90,8 @@
     #loading-message {
       font-size: 1.5rem;
       margin-bottom: 2rem;
+            font-family: 'YoMamaHeader';
+
     }
 
     #phrases {
@@ -174,6 +169,8 @@
 
     .main-content {
       padding: 2rem;
+        height: 780px;
+  width: 100%;
     }
 
     .features-section {
@@ -184,74 +181,198 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
-    .site-footer {
-      background: var(--color-primary);
-      color: var(--color-white);
-      padding: 1rem;
-      margin-top: 2rem;
-    }
-
-  /* Mobile Styles */
-@media (max-width: 768px) {
-  .mobile-redirect {
-    display: none !important;
-  }
-  
-  .mobile-background {
-    display: none !important;
-  }
-  
-  .responsive-wrapper:not(.mobile-redirect) {
-    display: none !important;
-  }
+#dozens-image{
+ height: 300px;
+  width: auto;
+}
+.nav-bar-parent {
+  font-weight: 900;
+  font-size: medium;
+  letter-spacing: .15em;
 }
 
+.nav-bar-parent:hover {
+  font-weight: 900;
+  font-size: large;
+  letter-spacing: .10em;
+  color: white;
+  text-decoration: underline;
+
+}
+#yo-mama-brand {
+  height: 100px;
+  width: auto;
+  margin-right: 60px;
+  float: left;
+}
+.nav-bar-parent-li{
+  margin-right: 3em;
+  margin-left: 3em;
+}
+
+#about-video {
+margin-left: 13%;
+}
+
+#yo-mama-dropdown{
+  outline:0;
+  border:0;
+  background-color: transparent;
+}
+
+.img-modal {
+  height: 15em;
+  width: auto;
+}
+/* Modify the background color */
+nav {
+  width: 100%;
+  background-color: var(--color-primary); /* was --primary-purple-color */
+}
+
+.btn-primary {
+  background-color: var(--color-primary) !important; /* was --primary-purple-color */
+}
+.btn-primary:hover,
+.btn-primary:active,
+.btn-primary:visited {
+  background-color: var(--color-accent) !important; /* was --primary-lime-color */
+}
+
+/* Consolidate duplicate #dozens-image rules */
+
+
+/* MOBILE-FIRST VISIBILITY ------------------------------ */
+
+/* Default: assume desktop/tablet layout is visible */
+.mobile-redirect,
+.mobile-background {
+  display: none !important;
+}
+
+/* Hide “mobile-only” helpers on wide screens if needed */
 @media (min-width: 769px) {
+  /* desktop rules */
+  .mobile-display { display: block !important; }
+  .responsive-wrapper { display: block !important; }
+}
+
+/* Actual mobile rules */
+@media (max-width: 768px) {
+  /* Show the mobile redirect UI on mobile */
   .mobile-redirect {
     display: block !important;
   }
-  
+
   .mobile-background {
     display: block !important;
     background-image: linear-gradient(315deg, #770071 0%, #620062 74%);
     background-size: cover;
     background-position: center;
-    background-repeat: repeat;
+    background-repeat: no-repeat;
     height: 100vh;
     width: 100%;
     position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 2
+    inset: 0;
+    z-index: 2;
   }
-  
+
+  /* Hide desktop wrappers on mobile */
+  .mobile-display {
+    display: none !important;
+  }
+  .responsive-wrapper {
+    display: none !important;
+  }
+}
+@media (max-width: 768px) {
+  body { background-attachment: scroll; height: auto; }
 }
 
-    /* Scrollbar Styles */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
+/* Speech Bubble Styles */
+.speech-bubble {
+    position: fixed; /* Use fixed instead of absolute for better positioning */
+    background: var(--color-primary);
+    color: var(--color-white);
+    padding: 15px 20px;
+    border-radius: 15px;
+    font-family: 'YoMamaBody', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    max-width: 300px;
+    min-width: 200px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+    border: 2px solid var(--color-accent);
+}
 
-    ::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.1);
-    }
+.speech-bubble.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
 
-    ::-webkit-scrollbar-thumb {
-      background: var(--color-primary);
-      border-radius: 4px;
-    }
+/* Speech bubble tail (pointing down to the icon) */
+.speech-bubble::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -10px;
+    border: 10px solid transparent;
+    border-top-color: var(--color-primary);
+}
 
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--color-secondary);
-    }
-  </style>
+/* Alternative tail positions */
+.speech-bubble.tail-left::after {
+    left: 20px;
+}
+
+.speech-bubble.tail-right::after {
+    left: auto;
+    right: 20px;
+}
+
+/* Icon container styles */
+.icon-joke-of-day {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.icon-joke-of-day:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 10px rgba(189, 0, 180, 0.6));
+}
+
+/* Loading state */
+.speech-bubble.loading {
+    background: var(--color-secondary);
+}
+
+.speech-bubble.loading::before {
+    content: '⟳ ';
+    animation: spin 1s linear infinite;
+    margin-right: 5px;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+    </style>
 </head>
 
 <body>
   <!-- Fixed Background -->
   <div class="background-container"></div>
 
-  <!-- Preloader -->
+  <!-- Preloader -->  
   <div id="preloader">
     <div class="loading-container">
       <div id="loading-message">Loading awesome jokes...</div>
@@ -262,18 +383,18 @@
 
     <div class="content-wrapper">
       <!-- Paste the provided content here -->
-      <div class="responsive-wrapper fade-in">
+      <div class="responsive-wrapper desktop-display fade-in">
 
         <!--suppress HtmlUnknownAttribute -->
         <nav uk-dropnav>
-          <ul class="uk-subnav justify-content-between navbar-main flex-nowrap">
-            <li class="ps-0 ms-4">
+         <ul class="uk-subnav ms-2 justify-content-between navbar-main flex-nowrap">
+            {% comment %} <li class="ps-0 ms-4">
               <img id="yo-mama-brand" class="navbar-brand img-fluid" src="{%  static 'assets/yo_momma_brand.png' %}"
                 alt="Yo Mama Logo" />
-            </li>
-            <li><a class="header-font" href="https://www.brooksjr.com" target="_blank">About the Developer</a></li>
+            </li>  {% endcomment %}
+            <li><a class="btn btn-primary header-font" href="https://www.brooksjr.com" target="_blank">About the Developer</a></li>
             <li>
-              <a class="header-font" href="#">The API <!--suppress HtmlUnknownAttribute, HtmlUnknownAttribute -->
+              <a class="btn btn-primary header-font" href="#">The API <!--suppress HtmlUnknownAttribute, HtmlUnknownAttribute -->
                 <span uk-drop-parent-icon></span></a>
               <div class="uk-dropdown">
                 <ul class="uk-nav uk-dropdown-nav">
@@ -315,11 +436,10 @@
                 <div id="joke-of-day-title-parent" class="row gx-1">
                   <div class="RandomJoke col-12 col-md-4">
                     <img id="jod-icon" class="icon-joke-of-day" src="{% static 'assets/icon-jod.png' %}" />
-                  </div>
-                  <div class="joke-content-parent col-12 col-md-8">
-                </div>
               </div>
               </div>
+              </div>
+              
             </li>
           </ul>
 
@@ -328,12 +448,16 @@
 
           <section class="desktop-display">
             <div class="row" id="body-img-row">
-              <div class="col-12 col-md-4 ps-0 py-0 ms-5 mt-n3">
-                <img id="dozens-image" src="{% static 'assets/Dozen-Word-brand.png' %}" alt="body-typography"
-                  class="img-fluid" />
+              <div class="col-12 col-md-6  mx-auto d-block">
+                <img id="dozens-image" src="{%  static 'assets/yo_momma_brand.png' %}" height="50%" alt="body-typography" />
               </div>
-
             </div>
+            <div
+                  <div class="col-12 col-md-6  mx-auto d-block">
+                <a id="getting-started-modal-btn" class="header-font btn btn-secondary btn-block" data-bs-toggle="modal"
+                      data-bs-target="#getting-started-modal">Getting Started!  </a>
+              </div></div>
+    </div>
             <div class="row" id="body-copy">
               <div class="col-12 col-md-6 text-center">
                 <p>Introducing a powerful and versatile Yo Mama Jokes API, meticulously crafted using Python 3.0's
@@ -347,7 +471,7 @@
             </div>
             <div class="row">
               <div class="col-12 col-md-6 me-n1" id="video">
-                <video id="about-video" width="100%" height="auto"
+                <video id="about-video" width="75%" height="auto"
                   src="{% static 'assets/blackish_the_dozens_abc_broadcasting.mp4' %}" class="img-fluid"
                   controls></video>
               </div>
@@ -360,16 +484,16 @@
                 <sub><i class="fa fa-copyright"></i> American Broadcasting Company (ABC)</sub>
               </div>
             </div>
-            <div id="key-features" class="row">
+          <section class="desktop-display">
+            <div id="key-features" class="row justify-content-center align-items-center">
               <div class="col-12 col-md-6">
 
-                <h1 class="ms-5">Key Features</h1
->
+                <h1 class="ms-5">Key Features</h1>
 
                 <!--suppress HtmlUnknownAttribute -->
                 <ul id="key-feature-list" uk-accordion>
                   <li class="uk-open">
-                    <a class="uk-accordion-title" href="#">Comprehensive Filtering</a>
+                    <strong><a class="uk-accordion-title" href="#">Comprehensive Filtering</a></strong>
                     <div class="uk-accordion-content">
                       <p class="text-center feature-text">API consumers can effortlessly filter jokes based on specific
                         categories and
@@ -377,7 +501,7 @@
                     </div>
                   </li>
                   <li>
-                    <a class="uk-accordion-title" href="#">Dual API Formats</a>
+                   <strong><a class="uk-accordion-title" href="#">Dual API Formats</a></strong>
                     <div class="uk-accordion-content">
                       <p class="text-center feature-text">In addition to the REST API, we offer a GraphQL API version,
                         providing
@@ -385,20 +509,15 @@
                     </div>
                   </li>
                   <li>
-                    <a class="uk-accordion-title" href="#">Generous Rate Limiting</a>
+                  <strong>  <a class="uk-accordion-title" href="#">Generous Rate Limiting</a><strong>
                     <div class="uk-accordion-content">
-                      <p class="text-center feature-text">Protects against abuse and ensures fair usage by implementing
+                      <p class="text-center feature-text">Protects against abuse and ensures fair usage by implementing,
                         robust rate limiting, making sure your
                         application's performance remains optimal even under high traffic.</p>
                     </div>
                   </li>
                 </ul>
-              </div>
-            </div>
-            <div class="align-items-center">
-              <a href="#">
-                <!-- Add your content here -->
-              </a>
+              </div> 
             </div>
           </section>
         </main>
@@ -425,216 +544,9 @@
         <!-- UIkit JS -->
         <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"></script>
-        <script>
 
+        {% comment %} <script type="text/javascript" src="{% static 'js/scripts.js' %}"></script> {% endcomment %}
 
-          class PreloaderAnimation {
-            constructor() {
-              this.config = {
-                animationDuration: 3000,
-                messageInterval: 1000,
-                fadeOutDuration: 500,
-                verticalSpacing: 50
-              };
-
-              this.phrases = [
-                "Loading jokes", "Preparing insults", "Getting ready to roast",
-                "Warming up the comebacks", "Almost there", "Final touches",
-                "Loading your mama jokes", "Preparing the dozens", "Setting up the fun"
-              ];
-
-              this.state = {
-                isAnimating: false,
-                startTime: Date.now(),
-                currentPhraseIndex: 0
-              };
-
-              this.elements = {
-                preloader: document.getElementById('preloader'),
-                phrasesContainer: document.getElementById('phrases'),
-                messageElement: document.getElementById('loading-message'),
-                contentWrapper: document.querySelector('.content-wrapper')
-              };
-
-              // Bind methods
-              this.animate = this.animate.bind(this);
-              this.updateMessage = this.updateMessage.bind(this);
-            }
-
-            initialize() {
-              if (!this.validateElements()) return;
-
-              this.setupPhrases();
-              this.start();
-            }
-
-            validateElements() {
-              const missingElements = Object.entries(this.elements)
-                .filter(([key, element]) => !element)
-                .map(([key]) => key);
-
-              if (missingElements.length > 0) {
-                console.error('Missing required elements:', missingElements);
-                return false;
-              }
-              return true;
-            }
-
-            setupPhrases() {
-              this.phrases = this.shuffleArray(this.phrases);
-              this.elements.phrasesContainer.innerHTML = this.createPhrasesHTML();
-            }
-
-            createPhrasesHTML() {
-              return this.phrases.map((phrase, index) => `
-                  <div class="phrase-item" style="transform: translateY(${index * this.config.verticalSpacing}px)">
-                      <span class="phrase-text">${phrase}...</span>
-                      <svg class="checkmark" viewBox="0 0 32 32">
-                          <circle cx="16" cy="16" r="15" fill="none" stroke="white" stroke-width="2"/>
-                          <path d="M9 16l5 5 9-9" fill="none" stroke="white" stroke-width="2"/>
-                      </svg>
-                  </div>
-              `).join('');
-            }
-
-            shuffleArray(array) {
-              const newArray = [...array];
-              for (let i = newArray.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-              }
-              return newArray;
-            }
-
-            start() {
-              this.state.isAnimating = true;
-              this.state.startTime = Date.now();
-              this.messageInterval = setInterval(this.updateMessage, this.config.messageInterval);
-              this.animate();
-            }
-
-            animate() {
-              if (!this.state.isAnimating) return;
-
-              const elapsed = Date.now() - this.state.startTime;
-              const progress = Math.min(elapsed / this.config.animationDuration, 1);
-
-              if (progress < 1) {
-                this.updateAnimation(progress);
-                requestAnimationFrame(this.animate);
-              } else {
-                this.stop();
-              }
-            }
-
-            updateAnimation(progress) {
-              const translateY = -progress * (this.phrases.length * this.config.verticalSpacing);
-              this.elements.phrasesContainer.style.transform = `translateY(${translateY}px)`;
-
-              document.querySelectorAll('.phrase-item').forEach((item, index) => {
-                const itemProgress = (progress * this.phrases.length) - index;
-                if (itemProgress > 0) {
-                  item.classList.add('completed');
-                }
-              });
-            }
-
-            updateMessage() {
-              this.state.currentPhraseIndex = (this.state.currentPhraseIndex + 1) % this.phrases.length;
-              this.elements.messageElement.textContent =
-                `${this.phrases[this.state.currentPhraseIndex]}...`;
-            }
-
-            stop() {
-              this.state.isAnimating = false;
-              clearInterval(this.messageInterval);
-
-              this.elements.preloader.classList.add('fade-out');
-              setTimeout(() => {
-                this.elements.preloader.style.display = 'none';
-                this.elements.contentWrapper.classList.add('show');
-                document.body.style.overflow = 'visible';
-              }, this.config.fadeOutDuration);
-            }
-          }
-          // Add event listener to the element with ID "jod-icon"
-          document.getElementById('jod-icon').addEventListener('click', async function () {
-            // Get the element to modify
-            const targetElement = document.getElementById('jod-icon');
-
-            // First create a rotating exit animation
-            targetElement.style.transition = 'all 0.5s ease';
-            targetElement.style.transform = 'rotate(360deg) scale(0)';
-            targetElement.style.opacity = '0';
-
-            // Wait for the animation to complete
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            // Clear the element's content
-            targetElement.innerHTML = '';
-
-            // Create a speech bubble element
-            const speechBubble = document.createElement('div');
-            speechBubble.classList.add('speech-bubble');
-            speechBubble.style.position = 'relative';
-            speechBubble.style.backgroundColor = '#f8f8f8';
-            speechBubble.style.border = '2px solid #ddd';
-            speechBubble.style.borderRadius = '10px';
-            speechBubble.style.padding = '15px';
-            speechBubble.style.marginBottom = '20px';
-            speechBubble.style.maxWidth = '300px';
-
-            // Add the speech bubble pointer
-            speechBubble.style.position = 'relative';
-            speechBubble.innerHTML = '<div style="position: absolute; bottom: -20px; left: 20px; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 20px solid #ddd;"></div>';
-            speechBubble.innerHTML += '<div style="position: absolute; bottom: -17px; left: 22px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 17px solid #f8f8f8;"></div>';
-
-            // Create the text element
-            const textElement = document.createElement('p');
-            textElement.style.margin = '0';
-            textElement.style.fontFamily = 'YoMamaBody';
-
-            // Append the text element to the speech bubble
-            speechBubble.appendChild(textElement);
-
-            // Append the speech bubble to the target element
-            targetElement.appendChild(speechBubble);
-
-            // Reset the animation properties
-            targetElement.style.transform = 'rotate(0deg) scale(1)';
-            targetElement.style.opacity = '1';
-
-            try {
-              // Make API call to get the joke
-              const response = await fetch('https://api.yo-momma.net/insults');
-              const data = await response.json();
-
-              // Use typewriter effect to display the joke
-              const jokeText = data.content || "Could not load joke";
-              let i = 0;
-              const typeWriter = () => {
-                if (i < jokeText.length) {
-                  textElement.textContent += jokeText.charAt(i);
-                  i++;
-                  setTimeout(typeWriter, 50); // Adjust speed of typewriter effect
-                }
-              };
-
-              // Start the typewriter effect
-              typeWriter();
-            } catch (error) {
-              // Handle errors gracefully
-              textElement.textContent = "Oops! Couldn't fetch a joke. Try again later!";
-              console.error('Error fetching joke:', error);
-            }
-          });
-          // Initialize when DOM is ready
-          document.addEventListener('DOMContentLoaded', () => {
-            const preloader = new PreloaderAnimation();
-            preloader.initialize();
-          });
-
-        </script>
 
         {% include 'includes/history-modal.html' %}
         {% include 'includes/joke-reporting-form.html' %}
@@ -642,7 +554,7 @@
 
 </div>
     </div>
-        <div class="mobile-display">
+        <div class="mobile-redirect">                      
           <div id="mobile-background">
             <img id="mobile-icon" src="{%  static 'assets/yo_momma_brand.png' %}" height="50px" width="auto" />
             <h1 id="mobile-redirection">
@@ -652,7 +564,615 @@
       </div>
 
 
+<script>
+// Get configuration from environment or data attributes
+const HIGHLIGHT_PROJECT_ID =
+  document.body.dataset.highlightProjectId || "5g5kvvlg";
 
+// Highlight.io Monitoring Configuration
+const HIGHLIGHT_CONFIG = {
+  environment: document.body.dataset.environment || "production",
+  version: "commit:abcdefg12345",
+  networkRecording: {
+    enabled: true,
+    recordHeadersAndBody: true,
+    urlBlocklist: [],
+  },
+};
+
+// Constants
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+const VERTICAL_SPACING = 50;
+const ANIMATION_DURATION = 30000;
+const API_URL = "https://api.yo-momma.net/insult";
+const PRELOADER_DELAY = 3000;
+const PHRASES = [
+  "Generating witty dialog",
+  "Prepping Insults",
+  "Offending Mothers",
+  "Debating Fathers",
+  "Irritating Aunts",
+  "Annoying Grandmothers",
+  "Disparaging Grandfathers",
+  "Frustrating Matriarchs",
+  "Cracking jokes",
+  "Slacking off",
+];
+
+// Initialize Highlight.io
+if (typeof H !== "undefined" && HIGHLIGHT_PROJECT_ID) {
+  H.init(HIGHLIGHT_PROJECT_ID, HIGHLIGHT_CONFIG);
+}
+
+// SVG Creation Utilities
+class SVGFactory {
+  /**
+   * Creates an SVG element with the specified tag, properties, and children.
+   * This is a utility function for creating SVG elements.
+   * @param {string} tag - The tag name of the SVG element to create.
+   * @param {object} properties - An object containing the attributes to set on the element.
+   * @param {array} children - An array of child elements to append to the created element.
+   * @returns {Element} The newly created SVG element.
+   */
+  static create(tag, properties = {}, children = []) {
+    const element = document.createElementNS(SVG_NAMESPACE, tag);
+    Object.entries(properties).forEach(([prop, value]) =>
+      element.setAttribute(prop, value)
+    );
+    children.forEach((child) => element.appendChild(child));
+    return element;
+  }
+
+  /**
+   * Creates an SVG text element for displaying a phrase.
+   * This creates the text element with default styling and appends an ellipsis.
+   * @param {string} phrase - The phrase to display.
+   * @param {number} yOffset - The vertical offset for positioning the text.
+   * @returns {Element} The newly created SVG text element.
+   */
+  static createPhrase(phrase, yOffset) {
+    return this.create(
+      "text",
+      {
+        fill: "white",
+        x: "50",
+        y: yOffset.toString(),
+        "font-size": "18",
+        "font-family": "Arial",
+      },
+      [document.createTextNode(phrase + "...")]
+    );
+  }
+  /**
+   * Creates an SVG checkmark icon.
+   * This creates a checkmark within a circle, used for loading animations.
+   * @param {number} yOffset - The vertical offset for positioning the checkmark.
+   * @param {number} index - An index used to generate unique IDs for the SVG elements.
+   * @returns {Element} The newly created SVG group element containing the checkmark.
+   */
+  static createCheck(yOffset, index) {
+    const check = this.create("polygon", {
+      points:
+        "21.661,7.643 13.396,19.328 9.429,15.361 7.075,17.714 13.745,24.384 24.345,9.708",
+      fill: "rgba(255,255,255,1)",
+      id: `loadingCheckSVG-${index}`,
+    });
+
+    const circleOutline = this.create("path", {
+      d: "M16,0C7.163,0,0,7.163,0,16s7.163,16,16,16s16-7.163,16-16S24.837,0,16,0z M16,30C8.28,30,2,23.72,2,16C2,8.28,8.28,2,16,2 c7.72,0,14,6.28,14,14C30,23.72,23.72,30,16,30z",
+      fill: "white",
+    });
+
+    const circle = this.create("circle", {
+      id: `loadingCheckCircleSVG-${index}`,
+      fill: "rgba(255,255,255,0)",
+      cx: "16",
+      cy: "16",
+      r: "15",
+    });
+
+    return this.create("g", {}, [circleOutline, circle, check]);
+  }
+}
+/**
+ * Controls the preloader animation.
+ * This class manages the animation of phrases and checkmarks during the preloading phase.
+ */
+class PreloaderAnimation {
+  constructor() {
+    this.config = {
+      animationDuration: 3000,
+      messageInterval: 1000,
+      fadeOutDuration: 500,
+      verticalSpacing: 50,
+    };
+
+    this.phrases = PHRASES;
+    this.state = {
+      isAnimating: false,
+      startTime: Date.now(),
+      currentPhraseIndex: 0,
+    };
+
+    this.elements = {
+      preloader: document.getElementById("preloader"),
+      phrasesContainer: document.getElementById("phrases"),
+      messageElement: document.getElementById("loading-message"),
+      contentWrapper: document.querySelector(".content-wrapper"),
+    };
+
+    // Bind methods
+    this.animate = this.animate.bind(this);
+    this.updateMessage = this.updateMessage.bind(this);
+  }
+  /**
+   * Shuffles the elements of an array randomly.
+   * Uses the Fisher-Yates shuffle algorithm.
+   * @param {array} array - The array to shuffle.
+   * @returns {array} The shuffled array.
+   */
+  shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+  /**
+   * Initializes the preloader animation.
+   * Confirms all UI Elements Are Valid, then sets up Phrases and Starts Animation
+   *
+   * @returns {void}
+   */
+  initialize() {
+    if (!this.validateElements()) return;
+
+    this.setupPhrases();
+    this.start();
+  }
+  /**
+   * Utility Function to Validate Required UI Elements
+   * Checks if all required elements are present in the DOM.
+   * Logs an error if any elements are missing.
+   * @returns {boolean} Returns true if all required elements are present, false otherwise.
+   */
+
+  validateElements() {
+    const missingElements = Object.entries(this.elements)
+      .filter(([key, element]) => !element)
+      .map(([key]) => key);
+
+    if (missingElements.length > 0) {
+      console.error("Missing required elements:", missingElements);
+      return false;
+    }
+    return true;
+  }
+  /** Converts an HTML element to a string representation.
+   * This is a utility function to convert an element to a string for easier manipulation.
+   * @param {Element} element - The HTML element to convert.
+   * @returns {string} The string representation of the element.
+   */
+  elementToString(element) {
+    const wrapper = document.createElement("div");
+    wrapper.appendChild(element);
+    return wrapper.innerHTML;
+  }
+
+  /**
+   * Sets up the animated phrase elements for the preloader.
+   * This function shuffles the phrases, clears the container, and creates DOM elements for each phrase and its checkmark.
+   */
+  setupPhrases() {
+    this.phrases = this.shuffleArray(this.phrases);
+    this.elements.phrasesContainer.innerHTML = ""; // Clear
+
+    this.phrases.forEach((phrase, index) => {
+      const div = document.createElement("div");
+      div.className = "phrase-item";
+      div.style.transform = `translateY(${
+        index * this.config.verticalSpacing
+      }px)`;
+
+      const span = document.createElement("span");
+      span.className = "phrase-text";
+      span.textContent = `${phrase}...`;
+
+      const checkSVG = SVGFactory.createCheck(
+        index * this.config.verticalSpacing,
+        index
+      );
+
+      div.appendChild(span);
+      div.appendChild(checkSVG);
+      this.elements.phrasesContainer.appendChild(div);
+    });
+  }
+
+  /**
+   * Implements an ease-in-out function for smoother animation.
+   * @param {number} t - The input value for the easing function.
+   * @returns {number} The eased value.
+   */
+
+  easeInOut(t) {
+    return (Math.sin(t / 200 + 100) + 1) / 2;
+  }
+  /**
+   * Generates HTML of the Preloaded Phrases
+   * @returns {string} HTML string containing all phrases with their respective styles and checkmarks.
+   */
+  createPhrasesHTML() {
+    return this.phrases
+      .map((phrase, index) => {
+        const checkSVG = SVGFactory.createCheck(
+          index * this.config.verticalSpacing,
+          index
+        );
+        const checkSVGString = this.elementToString(checkSVG); // Convert SVG to string
+
+        return `
+      <div class="phrase-item" style="transform: translateY(${
+        index * this.config.verticalSpacing
+      }px)">
+        <span class="phrase-text">${phrase}...</span>
+        ${checkSVGString}
+      </div>
+    `;
+      })
+      .join("");
+  }
+  /**
+   * Updates the appearance of the checkmark elements during animation.
+   * Adjusts the fill color and alpha based on the animation progress.
+   */
+  updateChecks() {
+    this.checks.forEach((check, i) => {
+      const colorChangeBoundary = -i * VERTICAL_SPACING + VERTICAL_SPACING + 15;
+      if (this.upwardMovingGroup.currentY < colorChangeBoundary) {
+        const alpha = Math.max(
+          Math.min(
+            1 -
+              (this.upwardMovingGroup.currentY - colorChangeBoundary + 15) / 30,
+            1
+          ),
+          0
+        );
+        check.circle.setAttribute("fill", `rgba(255, 255, 255, ${alpha})`);
+        const checkColor = [
+          Math.round(255 * (1 - alpha) + 120 * alpha),
+          Math.round(255 * (1 - alpha) + 154 * alpha),
+        ];
+        check.check.setAttribute(
+          "fill",
+          `rgba(255, ${checkColor[0]}, ${checkColor[1]}, 1)`
+        );
+      }
+    });
+  }
+  /**
+   * Executes a single frame of the preloader animation.
+   * Updates element positions and checkmark appearance.
+   */
+  animate() {
+    if (!this.state.isAnimating) return;
+
+    const elapsed = Date.now() - this.state.startTime;
+    const progress = Math.min(elapsed / this.config.animationDuration, 1);
+
+    if (progress < 1) {
+      this.updateAnimation(progress);
+      requestAnimationFrame(this.animate);
+    } else {
+      this.stop();
+    }
+  }
+  /**
+   *
+   * Updates the animation state based on the current progress.
+   * Moves phrases vertically and updates their completion status.
+   * @param {number} progress - The current progress of the animation (0 to 1).
+   */
+  updateAnimation(progress) {
+    const translateY =
+      -progress * (this.phrases.length * this.config.verticalSpacing);
+    this.elements.phrasesContainer.style.transform = `translateY(${translateY}px)`;
+
+    document.querySelectorAll(".phrase-item").forEach((item, index) => {
+      const itemProgress = progress * this.phrases.length - index;
+      if (itemProgress > 0) {
+        item.classList.add("completed");
+      }
+    });
+  }
+  /**
+   * Updates the message displayed during the preloader animation.
+   */
+  updateMessage() {
+    this.state.currentPhraseIndex =
+      (this.state.currentPhraseIndex + 1) % this.phrases.length;
+    this.elements.messageElement.textContent = `${
+      this.phrases[this.state.currentPhraseIndex]
+    }...`;
+  }
+
+  /**
+   * Starts the preloader animation.
+   */
+  start() {
+    this.isAnimating = true;
+    this.state.startTime = Date.now();
+    this.messageInterval = setInterval(
+      this.updateMessage,
+      this.config.messageInterval
+    );
+    this.animate();
+  }
+  /**
+   * Stops the preloader animation.
+   */
+  stop() {
+    this.state.isAnimating = false;
+    clearInterval(this.messageInterval);
+
+    this.elements.preloader.classList.add("fade-out");
+    setTimeout(() => {
+      this.elements.preloader.style.display = "none";
+      this.elements.contentWrapper.classList.add("show");
+      document.body.style.overflow = "visible";
+    }, this.config.fadeOutDuration);
+  }
+}
+
+// UI Controller
+/**
+ * UIController manages user interface interactions and event listeners for the application.
+ * This class provides static methods to initialize UI event handlers and load jokes from the API.
+ */
+class UIController {
+  /**
+   * Sets up event listeners for navigation buttons and the joke of the day title.
+   * This method attaches animation and click handlers to relevant UI elements.
+   */
+  static setupEventListeners() {
+    // Modal navigation buttons animation
+    document.querySelectorAll(".nav-bttn").forEach((button) => {
+      button.addEventListener("mouseenter", () =>
+        button.classList.add("animate__animated", "animate__pulse")
+      );
+    });
+  }
+}
+
+// DOM Ready
+document.addEventListener("DOMContentLoaded", () => {
+  const preloader = new PreloaderAnimation();
+  preloader.initialize();
+  // Initialize speech bubble controller
+  const speechBubble = new SpeechBubbleController();
+
+  // Setup UI event listeners
+  UIController.setupEventListeners();
+
+  setTimeout(() => {
+    preloader.stop();
+
+    const page = document.getElementById("page");
+    if (page) {
+      page.style.display = "none";
+    }
+
+    const bodyHide = document.getElementById("body-hide");
+    if (bodyHide) {
+      bodyHide.style.display = "block";
+    }
+
+    document.body.style.overflow = "visible";
+  }, PRELOADER_DELAY);
+});
+
+class SpeechBubbleController {
+  constructor() {
+    this.iconElement = document.getElementById('jod-icon');
+    this.bubbleElement = null;
+    this.jokeContentElement = document.getElementById('joke-content');
+    
+    this.isHovering = false;
+    this.currentJoke = null;
+    this.isLoading = false;
+    
+    this.init();
+  }
+
+  init() {
+    if (!this.iconElement) {
+      console.error('jod-icon element not found');
+      return;
+    }
+
+    this.createSpeechBubble();
+    this.setupEventListeners();
+    this.loadInitialJoke();
+  }
+
+  createSpeechBubble() {
+    // Create speech bubble element
+    this.bubbleElement = document.createElement('div');
+    this.bubbleElement.className = 'speech-bubble';
+    this.bubbleElement.id = 'speech-bubble';
+    
+    // Create content span
+    const contentSpan = document.createElement('span');
+    contentSpan.id = 'speech-bubble-content';
+    contentSpan.textContent = 'Loading joke...';
+    
+    this.bubbleElement.appendChild(contentSpan);
+    document.body.appendChild(this.bubbleElement);
+    
+    this.speechContentElement = contentSpan;
+  }
+
+  setupEventListeners() {
+    // Mouse enter - show bubble and load joke if needed
+    this.iconElement.addEventListener('mouseenter', (e) => {
+      this.handleMouseEnter(e);
+    });
+
+    // Mouse leave - hide bubble
+    this.iconElement.addEventListener('mouseleave', () => {
+      this.handleMouseLeave();
+    });
+
+    // Click - load new joke
+    this.iconElement.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.handleClick();
+    });
+
+    // Position bubble on mouse move
+    this.iconElement.addEventListener('mousemove', (e) => {
+      this.positionBubble(e);
+    });
+  }
+
+  async handleMouseEnter(e) {
+    this.isHovering = true;
+    this.positionBubble(e);
+    this.showBubble();
+
+    // Update bubble content with current joke or load new one
+    if (this.currentJoke) {
+      this.speechContentElement.textContent = this.currentJoke;
+    } else if (!this.isLoading) {
+      await this.loadNewJoke();
+    }
+  }
+
+  handleMouseLeave() {
+    this.isHovering = false;
+    this.hideBubble();
+  }
+
+  async handleClick() {
+    if (!this.isLoading) {
+      await this.loadNewJoke();
+    }
+  }
+
+  showBubble() {
+    this.bubbleElement.classList.add('show');
+  }
+
+  hideBubble() {
+    this.bubbleElement.classList.remove('show');
+  }
+
+  positionBubble(e) {
+    const iconRect = this.iconElement.getBoundingClientRect();
+    const bubbleRect = this.bubbleElement.getBoundingClientRect();
+    const viewport = {
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+
+    // Calculate initial position (above the icon, centered)
+    const bubbleWidth = this.bubbleElement.offsetWidth || 250;
+    const bubbleHeight = this.bubbleElement.offsetHeight || 80;
+    
+    let left = iconRect.left + (iconRect.width / 2) - (bubbleWidth / 2);
+    let top = iconRect.top - bubbleHeight - 15; // 15px gap
+
+    // Adjust horizontal position if bubble would go off screen
+    if (left < 10) {
+      left = 10;
+      this.bubbleElement.classList.add('tail-left');
+      this.bubbleElement.classList.remove('tail-right');
+    } else if (left + bubbleWidth > viewport.width - 10) {
+      left = viewport.width - bubbleWidth - 10;
+      this.bubbleElement.classList.add('tail-right');
+      this.bubbleElement.classList.remove('tail-left');
+    } else {
+      this.bubbleElement.classList.remove('tail-left', 'tail-right');
+    }
+
+    // Adjust vertical position if bubble would go off screen
+    if (top < 10) {
+      top = iconRect.bottom + 15; // Show below icon instead
+    }
+
+    // Apply position
+    this.bubbleElement.style.left = `${left}px`;
+    this.bubbleElement.style.top = `${top}px`;
+  }
+
+  async loadNewJoke() {
+    if (this.isLoading) {
+      return;
+    }
+    
+    this.isLoading = true;
+    this.bubbleElement.classList.add('loading');
+    
+    if (this.speechContentElement) {
+      this.speechContentElement.textContent = 'Loading new joke...';
+    }
+
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      this.currentJoke = Object.values(data)[0];
+      
+      // Update both the speech bubble and the main joke content
+      if (this.speechContentElement) {
+        this.speechContentElement.textContent = this.currentJoke;
+      }
+
+    } catch (error) {
+      console.error('Error loading joke:', error);
+      const errorMessage = 'Failed to load joke. Please try again.';
+      
+      if (this.speechContentElement) {
+        this.speechContentElement.textContent = errorMessage;
+      }
+      
+      if (this.jokeContentElement) {
+        this.jokeContentElement.textContent = errorMessage;
+      }
+      
+      this.currentJoke = null;
+    } finally {
+      this.isLoading = false;
+      this.bubbleElement.classList.remove('loading');
+    }
+  }
+
+  async loadInitialJoke() {
+    // Load first joke without showing loading state
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      this.currentJoke = Object.values(data)[0];
+      
+      if (this.speechContentElement) {
+        this.speechContentElement.textContent = this.currentJoke;
+      }
+      
+      if (this.jokeContentElement) {
+        this.jokeContentElement.textContent = this.currentJoke;
+      }
+    } catch (error) {
+      console.error('Error loading initial joke:', error);
+      const fallbackJoke = 'Yo momma is so fat that when she walked past the TV, I missed three episodes.';
+      this.currentJoke = fallbackJoke;
+      
+      if (this.speechContentElement) {
+        this.speechContentElement.textContent = fallbackJoke;
+      }
+    }
+  }
+}
+
+</script>
 </body>
 
 </html>

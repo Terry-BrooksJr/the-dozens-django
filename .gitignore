@@ -112,7 +112,6 @@ celerybeat-schedule.*
 
 # Environments
 .env
-.venv
 env/
 venv/
 ENV/
@@ -158,8 +157,6 @@ logs
 data
 .task
 COCKROACH_DB_SSL.crt
-https:/cdn.yo-momma.net/staticfiles
-.kolo
-https:
-/AIVIN_SSL_CERT.pem
+staticfiles/*       # if you meant to ignore your local staticfiles directory
+AIVIN_SSL_CERT.pem
 users.acl

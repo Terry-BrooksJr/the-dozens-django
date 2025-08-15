@@ -53,6 +53,8 @@ transformers = "^4.54.1"
 torch = "^2.7.1"
 spacy = "^3.8.7"
 django-select2 = "^8.4.1"
+argon2-cffi = "^25.1.0"
+pylint-django = "^2.6.1"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -1,7 +1,9 @@
 import random
 
 from django.db.models import Q
+from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.auth.models import User
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -9,17 +11,20 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from rest_framework import viewsets
-from rest_framework.decorators import action
+from rest_framework import viewsets, status
+from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import PaginateByMaxMixin
 
 from applications.API.filters import InsultFilter
-from applications.API.models import Insult, InsultCategory
+from applications.API.models import Insult, InsultCategory, InsultReview
 from applications.API.permissions import IsOwnerOrReadOnly
-from applications.API.serializers import CategorySerializer, InsultSerializer
-from common.cache import CachedResponseMixin
+from applications.API.serializers import (
+    CategorySerializer,
+    OptimizedInsultSerializer,
+)
+from common.preformance import CachedResponseMixin, CacheInvalidationMixin, CategoryCacheManager
 from common.utils.helpers import _check_ownership
 
 
@@ -54,7 +59,7 @@ from common.utils.helpers import _check_ownership
         ],
         responses={
             200: OpenApiResponse(
-                response=InsultSerializer(many=True),
+                response=OptimizedInsultSerializer,
                 examples=[
                     OpenApiExample(
                         "Success Response",
@@ -91,7 +96,7 @@ from common.utils.helpers import _check_ownership
         ],
         responses={
             200: OpenApiResponse(
-                response=InsultSerializer,
+                response=OptimizedInsultSerializer,
                 examples=[
                     OpenApiExample(
                         "Success Response",
@@ -114,10 +119,10 @@ from common.utils.helpers import _check_ownership
         tags=["Insults"],
         operation_id="create_insult",
         description="Create a new insult. Authentication required.",
-        request=InsultSerializer,
+        request=OptimizedInsultSerializer,
         responses={
             201: OpenApiResponse(
-                response=InsultSerializer,
+                response=OptimizedInsultSerializer,
                 examples=[
                     OpenApiExample(
                         "Created Response",
@@ -149,9 +154,9 @@ from common.utils.helpers import _check_ownership
                 description="A unique integer value identifying this insult",
             )
         ],
-        request=InsultSerializer,
+        request=OptimizedInsultSerializer,
         responses={
-            200: InsultSerializer,
+            200: OptimizedInsultSerializer,
             400: OpenApiResponse(description="Invalid input"),
             401: OpenApiResponse(description="Authentication required"),
             403: OpenApiResponse(description="Permission denied - not the owner"),
@@ -178,7 +183,10 @@ from common.utils.helpers import _check_ownership
         },
     ),
 )
-class InsultViewSet(PaginateByMaxMixin, CachedResponseMixin, viewsets.ModelViewSet):
+class InsultViewSet(PaginateByMaxMixin,
+                    CachedResponseMixin,
+                    CacheInvalidationMixin,
+                    viewsets.ModelViewSet):
     """
     ViewSet for managing insults. Provides CRUD operations and additional actions.
 
@@ -190,12 +198,31 @@ class InsultViewSet(PaginateByMaxMixin, CachedResponseMixin, viewsets.ModelViewS
     - DELETE /api/insults/{id}/ - Delete an insult (owner only)
     - GET /api/insults/random/ - Get a random insult
     """
-
-    serializer_class = InsultSerializer
-    filter_backends = (DjangoFilterBackend,)
-    filterset_class = InsultFilter
-    lookup_field = "id"
     primary_model = Insult
+    cache_models = [InsultCategory, InsultReview]  
+    lookup_field = "insult_id"
+    bulk_select_related = ["added_by", "category"]
+    bulk_prefetch_related = ["reports"]
+    bulk_cache_timeout = 1800  
+    cache_invalidation_patterns = [  "Insult:*",
+        "bulk:insult*", 
+        "categories:*",
+        "users:*:insults*"]
+    filter_backends = (DjangoFilterBackend,)  #pyrefly: ignore
+    filterset_class = InsultFilter
+    
+    @action(detail=False, methods=['get'])
+    def cache_stats(self, request):
+        """Get cache performance statistics."""
+        return Response({
+            'cache_backend': cache.__class__.__name__,
+            'bulk_cache_timeout': self.bulk_cache_timeout,
+            'invalidation_patterns': self.cache_invalidation_patterns
+        })
+        
+    def get_serializer_class(self):
+        """Return the appropriate serializer class based on the action."""
+        return OptimizedInsultSerializer
 
     def get_permissions(self):
         if self.action in ["list", "retrieve", "random"]:
@@ -203,29 +230,236 @@ class InsultViewSet(PaginateByMaxMixin, CachedResponseMixin, viewsets.ModelViewS
         else:
             permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
         return [permission() for permission in permission_classes]
+    
 
     def get_queryset(self):
-        base_queryset = Insult.objects.all()
+        return (
+            Insult.objects.select_related("added_by", "category")
+            .prefetch_related("reports_count")
+            .order_by("-added_on")
+            .all()
+        )
+    # # Filter by status if authenticated user to return all insults regardless of status they created and all active insults created by others
+    #     if self.action == "list" and self.request.user.is_authenticated:
+    #         return base_queryset.filter(added_by=self.request.user)
 
-        if self.action == "list" and self.request.user.is_authenticated:
-            return base_queryset.filter(added_by=self.request.user)
+    #     if self.request.user.is_authenticated:
+    #         return base_queryset.filter(
+    #             Q(added_by=self.request.user) | Q(status=Insult.STATUS.ACTIVE)
+    #         )
 
-        if self.request.user.is_authenticated:
-            return base_queryset.filter(
-                Q(added_by=self.request.user) | Q(status=Insult.STATUS.ACTIVE)
-            )
-
-        return base_queryset.filter(status=Insult.STATUS.ACTIVE)
-
+    #     return base_queryset.filter(status=Insult.STATUS.ACTIVE)
+    
     def perform_update(self, serializer):
         obj = self.get_object()
-        _check_ownership(obj, self.request.user)
+        _check_ownership(obj=obj, user=self.request.user)
         serializer.save()
 
     def perform_destroy(self, instance):
         _check_ownership(instance, self.request.user)
         instance.delete()
-
+        
+    @action(detail=False, methods=["get"])
+    def bulk_list(self, request):
+        """
+        Optimized bulk listing with comprehensive caching and filtering.
+        
+        This endpoint demonstrates:
+        - Bulk query optimization
+        - Cache key generation with filters
+        - Cached bulk data retrieval
+        - Pagination support
+        """
+        # Build cache key with all relevant filters
+        filters = { 
+            "category": request.GET.get("category"),
+            "status": request.GET.get("status"),
+            "nsfw": request.GET.get("nsfw"),
+            "page": request.GET.get("page", "1"),
+            "page_size": request.GET.get("page_size", "20"),
+            "user": User.objects.get(id=request.user.username.id) if request.user.is_authenticated else None
+        }
+        
+        cache_key = self.get_cache_key("bulk_list", **filters)
+            
+        def get_filtered_queryset():
+            """Build the filtered queryset."""
+            queryset = self.get_queryset()
+            
+            # Apply filters
+            if filters["category"]:
+                queryset = queryset.filter(category__category_key=filters["category"])
+            if filters["status"]:
+                queryset = queryset.filter(status=filters["status"])
+            if filters["nsfw"] is not None:
+                nsfw_bool = filters["nsfw"].lower() in ('true', '1', 'yes')
+                queryset = queryset.filter(nsfw=nsfw_bool)
+            if self.action == "list" and filters["user"]:
+                status_agnostic_queryset = queryset.filter(added_by=filters["user"])
+                return status_agnostic_queryset.union(
+                    queryset.filter(status=Insult.STATUS.ACTIVE)
+                ).order_by("-added_on")
+            return queryset.filter(status=Insult.STATUS.ACTIVE).order_by('-added_on')
+            # Get cached or fresh data with optimizations
+        queryset, extra_data = self.get_cached_bulk_data(
+            cache_key, get_filtered_queryset, timeout=self.bulk_cache_timeout
+        )
+        # Apply pagination
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            response_data = self.get_paginated_response(serializer.data)
+            response_data.data.update(extra_data)  # Add metadata
+            return response_data
+        
+        # Non-paginated response
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            "results": serializer.data,
+            **extra_data
+        })
+    @action(detail=False, methods=["get"])
+    def my_insults(self, request):
+        """
+        Get current user's insults with optimization.
+        
+        Demonstrates user-specific caching and authentication handling.
+        """
+        if not request.user.is_authenticated:
+            return Response(
+                {"detail": "Authentication required"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        
+        cache_key = self.get_cache_key("my_insults", user_id=request.user.id)
+        
+        def get_user_queryset():
+            return self.get_queryset().filter(added_by=request.user).order_by('-added_on')
+        
+        queryset, extra_data = self.get_cached_bulk_data(
+            cache_key, get_user_queryset, timeout=1800  # 30 minutes for user data
+        )
+        
+        # Apply pagination
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    @extend_schema(
+        tags=["Insults"],
+        operation_id="list_category_insults",
+        description="Retrieve insults for a specific category",
+        parameters=[
+            OpenApiParameter(
+                name="category",
+                type=str,
+                location=OpenApiParameter.PATH,
+                description="Category key to filter insults by",
+                required=True,
+            ),
+            OpenApiParameter(
+                name="status",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="Filter by status (authenticated users only)",
+                required=False,
+                enum=["active", "pending", "rejected", ],
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=OptimizedInsultSerializer,
+                examples=[
+                    OpenApiExample(
+                        "Category Insults",
+                        value=[
+                            {
+                                "reference_id": "SNICKER_NDI5",
+                                "content": "Yo momma is so fat... she walked in front of the TV and I missed 3 shows.",
+                                "category": "Fat",
+                                "status": "Active",
+                                "nsfw": False,
+                                "added_on": "3 month ago",
+                                "report_count": 0,
+                                "added_by": "John D.",
+                            }, 
+                            
+                            {
+                                "reference_id": "CACKLE_NDU0",
+                                "content": "Yo momma’s so fat, when she stepped on the scale it said, ‘To be continued.",
+                                "category": "Fat",
+                                "status": "Active",
+                                "nsfw": False,
+                                "added_on": "3 days ago",
+                                "report_count": 0,
+                                "added_by": "Jane D.",
+                            },                  
+                        {
+                                "reference_id": "GIGGLE_NTA2",  
+                                "content":  "Yo momma so fat, a picture of her would fall off the wall!",
+                                "category": "Fat",
+                                "status": "Active",
+                                "nsfw": False,
+                                "added_on": "3 days ago",
+                            }
+                                              
+                        ],
+                    )
+                ],
+            ),
+            404: OpenApiResponse(
+                description="Category not found",
+                examples=[
+                    OpenApiExample("Not Found", value={"detail": "Category not found"})
+                ],
+            ),
+        },
+    )
+    @permission_classes(AllowAny)
+    @action(detail=False, methods=["get"])
+    def by_category(self, request):
+        """
+        Get insults by category using specialized category caching.
+        
+        Demonstrates integration with CategoryCacheManager.
+        """
+        category_name = request.GET.get('category')
+        if not category_name:
+            return Response(
+                {"detail": "Category parameter required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Use specialized category cache
+        category_key = CategoryCacheManager.get_category_key_by_name(category_name)
+        
+        if not category_key:
+            # Category not found in cache, might not exist
+            return Response(
+                {"detail": "Category not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        cache_key = self.get_cache_key("by_category", category_key=category_key)
+        
+        def get_category_queryset():
+            return self.get_queryset().filter(
+                category__category_key=category_key
+            ).order_by('-added_on')
+        
+        queryset, extra_data = self.get_cached_bulk_data(cache_key, get_category_queryset)
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
     @extend_schema(
         tags=["Insults"],
         operation_id="get_random_insult",
@@ -248,7 +482,7 @@ class InsultViewSet(PaginateByMaxMixin, CachedResponseMixin, viewsets.ModelViewS
         ],
         responses={
             200: OpenApiResponse(
-                response=InsultSerializer,
+ OptimizedInsultSerializer,
                 examples=[
                     OpenApiExample(
                         "Random Insult",
@@ -322,25 +556,7 @@ class InsultViewSet(PaginateByMaxMixin, CachedResponseMixin, viewsets.ModelViewS
                     )
                 ],
             )
-        },
-    ),
-    retrieve=extend_schema(
-        tags=["Categories"],
-        operation_id="retrieve_category",
-        description="Retrieve a specific category by key",
-        parameters=[
-            OpenApiParameter(
-                name="category_key",
-                type=str,
-                location=OpenApiParameter.PATH,
-                description="Category key",
-            )
-        ],
-        responses={
-            200: CategorySerializer,
-        },
-    ),
-)
+        }))
 class CategoryViewSet(
     CachedResponseMixin, PaginateByMaxMixin, viewsets.ReadOnlyModelViewSet
 ):
@@ -372,73 +588,3 @@ class CategoryViewSet(
                 "available_categories": available_categories,
             }
         )
-
-    @extend_schema(
-        tags=["Insults"],
-        operation_id="list_category_insults",
-        description="Retrieve insults for a specific category",
-        parameters=[
-            OpenApiParameter(
-                name="category",
-                type=str,
-                location=OpenApiParameter.PATH,
-                description="Category key to filter insults by",
-                required=True,
-            ),
-            OpenApiParameter(
-                name="status",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description="Filter by status (authenticated users only)",
-                required=False,
-                enum=["active", "pending", "rejected"],
-            ),
-        ],
-        responses={
-            200: OpenApiResponse(
-                response=InsultSerializer(many=True),
-                examples=[
-                    OpenApiExample(
-                        "Category Insults",
-                        value=[
-                            {
-                                "id": 1,
-                                "content": "Your code is like a black hole - it sucks up resources and nothing escapes",
-                                "category": "Programming",
-                                "status": "Active",
-                                "nsfw": False,
-                                "added_by": "John D.",
-                                "added_on": "3 days ago",
-                            }
-                        ],
-                    )
-                ],
-            ),
-            404: OpenApiResponse(
-                description="Category not found",
-                examples=[
-                    OpenApiExample("Not Found", value={"detail": "Category not found"})
-                ],
-            ),
-        },
-    )
-    @action(detail=True, methods=["get"])
-    def insults(self, request, pk=None):
-        """Get all insults for a specific category."""
-        category = self.get_object()
-
-        if request.user.is_authenticated:
-            user_insults = Insult.objects.filter(
-                added_by=request.user, category=category
-            )
-            other_insults = Insult.objects.exclude(added_by=request.user).filter(
-                status=Insult.STATUS.ACTIVE, category=category
-            )
-            queryset = user_insults.union(other_insults)
-        else:
-            queryset = Insult.objects.filter(
-                status=Insult.STATUS.ACTIVE, category=category
-            )
-
-        serializer = InsultSerializer(queryset, many=True)
-        return Response(serializer.data)

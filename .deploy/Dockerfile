@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends apt-transport-h
     apt-get --no-install-recommends -y install doppler=3.68.0 build-essential  && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-ARG DOPPLER_TOKEN=$(DOPPLER_TOKEN)
+ARG DOPPLER_TOKEN
 ARG DOPPLER_PROJECT="yo-mama"
 ARG DOPPLER_CONFIG="prod"
 ARG DJANGO_CONFIGURATION="Production"
@@ -17,12 +17,20 @@ EXPOSE 9090
 
 RUN useradd --shell /bin/bash --create-home api
 COPY --chown=api:api ./requirements/base.txt ./requirements.txt
-COPY --chown=api:api  Taskfile /src/Taskfile
+COPY --chown=api:api \
+    applications \
+    common \
+    core \
+    run \
+    schema \
+    static \
+    templates \
+    Taskfile.yml \
+    /src/
 
-COPY --chown=api:api  thedozens/ /src/app/
-RUN python -m pip install -r ./requirements.txt
-RUN mkdir -p src/app/.doppler
-RUN chown api:api /src/app/.doppler
-RUN chmod 770 /src/app/.doppler
+RUN python -m pip install --no-cache-dir -r ./requirements.txt && \
+    mkdir -p /src/app/.doppler && \
+    chown api:api /src/app/.doppler && \
+    chmod 770 /src/app/.doppler
 
-ENTRYPOINT [ "task", "production-server" ]
+ENTRYPOINT [ "task", "start" ]

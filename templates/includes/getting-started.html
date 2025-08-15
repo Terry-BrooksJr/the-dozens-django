@@ -20,9 +20,10 @@
             You can make simple HTTP requests to retrieve jokes, with filters for categories and content preferences. Rate limiting ensures the API remains responsive, allowing you to focus on delivering a great user experience without worrying about backend performance.
         </p>
         <h2 id="example-request-header">Example HTTP Request (Insult Endpoint)</h2>
+        <
         <h3>Endpoint:</h3>
         <p>
-            <code>POST /insult/</code>
+            <code>GET /insult/</code>
         </p>
         <h3>Headers:</h3>
         <pre>
@@ -68,3 +69,20 @@
            uk-toggle>Check Out More In Postman</a>
     </div>
 </div>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize the modal
+    const modal = UIkit.modal("#getting-started-modal");
+
+    // Show the modal when the button is clicked
+    document.getElementById("getting-started-modal-btn").addEventListener("click", function () {
+      modal.show();
+    });
+
+    // Close the modal when the close button is clicked
+    document.querySelector(".uk-modal-close-default").addEventListener("click", function () {
+      modal.hide();
+    });
+  });
+  </script>
+<!--End Getting STARTED Modals-->

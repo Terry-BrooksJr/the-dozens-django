@@ -1,10 +1,9 @@
 version: '3'
 env:
-  vars:
-    - PYTHONPATH: {{ .ROOT_DIR }}
-    - DJANGO_SETTINGS_MODULE: 'core.settings'git 
-    - DJANGO_CONFIGURATION: Production
-    - PATH_TO_DB_ROOT_CERT: "/home/vscode/.postgresql/root.crt"
+  DOPPLER_TOKEN: ${DOPPLER_TOKEN}
+  PATH_TO_DB_ROOT_CERT: ${PATH_TO_DB_ROOT_CERT}
+  PYTHON_PATH: "{{ .TASKFILE_DIR }}:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run"
+
 silent: true
 tasks:
   default:
@@ -15,17 +14,16 @@ tasks:
   venv:
     desc: Make a new virtual environment
     cmds:
-      - python3 -m venv {{.TASKFILE_DIR}}/.venv --prompt="ACTIVE_VENV_DJANGO_DOZENS"
+      - python3 -m venv .venv --prompt="ACTIVE_VENV_DJANGO_DOZENS"
       - source {{.TASKFILE_DIR}}/.venv/bin/activate
-    internal: false
+    internal: true
 
-    silent: false
   develop:
     desc: Starts the Django Application, and background workers in a debug state
-    dir: "{{ .ROOT_DIR}}" 
+    dir: .
     cmds:
       - echo "Completing Pre-Start Environment Check For Development..."
-      - source .envrc && PYTHONPATH="./core:$(pwd)/applications/API:$(pwd)/applications/graphQL:$(pwd)/applications/frontend:$(pwd)/common:$(pwd)/run:$(pwd)" doppler run  -- python3 .venv/bin/gunicorn -t 1 -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{.CLI_ARGS}} --reload
+      - source .envrc && PYTHONPATH="./core:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run:{{ .TASKFILE_DIR }}" doppler run  -- python3 .venv/bin/gunicorn -t 1 -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{.CLI_ARGS}} --reload
     interactive: false
     silent: false
 
@@ -55,28 +53,29 @@ tasks:
 
   db_sync:
     desc: Make and run migrations
-    dir: "{{ .ROOT_DIR }} "
+    dir: .
     cmds:
       - doppler run --  python3 run/manage.py makemigrations
       - doppler run --  python3 run/manage.py migrate
     generates:
-      - ./application/migrations/*.py
+      - ./applications/*/migrations/*.py
     sources:
-      - .application/migrations/*.py
+      - ./applications/*/migrations/*.py
+      - ./applications/*/migrations/*.py
     requires:
       vars:
         - DOPPLER_TOKEN
         - PATH_TO_DB_ROOT_CERT
 
   collect:
-    dir: "{{ .ROOT_DIR }} "
+    dir: .
 
     desc: Collect static files in to single directory for production
     cmds:
-      - source .envrc && PYTHONPATH="./core:$(pwd)/applications/API:$(pwd)/applications/graphQL:$(pwd)/applications/frontend:$(pwd)/common:$(pwd)/run:$(pwd)" doppler run -- python run/manage.py collectstatic --no-input
+      - source .envrc && PYTHONPATH="./core:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run:{{ .TASKFILE_DIR }}" doppler run -- python run/manage.py collectstatic --no-input
 
   test:
-    dir: "{{ .ROOT_DIR }} "
+    dir: .
     desc: Run tests
     cmds:
       - doppler run --  python3 run/manage.py test applications.API
@@ -87,17 +86,17 @@ tasks:
 
   run:
     desc: Starts a Gunicorn Based Development Server that Reloads on Changes
-    dir: "{{ .ROOT_DIR}}" 
+    dir: .
 
     cmds:
-      - doppler run -- python3 run/manage.py runserver #--workers=2 --threads=2 core.wsgi:application -b :{{or .CLI_ARGS 8000}} --reload
+      - doppler run -- python3 run/manage.py runserver
     requires:
       vars:
         - DOPPLER_TOKEN
         - PATH_TO_DB_ROOT_CERT
 
   start:
-    dir: "{{ .ROOT_DIR }} "
+    dir: .
 
     desc: Command to Start Production Level Services including Install requirements, apply migrations, then start development server
     cmds:
@@ -109,10 +108,10 @@ tasks:
       - task: db_sync
 
       - echo 'Starting server...'
-      - doppler run -- python3 -m gunicorn --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}} --reload --sync
+      - doppler run -- python3 -m gunicorn --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}}
 
   schema-check:
-    dir: "{{ .ROOT_DIR }} "
+    dir: "{{.TASKFILE_DIR}}"
 
     desc: Check Models and Serializers for schema compliance with OpenAPI .0 Standards and fail on warnings
     cmds:
@@ -120,8 +119,8 @@ tasks:
     internal: true
 
   schema:
-    deps: [schema-check]
-    dir: "{{ .ROOT_DIR }}" 
+    deps: [ schema-check ]
+    dir: "{{.TASKFILE_DIR}}"
 
     desc: Generate OpenAPI 3.0 schema.yaml file from models and serializers
     cmds:
@@ -129,16 +128,63 @@ tasks:
 
   build-image:
     desc: Build Docker Image
-    dir: "{{ .ROOT_DIR}}/.deploy"
+    dir: "{{.TASKFILE_DIR}}/.deploy"
     cmds:
-      - docker build buildx --platform --push linux/amd64,linux/arm64  --env DOPPLER_TOKEN=$DOPPLER_TOKEN -t thedozens:latest .
-    :
+      - docker buildx build --platform linux/amd64,linux/arm64 --push --build-arg DOPPLER_TOKEN=$DOPPLER_TOKEN -t thedozens:latest .
+    requires:
+      vars:
+        - DOPPLER_TOKEN
+        - PATH_TO_DB_ROOT_CERT
+  lint:lint:
+    desc: Run all linting and formatting tools
+    dir: .
+    cmds:
+      - echo "🔍 Running Python linting and formatting..."
+      - echo "🧹 Running autoflake (unused imports/variables check)..."
+      - doppler run -- .venv/bin/autoflake --check --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
+      - echo "📋 Running isort (import sorting)..."
+      - doppler run -- .venv/bin/isort . --check-only --diff
+      - echo "⚫ Running black (code formatting)..."
+      - doppler run -- .venv/bin/black . --check --diff
+      - echo "🚀 Running ruff (fast linting)..."
+      - doppler run -- .venv/bin/ruff check .
+      - echo "🔧 Running pylint (comprehensive linting)..."
+      - doppler run -- .venv/bin/pylint **/*.py --load-plugins=pylint_django,pylint_celery --django-settings-module=core.settings
+      - echo "🔒 Running bandit (security linting)..."
+      - doppler run -- .venv/bin/bandit -r . -f json --exclude=./tests,./venv,./.venv
+      - echo "🎯 Running mypy (type checking)..."
+      - doppler run -- .venv/bin/mypy .
+      - echo "🌟 Running djlint (Django template linting)..."
+      - doppler run -- .venv/bin/djlint --check templates/**/*.html
+      - echo "✅ All linting checks completed!"
+    silent: false
+    interactive: false
+  lint:fix:
+    desc: Automatically fix linting and formatting issues
+    dir: .
+    cmds:
+      - echo "🔧 Auto-fixing Python linting and formatting issues..."
+      - echo "🧹 Running autoflake (removing unused imports/variables)..."
+      - cmd: doppler run -- .venv/bin/autoflake --in-place --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
+        ignore_error: true
+      - echo "📋 Running isort (import sorting)..."
+      - cmd: doppler run -- .venv/bin/isort .
+        ignore_error: true
+      - echo "⚫ Running black (code formatting)..."
+      - cmd: doppler run -- .venv/bin/black .
+        ignore_error: true
+      - echo "🚀 Running ruff (auto-fix)..."
+      - cmd: doppler run -- .venv/bin/ruff check . --fix
+        ignore_error: true
+      - echo "🌟 Running djlint (Django template auto-fix)..."
+      - cmd: doppler run -- .venv/bin/djlint --reformat templates/**/*.html
+      - echo "✅ Auto-fix completed! Run 'task lint' to check remaining issues."
+    silent: false
+    interactive: false
 
-
-  lint:
-    desc: Run linters
-    dir: "{{ .ROOT_DIR}}" 
-
+  django:
+    desc: "Wrapper command to simpltify the use of Django management commands. Example Usage: task django -- runserver"
+    dir: "{{.TASKFILE_DIR}}"
     cmds:
       - doppler run -- python3 run/manage.py {{.CLI_ARGS}}
     silent: false

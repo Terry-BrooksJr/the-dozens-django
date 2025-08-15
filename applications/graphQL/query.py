@@ -20,7 +20,7 @@ class Query(ObjectType):
 
     insult_by_id = Field(
         InsultType,
-        id=NonNull(ID, description="Unique identifier of the insult"),
+        reference_id=NonNull(ID, description="Unique identifier of the insult"),
         description="Get a specific insult by its ID",
     )
 

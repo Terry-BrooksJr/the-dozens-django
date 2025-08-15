@@ -1,13 +1,15 @@
 """
 applications.API.admin
 This module registers the Insult and InsultReview models with the Django admin interface.
-It provides custom admin interfaces for managing insults and their reviews, including inline editing of reviews within theQ Insult admin page.
+It provides custom admin interfaces for managing insults and their reviews, including inline editing of reviews within the Insult admin page.
 It also includes functionality to invalidate the insult cache whenever an Insult is saved.
 It uses Django's admin features to enhance the management of these models, making it easier for administrators
 to view, edit, and manage insults and their associated reviews.
 It also provides a link to view all reports associated with an insult directly from the Insult admin page.
 
 """
+
+from typing import ClassVar
 
 from django.contrib import admin
 from django.db.models import Count, Q
@@ -48,39 +50,36 @@ class HasPendingReviewFilter(admin.SimpleListFilter):
         )
 
     def queryset(self, request, queryset):
+        annotated_queryset = queryset.annotate(
+            pending_review_count=Count("reports", filter=Q(reports__status="P"))
+        )
         if self.value() == "yes":
-            return queryset.annotate(
-                pending_review_count=Count("reports", filter=Q(reports__status="P"))
-            ).filter(pending_review_count__gt=0)
+            return annotated_queryset.filter(pending_review_count__gt=0)
         if self.value() == "no":
-            return queryset.annotate(
-                pending_review_count=Count("reports", filter=Q(reports__status="P"))
-            ).filter(pending_review_count=0)
-        return queryset
+            return annotated_queryset.filter(pending_review_count=0)
+        # If no filter is selected, return the original queryset
+        return annotated_queryset
 
 
 class InsultAdmin(admin.ModelAdmin):
-    """
-    Customizes the Django admin interface for Insult objects.
-
-    This class defines how Insult entries are displayed, filtered, and searched in the admin panel, including inline review editing and a link to view all reports for each insult.
-    """
-
+    # inlines: ClassVar = [InsultReviewInline]
     list_display = (
-        "id",
+        "insult_id",
+        "reference_id",
+        "nsfw",
+        "added_by",
         "content",
         "category",
         "reports_count",
         "status",
         "view_reports_link",
     )
-    inlines = [InsultReviewInline]
-    search_fields = ("content", "category__name", "status")
-    list_filter = ("category", "status", "nsfw", "added_by", HasPendingReviewFilter)
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        invalidate_insult_cache()
+        invalidate_insult_cache(reason="admin_save")
+
+ 
 
     def view_reports_link(self, obj):
         """
@@ -129,13 +128,13 @@ class InsultReviewAdmin(admin.ModelAdmin):
 
     list_display = ("id", "insult", "review_type", "status", "date_submitted")
     list_filter = (
-        "insult",
         "review_type",
+        "insult_reference_id",
         "status",
         ManyReportsFilter,
         "date_submitted",
     )
-    search_fields = ("insult__content", "review_type", "status")
+    search_fields = ("insult__content", "insult_reference_id", "review_type", "status")
 
 
 admin.site.register(InsultReview, InsultReviewAdmin)

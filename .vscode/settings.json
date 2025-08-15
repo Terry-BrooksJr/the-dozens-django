@@ -47,7 +47,11 @@
     ],
     "doppler.autocomplete.enable": true,
     "doppler.hover.enable": true,
-    "python.analysis.autoImportCompletions": true
+    "python.analysis.autoImportCompletions": true,
+    "task": {
+        "path":"/opt/homebrew/bin/task"
+
+    }
    
         
     

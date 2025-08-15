@@ -243,7 +243,7 @@ missing-member-hint-distance=1
 missing-member-max-choices=1
 
 # Regex pattern to define which classes are considered mixins.
-mixin-class-rgx=.*[Mm]
+mixin-class-rgx=.*[Mm]ixin|.*[Mm]ix
 
 # List of decorators that change the signature of a decorated function.
 signature-mutators=

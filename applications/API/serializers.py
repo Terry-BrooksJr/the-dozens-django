@@ -1,459 +1,337 @@
-# from rest_framework import serializers
-# from drf_spectacular.utils import (
-#     OpenApiExample,
-#     extend_schema_field,
-#     extend_schema_serializer,
-#     OpenApiParameter,
-# )
-# from humanize import naturaltime
-# from rest_framework.views import status
-# from django.utils.text import capfirst
+from asyncio.log import logger
+from functools import lru_cache
+from typing import Any, Dict, Optional
+from datetime import datetime
 
-# from applications.API.models import Insult, InsultReview, InsultCategory
-
-
-# class BaseInsultSerializer(serializers.ModelSerializer):
-#     """
-#     Base serializer for Insult model containing common functionality.
-#     """
-#     category = serializers.CharField(source="get_category_display")
-
-#     def format_date(self, date):
-#         """Format date using humanize library."""
-#         return naturaltime(date).humanize(
-#             granularity=["month", "day", "hour", "minute"]
-#         )
-
-#     def format_category(self, category):
-#         """Ensure consistent category formatting."""
-#         return capfirst(category)
-
-
-# @extend_schema_serializer(
-#     examples=[
-#         OpenApiExample(
-#             name="NSFW Insult Example",
-#             value={
-#                 "id": 10000987765,
-#                 "content": "Yo Mama's so Dumb, She thought a quarterback was a refund",
-#                 "category": "Poor",
-#                 "status": "Active",
-#                 "nsfw": True,
-#                 "added_by": "John D.",
-#                 "added_on": "2 months ago"
-#             },
-#             description="Example of an NSFW humorous insult that has been approved.",
-#             response_only=True
-#         ),
-#         OpenApiExample(
-#             name="Safe Insult Example",
-#             value={
-#                 "id": 678867900002,
-#                 "content": "Yo Mama's coding style is like a Picasso painting—hard to interpret!",
-#                 "category": "Stupid",
-#                 "status": "Pending",
-#                 "nsfw": False,
-#                 "added_by": "Jane S.",
-#                 "added_on": "5 days ago"
-#             },
-#             description="Example of a safe sarcastic insult pending approval.",
-#             response_only=True
-#         ),
-#         OpenApiExample(
-#             name="Create Insult Request",
-#             value={
-#                 "content": "Your code has more bugs than a roach motel!",
-#                 "category": "Programming",
-#                 "nsfw": False
-#             },
-#             description="Example request body for creating a new insult.",
-#             request_only=True
-#         )
-#     ],
-#     # parameters=[
-#     #     OpenApiParameter(
-#     #         name="content",
-#     #         description="The actual text content of the insult",
-#     #         required=True,
-#     #         type=str
-#     #     ),
-#     #     OpenApiParameter(
-#     #         name="category",
-#     #         description="The category the insult belongs to (e.g., 'Programming', 'Poor', 'Stupid')",
-#     #         required=True,
-#     #         type=str
-#     #     ),
-#     #     OpenApiParameter(
-#     #         name="nsfw",
-#     #         description="Flag indicating if the content is Not Safe For Work",
-#     #         required=True,
-#     #         type=bool
-#     #     ),
-#     #     OpenApiParameter(
-#     #         name="status",
-#     #         description="Current status of the insult (read-only)",
-#     #         required=False,
-#     #         type=str
-#     #     ),
-#     #     OpenApiParameter(
-#     #         name="added_by",
-#     #         description="Username of the person who added the insult (read-only)",
-#     #         required=False,
-#     #         type=str
-#     #     ),
-#     #     OpenApiParameter(
-#     #         name="added_on",
-#     #         description="Timestamp when the insult was added (read-only)",
-#     #         required=False,
-#     #         type=str
-#     #     )
-#     # ]
-# )
-# class InsultSerializer(BaseInsultSerializer):
-#     """
-#     Main serializer for the Insult model with full field representation.
-#     Handles both creation and retrieval of insults with proper field validation.
-#     """
-#     status = serializers.CharField(source="get_status_display", read_only=True)
-#     nsfw = serializers.BooleanField(source="explicit")
-#     id = serializers.ReadOnlyField()
-#     added_by = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = Insult
-#         fields = [
-#             'id', 'content', 'category', 'status',
-#             'nsfw', 'added_by', 'added_on'
-#         ]
-#         read_only_fields = ['id', 'status', 'added_by', 'added_on']
-
-#     def get_added_by(self, obj):
-#         if not obj.added_by:
-#             return None
-#         return f"{obj.added_by.first_name} {obj.added_by.last_name[0]}."
-
-#     def to_representation(self, instance):
-#         representation = super().to_representation(instance)
-#         representation['added_on'] = self.format_date(instance.added_on)
-#         representation['category'] = self.format_category(representation['category'])
-#         return representation
-
-
-# @extend_schema_serializer(
-#     examples=[
-#         OpenApiExample(
-#             "My Insults List Example",
-#             summary="List of User's Insults",
-#             description="Shows a simplified list of insults created by the user",
-#             value=[{
-#                 "category": "Poor",
-#                 "content": "Your code runs slower than a turtle in molasses",
-#                 "status": "Active",
-#                 "added_by": "John D."
-#             }, {
-#                 "category": "Stupid",
-#                 "content": "You bring everyone so much joy when you leave the room",
-#                 "status": "Pending",
-#                 "added_by": "John D."
-#             }],
-#             response_only=True
-#         ),
-#         OpenApiExample(
-#             "Create My Insult Example",
-#             summary="Create New Insult",
-#             description="Example request for creating a new insult",
-#             value={
-#                 "category": "Poor",
-#                 "content": "Your code is like a maze - confusing and full of dead ends"
-#             },
-#             request_only=True
-#         )
-#     ]
-#     # parameters=[
-#     #     OpenApiParameter(
-#     #         name="category",
-#     #         description="Category of the insult",
-#     #         required=True,
-#     #         type=str
-#     #     ),
-#     #     OpenApiParameter(
-#     #         name="content",
-#     #         description="The insult text content",
-#     #         required=True,
-#     #         type=str
-#     #     ),
-#     #     OpenApiParameter(
-#     #         name="status",
-#     #         description="Current status (read-only)",
-#     #         required=False,
-#     #         type=str
-#     #     )
-#     # ]
-# )
-# class MyInsultSerializer(BaseInsultSerializer):
-#     """
-#     Simplified serializer for user's own insults.
-#     Provides a streamlined view for insult creation and listing.
-#     """
-#     status = serializers.CharField(source="get_status_display", read_only=True)
-#     added_by = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = Insult
-#         fields = ['category', 'content', 'status', 'added_by']
-#         read_only_fields = ['status', 'added_by']
-
-#     def get_added_by(self, obj):
-#         if not obj.added_by:
-#             return None
-#         return f"{obj.added_by.first_name} {obj.added_by.last_name[0]}."
-
-#     def to_representation(self, instance):
-#         representation = super().to_representation(instance)
-#         representation['category'] = self.format_category(representation['category'])
-#         return representation
-
-
-# @extend_schema_serializer(
-#     examples=[
-#         OpenApiExample(
-#             "Category List Example",
-#             summary="Available Categories",
-#             description="List of all available insult categories",
-#             value=[{
-#                 "key": "P",
-#                 "name": "Poor"
-#             }, {
-#                 "key": "S",
-#                 "name": "Stupid"
-#             }],
-#             response_only=True
-#         )
-#     ],
-#     # parameters=[
-#     #     OpenApiParameter(
-#     #         name="key",
-#     #         description="Unique identifier for the category",
-#     #         required=True,
-#     #         type=str
-#     #     ),
-#     #     OpenApiParameter(
-#     #         name="name",
-#     #         description="Display name of the category",
-#     #         required=True,
-#     #         type=str
-#     #     )
-#     # ]
-# )
-# class CategorySerializer(serializers.ModelSerializer):
-#     """
-#     Serializer for InsultCategory model.
-#     Handles the listing and retrieval of insult categories.
-#     """
-#     class Meta:
-#         model = InsultCategory
-#         fields = ['key', 'name']
-
+from humanize import naturaltime
+from django.core.cache import cache
+from django.utils.text import capfirst
 from drf_spectacular.utils import (
     OpenApiExample,
     extend_schema_field,
     extend_schema_serializer,
 )
-from humanize import naturaltime
-from rest_framework import serializers
+from rest_framework import serializers, status
+from rest_framework.response import Response
 
 from applications.API.models import Insult, InsultCategory
+from common.preformance import CategoryCacheManager
 
 
-class BaseInsultSerializer(serializers.ModelSerializer):
+class BulkSerializationMixin:
+    """
+    Mixin to handle bulk serialization with optimized ListSerializer.
+    """
+
+    def get_bulk_serializer_class(self):
+        """
+        Return the serializer class optimized for bulk operations.
+        Override this method to return your optimized serializer.
+        """
+        return getattr(self, "bulk_serializer_class", self.get_serializer_class())
+
+    def get_bulk_serializer(self, *args, **kwargs):
+        """
+        Return a serializer instance optimized for bulk operations.
+        """
+        serializer_class = self.get_bulk_serializer_class()
+        kwargs.setdefault("context", self.get_serializer_context())
+        return serializer_class(*args, **kwargs)
+
+    def bulk_serialize_response(self, queryset, extra_data: Optional[Dict] = None):
+        """
+        Serialize bulk data with additional metadata.
+        """
+        serializer = self.get_bulk_serializer(queryset, many=True)
+        response_data = {"results": serializer.data, "count": len(serializer.data)}
+
+        # Add extra metadata if provided
+        if extra_data:
+            response_data |= extra_data   
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+class OptimizedListSerializer(serializers.ListSerializer):
+    """
+    Enhanced ListSerializer with better bulk optimization.
+    """
+
+    def to_representation(self, data):
+        """
+        Optimized bulk serialization with caching and prefetching.
+        """
+        # Optimize queryset if it's not already optimized
+        if hasattr(data, "select_related") and not getattr(
+            data, "_prefetch_done", False
+        ):
+            # Get related fields from child serializer
+            child_class = self.child.__class__
+            select_related = getattr(child_class, "select_related_fields", [])
+            prefetch_related = getattr(child_class, "prefetch_related_fields", [])
+
+            if select_related:
+                data = data.select_related(*select_related)
+            if prefetch_related:
+                data = data.prefetch_related(*prefetch_related)
+
+            # Mark as optimized to avoid double optimization
+            data._prefetch_done = True
+
+        # Cache serialization context for reuse
+        if not hasattr(self, "_cached_context"):
+            self._cached_context = self.child.context
+
+        return super().to_representation(data)
+
+    def create(self, validated_data):
+        """Optimized bulk create operation."""
+        # Use bulk_create for better performance
+        ModelClass = self.child.Meta.model
+        instances = [ModelClass(**attrs) for attrs in validated_data]
+
+        # Bulk create with ignore_conflicts for better performance
+        try:
+            return ModelClass.objects.bulk_create(instances, ignore_conflicts=False)
+        except Exception:
+            # Fallback to individual creation if bulk fails
+            return [self.child.create(attrs) for attrs in validated_data]
+
+    def update(self, instance, validated_data):
+        """Optimized bulk update operation."""
+        # This is more complex and usually handled at the ViewSet level
+        # For now, fallback to individual updates
+        return super().update(instance, validated_data)
+
+
+class CachedBulkSerializer(serializers.ModelSerializer):
+    """
+    Base serializer with caching capabilities for bulk operations.
+    """
+
+    # Define these in your concrete serializer
+    select_related_fields = []  # e.g., ['added_by', 'category']
+    prefetch_related_fields = []  # e.g., ['reviews']
+    cached_fields = []  # Fields to cache individually
+    
+    
+    def set_cached_field_value(self, obj, field_name: str, value, cache_timeout: int = 300):
+        """
+        Set a cached value for an expensive field computation.
+        """
+        if field_name not in self.cached_fields:
+            return
+        cache_key = f"field:{self.__class__.__name__}:{field_name}:{obj.pk}"
+        cache.set(cache_key, value, cache_timeout)
+    class Meta:
+        list_serializer_class = OptimizedListSerializer
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._field_cache = {}
+
+    def get_cached_field_value(self, obj, field_name: str, cache_timeout: int = 300):
+        """
+        Get field value with caching for expensive computations.
+        """
+        if field_name not in self.cached_fields:
+            return None
+
+        cache_key = f"field:{self.__class__.__name__}:{field_name}:{obj.pk}"
+        cached_value = cache.get(cache_key)
+
+        if cached_value is None:
+            # Field not cached, compute and cache
+            method_name = f"get_{field_name}"
+            if hasattr(self, method_name):
+                cached_value = getattr(self, method_name)(obj)
+                cache.set(cache_key, cached_value, cache_timeout)
+
+        return cached_value
+
+
+class BaseInsultSerializer(CachedBulkSerializer):
     """
     Base serializer for Insult model containing common functionality.
     """
 
-    category = serializers.PrimaryKeyRelatedField(
-        queryset=InsultCategory.objects.all(), pk_field=serializers.CharField()
-    )
-
-    def format_date(self, date):
-        """Format date using humanize library."""
-        # Use caching to prevent repeated calculations
-        if not hasattr(self, "_formatted_dates"):
-            self._formatted_dates = {}
-
-        cache_key = date.isoformat() if date else None
-        if cache_key and cache_key in self._formatted_dates:
-            return self._formatted_dates[cache_key]
-
-        formatted = naturaltime(date, future=False, minimum_unit="minutes", months=True)
-
-        if cache_key:
-            self._formatted_dates[cache_key] = formatted
-
-        return formatted
-
-
-@extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            name="NSFW Insult Example",
-            value={
-                "id": 10000987765,
-                "content": "Yo Mama's so Dumb, She thought a quarterback was a refund",
-                "category": "Poor",
-                "status": "Active",
-                "nsfw": True,
-                "added_by": "John D.",
-                "added_on": "2 months ago",
-            },
-            description="Example of an NSFW humorous insult that has been approved.",
-            response_only=True,
-        ),
-        OpenApiExample(
-            name="Safe Insult Example",
-            value={
-                "id": 678867900002,
-                "content": "Yo Mama's coding style is like a Picasso painting—hard to interpret!",
-                "category": "Stupid",
-                "status": "Pending",
-                "nsfw": False,
-                "added_by": "Jane S.",
-                "added_on": "5 days ago",
-            },
-            description="Example of a safe sarcastic insult pending approval.",
-            response_only=True,
-        ),
-        OpenApiExample(
-            name="Create Insult Request",
-            value={
-                "content": "Your code has more bugs than a roach motel!",
-                "category": "Programming",
-                "nsfw": False,
-            },
-            description="Example request body for creating a new insult.",
-            request_only=True,
-        ),
-    ]
-)
-class InsultSerializer(BaseInsultSerializer):
-    """
-    Main serializer for the Insult model with full field representation.
-
-    Handles both creation and retrieval of insults with proper field validation.
-    Provides comprehensive information about each insult including metadata.
-
-    Attributes:
-        id (int): Unique identifier for the insult (read-only)
-        content (str): The actual text content of the insult
-        category (str): The category the insult belongs to (formatted display name)
-        status (str): Current status of the insult (e.g., 'Active', 'Pending')
-        nsfw (bool): Flag indicating if the content is Not Safe For Work
-        added_by (str): Username of the person who added the insult
-        added_on (str): Humanized timestamp when the insult was added
-    """
-
-    status = serializers.CharField(source="get_status_display", read_only=True)
-    nsfw = serializers.BooleanField()
-    id = serializers.ReadOnlyField()
-    added_by = serializers.SerializerMethodField()
-
-    @extend_schema_field(serializers.CharField())
-    def get_added_by(self, obj):
-        """Format the added_by field to protect user privacy."""
-        try:
-            if not obj.added_by:
-                return None
-            elif obj.added_by.first_name and not obj.added_by.last_name:
-                return f"{obj.added_by.first_name}"
-            elif not obj.added_by.first_name or not obj.added_by.last_name:
-                return f"{obj.added_by.username}"
-            return f"{obj.added_by.first_name} {obj.added_by.last_name[0]}."
-        except IndexError:
-            return "Unknown User."
-
-    class Meta:
-        model = Insult
-        fields = ["id", "content", "category", "status", "nsfw", "added_by", "added_on"]
-        read_only_fields = ["id", "status", "added_by", "added_on"]
-
-    def to_representation(self, instance):
+    category = serializers.CharField(source="get_category_display")
+    added_on = serializers.SerializerMethodField(method_name="added_on_display")  
+    
+    def get_category_by_key(self, category_key: str) -> Dict[str, str]:
         """
-        Transform the outgoing data to desired format.
-        Applies date formatting and ensures proper category display.
+        Get category info by key with caching.
+        Returns dict with category_key and category_name.
+        """
+        if not category_key:
+            return {"category_key": "", "category_name": "Uncategorized"}
+
+        if category_name := CategoryCacheManager.get_category_name_by_key(
+            category_key
+        ):
+            return {
+                "category_key": category_key,
+                "category_name": category_name,
+            }
+
+        # Fallback to database
+        try:
+            category = InsultCategory.objects.get(category_key=category_key)
+            # Update cache for future requests
+            CategoryCacheManager.set_category_name_mapping(category_key, category.name)
+            return {
+                "category_key": category_key,
+                "category_name": category.name,
+            }
+        except InsultCategory.DoesNotExist as e:
+            raise serializers.ValidationError(f"Category with key '{category_key}' does not exist.") from e
+
+    def get_category_by_name(self, category_name: str) -> Dict[str, str]:
+        """
+        Get category info by name with caching.
+        Returns dict with category_key and category_name.
+        """
+        if not category_name:
+            return {"category_key": "", "category_name": "Uncategorized"}
+
+        normalized_name = category_name.lower()
+
+        if category_key := CategoryCacheManager.get_category_key_by_name(
+            normalized_name
+        ):
+            return {
+                "category_key": category_key,
+                "category_name": normalized_name,
+            }
+
+        # Fallback to database
+        try:
+            category = InsultCategory.objects.get(name=normalized_name)
+            # Update cache for future requests
+            CategoryCacheManager.set_category_name_mapping(category.category_key, category.name)
+            return {
+                "category_key": category.category_key,
+                "category_name": category.name,
+            }
+        except InsultCategory.DoesNotExist .add(element):
+            logger.error(f'Category "{category_name}" does not exist.')
+            raise serializers.ValidationError(f"Category '{category_name}' does not exist.") from e
+    def validate_category(self, value: str) -> Dict[str, str]:
+        """
+        Validate category by key or name and return complete category info.
+        Auto-detects whether input is a key or name and resolves the missing value.
+        """
+        if not value:
+            return {"category_key": "", "category_name": "Uncategorized"}
+        
+        # First try as category key (keys are typically hyphenated/underscored)
+        try:
+            return self.get_category_by_key(value)
+        except serializers.ValidationError:
+            # If key lookup fails, try as category name
+            try:
+                return self.get_category_by_name(value)
+            except serializers.ValidationError as e:
+                # Neither key nor name found
+                raise serializers.ValidationError(
+                    f"Category '{value}' not found. Please provide a valid category key or name."
+                ) from e
+
+    # If you need just the name (for backward compatibility):
+    def get_category_name_by_key(self, category_key: str) -> str:
+        """Get formatted category name by key."""
+        category_info = self.get_category_by_key(category_key)
+        return BaseInsultSerializer.format_category(category_info["category_name"])
+        
+    @staticmethod
+    @lru_cache(maxsize=128)
+    def _format_date(date_iso: str) -> str:
+        """
+        Format date using humanize library with caching.
+        Uses ISO string for hashable cache key.
+        """
+
+        date = datetime.fromisoformat(date_iso.replace("Z", "+00:00"))
+        return naturaltime(date, future=False, minimum_unit="minutes", months=True)
+
+    @staticmethod
+    @lru_cache(maxsize=64)
+    def format_category(category: str) -> str:
+        """Ensure consistent category formatting with caching."""
+        return capfirst(category) if category else "Uncategorized"
+
+
+    def get_added_on_display(self, obj):
+        """Cached date formatting."""
+        cached_value = self.get_cached_field_value(obj, "added_on_display")
+        if cached_value is not None:
+            return cached_value
+        
+        if not obj.added_on:
+            display_date = ""
+        else:
+            display_date = self._format_date(obj.added_on.isoformat())
+        
+        self.set_cached_field_value(obj, "added_on_display", display_date)
+        return display_date
+    def to_internal_value(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Override to handle category name to key conversion.
+        This allows users to submit category names directly.
+        """
+        if "category" in data and isinstance(data["category"], str):
+            category_name = data["category"].lower()
+            category_key = self.validate_category(category_name)["category_key"]
+            data["category"] = category_key
+
+        return super().to_internal_value(data)
+
+    def to_representation(self, instance) -> Dict[str, Any]: #pyrefly: ignore
+        """
+        Transform the outgoing data with optimized category lookup.
         """
         representation = super().to_representation(instance)
-        representation["added_on"] = self.format_date(instance.added_on)
-        representation["category"] = representation["category"].title()
+
+        # Use cached category lookup instead of additional DB query
+        if representation.get("category"):
+            representation["category"] =  self.validate_category(
+                representation["category"]
+            )["category_name"]
+
         return representation
+    
+    @extend_schema_field(serializers.CharField())
+    def get_added_by(self, obj) -> Optional[str]:
+        """Optimized added_by formatter matching InsultSerializer logic."""
+        cached_value = self.get_cached_field_value(obj, "added_by_name")
+        if cached_value is not None:
+            return cached_value         
+        
+        if not obj.added_by:
+            return None
 
+        user = obj.added_by
 
-@extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            "My Insults List Example",
-            summary="List of User's Insults",
-            description="Shows a simplified list of insults created by the user",
-            value=[
-                {
-                    "category": "Poor",
-                    "content": "Your code runs slower than a turtle in molasses",
-                    "status": "Active",
-                    "added_by": "John D.",
-                },
-                {
-                    "category": "Stupid",
-                    "content": "You bring everyone so much joy when you leave the room",
-                    "status": "Pending",
-                    "added_by": "John D.",
-                },
-            ],
-            response_only=True,
-        ),
-        OpenApiExample(
-            "Create My Insult Example",
-            summary="Create New Insult",
-            description="Example request for creating a new insult",
-            value={
-                "category": "Poor",
-                "content": "Your code is like a maze - confusing and full of dead ends",
-            },
-            request_only=True,
-        ),
-    ]
-)
+        if user.first_name:
+            if user.last_name:
+                return f"{user.first_name} {user.last_name[0]}."
+            else:
+                return user.first_name
+        return user.username or "Unknown User"
 class MyInsultSerializer(BaseInsultSerializer):
     """
     Simplified serializer for user's own insults.
-
-    Provides a streamlined view for insult creation and listing.
-    Focused on the most relevant fields for user-created content.
-
-    Attributes:
-        category (str): Category of the insult (formatted display name)
-        content (str): The actual text content of the insult
-        status (str): Current status of the insult (read-only)
-        added_by (str): Username of the person who added the insult (read-only)
+    Optimized for common user operations.
     """
 
     status = serializers.CharField(source="get_status_display", read_only=True)
     added_by = serializers.SerializerMethodField()
 
-    @extend_schema_field(serializers.CharField())
-    def get_added_by(self, obj):
-        """Format the added_by field to protect user privacy."""
-        if not obj.added_by:
-            return None
-        return f"{obj.added_by.first_name} {obj.added_by.last_name[0]}."
 
     class Meta:
         model = Insult
-        fields = ["category", "content", "status", "added_by"]
-        read_only_fields = ["status", "added_by"]
-
-    def to_representation(self, instance):
-        """Apply proper formatting to category names."""
-        representation = super().to_representation(instance)
-        representation["category"] = self.format_category(representation["category"])
-        return representation
+        fields = ["reference_id", "category", "content", "status", "reports_count"]
+        read_only_fields = ["reference_id", "status", "added_by", "reports_count"]
 
 
 @extend_schema_serializer(
@@ -466,6 +344,7 @@ class MyInsultSerializer(BaseInsultSerializer):
                 {"category_key": "P", "name": "Poor"},
                 {"category_key": "S", "name": "Stupid"},
                 {"category_key": "F", "name": "Fat"},
+                {"category_key": "L", "name": "Lazy"},
             ],
             response_only=True,
         )
@@ -474,14 +353,114 @@ class MyInsultSerializer(BaseInsultSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     """
     Serializer for InsultCategory model.
-
-    Handles the listing and retrieval of insult categories.
-
-    Attributes:
-        category_key (str): Unique identifier for the category
-        name (str): Display name of the category
+    Simple and efficient category representation.
     """
 
     class Meta:
         model = InsultCategory
         fields = ["category_key", "name"]
+
+
+# Bulk operations serializer for better performance with multiple insults
+class BulkInsultSerializer(serializers.ListSerializer):
+    """
+    Custom ListSerializer for bulk operations.
+    Optimizes database queries when handling multiple insults.
+    """
+
+    def to_representation(self, data):
+        """
+        Optimize bulk serialization by prefetching related data.
+        """
+        # Prefetch related data to avoid N+1 queries
+        if hasattr(data, "select_related"):
+            data = data.select_related("added_by", "category")
+        elif hasattr(data, "__iter__"):
+            # For querysets, prefetch related objects
+            [obj.insult_id for obj in data if hasattr(obj, "insult_id")]
+        return super().to_representation(data)
+
+
+
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "My Insults List Example",
+            summary="List of User's Insults",
+            description="Shows a simplified list of insults created by the user",
+            value=[
+                {
+                    "reference_id": "GIGGLE_Nzk1",
+                    "category": "One-Off/Unique",
+                    "content": "Yo momma is so bald... you can see what''s on her mind.",
+                    "status": "Active",
+                    "reports_count": 0,
+                },
+                {
+                    "reference_id": "GIGGLE_Nzk1",
+                    "category": "Stupid",
+                    "content": "Yo momma so stupid, she went to the dentist to get Bluetooth.",
+                    "status": "Pending",
+                    "reports_count": 2,
+                },
+            ],
+            response_only=True,
+        ),
+        OpenApiExample(
+            "Create My Insult Example",
+            summary="Create New Insult",
+            description="Example request for creating a new insult",
+            value={
+                "category": "Poor",
+                "content": "Your code is like a maze - confusing and full of dead ends",
+                "nsfw": False,
+            },
+            request_only=True,
+        ),
+    ]
+)
+class OptimizedInsultSerializer(BaseInsultSerializer):
+    """
+    Version of InsultSerializer optimized for bulk operations.
+    """
+
+    # Optimization settings
+    select_related_fields = ["added_by", "category"]
+    prefetch_related_fields = ["reviews"]
+    cached_fields = ["added_by", "added_on"]    # Cache expensive fields
+
+    status = serializers.CharField(source="get_status_display", read_only=True)
+    nsfw = serializers.BooleanField()
+    reference_id = serializers.ReadOnlyField()
+    added_by = serializers.SerializerMethodField(method_name="get_added_by")
+    added_on = serializers.SerializerMethodField(method_name="get_added_on_display")
+    category = serializers.CharField(source="get_category_display")
+    
+    
+    class Meta:
+        list_serializer_class = BulkInsultSerializer
+        model = Insult
+        fields = [
+            "reference_id",
+            "content",
+            "category",
+            "status",
+            "nsfw",
+            "added_by",
+            "added_on",
+        ]
+        read_only_fields = ["reference_id", "status", "added_by", "added_on"]
+
+    def get_category_display(self, obj):
+        """
+        Use cached category name for performance.
+        """
+        try:
+            category_key, category_name = self.validate_category_key(obj.category)
+            return BaseInsultSerializer.format_category(category_name)
+        except serializers.ValidationError:
+            logger.error(
+                f"Invalid category key '{obj.category}' for Insult ID {obj.insult_id}"
+            )
+            # Fallback to default category if validation fails
+            return "Uncategorized"
