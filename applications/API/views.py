@@ -1,3 +1,5 @@
+import django.utils.decorators
+import django.views.decorators.cache
 import random
 
 from django.db.models import Q
@@ -11,7 +13,11 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
+from django.views.decorators.cache import never_cache
 from rest_framework import viewsets, status
+from django.utils.decorators import method_decorator
+from rest_framework.exceptions import PermissionDenied
+
 from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -23,6 +29,7 @@ from applications.API.permissions import IsOwnerOrReadOnly
 from applications.API.serializers import (
     CategorySerializer,
     OptimizedInsultSerializer,
+    CreateInsultSerializer
 )
 from common.preformance import CachedResponseMixin, CacheInvalidationMixin, CategoryCacheManager
 from common.utils.helpers import _check_ownership
@@ -65,9 +72,9 @@ from common.utils.helpers import _check_ownership
                         "Success Response",
                         value=[
                             {
-                                "id": 1,
-                                "content": "Your code runs slower than a turtle in molasses",
-                                "category": "Programming",
+                                "reference_id": 1,
+                                "content": "Yo momma is so ugly... when they took her to the beautician it took 12 hours for a quote!",
+                                "category": "Ugly",
                                 "status": "Active",
                                 "nsfw": False,
                                 "added_by": "John D.",
@@ -101,13 +108,13 @@ from common.utils.helpers import _check_ownership
                     OpenApiExample(
                         "Success Response",
                         value={
-                            "id": 1,
-                            "content": "Your code runs slower than a turtle in molasses",
-                            "category": "Programming",
+                            "reference_id": 1,
+                            "content": "Yo momma is so fat... she rolled over 4 quarters and made a dollar!'",
+                            "category": "Fat",
                             "status": "Active",
                             "nsfw": False,
-                            "added_by": "John D.",
-                            "added_on": "2 days ago",
+                            "added_by": "Mike R.",
+                            "added_on": "2 years ago",
                         },
                     )
                 ],
@@ -119,7 +126,7 @@ from common.utils.helpers import _check_ownership
         tags=["Insults"],
         operation_id="create_insult",
         description="Create a new insult. Authentication required.",
-        request=OptimizedInsultSerializer,
+        request=CreateInsultSerializer,
         responses={
             201: OpenApiResponse(
                 response=OptimizedInsultSerializer,
@@ -128,11 +135,11 @@ from common.utils.helpers import _check_ownership
                         "Created Response",
                         value={
                             "id": 1,
-                            "content": "Your code has more bugs than a roach motel",
-                            "category": "Programming",
-                            "status": "Pending",
+                            "content": "Yo momma is so old... her birth certificate says expired on it.",
+                            "category": "Unique\One-Off",
+                            "status": "Active",
                             "nsfw": False,
-                            "added_by": "John D.",
+                            "added_by": "Mariyln Q.",
                             "added_on": "just now",
                         },
                     )
@@ -235,7 +242,7 @@ class InsultViewSet(PaginateByMaxMixin,
     def get_queryset(self):
         return (
             Insult.objects.select_related("added_by", "category")
-            .prefetch_related("reports_count")
+            .prefetch_related("reports")
             .order_by("-added_on")
             .all()
         )
@@ -254,7 +261,60 @@ class InsultViewSet(PaginateByMaxMixin,
         obj = self.get_object()
         _check_ownership(obj=obj, user=self.request.user)
         serializer.save()
-
+    @extend_schema(
+        tags=["Insults"],
+        operation_id="create_insult",
+        description="Create a new insult. Authentication required.",
+        request=CreateInsultSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=OptimizedInsultSerializer,
+                examples=[
+                    OpenApiExample(
+                        "Created Response",
+                        response_only=True,
+                        value={
+                            "reference_id": 1,
+                            "content": "Your code has more bugs than a roach motel",
+                            "category": "Programming",
+                            "status": "Pending",
+                            "nsfw": False,
+                            "added_by": "John D.",
+                            "added_on": "just now",
+                        },
+                    ),
+                    OpenApiExample( "Create Request",
+                        request_only=True,
+                        value={
+                            "content": "Your code has more bugs than a roach motel",
+                            "category": "Programming",
+                            "nsfw": False,
+                        }
+                        ), 
+                ],
+            ),
+            400: OpenApiResponse(description="Invalid input"),
+            401: OpenApiResponse(description="Authentication required",
+                examples=[
+                    OpenApiExample(
+                        "Authentication Required",
+                        value={
+                            "detail": "Authentication credentials were not provided."
+                        },  
+                        ) 
+                    ]
+            ),
+        },  
+    )
+    def preform_create(self, serializer):
+        """
+        Custom create method to handle ownership and additional logic.
+        
+        This method checks if the user is authenticated and sets the added_by field.
+        """
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Authentication required to create insults.")
+        serializer.save(added_by=self.request.user)
     def perform_destroy(self, instance):
         _check_ownership(instance, self.request.user)
         instance.delete()
@@ -376,36 +436,40 @@ class InsultViewSet(PaginateByMaxMixin,
                     OpenApiExample(
                         "Category Insults",
                         value=[
-                            {
-                                "reference_id": "SNICKER_NDI5",
-                                "content": "Yo momma is so fat... she walked in front of the TV and I missed 3 shows.",
-                                "category": "Fat",
-                                "status": "Active",
-                                "nsfw": False,
-                                "added_on": "3 month ago",
-                                "report_count": 0,
-                                "added_by": "John D.",
-                            }, 
-                            
-                            {
-                                "reference_id": "CACKLE_NDU0",
-                                "content": "Yo momma’s so fat, when she stepped on the scale it said, ‘To be continued.",
-                                "category": "Fat",
-                                "status": "Active",
-                                "nsfw": False,
-                                "added_on": "3 days ago",
-                                "report_count": 0,
-                                "added_by": "Jane D.",
-                            },                  
-                        {
-                                "reference_id": "GIGGLE_NTA2",  
-                                "content":  "Yo momma so fat, a picture of her would fall off the wall!",
-                                "category": "Fat",
-                                "status": "Active",
-                                "nsfw": False,
-                                "added_on": "3 days ago",
-                            }
-                                              
+{
+  "count": 116,
+  "next": "http://127.0.0.1:8888/api/insults/?category=F&page=2",
+  "previous": None ,
+  "results": [
+    {
+      "reference_id": "GIGGLE_OTc3",
+      "content": "“Yo Momma’s so fat that when she walked past the TV, I missed three episodes.",
+      "category": "fat",
+      "status": "Active",
+      "nsfw": False,
+      "added_by": "terry-brooks.",
+      "added_on": "2 years ago"
+    },
+    {
+      "reference_id": "GIGGLE_MTAxOA==",
+      "content": "Yo Momma’s so fat, when she stepped on the scale it said, ‘To be continued.’",
+      "category": "fat",
+      "status": "Active",
+      "nsfw": False,
+      "added_by": "terry-brooks.",
+      "added_on": "2 years ago"
+    },
+    {
+      "reference_id": "SNORT_OTE5",
+      "content": "Yo Momma so fat, she left in high heels and came back in flip flops.",
+      "category": "fat",
+      "status": "Active",
+      "nsfw": False,
+      "added_by": "terry-brooks.",
+      "added_on": "2 years ago"
+    }
+  ]
+}                                        
                         ],
                     )
                 ],
@@ -419,7 +483,7 @@ class InsultViewSet(PaginateByMaxMixin,
         },
     )
     @permission_classes(AllowAny)
-    @action(detail=False, methods=["get"])
+    @action(detail=True, methods=["get"])
     def by_category(self, request):
         """
         Get insults by category using specialized category caching.
@@ -509,6 +573,7 @@ class InsultViewSet(PaginateByMaxMixin,
             ),
         },
     )
+    @method_decorator(never_cache)
     @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def random(self, request):
         """Get a random insult."""
@@ -558,7 +623,7 @@ class InsultViewSet(PaginateByMaxMixin,
             )
         }))
 class CategoryViewSet(
-    CachedResponseMixin, PaginateByMaxMixin, viewsets.ReadOnlyModelViewSet
+    CachedResponseMi xin, PaginateByMaxMixin, viewsets.ReadOnlyModelViewSet
 ):
     """
     ViewSet for viewing insult categories. Provides read-only operations.
@@ -585,6 +650,6 @@ class CategoryViewSet(
         return Response(
             {
                 "help_text": "Available categories",
-                "available_categories": available_categories,
+                "available_cate gories": available_categories,
             }
         )

@@ -23,18 +23,9 @@ from django.utils.translation import gettext_lazy as _
 from django_prometheus.models import ExportModelOperationsMixin
 from loguru import logger
 
-INSULT_REFERENCE_ID_PREFIX_OPTIONS: List[str] = [
-    "GIGGLE",
-    "CHUCKLE",
-    "SNORT",
-    "SNICKER",
-    "CACKLE",
-]
 
 
-class Base64DecoderException(Exception):
-
-INSULT_REFERENCE_ID_PREFIX_OPTIONS: List[str] = [
+INSULT_REFERENCE_ID_PREFIX_OPTIONS: List[str] =  [
     "GIGGLE",
     "CHUCKLE",
     "SNORT",
@@ -46,17 +37,14 @@ INSULT_REFERENCE_ID_PREFIX_OPTIONS: List[str] = [
 class Base64DecoderException(Exception):
     """Custom exception for base36 decoding errors."""
 
+class Base64EncoderException(Exception):
+    """Custom exception for base36 encoding errors."""
 
 
-def encode_base36(number):
-    """Encodes a number to a base36 string."""
+def encode_base64(number):
+    """Encodes a number to a base64 string."""
     if number < 0:
-        raise ValueError("Number must be non-negative")
-    return base64.b64encode(number.encode()).decode()
-
-    """Encodes a number to a base36 string."""
-    if number < 0:
-        raise ValueError("Number must be non-negative")
+        raise Base64EncoderException("Number must be non-negative")
     return base64.b64encode(number.encode()).decode()
 
 
@@ -70,6 +58,11 @@ class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Mod
 
     def __str__(self):
         return f"{self.category_key} - {self.name}"
+    
+    def lower (self):
+        """Returns the name of the category in lowercase."""
+        return self.name.lower()
+    
 
     class Meta:
         db_table = "insult_categories"
@@ -78,9 +71,6 @@ class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Mod
         managed = True
         ordering = ["name"]
         constraints = [
-            models.UniqueConstraint(
-                fields=["category_key", "name"], name="unique_category_key_name"
-            ),
             models.UniqueConstraint(
                 fields=["category_key", "name"], name="unique_category_key_name"
             ),
@@ -121,14 +111,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             models.Index(
                 fields=["added_by", "status", "category"],
                 name="idx_added_status_cat",
-            ),
-            models.Index(
-                fields=["reference_id", "insult_id"], name="idx_reference_id_pk"
-            ),
-            models.Index(
-                fields=["added_by", "status", "category"],
-                name="idx_added_status_cat",
-            ),
+            )
         ]
 
     class STATUS(models.TextChoices):
@@ -146,9 +129,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         ACTIVE = "A", _("Active")
         REMOVED = "X", _("Inactive/Removed")
         PENDING = "P", _("Pending - New")
-        PENDING = "P", _("Pending - New")
         REJECTED = "R", _("Rejected")
-        FLAGGED = "F", _("Flagged for Review")
         FLAGGED = "F", _("Flagged for Review")
 
     content = models.CharField(
@@ -156,19 +137,6 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         null=False,
         blank=False,
         error_messages={"required": "Insults must have content"},
-    )
-    insult_id = models.AutoField(primary_key=True)
-
-    reference_id = models.CharField(
-        max_length=50,
-        unique=True,
-        editable=False,
-        db_index=True,
-        blank=True,
-        null=True,
-        verbose_name="Reference ID",
-        db_comment="Unique reference ID for the insult, generated from the primary key.",
-        help_text="Unique identifier for the insult, generated from the primary key.",
     )
     insult_id = models.AutoField(primary_key=True)
 
@@ -206,28 +174,9 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             super().save(*args, **kwargs)
             # Generate a unique reference_id
             while True:
-                candidate = f"{random.choice(INSULT_REFERENCE_ID_PREFIX_OPTIONS)}_{encode_base36(self.pk)}"
+                candidate = f"{random.choice(INSULT_REFERENCE_ID_PREFIX_OPTIONS)}_{encode_base64(self.pk)}"
                 if not type(self).objects.filter(reference_id=candidate).exists():
-                    self.reference_id = candidate
-                    break
-            # Only update the reference_id field
-            super().save(update_fields=["reference_id"])
-        else:
-            # Prevent regeneration of reference_id if already set
-            super().save(*args, **kwargs)
-
-    )
-
-    def save(self, *args, **kwargs):
-        # Only generate reference_id if it is not set and pk is None (new object)
-        if self.pk is None and not self.reference_id:
-            # Save first to get a PK
-            super().save(*args, **kwargs)
-            # Generate a unique reference_id
-            while True:
-                candidate = f"{random.choice(INSULT_REFERENCE_ID_PREFIX_OPTIONS)}_{encode_base36(self.pk)}"
-                if not type(self).objects.filter(reference_id=candidate).exists():
-                    self.reference_id = candidate
+                    self.reference_id = candidate # pyrefly: ignore
                     break
             # Only update the reference_id field
             super().save(update_fields=["reference_id"])
@@ -245,14 +194,10 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
 
     @classmethod
     def get_by_reference_id(cls, reference_id: str):
-    def get_by_reference_id(cls, reference_id: str):
-        """Get insult by reference ID"""
-        for prefix in INSULT_REFERENCE_ID_PREFIX_OPTIONS:
         for prefix in INSULT_REFERENCE_ID_PREFIX_OPTIONS:
             if reference_id.startswith(prefix):
                 # Extract base36 part and decode to PK
-                base36_part = reference_id.replace(f"{prefix}_", "")
-                base36_part = reference_id.replace(f"{prefix}_", "")
+                base64_part = reference_id.replace(f"{prefix}_", "")
                 try:
                     pk = base64.b64decode(reference_id.encode()).decode(
                         "utf-8"
@@ -370,9 +315,6 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             logger.success(
                 f"Successfully reclassified {self.reference_id} to {self.nsfw}"
             )
-            logger.success(
-                f"Successfully reclassified {self.reference_id} to {self.nsfw}"
-            )
         except Exception as e:
             logger.error(f"Unable to ReClassify Insult {self.reference_id}: {e}")
 
@@ -433,30 +375,27 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
 
     def __str__(self):
         return f"Joke: {self.insult_reference_id} - Review Type: {self.review_type} - Submitted: {self.date_submitted}({self.status})"
-        return f"Joke: {self.insult_reference_id} - Review Type: {self.review_type} - Submitted: {self.date_submitted}({self.status})"
 
-    def set_insult(self) -> None:
     def set_insult(self) -> None:
         """Get the associated Insult instance."""
-
-
         try:
             # Decode the reference ID to get the insult ID
             if not self.insult_reference_id:
                 raise IntegrityError(
                     "Insult Reference ID must be provided to set the related Insult."
                 )
-            if found_insult := Insult.get_by_reference_id(self.insult_reference_id):
-                logger.info(
-                    f"Setting Insult for Review {self.insult_reference_id} - {found_insult.insult_id}"
-                )
-                self.insult = found_insult
-                self.save(update_fields=["insult"])
+            if not self.insult:
+                if found_insult := Insult.get_by_reference_id(self.insult_reference_id):
+                    logger.info(
+                        f"Setting Insult for Review {self.insult_reference_id} - {found_insult.insult_id}"
+                    )
+                    self.insult = found_insult
+                    self.save(update_fields=["insult"]) 
         except Insult.DoesNotExist as e:
             logger.warning(
                 f"Insult with reference ID {self.insult_reference_id} does not exist."
             )
-            logger.warning(
+            logger.warning(          
                 f"Insult with reference ID {self.insult_reference_id} does not exist."
             )
             raise IntegrityError(
@@ -472,7 +411,6 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             )
             raise IntegrityError(
                 f"Reviews Must include a valid insult reference id that conforms to a pre-fixed Base36 format. Either value after the prefix is invalid  for Insult Reference ID: {self.insult_reference_id}"
-                f"Reviews Must include a valid insult reference id that conforms to a pre-fixed Base36 format. Either value after the prefix is invalid  for Insult Reference ID: {self.insult_reference_id}"
             ) from base36_error
 
 
@@ -482,7 +420,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         verbose_name = "Joke Needing Review"
         verbose_name_plural = "Jokes Needing Review"
         get_latest_by = ["-date_submitted"]
-        indexes = [
+
         indexes = [
             models.Index(fields=["review_type"], name="idx_review_type"),
             models.Index(fields=["status"], name="idx_status"),
@@ -492,10 +430,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             models.Index(
                 fields=["insult_reference_id"], name="idx_insult_reference_id"
             ),
-            models.Index(fields=["reviewer"], name="idx_reviewer"),
-            models.Index(
-                fields=["insult_reference_id"], name="idx_insult_reference_id"
-            ),
+            models.Index(fields=["insult", "insult_reference_id"], name="idx_insult)_ref_id"),
         ]
 
     def mark_review_not_reclassified(self, reviewer: User):
@@ -511,8 +446,8 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         """
 
         try:
-            self.status = "SCE"
-            self.reviewer = reviewer
+            self.status = self.STATUS.SAME_CLASSIFICATION
+            self.reviewer = reviewer.pk
             self.date_reviewed = settings.GLOBAL_NOW
             logger.success(f"Marked {self.insult_reference_id} as Not Reclassified")
             logger.success(f"Marked {self.insult_reference_id} as Not Reclassified")
@@ -527,7 +462,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
     def mark_review_recategorized(self, reviewer: User):
         try:
             self.status = self.STATUS.NEW_CATEGORY
-            self.reviewer = reviewer
+            self.reviewer = reviewer.pk
             self.date_reviewed = (
                 settings.settings.GLOBAL_NOW
             )  # Use settings.settings.GLOBAL_NOW consistently
@@ -555,7 +490,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         """
 
         try:
-            self.status = "SJC"
+            self.status = self.STATUS.SAME_CATEGORY
             self.date_reviewed = settings.GLOBAL_NOW
             self.save(update_fields=["status", "date_reviewed"])
             logger.success(f"Marked {self.insult_reference_id} as Reclassified")
@@ -581,7 +516,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         """
 
         try:
-            self.status = InsultReview.STATUS.REMOVED
+            self.status = self.STATUS.REMOVED
             self.date_reviewed = settings.GLOBAL_NOW
             self.save(update_fields=["status", "date_reviewed"])
             logger.success(f"Marked {self.insult_reference_id} as Reclassified")
@@ -666,7 +601,7 @@ def flag_insult(sender, instance, created, **kwargs):
         instance.set_insult()  # Ensure the related Insult is set
         # Set the insult status to FLAGGED
         instance.insult.status = Insult.STATUS.FLAGGED
-        instance.insult.save(update_fields=["reports_count"])
+        instance.insult.save(update_fields=["status","reports_count"])
 
 
 @receiver(post_delete, sender=InsultReview)

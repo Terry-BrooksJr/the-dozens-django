@@ -54,20 +54,17 @@
     }
 
 
-    body {
-      background-image: url("https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/assets/background.svg");
-      background-repeat: no-repeat;
-      background-color: #d1d937;
-      background-size: cover;
-
-      font-family: "YoMamaBody";
-      background-attachment: fixed;
-      background-position: center;
-
-      height: 135vh;
-
-
-    }
+   body {
+  background-image: url("https://cdn.jsdelivr.net/.../background.svg");
+  background-repeat: no-repeat;
+  background-color: #D7DF0D; /* fixed the double ## */
+  background-size: cover;
+  background-attachment: fixed; /* keeps image from moving */
+  background-position: center center; /* stays centered */
+  font-family: "YoMamaBody";
+  min-height: 100vh; /* allow scrolling naturally */
+  margin: 0;
+}
 
     #preloader {
       position: fixed;
@@ -149,7 +146,7 @@
       padding: 1.5rem;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-
+    .
     .joke-title {
       background-color: var(--color-accent);
       color: #333;
@@ -404,8 +401,7 @@ nav {
                   </li>
                   <li><a target="_blank" class="header-font" href="/graphql">GraphQL</a></li>
                   <li><a href="#" class="header-font">Register to Contribute</a></li>
-                  <li><a id="reportAJokeTrigger" class="header-font" data-bs-toggle="modal"
-                      data-bs-target="#reportJokeModal">Report a Joke To Be Reviewed</a></li>
+                  <li><a id="reportAJokeTrigger" class="header-font">Report a Joke To Be Reviewed</a></li>
                 </ul>
               </div>
             </li>
@@ -452,11 +448,11 @@ nav {
                 <img id="dozens-image" src="{%  static 'assets/yo_momma_brand.png' %}" height="50%" alt="body-typography" />
               </div>
             </div>
-            <div
+            <div class="row" id="getting-started-row">
                   <div class="col-12 col-md-6  mx-auto d-block">
                 <a id="getting-started-modal-btn" class="header-font btn btn-secondary btn-block" data-bs-toggle="modal"
                       data-bs-target="#getting-started-modal">Getting Started!  </a>
-              </div></div>
+              </div>
     </div>
             <div class="row" id="body-copy">
               <div class="col-12 col-md-6 text-center">
@@ -471,7 +467,7 @@ nav {
             </div>
             <div class="row">
               <div class="col-12 col-md-6 me-n1" id="video">
-                <video id="about-video" width="75%" height="auto"
+                <video id="about-video" width="600px" height="auto"
                   src="{% static 'assets/blackish_the_dozens_abc_broadcasting.mp4' %}" class="img-fluid"
                   controls></video>
               </div>
@@ -485,8 +481,8 @@ nav {
               </div>
             </div>
           <section class="desktop-display">
-            <div id="key-features" class="row justify-content-center align-items-center">
-              <div class="col-12 col-md-6">
+            <div id="key-features" class="row">
+              <div class="col-6 col-m3">
 
                 <h1 class="ms-5">Key Features</h1>
 
@@ -522,13 +518,13 @@ nav {
           </section>
         </main>
 
-        <footer class="footer desktop-display">
+        {% comment %} <footer class="footer desktop-display">
           <!--suppress HtmlUnknownTag -->
           <marquee>
             Over 400 Side-Splitting Yo Mama Jokes · 10 Categories to Choose From including Fat, Poor, Ugly, and Dumb ·
             Ability to filter out jokes based on explicit classification
           </marquee>
-        </footer>
+        </footer> {% endcomment %}
 
 
 
@@ -584,7 +580,7 @@ const HIGHLIGHT_CONFIG = {
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const VERTICAL_SPACING = 50;
 const ANIMATION_DURATION = 30000;
-const API_URL = "https://api.yo-momma.net/insult";
+const API_URL = "{% url 'insult-random' %}";
 const PRELOADER_DELAY = 3000;
 const PHRASES = [
   "Generating witty dialog",

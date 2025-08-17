@@ -15,8 +15,8 @@ import highlight_io
 from configurations import Configuration, values
 from highlight_io.integrations.django import DjangoIntegration
 from loguru import logger
-from django.templatetags.static import static
-
+from redis.retry import Retry
+from redis.backoff import ExponentialBackoff
 
 def log_warning(message, category, filename, lineno, file=None, line=None):
     logger.warning(f" {message}")
@@ -105,10 +105,10 @@ class Base(Configuration):
                 "HOST": os.getenv("PG_DATABASE_HOST"),
                 # "DISABLE_SERVER_SIDE_CURSORS": True,
                 "PORT": os.getenv("PG_DATABASE_PORT"),
-                "OPTIONS": {
-                    "sslmode": "require",
-                    "sslrootcert": os.environ["PATH_TO_DB_ROOT_CERT"],
-                },
+                # "OPTIONS": {
+                #     "sslmode": "require",
+                #     "sslrootcert": os.environ["PATH_TO_DB_ROOT_CERT"],
+                # },
                 # "pool": {
                 #     "max_size": 11,
                 #     "name": "django-thedozens",
@@ -299,8 +299,11 @@ class Base(Configuration):
                     "SOCKET_CONNECT_TIMEOUT": 5,
                     "SOCKET_TIMEOUT": 5,
                     "CONNECTION_POOL_KWARGS": {
-                        "max_connections": 100,
-                        "retry_on_timeout": True,
+              "max_connections": 50,            # cap concurrent connections from this pool
+                "health_check_interval": 30,       # keep pooled conns fresh
+                "socket_connect_timeout": 5,       # seconds
+                "socket_timeout": 5,               # seconds
+                "retry_on_timeout": True
                     },
                 },
             },
@@ -312,8 +315,11 @@ class Base(Configuration):
                     "SOCKET_CONNECT_TIMEOUT": 5,
                     "SOCKET_TIMEOUT": 5,
                     "CONNECTION_POOL_KWARGS": {
-                        "max_connections": 100,
-                        "retry_on_timeout": True,
+              "max_connections": 50,            # cap concurrent connections from this pool
+                "health_check_interval": 30,       # keep pooled conns fresh
+                "socket_connect_timeout": 5,       # seconds
+                "socket_timeout": 5,               # seconds
+                "retry_on_timeout": True
                     },
                 },
             },
@@ -418,7 +424,7 @@ class Production(Base):
                 "rest_framework.renderers.JSONRenderer",
                 "rest_framework.renderers.BrowsableAPIRenderer",
             ],
-            "DEFAULT_AUTHENTICATION_CLASSES": (
+            "DEFAULT_AUTHENTICATION_CLASSES": ( 
                 "rest_framework.authentication.TokenAuthentication",
             ),
             # "DEFAULT_THROTTLE_CLASSES": [
