@@ -49,17 +49,16 @@
 <script>
      document.addEventListener("DOMContentLoaded", function() {
           // Initialize the modal
-          const modal = UIkit.modal("#reportJokeModal", {
-          })};
+          const modal = $("#reportJokeModal").modal();
 
           // Show the modal when the button is clicked
           document.getElementById("reportAJokeTrigger").addEventListener("click", function() {
-               modal.show();
+               modal.modal("show");
           });
 
           // Close the modal when the close button is clicked
           document.querySelector(".uk-modal-close-default").addEventListener("click", function() {
-               modal.hide();
+               modal.modal("hide");
           });
      });
 </script>

@@ -16,8 +16,6 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import IntegrityError, models
 from django.db.models.signals import post_delete, post_save
-from django.db import IntegrityError, models
-from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from django_prometheus.models import ExportModelOperationsMixin

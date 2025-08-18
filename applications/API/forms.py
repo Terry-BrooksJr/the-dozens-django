@@ -9,11 +9,7 @@ import json
 import threading
 import time
 from typing import Any, Dict, List, Tuple, Union
-from typing import Any, Dict, List, Tuple, Union
 
-from crispy_forms.bootstrap import FormActions
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Button, Column, Div, Layout, Row, Submit
 from crispy_forms.bootstrap import FormActions
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Button, Column, Div, Layout, Row, Submit
@@ -23,7 +19,22 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models.signals import post_delete, post_save
 from django.db.utils import ProgrammingError
 from django.dispatch import receiver
-from django.forms import BooleanField, CharField, ChoiceField, ModelForm, widgets
+from django.forms import BooleanField, CharField, ChoiceField, ModelChoiceField, ModelForm, widgets
+from  django_select2 import forms as s2forms
+from applications.API.models import Insult, InsultReview
+# Select2 widget for Insult reference with AJAX search
+class InsultReferenceSelect2(s2forms.ModelSelect2Widget):
+    model = Insult
+    search_fields = [
+        "reference_id__icontains",
+    ]
+    attrs = {
+        "data-minimum-input-length": 3,
+        "data-placeholder": "Select an Insult by Ref ID…",
+        "data-close-on-select": "true",
+        "data-allow-clear": "true",
+        "style": "width: 100%;",
+    }
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django_select2 import forms as s2forms
@@ -45,10 +56,7 @@ _cache_lock = threading.Lock()
 CACHE_TIMEOUT = 60 * 60 * 24  # 24 hours
 CACHE_KEYS = {
     "choices": "Insult:form_choices_v2",
-    "queryset": "Insult:form_queryset_v2",
-    "choices": "Insult:form_choices_v2",
-    "queryset": "Insult:form_queryset_v2",
-}
+    "queryset": "Insult:form_queryset_v2"}
 
 
 def get_cache_stats() -> Dict[str, Any]:
@@ -90,7 +98,6 @@ def get_cached_insult_data() -> Tuple[List[Tuple[int, str]], str]:
     Caching strategy:
     1. Module-level cache (fastest)
     2. Redis cache (fast)
-    2. Redis cache (fast)
     3. Database query (slowest - 15 seconds)
     """
     global _cached_choices, _cached_queryset
@@ -99,7 +106,6 @@ def get_cached_insult_data() -> Tuple[List[Tuple[int, str]], str]:
     # Start timing the overall cache operation
     time.time()
 
-    time.time()
 
     with _cache_lock:
         try:
@@ -318,22 +324,14 @@ class InsultReviewForm(ModelForm):
     Form for submitting reviews of insults with optimized caching.
     """
 
-
-    # Dynamic choices will be set in __init__
-    insult_reference_id = ChoiceField(
-        widget=s2forms.ModelSelect2Widget(
-            model=Insult,
-            search_field=["insult_reference_id__icontains"],
-            max_results=50,
-            attrs={
-                "data-minimum-input-length": 4,
-                "data-placeholder": "Select an Insult",
-                "data-close-on-select": "true",
-            },
-        ),
+    insult_reference_id = ModelChoiceField(
+        queryset=Insult.objects.filter(status="A").only("reference_id"),
+        to_field_name="reference_id",
+        widget=InsultReferenceSelect2,
         required=True,
         label="Insult Reference ID",
-        help_text="Select the insult you want to review",),
+        help_text="Start typing a reference ID (e.g., GIGGLE_…).",
+    )
 
     review_type = ChoiceField(
         choices=InsultReview.REVIEW_TYPE.choices,
@@ -356,7 +354,8 @@ class InsultReviewForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        # Ensure queryset is up-to-date at runtime
+        self.fields["insult_reference_id"].queryset = Insult.objects.filter(status="A").only("reference_id")
 
         # Setup form helper for crispy forms
         self.helper = FormHelper()
@@ -411,7 +410,6 @@ class InsultReviewForm(ModelForm):
         """
         cleaned_data = super().clean()
 
-
         # Get form data
         anonymous = cleaned_data.get("anonymous", False)
         reporter_first_name = cleaned_data.get("reporter_first_name", "").strip()
@@ -419,18 +417,22 @@ class InsultReviewForm(ModelForm):
         post_review_contact_desired = cleaned_data.get(
             "post_review_contact_desired", False
         )
-        post_review_contact_desired = cleaned_data.get(
-            "post_review_contact_desired", False
-        )
         reporter_email = cleaned_data.get("reporter_email", "").strip()
-        insult_reference_id = cleaned_data.get("insult_reference_id")
 
-        # Validate insult ID
-        if Insult.get_by_reference_id(insult_reference_id) is None:
+        insult_obj_or_value = cleaned_data.get("insult_reference_id")
+        # Support both ModelChoiceField (object) and pre-populated string values
+        if hasattr(insult_obj_or_value, "reference_id"):
+            ref_id = insult_obj_or_value.reference_id
+        else:
+            ref_id = str(insult_obj_or_value or "").strip()
+
+        if not ref_id or Insult.get_by_reference_id(ref_id) is None:
             raise ValidationError(
                 _("Invalid Insult ID - Please select a valid insult from the dropdown"),
                 code="invalid-insult-id",
             )
+        # Ensure downstream code receives the reference-id string
+        cleaned_data["insult_reference_id"] = ref_id
 
         # Validate non-anonymous submissions
         if not anonymous:
@@ -439,8 +441,6 @@ class InsultReviewForm(ModelForm):
                     _("First name is required when not submitting anonymously"),
                     code="first-name-required",
                 )
-
-
             if not reporter_last_name:
                 raise ValidationError(
                     _("Last name is required when not submitting anonymously"),
