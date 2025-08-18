@@ -1116,7 +1116,7 @@ class SpeechBubbleController {
     try {
       const response = await fetch(API_URL);
       const data = await response.json();
-      this.currentJoke = Object.values(data)[0];
+      this.currentJoke = Object.values(data)[0][['content']];
       
       // Update both the speech bubble and the main joke content
       if (this.speechContentElement) {

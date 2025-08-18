@@ -623,7 +623,7 @@ class InsultViewSet(PaginateByMaxMixin,
             )
         }))
 class CategoryViewSet(
-    CachedResponseMi xin, PaginateByMaxMixin, viewsets.ReadOnlyModelViewSet
+    CachedResponseMixin, PaginateByMaxMixin, viewsets.ReadOnlyModelViewSet
 ):
     """
     ViewSet for viewing insult categories. Provides read-only operations.
