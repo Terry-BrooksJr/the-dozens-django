@@ -3,7 +3,7 @@ env:
   DOPPLER_TOKEN: ${DOPPLER_TOKEN}
   PATH_TO_DB_ROOT_CERT: ${PATH_TO_DB_ROOT_CERT}
   PYTHON_PATH: "{{ .TASKFILE_DIR }}:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run"
-
+  TEMP_STATIC_DIR: ${TEMP_STATIC_DIR}
 silent: true
 tasks:
   default:
@@ -23,7 +23,8 @@ tasks:
     dir: .
     cmds:
       - echo "Completing Pre-Start Environment Check For Development..."
-      - source .envrc && PYTHONPATH="./core:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run:{{ .TASKFILE_DIR }}" doppler run  -- python3 .venv/bin/gunicorn -t 1 -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{.CLI_ARGS}} --reload
+      - source .envrc && PYTHONPATH="${PYTHON_PATH}" doppler run  -- python3 .venv/bin/gunicorn -t 1 -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{.CLI_ARGS}} --reload
+      - defer: rm -r ${TEMP_STATIC_DIR}
     interactive: false
     silent: false
 
@@ -60,7 +61,6 @@ tasks:
     generates:
       - ./applications/*/migrations/*.py
     sources:
-      - ./applications/*/migrations/*.py
       - ./applications/*/migrations/*.py
     requires:
       vars:

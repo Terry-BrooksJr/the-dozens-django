@@ -243,8 +243,8 @@ missing-member-hint-distance=1
 missing-member-max-choices=1
 
 # Regex pattern to define which classes are considered mixins.
-mixin-class-rgx=.*[Mm]ixin|.*[Mm]ix
-
+# Treat classes ending with 'Mixin' (or 'Mix') as mixins; anchor to end to avoid overmatching
+mixin-class-rgx=.*[Mm]ixin$|.*[Mm]ix$
 # List of decorators that change the signature of a decorated function.
 signature-mutators=
 
@@ -400,8 +400,7 @@ spelling-dict=
 
 # List of comma separated words that should be considered directives if they
 # appear at the beginning of a comment and should not be checked.
-spelling-ignore-comment-directives=fmt: on,fmt: off,noqa:,noqa,nosec,isort:skip,mypy:, # noinspection
-
+spelling-ignore-comment-directives=fmt: on,fmt: off,noqa:,noqa,nosec,isort:skip,mypy:,noinspection
 # List of comma separated words that should not be checked.
 spelling-ignore-words=
 

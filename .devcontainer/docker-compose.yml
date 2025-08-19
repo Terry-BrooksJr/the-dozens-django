@@ -34,7 +34,7 @@ services:
     ports:
       - '3001:6379'
     healthcheck:
-      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      test: ["CMD", "redis-cli", "PING"]
       interval: 5m
       timeout: 2m
       retries: 5
@@ -53,7 +53,8 @@ services:
       - POSTGRES_PASSWORD=dozens
       - POSTGRES_DB=dozens
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U dozens" ]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dozens"]
       interval: 5m
       timeout: 2m
       retries: 5

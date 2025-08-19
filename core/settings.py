@@ -5,23 +5,24 @@ Django settings for thedozens project.
 
 """
 
+import json
 import os
 import sys
 import warnings
 from datetime import datetime
 from pathlib import Path
-
+import tempfile
 import highlight_io
 from configurations import Configuration, values
 from highlight_io.integrations.django import DjangoIntegration
 from loguru import logger
-from redis.retry import Retry
-from redis.backoff import ExponentialBackoff
-
-def log_warning(message, category, filename, lineno, file=None, line=None):
-    logger.warning(f" {message}")
 
 
+def log_warning(message:str, category, filename:str, lineno:str, file=None, line=None) ->  None:
+     logger.warning(f"{filename}:{lineno} - {category.__name__}: {message}")  
+
+TEMP_STATIC_DIR = tempfile.mkdtemp()
+os.environ['TEMP_STATIC_DIR'] = TEMP_STATIC_DIR
 NSFW_WORD_LIST_URI = values.URLValue(
     environ=True, environ_prefix=None, environ_name="NSFW_WORD_LIST_URI"
 )
@@ -85,9 +86,9 @@ class Base(Configuration):
         "backtrace": False,
         "serialize": True,
     }
-    PRIMARY_LOG_FILE = Path(os.path.join(BASE_DIR, "logs", "primary_ops.log"))
-    CRITICAL_LOG_FILE = Path(os.path.join(BASE_DIR, "logs", "fatal.log"))
-    DEBUG_LOG_FILE = Path(os.path.join(BASE_DIR, "logs", "utility.log"))
+    PRIMARY_LOG_FILE = Path(os.path.join(BASE_DIR, "logs", "primary_ops.log")) # pyrefly: ignore
+    CRITICAL_LOG_FILE = Path(os.path.join(BASE_DIR, "logs", "fatal.log")) # pyrefly: ignore
+    DEBUG_LOG_FILE = Path(os.path.join(BASE_DIR, "logs", "utility.log"))  # pyrefly: ignore
     DEFAULT_HANDLER = sys.stdout
     logger.remove()
 
@@ -106,16 +107,15 @@ class Base(Configuration):
                 # "DISABLE_SERVER_SIDE_CURSORS": True,
                 "PORT": os.getenv("PG_DATABASE_PORT"),
                 # "OPTIONS": {
-                #     "sslmode": "require",
-                #     "sslrootcert": os.environ["PATH_TO_DB_ROOT_CERT"],
-                # },
+                    "sslmode": "require",
+                    # "sslrootcert": os.environ["PATH_TO_DB_ROOT_CERT"],
+                },
                 # "pool": {
                 #     "max_size": 11,
                 #     "name": "django-thedozens",
                 #     "max_idle": 15,
                 # },
             }
-        }
     )
     # SECTION Start - Static files & Templates
     AWS_ACCESS_KEY_ID = values.SecretValue(
@@ -135,18 +135,18 @@ class Base(Configuration):
     AWS_LOCATION = "static"
     STATIC_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_LOCATION}/"
     STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, "the-dozens-django", "static"),
+        os.path.join(BASE_DIR, "the-dozens-django", "static"), # pyrefly: ignore
     ]
-    STATIC_ROOT = "/tmp/staticfiles"
+    STATIC_ROOT = TEMP_STATIC_DIR
     template_dir = values.ListValue(
-        [Path(os.path.join(BASE_DIR, "the-dozens-django", "templates"))],
+        [Path(os.path.join(BASE_DIR, "the-dozens-django","templates"))], # pyrefly: ignore
         environ=False,
     )
     STORAGES = {
         "default": {
             "BACKEND": "storages.backends.s3.S3Storage",
             "OPTIONS": {},
-        },
+        },  
         "staticfiles": {
             "BACKEND": "core.storage_backends.StaticStorage",
             "LOCATION": AWS_LOCATION,
@@ -258,7 +258,7 @@ class Base(Configuration):
             "displayOperationId": False,
         },
         "SWAGGER_UI_DIST": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest",
-        "SWAGGER_UI_FAVICON_HREF": "https://nyc3.digitaloceanspaces.com/yo-momma/static/assets/favicon.ico",
+        "SWAGGER_UI_FAVICON_HREF": "https://cdn.yo-momma.net/staticfiles/assets/yoyoo_400x400.jpg",
         "CONTACT": {
             "name": "Terry A. Brooks, Jr.",
             "url": "https://brooksjr.com",
@@ -275,7 +275,7 @@ class Base(Configuration):
     #  SECTION Start - GraphQL Settings (Graphene-Django)
     GRAPHENE = values.DictValue(
         {
-            "SCHEMA": "graphQL.schema.schema",
+            "SCHEMA": "applications.graphQL.schema.schema",
             "MIDDLEWARE": [
                 "graphene_django.debug.DjangoDebugMiddleware",
             ],
@@ -296,33 +296,15 @@ class Base(Configuration):
                 "LOCATION": os.getenv("REDIS_CACHE_TOKEN"),
                 "OPTIONS": {
                     "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                    "SOCKET_CONNECT_TIMEOUT": 5,
-                    "SOCKET_TIMEOUT": 5,
-                    "CONNECTION_POOL_KWARGS": {
-              "max_connections": 50,            # cap concurrent connections from this pool
-                "health_check_interval": 30,       # keep pooled conns fresh
-                "socket_connect_timeout": 5,       # seconds
-                "socket_timeout": 5,               # seconds
-                "retry_on_timeout": True
-                    },
                 },
             },
             "select2": {
-                "BACKEND": "django_redis.cache.RedisCache",
-                "LOCATION": f"{os.getenv('REDIS_CACHE_TOKEN')}/2",
-                "OPTIONS": {
-                    "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                    "SOCKET_CONNECT_TIMEOUT": 5,
-                    "SOCKET_TIMEOUT": 5,
-                    "CONNECTION_POOL_KWARGS": {
-              "max_connections": 50,            # cap concurrent connections from this pool
-                "health_check_interval": 30,       # keep pooled conns fresh
-                "socket_connect_timeout": 5,       # seconds
-                "socket_timeout": 5,               # seconds
-                "retry_on_timeout": True
-                    },
-                },
-            },
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"{os.getenv("REDIS_CACHE_TOKEN")}/2",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
         }
     )
     SELECT2_CACHE_BACKEND = "select2"
@@ -340,7 +322,9 @@ class Base(Configuration):
     EMAIL_HOST_PASSWORD = values.SecretValue(
         environ=True, environ_prefix=None, environ_name="EMAIL_ACCT_PASSWORD"
     )
-    MAILER_EMPTY_QUEUE_SLEEP = os.environ["MAILER_EMPTY_QUEUE_SLEEP"]
+    MAILER_EMPTY_QUEUE_SLEEP = values.IntegerValue(
+        environ=True, environ_prefix=None, environ_name="MAILER_EMPTY_QUEUE_SLEEP"
+    )
 
 
 class Production(Base):
@@ -396,19 +380,11 @@ class Production(Base):
         ],
         environ=False,
     )
-    DEBUG = values.BooleanValue(True, environ=False)
+    DEBUG = values.BooleanValue(False, environ=False)
     CSRF_TRUSTED_ORIGINS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_ORIGINS"
     )
-    CORS_ALLOWED_ORIGINS = [
-        "https://yo-momma.net",
-        "http://yo-momma.net",
-        "https://www.yo-momma.net",
-        "http://www.yo-momma.net",
-        "https://yo-mama.b-cdn.net",
-        "http://yo-mama.b-cdn.net",
-        "http://cdn.yo-momma.net",
-    ]  # os.getenv("ALLOWED_ORIGINS")
+    CORS_ALLOWED_ORIGINS = json.loads(os.getenv("ALLOWED_ORIGINS"))
     # SECTION Start - Production Database
 
     #!SECTION End - Database and Caching
@@ -424,7 +400,7 @@ class Production(Base):
                 "rest_framework.renderers.JSONRenderer",
                 "rest_framework.renderers.BrowsableAPIRenderer",
             ],
-            "DEFAULT_AUTHENTICATION_CLASSES": ( 
+            "DEFAULT_AUTHENTICATION_CLASSES": (
                 "rest_framework.authentication.TokenAuthentication",
             ),
             # "DEFAULT_THROTTLE_CLASSES": [
@@ -451,8 +427,8 @@ class Production(Base):
         environment="production",
     )
 
-    logger.add(sink=H.logging_handler, level="INFO", **Base.DEFAULT_LOGGER_CONFIG)
-    logger.add(sink=Base.PRIMARY_LOG_FILE, **Base.DEFAULT_LOGGER_CONFIG, level="INFO")
+    logger.add(sink=H.logging_handler, level="INFO", **Base.DEFAULT_LOGGER_CONFIG) #pyrefly: ignore
+    logger.add(sink=Base.PRIMARY_LOG_FILE, **Base.DEFAULT_LOGGER_CONFIG, level="INFO") #pyrefly: ignore
 
 
 class Testing(Base):
@@ -487,6 +463,7 @@ class Offline(Base):
             "django_prometheus",
             "drf_spectacular",
             "django_select2",
+
             # Project Apps
             "applications.API",
             "applications.graphQL",
@@ -592,6 +569,7 @@ class Development(Base):
             "django_prometheus",
             "drf_spectacular",
             "django_select2",
+
             # Project Apps
             "applications.API",
             "applications.graphQL",

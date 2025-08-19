@@ -40,8 +40,6 @@ pycodestyle:
     - E71
     - W292
     - W391
-  options:
-    max-line-length: 300
 
 pydocstyle:
   disable:
