@@ -18,7 +18,7 @@ tasks:
       - source {{.TASKFILE_DIR}}/.venv/bin/activate
     internal: true
 
-  develop:
+  run:dev:
     desc: Starts the Django Application, and background workers in a debug state
     dir: .
     cmds:
@@ -74,7 +74,7 @@ tasks:
     cmds:
       - source .envrc && PYTHONPATH="./core:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run:{{ .TASKFILE_DIR }}" doppler run -- python run/manage.py collectstatic --no-input
 
-  test:
+  run:test:
     dir: .
     desc: Run tests
     cmds:
@@ -84,18 +84,7 @@ tasks:
         - DOPPLER_TOKEN
         - PATH_TO_DB_ROOT_CERT
 
-  run:
-    desc: Starts a Gunicorn Based Development Server that Reloads on Changes
-    dir: .
-
-    cmds:
-      - doppler run -- python3 run/manage.py runserver
-    requires:
-      vars:
-        - DOPPLER_TOKEN
-        - PATH_TO_DB_ROOT_CERT
-
-  start:
+  run:prod:
     dir: .
 
     desc: Command to Start Production Level Services including Install requirements, apply migrations, then start development server
@@ -178,12 +167,13 @@ tasks:
         ignore_error: true
       - echo "🌟 Running djlint (Django template auto-fix)..."
       - cmd: doppler run -- .venv/bin/djlint --reformat templates/**/*.html
+        ignore_error: true
       - echo "✅ Auto-fix completed! Run 'task lint' to check remaining issues."
     silent: false
     interactive: false
 
   django:
-    desc: "Wrapper command to simpltify the use of Django management commands. Example Usage: task django -- runserver"
+    desc: "Wrapper command to simplify the use of Django management commands. Example Usage: task django -- runserver"
     dir: "{{.TASKFILE_DIR}}"
     cmds:
       - doppler run -- python3 run/manage.py {{.CLI_ARGS}}

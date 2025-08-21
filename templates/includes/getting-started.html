@@ -2,64 +2,66 @@
 <!--Start History Modals-->
 <!-- History: Overview -->
 <!--suppress ALL -->
-<div class="modal fade" id="getting-started-modal" tabindex="-1" role="dialog" aria-labelledby="getting-started-modal" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="gttingStarteModalHeader">Getting Started With The Yo' Momma Jokes  API</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-          <p id="ease-of-use-text">
-            Our Yo Mama Jokes API is designed with developers in mind, offering an intuitive and straightforward interface. With well-documented endpoints and clear error messages, you'll be able to integrate our API into your applications seamlessly. Whether you're new to API consumption or a seasoned developer, you'll find our endpoints easy to navigate and implement.
-        </p>
-        <p id="request-capability-text">
-            You can make simple HTTP requests to retrieve jokes, with filters for categories and content preferences. Rate limiting ensures the API remains responsive, allowing you to focus on delivering a great user experience without worrying about backend performance.
-        </p>
-q
-        <h2 class="example-request-header">Step 1: Create Account</h2>
-        <sub><em>Creating a User is required if you plan on contributring to the API. Just looking to laugh, skip to step 2</em></sub>
-        <h3>Endpoint:</h3>
-        <code>POST /auth/user</code> 
-        <h3>Request Body</h3>
-        <code>
-          {
-            "email": "user@example.com",
-            "username": "dozens_lover",
-            "password": "string"
-          }
-          </code>
-          <h3>Expected Response</h3>
-          <code>
-          {
-  "id": 12
-  "username": "O4MFaO-wxmFrTXhakUCzIzpgU8RfqVPCJKIzfR8a73iH7j@apK@iemruUX17zaGbGCf.iPNlPHnazN44p6Uh74aK3@",
-}
-</code>     
-
-
-
-        <h2 class="example-request-header">Example HTTP Request (Insult Endpoint)</h2>
-        <
-        <
-        <h3>Endpoint:</h3>
-        <p>
-            <code>GET /insult/</code>
-        </p>
-        <h3>Headers:</h3>
-        <pre>
+<div class="modal fade"
+     id="getting-started-modal"
+     tabindex="-1"
+     role="dialog"
+     aria-labelledby="getting-started-modal"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="gttingStarteModalHeader">Getting Started With The Yo' Momma Jokes  API</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="ease-of-use-text">
+                    Our Yo Mama Jokes API is designed with developers in mind, offering an intuitive and straightforward interface. With well-documented endpoints and clear error messages, you'll be able to integrate our API into your applications seamlessly. Whether you're new to API consumption or a seasoned developer, you'll find our endpoints easy to navigate and implement.
+                </p>
+                <p id="request-capability-text">
+                    You can make simple HTTP requests to retrieve jokes, with filters for categories and content preferences. Rate limiting ensures the API remains responsive, allowing you to focus on delivering a great user experience without worrying about backend performance.
+                </p>
+                q
+                <h2 class="example-request-header">Step 1: Create Account</h2>
+                <sub><em>Creating a User is required if you plan on contributring to the API. Just looking to laugh, skip to step 2</em></sub>
+                <h3>Endpoint:</h3>
+                <code>POST /auth/user</code>
+                <h3>Request Body</h3>
+                <code>
+                    {
+                    "email": "user@example.com",
+                    "username": "dozens_lover",
+                    "password": "string"
+                    }
+                </code>
+                <h3>Expected Response</h3>
+                <code>
+                    {
+                    "id": 12
+                    "username": "O4MFaO-wxmFrTXhakUCzIzpgU8RfqVPCJKIzfR8a73iH7j@apK@iemruUX17zaGbGCf.iPNlPHnazN44p6Uh74aK3@",
+                    }
+                </code>
+                <h2 class="example-request-header">Example HTTP Request (Insult Endpoint)</h2>
+                <
+                <
+                <h3>Endpoint:</h3>
+                <p>
+                    <code>GET /insult/</code>
+                </p>
+                <h3>Headers:</h3>
+                <pre>
       <code>
   Content-Type: application/json
   Authorization: Token <your_api_key_here>
       </code>
 </pre>
-        <h3>
-            Request Body <sub>(Optional):</sub>
-        </h3>
-        :
-        <pre>
+                <h3>
+                    Request Body <sub>(Optional):</sub>
+                </h3>
+                :
+                <pre>
       <code>
   {
     "category": "P",
@@ -67,8 +69,8 @@ q
   }
       </code>
 </pre>
-        <h3>Response:</h3>
-        <pre>
+                <h3>Response:</h3>
+                <pre>
       <code>
   {
     "id": 123,
@@ -78,22 +80,22 @@ q
   }
       </code>
 </pre>
-        <p id="additional-notes-text">
-            In this example, you can specify the joke category and whether nsfw content is allowed. If no filters are provided, a random joke will be returned.
-        </p>
+                <p id="additional-notes-text">
+                    In this example, you can specify the joke category and whether nsfw content is allowed. If no filters are provided, a random joke will be returned.
+                </p>
+            </div>
+            <div class="modal-footer text-center">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <!--suppress HtmlUnknownAttribute -->
+                <a href="{% url 'swagger' %}" class="btn nav-bttn btn-success" uk-toggle>Check Out More In Swagger</a>
+                <!--suppress HtmlUnknownAttribute -->
+                <a href="https://www.postman.com/terryabrooksjr/the-roast-api-yo-mama-jokes/overview"
+                   class="btn nav-bttn btn-success"
+                   uk-toggle>Check Out More In Postman</a>
+            </div>
+        </div>
     </div>
-    <div class="modal-footer text-center">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <!--suppress HtmlUnknownAttribute -->
-        <a href="{% url 'swagger' %}" class="btn nav-bttn btn-success" uk-toggle>Check Out More In Swagger</a>
-        <!--suppress HtmlUnknownAttribute -->
-        <a href="https://www.postman.com/terryabrooksjr/the-roast-api-yo-mama-jokes/overview"
-           class="btn nav-bttn btn-success"
-           uk-toggle>Check Out More In Postman</a>
-    </div>
-      </div>
-    </div>
-  </div>
+</div>
 <!--End Getting STARTED Modals-->
 <script>
      document.addEventListener("DOMContentLoaded", function() {

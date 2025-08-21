@@ -9,8 +9,6 @@ It also provides a link to view all reports associated with an insult directly f
 
 """
 
-from typing import ClassVar
-
 from django.contrib import admin
 from django.db.models import Count, Q
 from django.urls import reverse

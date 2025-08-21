@@ -119,7 +119,6 @@ class TestInsultSingleItem(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
-
 class TestMyInsultsViewSet(BaseTestCase):
     def test_list_own_insults(self):
         """Test that users can list all their insults regardless of status"""

@@ -1,11 +1,9 @@
-import django.utils.decorators
-import django.views.decorators.cache
-import random
+import secrets
 
-from django.db.models import Q
 from django.core.cache import cache
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 from django_filters.rest_framework import DjangoFilterBackend
-from django.contrib.auth.models import User
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -13,12 +11,9 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from django.views.decorators.cache import never_cache
-from rest_framework import viewsets, status
-from django.utils.decorators import method_decorator
-from rest_framework.exceptions import PermissionDenied
-
+from rest_framework import status, viewsets
 from rest_framework.decorators import action, permission_classes
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import PaginateByMaxMixin
@@ -28,10 +23,14 @@ from applications.API.models import Insult, InsultCategory, InsultReview
 from applications.API.permissions import IsOwnerOrReadOnly
 from applications.API.serializers import (
     CategorySerializer,
+    CreateInsultSerializer,
     OptimizedInsultSerializer,
-    CreateInsultSerializer
 )
-from common.preformance import CachedResponseMixin, CacheInvalidationMixin, CategoryCacheManager
+from common.preformance import (
+    CachedResponseMixin,
+    CacheInvalidationMixin,
+    CategoryCacheManager,
+)
 from common.utils.helpers import _check_ownership
 
 
@@ -190,10 +189,12 @@ from common.utils.helpers import _check_ownership
         },
     ),
 )
-class InsultViewSet(PaginateByMaxMixin,
-                    CachedResponseMixin,
-                    CacheInvalidationMixin,
-                    viewsets.ModelViewSet):
+class InsultViewSet(
+    PaginateByMaxMixin,
+    CachedResponseMixin,
+    CacheInvalidationMixin,
+    viewsets.ModelViewSet,
+):
     """
     ViewSet for managing insults. Provides CRUD operations and additional actions.
 
@@ -205,28 +206,33 @@ class InsultViewSet(PaginateByMaxMixin,
     - DELETE /api/insults/{id}/ - Delete an insult (owner only)
     - GET /api/insults/random/ - Get a random insult
     """
+
     primary_model = Insult
-    cache_models = [InsultCategory, InsultReview]  
+    cache_models = [InsultCategory, InsultReview]
     lookup_field = "insult_id"
     bulk_select_related = ["added_by", "category"]
     bulk_prefetch_related = ["reports"]
-    bulk_cache_timeout = 1800  
-    cache_invalidation_patterns = [  "Insult:*",
-        "bulk:insult*", 
+    bulk_cache_timeout = 1800
+    cache_invalidation_patterns = [
+        "Insult:*",
+        "bulk:insult*",
         "categories:*",
-        "users:*:insults*"]
-    filter_backends = (DjangoFilterBackend,)  #pyrefly: ignore
+        "users:*:insults*",
+    ]
+    filter_backends = (DjangoFilterBackend,)  # pyrefly: ignore
     filterset_class = InsultFilter
-    
-    @action(detail=False, methods=['get'])
+
+    @action(detail=False, methods=["get"])
     def cache_stats(self, request):
         """Get cache performance statistics."""
-        return Response({
-            'cache_backend': cache.__class__.__name__,
-            'bulk_cache_timeout': self.bulk_cache_timeout,
-            'invalidation_patterns': self.cache_invalidation_patterns
-        })
-        
+        return Response(
+            {
+                "cache_backend": cache.__class__.__name__,
+                "bulk_cache_timeout": self.bulk_cache_timeout,
+                "invalidation_patterns": self.cache_invalidation_patterns,
+            }
+        )
+
     def get_serializer_class(self):
         """Return the appropriate serializer class based on the action."""
         return OptimizedInsultSerializer
@@ -237,7 +243,6 @@ class InsultViewSet(PaginateByMaxMixin,
         else:
             permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
         return [permission() for permission in permission_classes]
-    
 
     def get_queryset(self):
         return (
@@ -246,6 +251,7 @@ class InsultViewSet(PaginateByMaxMixin,
             .order_by("-added_on")
             .all()
         )
+
     # # Filter by status if authenticated user to return all insults regardless of status they created and all active insults created by others
     #     if self.action == "list" and self.request.user.is_authenticated:
     #         return base_queryset.filter(added_by=self.request.user)
@@ -256,11 +262,12 @@ class InsultViewSet(PaginateByMaxMixin,
     #         )
 
     #     return base_queryset.filter(status=Insult.STATUS.ACTIVE)
-    
+
     def perform_update(self, serializer):
         obj = self.get_object()
         _check_ownership(obj=obj, user=self.request.user)
         serializer.save()
+
     @extend_schema(
         tags=["Insults"],
         operation_id="create_insult",
@@ -283,47 +290,50 @@ class InsultViewSet(PaginateByMaxMixin,
                             "added_on": "just now",
                         },
                     ),
-                    OpenApiExample( "Create Request",
+                    OpenApiExample(
+                        "Create Request",
                         request_only=True,
                         value={
                             "content": "Your code has more bugs than a roach motel",
                             "category": "Programming",
                             "nsfw": False,
-                        }
-                        ), 
+                        },
+                    ),
                 ],
             ),
             400: OpenApiResponse(description="Invalid input"),
-            401: OpenApiResponse(description="Authentication required",
+            401: OpenApiResponse(
+                description="Authentication required",
                 examples=[
                     OpenApiExample(
                         "Authentication Required",
                         value={
                             "detail": "Authentication credentials were not provided."
-                        },  
-                        ) 
-                    ]
+                        },
+                    )
+                ],
             ),
-        },  
+        },
     )
     def preform_create(self, serializer):
         """
         Custom create method to handle ownership and additional logic.
-        
+
         This method checks if the user is authenticated and sets the added_by field.
         """
         if not self.request.user.is_authenticated:
             raise PermissionDenied("Authentication required to create insults.")
         serializer.save(added_by=self.request.user)
+
     def perform_destroy(self, instance):
         _check_ownership(instance, self.request.user)
         instance.delete()
-        
+
     @action(detail=False, methods=["get"])
     def bulk_list(self, request):
         """
         Optimized bulk listing with comprehensive caching and filtering.
-        
+
         This endpoint demonstrates:
         - Bulk query optimization
         - Cache key generation with filters
@@ -331,36 +341,37 @@ class InsultViewSet(PaginateByMaxMixin,
         - Pagination support
         """
         # Build cache key with all relevant filters
-        filters = { 
+        filters = {
             "category": request.GET.get("category"),
             "status": request.GET.get("status"),
             "nsfw": request.GET.get("nsfw"),
             "page": request.GET.get("page", "1"),
             "page_size": request.GET.get("page_size", "20"),
-            "user": User.objects.get(id=request.user.username.id) if request.user.is_authenticated else None
+            "user": request.user if request.user.is_authenticated else None,
         }
-        
+
         cache_key = self.get_cache_key("bulk_list", **filters)
-            
+
         def get_filtered_queryset():
             """Build the filtered queryset."""
             queryset = self.get_queryset()
-            
+
             # Apply filters
             if filters["category"]:
                 queryset = queryset.filter(category__category_key=filters["category"])
             if filters["status"]:
                 queryset = queryset.filter(status=filters["status"])
             if filters["nsfw"] is not None:
-                nsfw_bool = filters["nsfw"].lower() in ('true', '1', 'yes')
+                nsfw_bool = filters["nsfw"].lower() in ("true", "1", "yes")
                 queryset = queryset.filter(nsfw=nsfw_bool)
             if self.action == "list" and filters["user"]:
                 status_agnostic_queryset = queryset.filter(added_by=filters["user"])
                 return status_agnostic_queryset.union(
                     queryset.filter(status=Insult.STATUS.ACTIVE)
                 ).order_by("-added_on")
-            return queryset.filter(status=Insult.STATUS.ACTIVE).order_by('-added_on')
+            return queryset.filter(status=Insult.STATUS.ACTIVE).order_by("-added_on")
             # Get cached or fresh data with optimizations
+
         queryset, extra_data = self.get_cached_bulk_data(
             cache_key, get_filtered_queryset, timeout=self.bulk_cache_timeout
         )
@@ -371,18 +382,16 @@ class InsultViewSet(PaginateByMaxMixin,
             response_data = self.get_paginated_response(serializer.data)
             response_data.data.update(extra_data)  # Add metadata
             return response_data
-        
+
         # Non-paginated response
         serializer = self.get_serializer(queryset, many=True)
-        return Response({
-            "results": serializer.data,
-            **extra_data
-        })
+        return Response({"results": serializer.data, **extra_data})
+
     @action(detail=False, methods=["get"])
     def my_insults(self, request):
         """
         Get current user's insults with optimization.
-        
+
         Demonstrates user-specific caching and authentication handling.
         """
         if not request.user.is_authenticated:
@@ -390,24 +399,27 @@ class InsultViewSet(PaginateByMaxMixin,
                 {"detail": "Authentication required"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-        
+
         cache_key = self.get_cache_key("my_insults", user_id=request.user.id)
-        
+
         def get_user_queryset():
-            return self.get_queryset().filter(added_by=request.user).order_by('-added_on')
-        
+            return (
+                self.get_queryset().filter(added_by=request.user).order_by("-added_on")
+            )
+
         queryset, extra_data = self.get_cached_bulk_data(
             cache_key, get_user_queryset, timeout=1800  # 30 minutes for user data
         )
-        
+
         # Apply pagination
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
-        
+
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
     @extend_schema(
         tags=["Insults"],
         operation_id="list_category_insults",
@@ -426,7 +438,11 @@ class InsultViewSet(PaginateByMaxMixin,
                 location=OpenApiParameter.QUERY,
                 description="Filter by status (authenticated users only)",
                 required=False,
-                enum=["active", "pending", "rejected", ],
+                enum=[
+                    "active",
+                    "pending",
+                    "rejected",
+                ],
             ),
         ],
         responses={
@@ -436,40 +452,40 @@ class InsultViewSet(PaginateByMaxMixin,
                     OpenApiExample(
                         "Category Insults",
                         value=[
-{
-  "count": 116,
-  "next": "http://127.0.0.1:8888/api/insults/?category=F&page=2",
-  "previous": None ,
-  "results": [
-    {
-      "reference_id": "GIGGLE_OTc3",
-      "content": "“Yo Momma’s so fat that when she walked past the TV, I missed three episodes.",
-      "category": "fat",
-      "status": "Active",
-      "nsfw": False,
-      "added_by": "terry-brooks.",
-      "added_on": "2 years ago"
-    },
-    {
-      "reference_id": "GIGGLE_MTAxOA==",
-      "content": "Yo Momma’s so fat, when she stepped on the scale it said, ‘To be continued.’",
-      "category": "fat",
-      "status": "Active",
-      "nsfw": False,
-      "added_by": "terry-brooks.",
-      "added_on": "2 years ago"
-    },
-    {
-      "reference_id": "SNORT_OTE5",
-      "content": "Yo Momma so fat, she left in high heels and came back in flip flops.",
-      "category": "fat",
-      "status": "Active",
-      "nsfw": False,
-      "added_by": "terry-brooks.",
-      "added_on": "2 years ago"
-    }
-  ]
-}                                        
+                            {
+                                "count": 116,
+                                "next": "http://127.0.0.1:8888/api/insults/?category=F&page=2",
+                                "previous": None,
+                                "results": [
+                                    {
+                                        "reference_id": "GIGGLE_OTc3",
+                                        "content": "“Yo Momma’s so fat that when she walked past the TV, I missed three episodes.",
+                                        "category": "fat",
+                                        "status": "Active",
+                                        "nsfw": False,
+                                        "added_by": "terry-brooks.",
+                                        "added_on": "2 years ago",
+                                    },
+                                    {
+                                        "reference_id": "GIGGLE_MTAxOA==",
+                                        "content": "Yo Momma’s so fat, when she stepped on the scale it said, ‘To be continued.’",
+                                        "category": "fat",
+                                        "status": "Active",
+                                        "nsfw": False,
+                                        "added_by": "terry-brooks.",
+                                        "added_on": "2 years ago",
+                                    },
+                                    {
+                                        "reference_id": "SNORT_OTE5",
+                                        "content": "Yo Momma so fat, she left in high heels and came back in flip flops.",
+                                        "category": "fat",
+                                        "status": "Active",
+                                        "nsfw": False,
+                                        "added_by": "terry-brooks.",
+                                        "added_on": "2 years ago",
+                                    },
+                                ],
+                            }
                         ],
                     )
                 ],
@@ -487,43 +503,46 @@ class InsultViewSet(PaginateByMaxMixin,
     def by_category(self, request):
         """
         Get insults by category using specialized category caching.
-        
+
         Demonstrates integration with CategoryCacheManager.
         """
-        category_name = request.GET.get('category')
+        category_name = request.GET.get("category")
         if not category_name:
             return Response(
                 {"detail": "Category parameter required"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Use specialized category cache
         category_key = CategoryCacheManager.get_category_key_by_name(category_name)
-        
+
         if not category_key:
             # Category not found in cache, might not exist
             return Response(
-                {"detail": "Category not found"},
-                status=status.HTTP_404_NOT_FOUND
+                {"detail": "Category not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        
+
         cache_key = self.get_cache_key("by_category", category_key=category_key)
-        
+
         def get_category_queryset():
-            return self.get_queryset().filter(
-                category__category_key=category_key
-            ).order_by('-added_on')
-        
-        queryset, extra_data = self.get_cached_bulk_data(cache_key, get_category_queryset)
-        
+            return (
+                self.get_queryset()
+                .filter(category__category_key=category_key)
+                .order_by("-added_on")
+            )
+
+        queryset, extra_data = self.get_cached_bulk_data(
+            cache_key, get_category_queryset
+        )
+
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
-        
+
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-    
+
     @extend_schema(
         tags=["Insults"],
         operation_id="get_random_insult",
@@ -546,7 +565,7 @@ class InsultViewSet(PaginateByMaxMixin,
         ],
         responses={
             200: OpenApiResponse(
- OptimizedInsultSerializer,
+                OptimizedInsultSerializer,
                 examples=[
                     OpenApiExample(
                         "Random Insult",
@@ -594,7 +613,7 @@ class InsultViewSet(PaginateByMaxMixin,
                 {"detail": "No insults found matching the criteria."}, status=404
             )
 
-        random_insult = random.choice(queryset)
+        random_insult = secrets.choice(list(queryset))
         serializer = self.get_serializer(random_insult)
         return Response(serializer.data)
 
@@ -621,7 +640,9 @@ class InsultViewSet(PaginateByMaxMixin,
                     )
                 ],
             )
-        }))
+        },
+    )
+)
 class CategoryViewSet(
     CachedResponseMixin, PaginateByMaxMixin, viewsets.ReadOnlyModelViewSet
 ):

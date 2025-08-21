@@ -1,29 +1,59 @@
 """
 module: applications.API.forms
 This module contains forms related to the API, specifically for handling insults and their reviews.
-It includes a form for submitting reviews of insults, with validation and caching mechanisms.
+It uses the generalized caching framework for optimal performance.
 """
-
-
-import json
-import threading
-import time
-from typing import Any, Dict, List, Tuple, Union
 
 from crispy_forms.bootstrap import FormActions
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Button, Column, Div, Layout, Row, Submit
-from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models.signals import post_delete, post_save
-from django.db.utils import ProgrammingError
-from django.dispatch import receiver
-from django.forms import BooleanField, CharField, ChoiceField, ModelChoiceField, ModelForm, widgets
-from  django_select2 import forms as s2forms
+from django.forms import (
+    BooleanField,
+    CharField,
+    ChoiceField,
+    ModelChoiceField,
+    ModelForm,
+    widgets,
+)
+from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
+from django_select2 import forms as s2forms
+from loguru import logger
+
 from applications.API.models import Insult, InsultReview
-# Select2 widget for Insult reference with AJAX search
+from common.cache_managers import create_form_choices_manager
+from common.metrics import metrics
+
+# ===================================================================
+# Cache Manager Setup
+# ===================================================================
+
+
+def insult_display_formatter(obj_dict: dict) -> str:
+    """Format insult reference for display in form choices."""
+    ref_id = obj_dict.get("reference_id", "Unknown")
+    return f"Ref. ID: {ref_id}"
+
+
+# Create and configure the insult choices cache manager
+insult_choices_manager = create_form_choices_manager(
+    model_class=Insult,
+    choice_field="reference_id",
+    display_formatter=insult_display_formatter,
+    filter_kwargs={"status": "A"},  # Only active insults
+    cache_prefix="Insult",
+)
+
+
+# ===================================================================
+# Select2 Widget
+# ===================================================================
+
+
 class InsultReferenceSelect2(s2forms.ModelSelect2Widget):
+    """Select2 widget for Insult reference with AJAX search."""
+
     model = Insult
     search_fields = [
         "reference_id__icontains",
@@ -35,257 +65,45 @@ class InsultReferenceSelect2(s2forms.ModelSelect2Widget):
         "data-allow-clear": "true",
         "style": "width: 100%;",
     }
-from django.urls import reverse
-from django.utils.translation import gettext_lazy as _
-from django_select2 import forms as s2forms
-from loguru import logger
-
-from applications.API.models import Insult, InsultReview
-from common.metrics import metrics
-from common.metrics import metrics
-
-# Module-level caches
-_cached_choices: Union[None, List[Tuple[int, str]]] = None
-_cached_queryset: Union[None, str] = None
-# Module-level caches
-_cached_choices: Union[None, List[Tuple[int, str]]] = None
-_cached_queryset: Union[None, str] = None
-_cache_lock = threading.Lock()
-
-# Cache configurationtask
-CACHE_TIMEOUT = 60 * 60 * 24  # 24 hours
-CACHE_KEYS = {
-    "choices": "Insult:form_choices_v2",
-    "queryset": "Insult:form_queryset_v2"}
 
 
-def get_cache_stats() -> Dict[str, Any]:
-    """Helper function to get current cache statistics for monitoring.
+# ===================================================================
+# Utility Functions (simplified using cache manager)
+# ===================================================================
 
+
+def get_cached_insult_data():
+    """
+    Get cached insult choices and queryset data.
 
     Returns:
-        Dictionary with cache statistics suitable for Prometheus metrics.
+        Tuple of (choices_list, queryset_json_string)
     """
-    global _cached_choices, _cached_queryset
-
-    redis_keys = cache.get_many([CACHE_KEYS["choices"], CACHE_KEYS["queryset"]])
-
-
-    redis_keys = cache.get_many([CACHE_KEYS["choices"], CACHE_KEYS["queryset"]])
-
-    return {
-        "module_cache_loaded": _cached_choices is not None and len(_cached_choices) > 0,
-        "choices_count": len(_cached_choices) if _cached_choices else 0,
-        "redis_keys": redis_keys,
-        "redis_keys_count": len(redis_keys),
-        "cache_timeout": CACHE_TIMEOUT,
-        "timestamp": time.time(),
-        "module_cache_loaded": _cached_choices is not None and len(_cached_choices) > 0,
-        "choices_count": len(_cached_choices) if _cached_choices else 0,
-        "redis_keys": redis_keys,
-        "redis_keys_count": len(redis_keys),
-        "cache_timeout": CACHE_TIMEOUT,
-        "timestamp": time.time(),
-    }
-
-
-def get_cached_insult_data() -> Tuple[List[Tuple[int, str]], str]:
-    """
-    Multi-level caching function to get insult data with comprehensive metrics.
-    Returns tuple of (choices_list, queryset_json_string).
-
-
-    Caching strategy:
-    1. Module-level cache (fastest)
-    2. Redis cache (fast)
-    3. Database query (slowest - 15 seconds)
-    """
-    global _cached_choices, _cached_queryset
-
-
-    # Start timing the overall cache operation
-    time.time()
-
-
-    with _cache_lock:
-        try:
-            with metrics.time_cache_operation("Insult", "load"):
-                # Level 1: Module-level cache check
-                if (
-                    _cached_choices is not None
-                    and _cached_queryset is not None
-                    and len(_cached_choices) > 0
-                ):
-
-                    logger.debug("Module-level cache hit for insult data")
-                    metrics.increment_cache("Insult", "hit")
-
-
-                    # Update cache statistics
-                    stats = get_cache_stats()
-                    metrics.update_cache_stats("Insult", stats)
-
-                    return _cached_choices, _cached_queryset
-
-                # Level 2: Redis cache check
-                cached_data = cache.get_many(
-                    [CACHE_KEYS["choices"], CACHE_KEYS["queryset"]]
-                )
-                if len(cached_data) == 2:
-                    logger.debug("Redis cache hit for insult data")
-                    metrics.increment_cache("Insult", "hit")
-
-
-                    _cached_choices = cached_data[CACHE_KEYS["choices"]]
-                    _cached_queryset = cached_data[CACHE_KEYS["queryset"]]
-
-                    # Update cache statistics
-                    stats = get_cache_stats()
-                    metrics.update_cache_stats("Insult", stats)
-
-                    return _cached_choices, _cached_queryset
-
-                # Level 3: Database query (cache miss)
-                logger.info(
-                    "Cache miss - querying database for insult data (this may take 15 seconds)"
-                )
-                metrics.increment_cache("Insult", "miss")
-
-                # Time the database query separately
-                db_start_time = time.time()
-
-                try:
-                    with metrics.time_database_query("Insult", "success"):
-                        # Query active insults
-                        insult_queryset = Insult.objects.filter(status="A").values(
-                            "reference_id"
-                        )
-
-                        # Create choices for the form field (id, display_text)
-                        _cached_choices = [
-                            (
-                                insult["reference_id"],
-                                f"Ref. ID: {insult['reference_id']}",
-                            )
-                            for insult in insult_queryset
-                        ]
-
-
-                        # Store full queryset as JSON for potential other uses
-                        _cached_queryset = json.dumps(
-                            list(insult_queryset), cls=DjangoJSONEncoder
-                        )
-
-                        _cached_queryset = json.dumps(
-                            list(insult_queryset), cls=DjangoJSONEncoder
-                        )
-
-                    db_duration = time.time() - db_start_time
-                    logger.info(
-                        f"Successfully cached {len(_cached_choices)} insult choices in {db_duration:.2f}s"
-                    )
-
-                except ProgrammingError as e:
-                    db_duration = time.time() - db_start_time
-                    logger.error(f"Database not ready during insult data query: {e}")
-
-                    # Record the failed query time
-
-                    metrics.record_database_query_time("Insult", db_duration, "error")
-
-                    _cached_choices = []
-                    _cached_queryset = "[]"
-
-
-                except Exception as e:
-                    db_duration = time.time() - db_start_time
-                    logger.error(f"Unexpected error querying insult data: {e}")
-                    # Record the failed query time
-                    metrics.record_database_query_time("Insult", db_duration, "error")
-                    _cached_choices = []
-                    _cached_queryset = "[]"
-
-                # Update Redis cache if we have data
-                if _cached_choices:
-                    cache_dict = {
-                        CACHE_KEYS["choices"]: _cached_choices,
-                        CACHE_KEYS["queryset"]: _cached_queryset,
-                    }
-                    cache.set_many(cache_dict, timeout=CACHE_TIMEOUT)
-                    logger.debug(
-                        f"Updated Redis cache with {len(_cached_choices)} insult choices"
-                    )
-
-                # Update final cache statistics
-                stats = get_cache_stats()
-                metrics.update_cache_stats("Insult", stats)
-
-                return _cached_choices, _cached_queryset
-
-
-        except Exception as e:
-            logger.error(f"Error in get_cached_insult_data: {e}")
-            # Still update metrics even on error
-            stats = get_cache_stats()
-            metrics.update_cache_stats("Insult", stats)
-            raise
+    try:
+        return insult_choices_manager.get_choices_and_queryset()
+    except Exception as e:
+        logger.error(f"Error getting cached insult data: {e}")
+        return [], "[]"
 
 
 def invalidate_insult_cache(reason: str = "manual") -> None:
     """
-    Invalidate both module-level and Redis cache with metrics tracking.
-
+    Invalidate insult cache.
 
     Args:
-        reason: Reason for invalidation ('post_save', 'post_delete', 'manual').
+        reason: Reason for invalidation
     """
-    global _cached_choices, _cached_queryset
+    insult_choices_manager.invalidate_cache(reason)
 
 
-    logger.info(f"Invalidating insult cache (reason: {reason})")
+def get_cache_stats() -> dict:
+    """Get current cache statistics for insult data."""
+    return insult_choices_manager.get_cache_stats()
 
 
-    with metrics.time_cache_operation("Insult", "invalidate"):
-        # Clear module-level cache
-        _cached_choices = None
-        _cached_queryset = None
-
-
-        # Clear Redis cache
-        cache.delete_many([CACHE_KEYS["choices"], CACHE_KEYS["queryset"]])
-
-
-        # Record the invalidation
-        metrics.increment_cache("Insult", "invalidated", reason)
-
-
-        # Update cache statistics to reflect empty state
-        stats = get_cache_stats()
-        metrics.update_cache_stats("Insult", stats)
-
-
-@receiver([post_save, post_delete], sender=Insult)
-def handle_insult_change(sender, instance, **kwargs):
+def get_cache_performance_summary() -> dict:
     """
-    Invalidate caches when Insult model is modified with proper reason tracking.
-    """
-    # Determine the reason based on the signal
-    if kwargs.get("created"):
-        reason = "post_save_created"
-    elif "post_save" in str(kwargs):
-        reason = "post_save_updated"
-    else:
-        reason = "post_delete"
-
-
-    logger.debug(f"Insult {instance.id} modified ({reason}), invalidating cache")
-    invalidate_insult_cache(reason)
-
-
-def get_cache_performance_summary() -> Dict[str, Any]:
-    """
-    Get a summary of cache performance for monitoring dashboards.
-
+    Get cache performance summary for monitoring dashboards.
 
     Returns:
         Dictionary with cache performance metrics.
@@ -294,16 +112,11 @@ def get_cache_performance_summary() -> Dict[str, Any]:
         hit_rate = metrics.get_cache_hit_rate("Insult")
         current_stats = get_cache_stats()
 
-
         return {
             "hit_rate_percentage": hit_rate,
             "current_stats": current_stats,
-            "cache_keys": list(CACHE_KEYS.values()),
-            "cache_timeout_hours": CACHE_TIMEOUT / 3600,
-            "hit_rate_percentage": hit_rate,
-            "current_stats": current_stats,
-            "cache_keys": list(CACHE_KEYS.values()),
-            "cache_timeout_hours": CACHE_TIMEOUT / 3600,
+            "cache_manager": "FormChoicesCacheManager",
+            "cache_timeout_hours": insult_choices_manager.cache_timeout / 3600,
         }
     except Exception as e:
         logger.error(f"Error getting cache performance summary: {e}")
@@ -311,17 +124,19 @@ def get_cache_performance_summary() -> Dict[str, Any]:
             "hit_rate_percentage": 0.0,
             "current_stats": get_cache_stats(),
             "error": str(e),
-            "hit_rate_percentage": 0.0,
-            "current_stats": get_cache_stats(),
-            "error": str(e),
         }
 
 
+# ===================================================================
+# Form Definition
+# ===================================================================
 
 
 class InsultReviewForm(ModelForm):
     """
     Form for submitting reviews of insults with optimized caching.
+
+    Uses the generalized caching framework for improved performance and maintainability.
     """
 
     insult_reference_id = ModelChoiceField(
@@ -345,6 +160,7 @@ class InsultReviewForm(ModelForm):
         widget=widgets.CheckboxInput(attrs={"class": "form-check-input"}),
         help_text="Check if you want to remain anonymous",
     )
+
     review_text = CharField(
         required=False,
         min_length=70,
@@ -354,8 +170,25 @@ class InsultReviewForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Ensure queryset is up-to-date at runtime
-        self.fields["insult_reference_id"].queryset = Insult.objects.filter(status="A").only("reference_id")
+
+        # Ensure queryset is up-to-date at runtime using cache manager
+        try:
+            # The cache manager handles all the caching complexity
+            choices, _ = get_cached_insult_data()
+
+            # Update the queryset to ensure it's fresh
+            self.fields["insult_reference_id"].queryset = Insult.objects.filter(
+                status="A"
+            ).only("reference_id")
+
+            logger.debug(f"Form initialized with {len(choices)} cached insult choices")
+
+        except Exception as e:
+            logger.error(f"Error initializing form with cached data: {e}")
+            # Fallback to standard queryset
+            self.fields["insult_reference_id"].queryset = Insult.objects.filter(
+                status="A"
+            ).only("reference_id")
 
         # Setup form helper for crispy forms
         self.helper = FormHelper()
@@ -363,7 +196,8 @@ class InsultReviewForm(ModelForm):
         self.helper.form_method = "post"
         self.helper.form_action = reverse("report-joke")
         self.helper.layout = Layout(
-            HTML("""
+            HTML(
+                """
                 <h3 class="application-text modal-title">Report Form</h3>
                 <br/>
                 <hr class="border border-primary border-3 opacity-75"/>
@@ -402,7 +236,7 @@ class InsultReviewForm(ModelForm):
                 ),
                 css_class="form-row",
             ),
-        ) # pyrefly:ignore
+        )
 
     def clean(self):
         """
@@ -420,6 +254,7 @@ class InsultReviewForm(ModelForm):
         reporter_email = cleaned_data.get("reporter_email", "").strip()
 
         insult_obj_or_value = cleaned_data.get("insult_reference_id")
+
         # Support both ModelChoiceField (object) and pre-populated string values
         if hasattr(insult_obj_or_value, "reference_id"):
             ref_id = insult_obj_or_value.reference_id
@@ -431,6 +266,7 @@ class InsultReviewForm(ModelForm):
                 _("Invalid Insult ID - Please select a valid insult from the dropdown"),
                 code="invalid-insult-id",
             )
+
         # Ensure downstream code receives the reference-id string
         cleaned_data["insult_reference_id"] = ref_id
 
@@ -477,16 +313,7 @@ class InsultReviewForm(ModelForm):
             "rationale_for_review": "Reason for Review",
         }
         help_texts = {
-            "insult_reference_id": "Select the insult you want reviewed review",
-            "reporter_first_name": "Your first name (required unless anonymous)",
-            "reporter_last_name": "Your last name or initial (required unless anonymous)",
-            "post_review_contact_desired": "Check if you want to be contacted with the review results",
-            "reporter_email": "Your email address (required if you want to be contacted)",
-            "rationale_for_review": "Provide a reason for your review",
-        }
-
-        help_texts = {
-            "insult_reference_id": "Select the insult you want reviewed review",
+            "insult_reference_id": "Select the insult you want reviewed",
             "reporter_first_name": "Your first name (required unless anonymous)",
             "reporter_last_name": "Your last name or initial (required unless anonymous)",
             "post_review_contact_desired": "Check if you want to be contacted with the review results",

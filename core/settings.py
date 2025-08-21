@@ -11,18 +11,19 @@ import sys
 import warnings
 from datetime import datetime
 from pathlib import Path
-import tempfile
+
 import highlight_io
 from configurations import Configuration, values
 from highlight_io.integrations.django import DjangoIntegration
 from loguru import logger
 
 
-def log_warning(message:str, category, filename:str, lineno:str, file=None, line=None) ->  None:
-     logger.warning(f"{filename}:{lineno} - {category.__name__}: {message}")  
+def log_warning(
+    message: str, category, filename: str, lineno: str, file=None, line=None
+) -> None:
+    logger.warning(f"{filename}:{lineno} - {category.__name__}: {message}")
 
-TEMP_STATIC_DIR = tempfile.mkdtemp()
-os.environ['TEMP_STATIC_DIR'] = TEMP_STATIC_DIR
+
 NSFW_WORD_LIST_URI = values.URLValue(
     environ=True, environ_prefix=None, environ_name="NSFW_WORD_LIST_URI"
 )
@@ -86,15 +87,20 @@ class Base(Configuration):
         "backtrace": False,
         "serialize": True,
     }
-    PRIMARY_LOG_FILE = Path(os.path.join(BASE_DIR, "logs", "primary_ops.log")) # pyrefly: ignore
-    CRITICAL_LOG_FILE = Path(os.path.join(BASE_DIR, "logs", "fatal.log")) # pyrefly: ignore
-    DEBUG_LOG_FILE = Path(os.path.join(BASE_DIR, "logs", "utility.log"))  # pyrefly: ignore
+    PRIMARY_LOG_FILE = Path(
+        os.path.join(BASE_DIR, "logs", "primary_ops.log")
+    )  # pyrefly: ignore
+    CRITICAL_LOG_FILE = Path(
+        os.path.join(BASE_DIR, "logs", "fatal.log")
+    )  # pyrefly: ignore
+    DEBUG_LOG_FILE = Path(
+        os.path.join(BASE_DIR, "logs", "utility.log")
+    )  # pyrefly: ignore
     DEFAULT_HANDLER = sys.stdout
     logger.remove()
 
-    warnings.filterwarnings(action="ignore", message=r"w+")
+    warnings.filterwarnings("default")
     warnings.showwarning = log_warning
-
     #!SECTION END - Logging
     DATABASES = values.DictValue(
         {
@@ -104,18 +110,15 @@ class Base(Configuration):
                 "USER": os.getenv("PG_DATABASE_USER"),
                 "PASSWORD": os.getenv("PG_DATABASE_PASSWORD"),
                 "HOST": os.getenv("PG_DATABASE_HOST"),
-                # "DISABLE_SERVER_SIDE_CURSORS": True,
+                "DISABLE_SERVER_SIDE_CURSORS": True,
                 "PORT": os.getenv("PG_DATABASE_PORT"),
-                # "OPTIONS": {
-                    "sslmode": "require",
-                    # "sslrootcert": os.environ["PATH_TO_DB_ROOT_CERT"],
-                },
-                # "pool": {
-                #     "max_size": 11,
-                #     "name": "django-thedozens",
-                #     "max_idle": 15,
-                # },
+            "pool": {
+                "max_size": 11,
+                "name": "django-thedozens",
+                "max_idle": 15,
             }
+        }
+    }
     )
     # SECTION Start - Static files & Templates
     AWS_ACCESS_KEY_ID = values.SecretValue(
@@ -135,18 +138,20 @@ class Base(Configuration):
     AWS_LOCATION = "static"
     STATIC_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_LOCATION}/"
     STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, "the-dozens-django", "static"), # pyrefly: ignore
+        os.path.join(BASE_DIR, "the-dozens-django", "static"),  # pyrefly: ignore
     ]
-    STATIC_ROOT = TEMP_STATIC_DIR
+    STATIC_ROOT = os.environ["TEMP_STATIC_DIR"]
     template_dir = values.ListValue(
-        [Path(os.path.join(BASE_DIR, "the-dozens-django","templates"))], # pyrefly: ignore
+        [
+            Path(os.path.join(BASE_DIR, "the-dozens-django", "templates"))
+        ],  # pyrefly: ignore
         environ=False,
     )
     STORAGES = {
         "default": {
             "BACKEND": "storages.backends.s3.S3Storage",
             "OPTIONS": {},
-        },  
+        },
         "staticfiles": {
             "BACKEND": "core.storage_backends.StaticStorage",
             "LOCATION": AWS_LOCATION,
@@ -165,7 +170,7 @@ class Base(Configuration):
                 "CacheControl": "max-age=86400",
             },
             "AWS_S3_FILE_OVERWRITE": False,
-            "AWS_DEFAULT_ACL": "private",
+            "AWS_DEFAULT_ACL": "public",
             "AWS_REGION_NAME": AWS_REGION_NAME,
             "AWS_S3_ENDPOINT_URL": AWS_S3_ENDPOINT_URL,
         },
@@ -293,18 +298,18 @@ class Base(Configuration):
         {
             "default": {
                 "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
-                "LOCATION": os.getenv("REDIS_CACHE_TOKEN"),
+                "LOCATION": os.environ["REDIS_CACHE_TOKEN"],
                 "OPTIONS": {
                     "CLIENT_CLASS": "django_redis.client.DefaultClient",
                 },
             },
             "select2": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"{os.getenv("REDIS_CACHE_TOKEN")}/2",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
-    }
+                "BACKEND": "django_redis.cache.RedisCache",
+                "LOCATION": f"{os.environ['REDIS_CACHE_TOKEN']}/2",
+                "OPTIONS": {
+                    "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                },
+            },
         }
     )
     SELECT2_CACHE_BACKEND = "select2"
@@ -427,8 +432,12 @@ class Production(Base):
         environment="production",
     )
 
-    logger.add(sink=H.logging_handler, level="INFO", **Base.DEFAULT_LOGGER_CONFIG) #pyrefly: ignore
-    logger.add(sink=Base.PRIMARY_LOG_FILE, **Base.DEFAULT_LOGGER_CONFIG, level="INFO") #pyrefly: ignore
+    logger.add(
+        sink=H.logging_handler, level="INFO", **Base.DEFAULT_LOGGER_CONFIG
+    )  # pyrefly: ignore
+    logger.add(
+        sink=Base.PRIMARY_LOG_FILE, **Base.DEFAULT_LOGGER_CONFIG, level="INFO"
+    )  # pyrefly: ignore
 
 
 class Testing(Base):
@@ -463,7 +472,6 @@ class Offline(Base):
             "django_prometheus",
             "drf_spectacular",
             "django_select2",
-
             # Project Apps
             "applications.API",
             "applications.graphQL",
@@ -569,7 +577,6 @@ class Development(Base):
             "django_prometheus",
             "drf_spectacular",
             "django_select2",
-
             # Project Apps
             "applications.API",
             "applications.graphQL",
