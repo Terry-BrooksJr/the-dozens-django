@@ -16,7 +16,11 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 
 from applications.API.models import Insult, InsultCategory
-from common.preformance import CategoryCacheManager
+from common.cache_managers import CategoryCacheManager, create_category_manager
+
+category_manager: CategoryCacheManager = create_category_manager(
+    model_class=InsultCategory, key_field="category_key", name_field="name"
+)
 
 
 class BulkSerializationMixin:
@@ -158,6 +162,33 @@ class BaseInsultSerializer(CachedBulkSerializer):
     Base serializer for Insult model containing common functionality.
     """
 
+    @staticmethod
+    def _normalize_category_input(value: str) -> str:
+        """Normalize user-provided category strings like 'F - fat' to 'F'.
+        Also accept an InsultCategory instance and return its key.
+        """
+        # If a model instance is passed (e.g., during serialization), use its key
+        try:
+            from applications.API.models import (
+                InsultCategory as _IC,  # local import to avoid cycles
+            )
+
+            if isinstance(value, _IC):
+                return value.category_key
+        except Exception:
+            pass
+
+        if not isinstance(value, str):
+            return value
+        v = value.strip()
+        # Try common separators first
+        for sep in (" - ", "–", "-"):
+            if sep in v:
+                left = v.split(sep, 1)[0].strip()
+                if left:
+                    return left
+        return v
+
     def get_category_by_key(self, category_key: str) -> Dict[str, str]:
         """
         Get category info by key with caching.
@@ -166,24 +197,22 @@ class BaseInsultSerializer(CachedBulkSerializer):
         if not category_key:
             return {"category_key": "", "category_name": "Uncategorized"}
 
-        if category_name := CategoryCacheManager.get_category_name_by_key(category_key):
-            return {
-                "category_key": category_key,
-                "category_name": category_name,
-            }
+        key = self._normalize_category_input(category_key)
+
+        if category_name := category_manager.get_category_name_by_key(key):
+            return {"category_key": key, "category_name": category_name}
 
         # Fallback to database
         try:
-            category = InsultCategory.objects.get(category_key=category_key)
-            # Update cache for future requests
-            CategoryCacheManager.set_category_name_mapping(category_key, category.name)
-            return {
-                "category_key": category_key,
-                "category_name": category.name,
-            }
+            category = InsultCategory.objects.get(category_key=key)
+            # Update cache for future requests (targeted update)
+            category_manager.set_category_name_mapping(
+                category.category_key, category.name
+            )
+            return {"category_key": key, "category_name": category.name}
         except InsultCategory.DoesNotExist as e:
             raise serializers.ValidationError(
-                f"Category with key '{category_key}' does not exist."
+                f"Category with key '{key}' does not exist."
             ) from e
 
     def get_category_by_name(self, category_name: str) -> Dict[str, str]:
@@ -194,21 +223,19 @@ class BaseInsultSerializer(CachedBulkSerializer):
         if not category_name:
             return {"category_key": "", "category_name": "Uncategorized"}
 
-        normalized_name = category_name.lower()
+        if isinstance(category_name, str):
+            normalized_name = category_name.strip()
+        else:
+            # If a model instance or other type is passed in by mistake, fail fast here
+            raise serializers.ValidationError("Category name must be a string.")
 
-        if category_key := CategoryCacheManager.get_category_key_by_name(
-            normalized_name
-        ):
-            return {
-                "category_key": category_key,
-                "category_name": normalized_name,
-            }
+        if category_key := category_manager.get_category_key_by_name(normalized_name):
+            return {"category_key": category_key, "category_name": normalized_name}
 
         # Fallback to database
         try:
             category = InsultCategory.objects.get(name__iexact=normalized_name)
-            # Update cache for future requests
-            CategoryCacheManager.set_category_name_mapping(
+            category_manager.set_category_name_mapping(
                 category.category_key, category.name
             )
             return {
@@ -224,20 +251,27 @@ class BaseInsultSerializer(CachedBulkSerializer):
     def validate_category(self, value: str) -> Dict[str, str]:
         """
         Validate category by key or name and return complete category info.
-        Auto-detects whether input is a key or name and resolves the missing value.
+        Auto-detects whether input is a key, name, or an InsultCategory instance and resolves the missing value.
         """
         if not value:
             return {"category_key": "", "category_name": "Uncategorized"}
 
-        # First try as category key (keys are typically hyphenated/underscored)
+        # If a model instance is already present (FK loaded), extract directly
+        from applications.API.models import InsultCategory as _IC
+
+        if isinstance(value, _IC):
+            return {"category_key": value.category_key, "category_name": value.name}
+
+        if isinstance(value, str):
+            value = self._normalize_category_input(value)
+
+        # First try as category key
         try:
             return self.get_category_by_key(value)
         except serializers.ValidationError:
-            # If key lookup fails, try as category name
             try:
                 return self.get_category_by_name(value)
             except serializers.ValidationError as e:
-                # Neither key nor name found
                 raise serializers.ValidationError(
                     f"Category '{value}' not found. Please provide a valid category key or name."
                 ) from e
@@ -285,8 +319,8 @@ class BaseInsultSerializer(CachedBulkSerializer):
         This allows users to submit category names directly.
         """
         if "category" in data and isinstance(data["category"], str):
-            category_name = data["category"].lower()
-            category_key = self.validate_category(category_name)["category_key"]
+            normalized = self._normalize_category_input(data["category"])
+            category_key = self.validate_category(normalized)["category_key"]
             data["category"] = category_key
 
         return super().to_internal_value(data)
@@ -299,9 +333,8 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
         # Use cached category lookup instead of additional DB query
         if representation.get("category"):
-            representation["category"] = self.validate_category(
-                representation["category"]
-            )["category_name"]
+            key = self._normalize_category_input(representation["category"])
+            representation["category"] = self.validate_category(key)["category_name"]
 
         return representation
 
@@ -368,7 +401,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InsultCategory
-        fields = ["category_key","name", "insult_count"]
+        fields = ["category_key", "name", "insult_count"]
 
     @extend_schema_field(OpenApiTypes.INT)
     def get_count(self, instance):
@@ -442,7 +475,7 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
     # Optimization settings
     select_related_fields = ["added_by", "category"]
     prefetch_related_fields = ["reviews"]
-    cached_fields = ["added_by", "added_on"]  # Cache expensive fields
+    cached_fields = ["added_by_name", "added_on_display"]
 
     status = serializers.CharField(source="get_status_display", read_only=True)
     nsfw = serializers.BooleanField()
@@ -450,6 +483,7 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
     added_by = serializers.SerializerMethodField(method_name="get_added_by")
     added_on = serializers.SerializerMethodField(method_name="get_added_on_display")
     category = serializers.SerializerMethodField(method_name="find_category")
+    content = serializers.CharField()
 
     class Meta:
         list_serializer_class = BulkInsultSerializer
@@ -467,17 +501,26 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
 
     def find_category(self, obj) -> str:
         """
-        Use cached category name for performance.
+        Resolve and format the category name efficiently, handling either a raw
+        key/name string or an InsultCategory FK instance on the model.
         """
         try:
-            category = self.validate_category(obj.category)
+            category_value = obj.category
+
+            # If FK instance is loaded, short-circuit without hitting validation branches
+            from applications.API.models import InsultCategory as _IC
+
+            if isinstance(category_value, _IC):
+                return self.format_category(category_value.name)
+
+            # Otherwise, let the standard validator resolve string key/name
+            category = self.validate_category(category_value)
             return self.format_category(category["category_name"])
 
         except serializers.ValidationError:
             logger.error(
-                f"Invalid category key '{obj.category}' for Insult ID {obj.insult_id}"
+                f"Invalid category value '{getattr(obj, 'category', None)}' for Insult ID {getattr(obj, 'insult_id', 'unknown')}"
             )
-            # Fallback to default category if validation fails
             return "Uncategorized"
 
 

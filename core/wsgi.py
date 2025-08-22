@@ -13,10 +13,9 @@ import tempfile
 
 from configurations.wsgi import get_wsgi_application
 
-TEMP_STATIC_DIR = tempfile.mkdtemp()
-os.environ.setdefault("TEMP_STATIC_DIR", TEMP_STATIC_DIR)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 os.environ.setdefault("DJANGO_CONFIGURATION", "Production")
-
+TEMP_STATIC_DIR = tempfile.mkdtemp()
+os.environ.setdefault("TEMP_STATIC_DIR", TEMP_STATIC_DIR)
 
 application = get_wsgi_application()

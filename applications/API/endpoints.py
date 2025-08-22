@@ -3,7 +3,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.mixins import CreateModelMixin
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import SAFE_METHODS, AllowAny
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import PaginateByMaxMixin
 
@@ -21,8 +21,6 @@ class InsultDetailsEndpoints(
     serializer_class = OptimizedInsultSerializer
     primary_model = Insult
     cache_models = [InsultCategory, InsultReview]
-    permission_classes = [IsOwnerOrReadOnly]
-    lookup_field = "insult_id"
     bulk_select_related = ["added_by", "category"]
     bulk_prefetch_related = ["reports"]
     bulk_cache_timeout = 1800
@@ -34,6 +32,12 @@ class InsultDetailsEndpoints(
     ]
     filter_backends = (DjangoFilterBackend,)  # pyrefly: ignore
     filterset_class = InsultFilter
+
+    def get_permissions(self):
+        if self.request.method in SAFE_METHODS:
+            return [AllowAny]
+        else:
+            return [IsOwnerOrReadOnly]
 
     def get_queryset(self):
         return (
@@ -49,7 +53,6 @@ class InsultListEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIView):
     primary_model = Insult
     cache_models = [InsultCategory, InsultReview]
     permission_classes = [IsOwnerOrReadOnly]
-    lookup_field = "insult_id"
     bulk_select_related = ["added_by", "category"]
     bulk_prefetch_related = ["reports"]
     bulk_cache_timeout = 1800
@@ -148,6 +151,6 @@ def random(request):
             {"detail": "No insults found matching the criteria."}, status=404
         )
 
-    random_insult = queryset.order_by("?").first
+    random_insult = queryset.order_by("?").first()
     serializer = OptimizedInsultSerializer(random_insult)
     return Response(serializer.data)

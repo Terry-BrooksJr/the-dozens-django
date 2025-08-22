@@ -9,8 +9,9 @@ import json
 import os
 import sys
 import warnings
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import TextIO
 
 import highlight_io
 from configurations import Configuration, values
@@ -19,15 +20,24 @@ from loguru import logger
 
 
 def log_warning(
-    message: str, category, filename: str, lineno: str, file=None, line=None
+    message: str,
+    category: type[Warning],
+    filename: str,
+    lineno: int,
+    file: TextIO | None = None,
+    line: str | None = None,
 ) -> None:
-    logger.warning(f"{filename}:{lineno} - {category.__name__}: {message}")
+    file_info = f" [{getattr(file, 'name', '')}]" if file else ""
+    line_info = f" | {line.strip()}" if line else ""
+    logger.warning(
+        f"{filename}:{lineno}{file_info} - {category.__name__}: {message}{line_info}"
+    )
 
 
 NSFW_WORD_LIST_URI = values.URLValue(
     environ=True, environ_prefix=None, environ_name="NSFW_WORD_LIST_URI"
 )
-GLOBAL_NOW = datetime.now()
+GLOBAL_NOW = datetime.now(tz=timezone.utc)
 
 BASE_DIR = values.PathValue(
     Path(__file__).resolve().parent.parent.parent, environ=False
@@ -97,8 +107,9 @@ class Base(Configuration):
         os.path.join(BASE_DIR, "logs", "utility.log")
     )  # pyrefly: ignore
     DEFAULT_HANDLER = sys.stdout
+    for _p in (PRIMARY_LOG_FILE, CRITICAL_LOG_FILE, DEBUG_LOG_FILE):
+        _p.parent.mkdir(parents=True, exist_ok=True)
     logger.remove()
-
     warnings.filterwarnings("default")
     warnings.showwarning = log_warning
     #!SECTION END - Logging
@@ -112,13 +123,13 @@ class Base(Configuration):
                 "HOST": os.getenv("PG_DATABASE_HOST"),
                 "DISABLE_SERVER_SIDE_CURSORS": True,
                 "PORT": os.getenv("PG_DATABASE_PORT"),
-            "pool": {
-                "max_size": 11,
-                "name": "django-thedozens",
-                "max_idle": 15,
+                "pool": {
+                    "max_size": 11,
+                    "name": "django-thedozens",
+                    "max_idle": 15,
+                },
             }
         }
-    }
     )
     # SECTION Start - Static files & Templates
     AWS_ACCESS_KEY_ID = values.SecretValue(
@@ -263,7 +274,7 @@ class Base(Configuration):
             "displayOperationId": False,
         },
         "SWAGGER_UI_DIST": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest",
-        "SWAGGER_UI_FAVICON_HREF": "https://cdn.yo-momma.net/staticfiles/assets/yoyoo_400x400.jpg",
+        "SWAGGER_UI_FAVICON_HREF": "https://nyc3.digitaloceanspaces.com/yo-momma/static/assets/favicon.ico",
         "CONTACT": {
             "name": "Terry A. Brooks, Jr.",
             "url": "https://brooksjr.com",
@@ -287,6 +298,7 @@ class Base(Configuration):
         },
         environ=False,
     )
+
     #!SECTION End - GraphQL Settings (Graphene-Django)
 
     # SECTION - Email Settings (Django-Mailer)
@@ -301,14 +313,30 @@ class Base(Configuration):
                 "LOCATION": os.environ["REDIS_CACHE_TOKEN"],
                 "OPTIONS": {
                     "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                    "SOCKET_CONNECT_TIMEOUT": 0.5,
+                    "SOCKET_TIMEOUT": 0.5,
+                    "RETRY_ON_TIMEOUT": False,
+                    "PARSER_CLASS": "redis.connection._HiredisParser",
+                    "CONNECTION_POOL_KWARGS": {
+                        "max_connections": 10  # Example: Limit the pool to 10 connections
+                    },
                 },
+                "TIMEOUT": 300,
             },
             "select2": {
-                "BACKEND": "django_redis.cache.RedisCache",
+                "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
                 "LOCATION": f"{os.environ['REDIS_CACHE_TOKEN']}/2",
                 "OPTIONS": {
                     "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                    "SOCKET_CONNECT_TIMEOUT": 0.5,
+                    "SOCKET_TIMEOUT": 0.5,
+                    "RETRY_ON_TIMEOUT": False,
+                    "PARSER_CLASS": "redis.connection._HiredisParser",
+                    "CONNECTION_POOL_KWARGS": {
+                        "max_connections": 5  # Example: Limit the pool to 10 connections
+                    },
                 },
+                "TIMEOUT": 300,
             },
         }
     )

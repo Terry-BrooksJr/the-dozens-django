@@ -155,8 +155,13 @@ GitHub.sublime-settings
 .postgresql/do_cert.crt
 logs
 data
-.task
+.task/*
 COCKROACH_DB_SSL.crt
 staticfiles/*       # if you meant to ignore your local staticfiles directory
 AIVIN_SSL_CERT.pem
 users.acl
+
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md
+.ruff_cache

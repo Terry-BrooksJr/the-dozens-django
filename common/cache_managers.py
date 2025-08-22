@@ -13,6 +13,8 @@ This module provides:
 - Thread-safe operations
 """
 
+from __future__ import annotations
+
 import json
 import threading
 import time
@@ -214,7 +216,7 @@ class GenericDataCacheManager(BaseCacheManager):
         post_delete.connect(
             handle_model_change,
             sender=self.model_class,
-            dispatch_uid=f"{self.__class__.__name__}_{self.model_class.__name__}_post_create",
+            dispatch_uid=f"{self.__class__.__name__}_{self.model_class.__name__}_post_delete",
         )
 
     def get_cache_stats(self) -> Dict[str, Any]:
@@ -297,7 +299,7 @@ class FormChoicesCacheManager(GenericDataCacheManager):
                 "queryset": queryset_json,
             }
 
-        except Exception as e:
+        except (AttributeError, ValueError, TypeError) as e:
             logger.error(f"Error building form choices for {self.cache_prefix}: {e}")
             return {
                 "choices": [],
@@ -322,7 +324,12 @@ class FormChoicesCacheManager(GenericDataCacheManager):
 
 class CategoryCacheManager(BaseCacheManager):
     """
-    Enhanced category cache manager with bidirectional lookups and bulk operations.
+    Manages caching for category data, providing efficient retrieval and bidirectional mapping
+    between category keys and names. This class supports cache invalidation, cache population,
+    and lookup operations for category data.
+
+    The manager caches all categories, individual key-to-name and name-to-key mappings, and
+    provides methods for cache invalidation and population from the database.
     """
 
     CACHE_TIMEOUT = 86400  # 1 Day
@@ -366,8 +373,7 @@ class CategoryCacheManager(BaseCacheManager):
         cache_keys = self.get_cache_keys()
         cache_key = f"{cache_keys['name_prefix']}{category_key}"
 
-        cached_name = cache.get(cache_key)
-        if cached_name:
+        if cached_name := cache.get(cache_key):
             return cached_name
 
         # Fallback to all categories

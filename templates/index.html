@@ -137,6 +137,7 @@
       opacity: 1;
     }
 
+    
     /* Yo Mama Specific Styles */
     .joke-of-day {
       background-color: var(--color-primary);
@@ -226,7 +227,7 @@ nav {
 }
 
 .btn-primary {
-  background-color: var(--color-primary) !important; /* was --primary-purple-color */
+  background-color: var(--color-accent) !important; /* was --primary-purple-color */
 }
 .btn-primary:hover,
 .btn-primary:active,
@@ -242,7 +243,7 @@ nav {
 /* Default: assume desktop/tablet layout is visible */
 .mobile-redirect,
 .mobile-background {
-  display: none !important;
+  display: none !important;m
 }
 
 /* Hide “mobile-only” helpers on wide screens if needed */
@@ -553,6 +554,7 @@ nav {
 
 
 <script>
+
 // Get configuration from environment or data attributes
 const HIGHLIGHT_PROJECT_ID =
   document.body.dataset.highlightProjectId || "5g5kvvlg";
@@ -586,6 +588,24 @@ const PHRASES = [
   "Cracking jokes",
   "Slacking off",
 ];
+
+const animateCSS = (element, animation, prefix = 'animate__') =>
+  // We create a Promise and return it
+  new Promise((resolve, reject) => {
+    const animationName = `${prefix}${animation}`;
+    const node = document.querySelector(element);
+
+    node.classList.add(`${prefix}animated`, animationName);
+
+    // When the animation ends, we clean the classes and resolve the Promise
+    function handleAnimationEnd(event) {
+      event.stopPropagation();
+      node.classList.remove(`${prefix}animated`, animationName);
+      resolve('Animation ended');
+    }
+
+    node.addEventListener('animationend', handleAnimationEnd, {once: true});
+  });
 
 // Initialize Highlight.io
 if (typeof H !== "undefined" && HIGHLIGHT_PROJECT_ID) {

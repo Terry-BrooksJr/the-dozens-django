@@ -8,22 +8,13 @@ from crispy_forms.bootstrap import FormActions
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Button, Column, Div, Layout, Row, Submit
 from django.core.exceptions import ValidationError
-from django.forms import (
-    BooleanField,
-    CharField,
-    ChoiceField,
-    ModelChoiceField,
-    ModelForm,
-    widgets,
-)
+from django.forms import BooleanField, CharField, ChoiceField, ModelForm, widgets
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django_select2 import forms as s2forms
 from loguru import logger
 
 from applications.API.models import Insult, InsultReview
-from common.cache_managers import create_form_choices_manager
-from common.metrics import metrics
 
 # ===================================================================
 # Cache Manager Setup
@@ -37,13 +28,13 @@ def insult_display_formatter(obj_dict: dict) -> str:
 
 
 # Create and configure the insult choices cache manager
-insult_choices_manager = create_form_choices_manager(
-    model_class=Insult,
-    choice_field="reference_id",
-    display_formatter=insult_display_formatter,
-    filter_kwargs={"status": "A"},  # Only active insults
-    cache_prefix="Insult",
-)
+# insult_choices_manager = create_form_choices_manager(
+#     model_class=Insult,
+#     choice_field="reference_id",
+#     display_formatter=insult_display_formatter,
+#     filter_kwargs={"status": "A"},  # Only active insults
+#     cache_prefix="Insult",
+# )
 
 
 # ===================================================================
@@ -101,32 +92,6 @@ def get_cache_stats() -> dict:
     return insult_choices_manager.get_cache_stats()
 
 
-def get_cache_performance_summary() -> dict:
-    """
-    Get cache performance summary for monitoring dashboards.
-
-    Returns:
-        Dictionary with cache performance metrics.
-    """
-    try:
-        hit_rate = metrics.get_cache_hit_rate("Insult")
-        current_stats = get_cache_stats()
-
-        return {
-            "hit_rate_percentage": hit_rate,
-            "current_stats": current_stats,
-            "cache_manager": "FormChoicesCacheManager",
-            "cache_timeout_hours": insult_choices_manager.cache_timeout / 3600,
-        }
-    except Exception as e:
-        logger.error(f"Error getting cache performance summary: {e}")
-        return {
-            "hit_rate_percentage": 0.0,
-            "current_stats": get_cache_stats(),
-            "error": str(e),
-        }
-
-
 # ===================================================================
 # Form Definition
 # ===================================================================
@@ -139,10 +104,7 @@ class InsultReviewForm(ModelForm):
     Uses the generalized caching framework for improved performance and maintainability.
     """
 
-    insult_reference_id = ModelChoiceField(
-        queryset=Insult.objects.filter(status="A").only("reference_id"),
-        to_field_name="reference_id",
-        widget=InsultReferenceSelect2,
+    insult_reference_id = CharField(
         required=True,
         label="Insult Reference ID",
         help_text="Start typing a reference ID (e.g., GIGGLE_…).",
@@ -172,23 +134,23 @@ class InsultReviewForm(ModelForm):
         super().__init__(*args, **kwargs)
 
         # Ensure queryset is up-to-date at runtime using cache manager
-        try:
-            # The cache manager handles all the caching complexity
-            choices, _ = get_cached_insult_data()
+        # try:
+        # # The cache manager handles all the caching complexity
+        # choices, _ = get_cached_insult_data()
 
-            # Update the queryset to ensure it's fresh
-            self.fields["insult_reference_id"].queryset = Insult.objects.filter(
-                status="A"
-            ).only("reference_id")
+        # # Update the queryset to ensure it's fresh
+        # self.fields["insult_reference_id"].queryset = Insult.objects.filter(
+        #     status="A"
+        # ).only("reference_id")
 
-            logger.debug(f"Form initialized with {len(choices)} cached insult choices")
+        # logger.debug(f"Form initialized with {len(choices)} cached insult choices")
 
-        except Exception as e:
-            logger.error(f"Error initializing form with cached data: {e}")
-            # Fallback to standard queryset
-            self.fields["insult_reference_id"].queryset = Insult.objects.filter(
-                status="A"
-            ).only("reference_id")
+        # except Exception as e:
+        #     logger.error(f"Error initializing form with cached data: {e}")
+        #     # Fallback to standard queryset
+        #     self.fields["insult_reference_id"].queryset = Insult.objects.filter(
+        #         status="A"
+        #     ).only("reference_id")
 
         # Setup form helper for crispy forms
         self.helper = FormHelper()
