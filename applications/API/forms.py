@@ -15,6 +15,7 @@ from django_select2 import forms as s2forms
 from loguru import logger
 
 from applications.API.models import Insult, InsultReview
+from common.cache_managers import create_form_choices_manager
 
 # ===================================================================
 # Cache Manager Setup
@@ -28,13 +29,13 @@ def insult_display_formatter(obj_dict: dict) -> str:
 
 
 # Create and configure the insult choices cache manager
-# insult_choices_manager = create_form_choices_manager(
-#     model_class=Insult,
-#     choice_field="reference_id",
-#     display_formatter=insult_display_formatter,
-#     filter_kwargs={"status": "A"},  # Only active insults
-#     cache_prefix="Insult",
-# )
+insult_choices_manager = create_form_choices_manager(
+    model_class=Insult,
+    choice_field="reference_id",
+    display_formatter=insult_display_formatter,
+    filter_kwargs={"status": "A"},  # Only active insults
+    cache_prefix="Insult",
+)
 
 
 # ===================================================================
@@ -45,7 +46,6 @@ def insult_display_formatter(obj_dict: dict) -> str:
 class InsultReferenceSelect2(s2forms.ModelSelect2Widget):
     """Select2 widget for Insult reference with AJAX search."""
 
-    model = Insult
     search_fields = [
         "reference_id__icontains",
     ]

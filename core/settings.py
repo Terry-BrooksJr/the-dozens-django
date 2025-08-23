@@ -19,6 +19,41 @@ from highlight_io.integrations.django import DjangoIntegration
 from loguru import logger
 
 
+# --- drf-spectacular postprocessing hook to inject TokenAuth without using APPEND_COMPONENTS ---
+def add_token_auth_scheme(result, generator, request, public):
+    try:
+        components = result.setdefault("components", {})
+        security_schemes = components.setdefault("securitySchemes", {})
+        security_schemes["TokenAuth"] = {
+            "type": "apiKey",
+            "in": "header",
+            "name": "Authorization",
+            "description": (
+                "Token-based authentication. Supply your token like so:\n\n"
+                "`Authorization: Token <your_token>`"
+            ),
+        }
+    except Exception:  # keep schema generation resilient
+        pass
+    return result
+
+
+# --- Safety: normalize APPEND_COMPONENTS in case an env var or override sets it as a string ---
+def _normalize_append_components(settings_dict: dict) -> dict:
+    ac = settings_dict.get("APPEND_COMPONENTS")
+    if isinstance(ac, str):
+        try:
+            parsed = json.loads(ac)
+            settings_dict["APPEND_COMPONENTS"] = (
+                parsed if isinstance(parsed, dict) else {}
+            )
+        except Exception:
+            settings_dict["APPEND_COMPONENTS"] = {}
+    elif ac is None:
+        settings_dict["APPEND_COMPONENTS"] = {}
+    return settings_dict
+
+
 def log_warning(
     message: str,
     category: type[Warning],
@@ -268,6 +303,12 @@ class Base(Configuration):
         "DESCRIPTION": "RESTful implementation of a light hearted Roast Insult API ",
         "VERSION": "1.0.0",
         "SERVE_INCLUDE_SCHEMA": False,
+        "COMPONENT_SPLIT_REQUEST": True,
+        "SECURITY": [{"TokenAuth": []}],
+        "AUTHENTICATION_WHITELIST": [],
+        "SERVE_AUTHENTICATION": None,
+        "APPEND_COMPONENTS": {},  # replaced with empty dict
+        "POSTPROCESSING_HOOKS": ["core.settings.add_token_auth_scheme"],
         "SWAGGER_UI_SETTINGS": {
             "deepLinking": True,
             "persistAuthorization": True,
@@ -424,9 +465,7 @@ class Production(Base):
     # SECTION Start - DRF Settings
     REST_FRAMEWORK = values.DictValue(
         {
-            "DEFAULT_PERMISSION_CLASSES": [
-                "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
-            ],
+            "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
             "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
             "PAGE_SIZE": 10,
             "DEFAULT_RENDERER_CLASSES": [
@@ -686,4 +725,8 @@ class Development(Base):
     )
 
 
-# SECTION End - Logging
+# --- Coerce APPEND_COMPONENTS for all configurations ---
+for _cfg in (Base, Production, Development, Offline, Testing):
+    _cfg.SPECTACULAR_SETTINGS = _normalize_append_components(
+        dict(_cfg.SPECTACULAR_SETTINGS)
+    )

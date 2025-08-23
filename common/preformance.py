@@ -13,6 +13,7 @@ Features:
 """
 
 import hashlib
+import os
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from django.conf import settings
@@ -53,7 +54,7 @@ class CachedTemplateView(TemplateView):
         """
         Returns a view function for the template view with caching enabled.
         """
-        return cache_page(settings.CACHE_TTL)(
+        return cache_page(int(os.environ["CACHE_TTL"]))(
             super(CachedTemplateView, cls).as_view(**initkwargs)
         )
 

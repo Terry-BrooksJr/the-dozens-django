@@ -17,6 +17,7 @@ urlpatterns = [
     path("swagger/", SpectacularSwaggerView.as_view(), name="swagger"),
     path("redoc/", SpectacularRedocView.as_view(), name="redoc"),
     path("insult/<reference_id>", endpoints.InsultDetailsEndpoints.as_view()),
+    path("insults/<category_name>", endpoints.InsultByCategoryEndpoint.as_view()),
     path("insults", endpoints.InsultListEndpoint.as_view()),
-    path("insult", endpoints.random, name="insult-random"),
+    path("insult", endpoints.RandomInsultView.as_view(), name="insult-random"),
 ]

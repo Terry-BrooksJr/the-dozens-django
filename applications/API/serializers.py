@@ -1,7 +1,8 @@
+import contextlib
 from asyncio.log import logger
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional, Union
 
 from django.core.cache import cache
 from django.utils.text import capfirst
@@ -17,10 +18,6 @@ from rest_framework.response import Response
 
 from applications.API.models import Insult, InsultCategory
 from common.cache_managers import CategoryCacheManager, create_category_manager
-
-category_manager: CategoryCacheManager = create_category_manager(
-    model_class=InsultCategory, key_field="category_key", name_field="name"
-)
 
 
 class BulkSerializationMixin:
@@ -57,67 +54,36 @@ class BulkSerializationMixin:
         return Response(response_data, status=status.HTTP_200_OK)
 
 
-class OptimizedListSerializer(serializers.ListSerializer):
-    """
-    Enhanced ListSerializer with better bulk optimization.
-    """
-
-    def to_representation(self, data):
-        """
-        Optimized bulk serialization with caching and prefetching.
-        """
-        # Optimize queryset if it's not already optimized
-        if hasattr(data, "select_related") and not getattr(
-            data, "_prefetch_done", False
-        ):
-            # Get related fields from child serializer
-            child_class = self.child.__class__
-            select_related = getattr(child_class, "select_related_fields", [])
-            prefetch_related = getattr(child_class, "prefetch_related_fields", [])
-
-            if select_related:
-                data = data.select_related(*select_related)
-            if prefetch_related:
-                data = data.prefetch_related(*prefetch_related)
-
-            # Mark as optimized to avoid double optimization
-            data._prefetch_done = True
-
-        # Cache serialization context for reuse
-        if not hasattr(self, "_cached_context"):
-            self._cached_context = self.child.context
-
-        return super().to_representation(data)
-
-    def create(self, validated_data):
-        """Optimized bulk create operation."""
-        # Use bulk_create for better performance
-        ModelClass = self.child.Meta.model
-        instances = [ModelClass(**attrs) for attrs in validated_data]
-
-        # Bulk create with ignore_conflicts for better performance
-        try:
-            return ModelClass.objects.bulk_create(instances, ignore_conflicts=False)
-        except Exception:
-            # Fallback to individual creation if bulk fails
-            return [self.child.create(attrs) for attrs in validated_data]
-
-    def update(self, instance, validated_data):
-        """Optimized bulk update operation."""
-        # This is more complex and usually handled at the ViewSet level
-        # For now, fallback to individual updates
-        return super().update(instance, validated_data)
-
-
 class CachedBulkSerializer(serializers.ModelSerializer):
     """
     Base serializer with caching capabilities for bulk operations.
     """
 
+    # Default cache settings (subclasses can override)
+    CACHE_TIMEOUT: ClassVar[int] = 300
+    CACHE_VERSION: ClassVar[int] = 1
+
     # Define these in your concrete serializer
     select_related_fields = []  # e.g., ['added_by', 'category']
     prefetch_related_fields = []  # e.g., ['reviews']
     cached_fields = []  # Fields to cache individually
+
+    def get_cache_key(self, obj, field_name: str) -> str:
+        """
+        Build a stable cache key for a computed field value.
+        If the class defines a `cacher` with `get_cache_key`, delegate to it.
+        Otherwise, fall back to a deterministic string using class name, model name,
+        object primary key, field name, and a version number.
+        """
+        # Prefer a class-provided cacher if available
+        cacher = getattr(type(self), "cacher", None)
+        if cacher is not None and hasattr(cacher, "get_cache_key"):
+            with contextlib.suppress(Exception):
+                return cacher.get_cache_key(obj, field_name)
+
+        model_name = obj.__class__.__name__
+        obj_pk = getattr(obj, "pk", None) or getattr(obj, "id", None) or ""
+        return f"field:{self.__class__.__name__}:{model_name}:{obj_pk}:{field_name}:v{type(self).CACHE_VERSION}"
 
     def set_cached_field_value(
         self, obj, field_name: str, value, cache_timeout: int = 300
@@ -127,86 +93,102 @@ class CachedBulkSerializer(serializers.ModelSerializer):
         """
         if field_name not in self.cached_fields:
             return
-        cache_key = f"field:{self.__class__.__name__}:{field_name}:{obj.pk}"
+        cache_key = self.get_cache_key(obj, field_name)
         cache.set(cache_key, value, cache_timeout)
 
-    class Meta:
-        list_serializer_class = OptimizedListSerializer
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._field_cache = {}
-
-    def get_cached_field_value(self, obj, field_name: str, cache_timeout: int = 300):
+    def get_cached_field_value(self, obj, field_name: str, compute_method_name: str):
         """
-        Get field value with caching for expensive computations.
+        Retrieve a cached value for a computed field, or compute and cache it if not present.
+        This method ensures efficient access to expensive field computations by leveraging caching.
+
+        Args:
+            obj: The object for which the field value is being retrieved.
+            field_name: The name of the field to cache.
+            compute_method_name: The name of the method used to compute the field value.
+
+        Returns:
+            The cached or newly computed value for the specified field.
         """
-        if field_name not in self.cached_fields:
-            return None
+        cache_key = self.get_cache_key(obj, field_name)
+        try:
+            cached_value = cache.get(cache_key)
+        except Exception as e:  # Dragonfly/Redis flakiness => fail open
+            logger.warning(f"Cache backend unavailable while getting {field_name}: {e}")
+            cached_value = None
+        if cached_value is not None:
+            return cached_value
 
-        cache_key = f"field:{self.__class__.__name__}:{field_name}:{obj.pk}"
-        cached_value = cache.get(cache_key)
-
-        if cached_value is None:
-            # Field not cached, compute and cache
-            method_name = f"get_{field_name}"
-            if hasattr(self, method_name):
-                cached_value = getattr(self, method_name)(obj)
-                cache.set(cache_key, cached_value, cache_timeout)
-
-        return cached_value
+        compute = getattr(self, compute_method_name)
+        value = compute(obj)
+        try:
+            cache.set(cache_key, value, timeout=self.CACHE_TIMEOUT)
+        except Exception as e:
+            logger.warning(f"Cache backend unavailable while setting {field_name}: {e}")
+        return value
 
 
 class BaseInsultSerializer(CachedBulkSerializer):
-    """
-    Base serializer for Insult model containing common functionality.
-    """
+    cacher: ClassVar[CategoryCacheManager] = create_category_manager(
+        model_class=InsultCategory, key_field="category_key", name_field="name"
+    )
 
     @staticmethod
     def _normalize_category_input(value: str) -> str:
-        """Normalize user-provided category strings like 'F - fat' to 'F'.
-        Also accept an InsultCategory instance and return its key.
+        """
+        Normalize the input value for a category key or name.
+        Returns the category key if a model instance is provided, or a cleaned string otherwise.
+
+        Args:
+            value: The category key, name, or model instance.
+
+        Returns:
+            str: The normalized category key or name.
         """
         # If a model instance is passed (e.g., during serialization), use its key
-        try:
+        with contextlib.suppress(Exception):
             from applications.API.models import (
                 InsultCategory as _IC,  # local import to avoid cycles
             )
 
             if isinstance(value, _IC):
                 return value.category_key
-        except Exception:
-            pass
-
         if not isinstance(value, str):
             return value
         v = value.strip()
         # Try common separators first
         for sep in (" - ", "–", "-"):
             if sep in v:
-                left = v.split(sep, 1)[0].strip()
-                if left:
+                if left := v.split(sep, 1)[0].strip():
                     return left
         return v
 
     def get_category_by_key(self, category_key: str) -> Dict[str, str]:
         """
-        Get category info by key with caching.
-        Returns dict with category_key and category_name.
+        Retrieve category information by its key, using cache for efficiency.
+        Returns a dictionary containing the category key and name, or raises a validation error if not found.
+
+        Args:
+            category_key: The key of the category to look up.
+
+        Returns:
+            Dict[str, str]: A dictionary with 'category_key' and 'category_name'.
+
+        Raises:
+            serializers.ValidationError: If the category key does not exist.
         """
         if not category_key:
             return {"category_key": "", "category_name": "Uncategorized"}
 
         key = self._normalize_category_input(category_key)
 
-        if category_name := category_manager.get_category_name_by_key(key):
+        if category_name := type(self).cacher.get_category_name_by_key(key):
             return {"category_key": key, "category_name": category_name}
 
         # Fallback to database
         try:
             category = InsultCategory.objects.get(category_key=key)
             # Update cache for future requests (targeted update)
-            category_manager.set_category_name_mapping(
+            type(self).cacher.set_category_name_mapping(
                 category.category_key, category.name
             )
             return {"category_key": key, "category_name": category.name}
@@ -215,10 +197,61 @@ class BaseInsultSerializer(CachedBulkSerializer):
                 f"Category with key '{key}' does not exist."
             ) from e
 
+    def _compute_added_on_display(self, obj) -> str:
+        """
+        Generate a formatted string representation of the 'added_on' datetime for the given object.
+        Returns a formatted date string or an empty string if the date is not available.
+
+        Args:
+            obj: The object containing the 'added_on' attribute.
+
+        Returns:
+            str: The formatted date string or an empty string if not available.
+        """
+        dt = getattr(obj, "added_on", None)
+        if not dt:
+            return ""
+        try:
+            return dt.strftime("%Y-%m-%d %H:%M:%S %Z")
+        except Exception:
+            return str(dt)
+
+    def _compute_added_by_display(self, obj) -> str:
+        """
+        Generate a display string for the user who added the insult.
+        Returns a formatted name, username, or a default string if the user is anonymous.
+
+        Args:
+            obj: The object containing the 'added_by' user attribute.
+
+        Returns:
+            str: The display name for the user who added the insult.
+        """
+        user = getattr(obj, "added_by", None)
+        if user is None:
+            return "Anon Jokester"
+
+        if not user.first_name:
+            return user.username
+        return (
+            f"{user.first_name} {user.last_name[0]}."
+            if user.last_name
+            else user.first_name
+        )
+
     def get_category_by_name(self, category_name: str) -> Dict[str, str]:
         """
-        Get category info by name with caching.
-        Returns dict with category_key and category_name.
+        Retrieve category information by its name.
+        Returns a dictionary containing the category key and name, or raises a validation error if not found.
+
+        Args:
+            category_name: The name of the category to look up.
+
+        Returns:
+            Dict[str, str]: A dictionary with 'category_key' and 'category_name'.
+
+        Raises:
+            serializers.ValidationError: If the category name is not a string or does not exist.
         """
         if not category_name:
             return {"category_key": "", "category_name": "Uncategorized"}
@@ -229,13 +262,13 @@ class BaseInsultSerializer(CachedBulkSerializer):
             # If a model instance or other type is passed in by mistake, fail fast here
             raise serializers.ValidationError("Category name must be a string.")
 
-        if category_key := category_manager.get_category_key_by_name(normalized_name):
+        if category_key := type(self).cacher.get_category_key_by_name(normalized_name):
             return {"category_key": category_key, "category_name": normalized_name}
 
         # Fallback to database
         try:
             category = InsultCategory.objects.get(name__iexact=normalized_name)
-            category_manager.set_category_name_mapping(
+            type(self).cacher.set_category_name_mapping(
                 category.category_key, category.name
             )
             return {
@@ -248,10 +281,22 @@ class BaseInsultSerializer(CachedBulkSerializer):
                 f"Category '{category_name}' does not exist."
             ) from e
 
-    def validate_category(self, value: str) -> Dict[str, str]:
+    def validate_category(self, value: str) -> Dict[str, Union[None, str]]:
         """
-        Validate category by key or name and return complete category info.
-        Auto-detects whether input is a key, name, or an InsultCategory instance and resolves the missing value.
+        Validate and resolve a category by key or name.
+
+        This method checks if the provided value is a valid category key, name, or model instance,
+        and returns a dictionary with the resolved category key and name. If the category cannot be
+        resolved, a validation error is raised.
+
+        Args:
+            value: The category key, name, or InsultCategory instance to validate.
+
+        Returns:
+            Dict[str, str]: A dictionary containing 'category_key' and 'category_name'.
+
+        Raises:
+            serializers.ValidationError: If the category cannot be resolved by key or name.
         """
         if not value:
             return {"category_key": "", "category_name": "Uncategorized"}
@@ -267,10 +312,16 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
         # First try as category key
         try:
-            return self.get_category_by_key(value)
+            return {
+                "category_key": type(self).cacher.get_category_key_by_name(value),
+                "category_name": value,
+            }
         except serializers.ValidationError:
             try:
-                return self.get_category_by_name(value)
+                return {
+                    "category_key": value,
+                    "category_name": type(self).cacher.get_category_name_by_key(value),
+                }
             except serializers.ValidationError as e:
                 raise serializers.ValidationError(
                     f"Category '{value}' not found. Please provide a valid category key or name."
@@ -278,8 +329,17 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
     # If you need just the name (for backward compatibility):
     def get_category_name_by_key(self, category_key: str) -> str:
-        """Get formatted category name by key."""
-        category_info = self.get_category_by_key(category_key)
+        """
+        Retrieve and format the category name for a given category key.
+        Returns a consistently formatted category name string.
+
+        Args:
+            category_key: The key of the category to look up.
+
+        Returns:
+            str: The formatted category name.
+        """
+        category_info = type(self).cacher.get_category_by_key(category_key)
         return BaseInsultSerializer.format_category(category_info["category_name"])
 
     @staticmethod
@@ -299,36 +359,25 @@ class BaseInsultSerializer(CachedBulkSerializer):
         """Ensure consistent category formatting with caching."""
         return capfirst(category) if category else "Uncategorized"
 
-    def get_added_on_display(self, obj):
-        """Cached date formatting."""
-        cached_value = self.get_cached_field_value(obj, "added_on_display")
-        if cached_value is not None:
-            return cached_value
-
-        if not obj.added_on:
-            display_date = ""
-        else:
-            display_date = self._format_date(obj.added_on.isoformat())
-
-        self.set_cached_field_value(obj, "added_on_display", display_date)
-        return display_date
+    @extend_schema_field(serializers.CharField())
+    def get_added_on_display(self, obj) -> str:
+        return self.get_cached_field_value(
+            obj,
+            "added_on",
+            compute_method_name="_compute_added_on_display",
+        )
 
     def to_internal_value(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Override to handle category name to key conversion.
-        This allows users to submit category names directly.
-        """
+
         if "category" in data and isinstance(data["category"], str):
             normalized = self._normalize_category_input(data["category"])
-            category_key = self.validate_category(normalized)["category_key"]
-            data["category"] = category_key
+            category_key = self.validate_category(normalized)
+            data["category"] = category_key["category_key"]
 
         return super().to_internal_value(data)
 
     def to_representation(self, instance) -> Dict[str, Any]:  # pyrefly: ignore
-        """
-        Transform the outgoing data with optimized category lookup.
-        """
+
         representation = super().to_representation(instance)
 
         # Use cached category lookup instead of additional DB query
@@ -339,23 +388,10 @@ class BaseInsultSerializer(CachedBulkSerializer):
         return representation
 
     @extend_schema_field(serializers.CharField())
-    def get_added_by(self, obj) -> Optional[str]:
-        """Optimized added_by formatter matching InsultSerializer logic."""
-        cached_value = self.get_cached_field_value(obj, "added_by_name")
-        if cached_value is not None:
-            return cached_value
-
-        if not obj.added_by:
-            return None
-
-        user = obj.added_by
-
-        if user.first_name:
-            if user.last_name:
-                return f"{user.first_name} {user.last_name[0]}."
-            else:
-                return user.first_name
-        return user.username or "Unknown User"
+    def get_added_by_display(self, obj) -> Optional[str]:
+        return self.get_cached_field_value(
+            obj, "added_by", compute_method_name="_compute_added_by_display"
+        )
 
 
 class MyInsultSerializer(BaseInsultSerializer):
@@ -475,14 +511,13 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
     # Optimization settings
     select_related_fields = ["added_by", "category"]
     prefetch_related_fields = ["reviews"]
-    cached_fields = ["added_by_name", "added_on_display"]
+    cached_fields = ["added_by", "added_on"]
 
-    status = serializers.CharField(source="get_status_display", read_only=True)
     nsfw = serializers.BooleanField()
     reference_id = serializers.ReadOnlyField()
-    added_by = serializers.SerializerMethodField(method_name="get_added_by")
+    added_by = serializers.SerializerMethodField(method_name="get_added_by_display")
     added_on = serializers.SerializerMethodField(method_name="get_added_on_display")
-    category = serializers.SerializerMethodField(method_name="find_category")
+    category = serializers.CharField()
     content = serializers.CharField()
 
     class Meta:
@@ -498,30 +533,6 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
             "added_on",
         ]
         read_only_fields = ["reference_id", "status", "added_by", "added_on"]
-
-    def find_category(self, obj) -> str:
-        """
-        Resolve and format the category name efficiently, handling either a raw
-        key/name string or an InsultCategory FK instance on the model.
-        """
-        try:
-            category_value = obj.category
-
-            # If FK instance is loaded, short-circuit without hitting validation branches
-            from applications.API.models import InsultCategory as _IC
-
-            if isinstance(category_value, _IC):
-                return self.format_category(category_value.name)
-
-            # Otherwise, let the standard validator resolve string key/name
-            category = self.validate_category(category_value)
-            return self.format_category(category["category_name"])
-
-        except serializers.ValidationError:
-            logger.error(
-                f"Invalid category value '{getattr(obj, 'category', None)}' for Insult ID {getattr(obj, 'insult_id', 'unknown')}"
-            )
-            return "Uncategorized"
 
 
 class CreateInsultSerializer(BaseInsultSerializer):

@@ -16,6 +16,7 @@ This module provides:
 from __future__ import annotations
 
 import json
+import os
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -72,14 +73,14 @@ class GenericDataCacheManager(BaseCacheManager):
     """
 
     # Default cache timeout (24 hours)
-    CACHE_TIMEOUT = 60 * 60 * 24
+    CACHE_TIMEOUT = int(os.environ["CACHE_TTL"])
 
     def __init__(
         self,
         model_class: Type[models.Model],
         cache_prefix: str = None,
         data_builder: Callable = None,
-        cache_timeout: int = None,
+        cache_timeout: int = int(os.environ["CACHE_TTL"]),
     ):
         super().__init__(model_class, cache_prefix)
 
@@ -402,8 +403,8 @@ class CategoryCacheManager(BaseCacheManager):
     def set_category_name_mapping(self, category_key: str, name: str) -> None:
         """Cache category name bidirectionally."""
         cache_keys = self.get_cache_keys()
-        cache_key_for_key = f"{cache_keys['name_prefix']}{category_key}"
-        cache_key_for_name = f"{cache_keys['key_prefix']}{name.lower()}"
+        cache_key_for_key = f"{cache_keys['key_prefix']}{category_key}"
+        cache_key_for_name = f"{cache_keys['name_prefix']}{name.lower()}"
 
         cache.set(cache_key_for_name, category_key, self.cache_timeout)
         cache.set(cache_key_for_key, name, self.cache_timeout)

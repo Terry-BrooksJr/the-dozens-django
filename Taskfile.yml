@@ -113,7 +113,7 @@ tasks:
 
     desc: Generate OpenAPI 3.0 schema.yaml file from models and serializers
     cmds:
-      - doppler run --  python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
+      - doppler run --  .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
 
   build-image:
     desc: Build Docker Image
