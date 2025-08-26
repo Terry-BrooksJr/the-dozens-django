@@ -20,4 +20,5 @@ urlpatterns = [
     path("insults/<category_name>", endpoints.InsultByCategoryEndpoint.as_view()),
     path("insults", endpoints.InsultListEndpoint.as_view()),
     path("insult", endpoints.RandomInsultView.as_view(), name="insult-random"),
+    path("insult/categories", endpoints.ListCategoryView.as_view(), name="cat-list"),
 ]

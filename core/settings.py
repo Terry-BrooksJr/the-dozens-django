@@ -186,7 +186,7 @@ class Base(Configuration):
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, "the-dozens-django", "static"),  # pyrefly: ignore
     ]
-    STATIC_ROOT = os.environ["TEMP_STATIC_DIR"]
+    STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
     template_dir = values.ListValue(
         [
             Path(os.path.join(BASE_DIR, "the-dozens-django", "templates"))
@@ -299,20 +299,29 @@ class Base(Configuration):
 
     # SECTION Start - REST API.SWAGGER DOCUMENTATION SETTINGS
     SPECTACULAR_SETTINGS = {
-        "TITLE": "Yo' Mama - The Roast API - Swagger UI",
-        "DESCRIPTION": "RESTful implementation of a light hearted Roast Insult API ",
+        "TITLE": "Yo' Momma - The Joke API",
+        "DESCRIPTION": """
+            <h1 stye><h1 style="font-family: 'YoMamaHeader';">Yo' Momma Joke API</h1>
+    <p style="font-family: 'YoMamaBody';">Welcome to the Yo' Momma Joke API! This is a RESTful service that provides humorous insults categorized by types like "Poor," "Stupid," and "Fat," with programmatic access to both retrieve and contribute content.</p>
+    <p style="font-family: 'YoMamaBody';">API Consumers can fetch random insults, filter by category or NSFW status, and authenticated users can create, update, and manage their own contributions through comprehensive endpoints. The API includes a complete user management system with authentication, account activation, and password reset functionality. All responses are properly paginated with comprehensive documentation available through Swagger UI, and the service maintains moderation through status flags (active, pending, rejected) to ensure quality control.</p>
+    """,
         "VERSION": "1.0.0",
-        "SERVE_INCLUDE_SCHEMA": False,
+        "SERVE_INCLUDE_SCHEMA": True,
+        "COMPONENT_SPLIT_REQUEST": True,
+        "OAS_VERSION": "3.0.3",
         "COMPONENT_SPLIT_REQUEST": True,
         "SECURITY": [{"TokenAuth": []}],
         "AUTHENTICATION_WHITELIST": [],
         "SERVE_AUTHENTICATION": None,
-        "APPEND_COMPONENTS": {},  # replaced with empty dict
+        "APPEND_COMPONENTS": {},
         "POSTPROCESSING_HOOKS": ["core.settings.add_token_auth_scheme"],
         "SWAGGER_UI_SETTINGS": {
             "deepLinking": True,
             "persistAuthorization": True,
             "displayOperationId": False,
+            "tryItOutEnabled": True,
+            "requestSnippetsEnabled": True,
+            "syntaxHighlight.theme": "arta",
         },
         "SWAGGER_UI_DIST": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest",
         "SWAGGER_UI_FAVICON_HREF": "https://nyc3.digitaloceanspaces.com/yo-momma/static/assets/favicon.ico",

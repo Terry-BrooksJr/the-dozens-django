@@ -280,8 +280,8 @@ class BaseInsultSerializer(CachedBulkSerializer):
             raise serializers.ValidationError(
                 f"Category '{category_name}' does not exist."
             ) from e
-
-    def validate_category(self, value: str) -> Dict[str, Union[None, str]]:
+    @classmethod
+    def validate_category(cls, value: str) -> Dict[str, Union[None, str]]:
         """
         Validate and resolve a category by key or name.
 
@@ -308,19 +308,19 @@ class BaseInsultSerializer(CachedBulkSerializer):
             return {"category_key": value.category_key, "category_name": value.name}
 
         if isinstance(value, str):
-            value = self._normalize_category_input(value)
+            value = cls._normalize_category_input(value)
 
         # First try as category key
         try:
             return {
-                "category_key": type(self).cacher.get_category_key_by_name(value),
+                "category_key": cls.cacher.get_category_key_by_name(value),
                 "category_name": value,
             }
         except serializers.ValidationError:
             try:
                 return {
                     "category_key": value,
-                    "category_name": type(self).cacher.get_category_name_by_key(value),
+                    "category_name": cls.cacher.get_category_name_by_key(value).lower(),
                 }
             except serializers.ValidationError as e:
                 raise serializers.ValidationError(
@@ -368,11 +368,15 @@ class BaseInsultSerializer(CachedBulkSerializer):
         )
 
     def to_internal_value(self, data: Dict[str, Any]) -> Dict[str, Any]:
-
-        if "category" in data and isinstance(data["category"], str):
-            normalized = self._normalize_category_input(data["category"])
-            category_key = self.validate_category(normalized)
-            data["category"] = category_key["category_key"]
+        raw_category = None
+        if "category" in data:
+            raw_category = data["category"]
+        elif "category_name" in data:
+            raw_category = data["category_name"]
+            
+        if raw_category is not None and isinstance(raw_category, str):
+            category = type(self).validate_category(raw_category)
+            data["category"] = InsultCategory.objects.get(category_key=category["category_key"])
 
         return super().to_internal_value(data)
 
@@ -381,9 +385,8 @@ class BaseInsultSerializer(CachedBulkSerializer):
         representation = super().to_representation(instance)
 
         # Use cached category lookup instead of additional DB query
-        if representation.get("category"):
-            key = self._normalize_category_input(representation["category"])
-            representation["category"] = self.validate_category(key)["category_name"]
+        validated_category = type(self).validate_category(representation['category'])
+        representation["category"] = validated_category["category_name"]
 
         return representation
 
@@ -444,7 +447,14 @@ class CategorySerializer(serializers.ModelSerializer):
         return Insult.objects.filter(
             category_key=instance.category_key, status=Insult.STATUS.ACTIVE
         ).count()
-
+        
+    def to_representation(self, data):
+        representation = super().to_representation()
+        logger.debug(representation)
+        return {"key":representation["category_key"],
+                "name": representation["category_name"],
+                "insult_count": representation['']
+                }
 
 # Bulk operations serializer for better performance with multiple insults
 class BulkInsultSerializer(serializers.ListSerializer):
@@ -513,12 +523,12 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
     prefetch_related_fields = ["reviews"]
     cached_fields = ["added_by", "added_on"]
 
-    nsfw = serializers.BooleanField()
-    reference_id = serializers.ReadOnlyField()
+    # nsfw = serializers.BooleanField()
+    # reference_id = serializers.ReadOnlyField()
     added_by = serializers.SerializerMethodField(method_name="get_added_by_display")
     added_on = serializers.SerializerMethodField(method_name="get_added_on_display")
-    category = serializers.CharField()
-    content = serializers.CharField()
+    # category = serializers.CharField()
+    # content = serializers.CharField()
 
     class Meta:
         list_serializer_class = BulkInsultSerializer
@@ -550,12 +560,6 @@ class CreateInsultSerializer(BaseInsultSerializer):
         default=False, help_text="Indicates if the insult is NSFW (Not Safe For Work)."
     )
 
-    def validate_category(self, value: str) -> Dict[str, str]:
-        """
-        Validate category by key or name and return complete category info.
-        Auto-detects whether input is a key or name and resolves the missing value.
-        """
-        return super().validate_category(value)
 
     class Meta:
         model = Insult

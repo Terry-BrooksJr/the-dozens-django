@@ -51,7 +51,12 @@
     "task": {
         "path":"/opt/homebrew/bin/task"
 
-    }
+    },
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
    
         
     

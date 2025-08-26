@@ -26,7 +26,7 @@ from applications.API.serializers import (
     CreateInsultSerializer,
     OptimizedInsultSerializer,
 )
-from common.preformance import (
+from common.performance import (
     CachedResponseMixin,
     CacheInvalidationMixin,
     CategoryCacheManager,

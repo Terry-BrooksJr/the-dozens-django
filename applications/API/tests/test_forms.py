@@ -1,288 +1,106 @@
-# -*- coding: utf-8 -*-
-from django.conf import settings
-from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
-from django.test import TestCase
+# applications/API/tests/test_forms.py
+from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from applications.API.forms import InsultReviewForm
 from applications.API.models import Insult, InsultCategory
 
 
-class InsultReviewFormTest(TestCase):
-    """Test suite for InsultReviewForm validation."""
-
-    def setUp(self):
-        """Set up test fixtures before each test method."""
-        self.insult_category = InsultCategory.objects.create(
-            category_key="TEST", name="Test Category"
-        )
-        self.admin_user = User.objects.create_user(
-            username="admin_testuser",
-            password="testpass123",
-            is_active=True,
-            is_staff=True,
-            is_superuser=True,
-        )
-        self.user = User.objects.create_user(
-            username="testuser",
-            password="testpass123",
-            is_active=True,
-            is_staff=False,
-            is_superuser=False,
-        )
-        # Create test insults
-        self.insult1 = Insult.objects.create(
-            content="Test insult 1",
-            category="TEST",
+@override_settings(ROOT_URLCONF="applications.API.tests.urls")
+class InsultReviewFormTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        # Category + an active insult we can reference
+        cls.cat = InsultCategory.objects.create(category_key="P", name="Poor")
+        cls.insult = Insult.objects.create(
+            reference_id="TEST_123",
+            content="Yo momma is so poor she bought a ticket to nowhere.",
+            category=cls.cat,
             nsfw=False,
-            added_on=settings.GLOBAL_NOW,
-            reports_count=14,
-            added_by=1,
-            status=Insult.STATUS.ACTIVE,
-        )
-        self.insult2 = Insult.objects.create(
-            content="Test insult 2",
-            category="TEST",
-            nsfw=False,
-            added_on=settings.GLOBAL_NOW,
-            reports_count=14,
-            added_by=1,
-            status=Insult.STATUS.ACTIVE,
-        )
-        self.insult3 = Insult.objects.create(
-            content="Test insult 3",
-            category="TEST",
-            nsfw=False,
-            added_on=settings.GLOBAL_NOW,
-            reports_count=14,
-            added_by=1,
-            status=Insult.STATUS.ACTIVE,
+            status="A",  # ACTIVE
+            added_on=timezone.now(),
         )
 
-        # Base form data template
-        self.base_form_data = {
-            "anonymous": True,
-            "reporter_first_name": None,
-            "reporter_last_name": None,
-            "post_review_contact_desired": False,
-            "reporter_email": None,
-            "insult_id": self.insult1.id,
+    def _base_payload(self, **overrides):
+        base = {
+            "insult_reference_id": self.insult.reference_id,
+            "anonymous": "on",  # simulate checked checkbox
+            "reporter_first_name": "",
+            "reporter_last_name": "",
+            "post_review_contact_desired": "",
+            "reporter_email": "",
+            "rationale_for_review": "x" * 70,  # meets min_length
+            "review_type": "R",  # assume e.g. 'R' is a valid choice (Review); adjust if different
         }
+        base.update(overrides)
+        return base
 
-    def tearDown(self):
-        """Clean up after each test method."""
-        # Optional: Clean up any created objects if needed
-        # Usually Django handles this automatically in tests
+    def test_valid_when_anonymous_and_refid_ok(self):
+        """Anonymous submission is valid with a real insult ref id and sufficient rationale."""
+        form = InsultReviewForm(data=self._base_payload())
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+        # clean() should coerce insult_reference_id to the string ref id
+        self.assertEqual(form.cleaned_data["insult_reference_id"], self.insult.reference_id)
 
-    @classmethod
-    def setUpClass(cls):
-        """Set up class-level fixtures (run once for entire test class)."""
-        super().setUpClass()
-        # Add any class-level setup here if needed
+    def test_invalid_when_non_anonymous_missing_names(self):
+        """Non-anonymous requires first and last name."""
+        data = self._base_payload(anonymous="", reporter_first_name="", reporter_last_name="")
+        form = InsultReviewForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("First name is required", str(form.errors))
+        self.assertIn("Last name is required", str(form.errors))
 
-    @classmethod
-    def tearDownClass(cls):
-        """Clean up class-level fixtures."""
-        super().tearDownClass()
-        # Add any class-level cleanup here if needed
-
-    def test_clean_anonymous_submission_valid(self):
-        """Test valid anonymous submission."""
-        form_data = self.base_form_data.copy()
-        form = InsultReviewForm(data=form_data)
-
-        self.assertTrue(form.is_valid())
-        cleaned_data = form.clean()
-        self.assertEqual(cleaned_data["anonymous"], True)
-        self.assertIsNone(cleaned_data["reporter_first_name"])
-        self.assertIsNone(cleaned_data["reporter_last_name"])
-
-    def test_clean_non_anonymous_submission_valid(self):
-        """Test valid non-anonymous submission."""
-        form_data = self.base_form_data.copy()
-        form_data.update(
-            {
-                "anonymous": False,
-                "reporter_first_name": "John",
-                "reporter_last_name": "Doe",
-                "insult_id": self.insult2.id,
-            }
+    def test_valid_when_non_anonymous_with_names(self):
+        """Non-anonymous becomes valid once names are provided."""
+        data = self._base_payload(
+            anonymous="",
+            reporter_first_name="Terry",
+            reporter_last_name="B.",
         )
-        form = InsultReviewForm(data=form_data)
+        form = InsultReviewForm(data=data)
+        self.assertTrue(form.is_valid(), form.errors.as_json())
 
-        self.assertTrue(form.is_valid())
-        cleaned_data = form.clean()
-        self.assertEqual(cleaned_data["reporter_first_name"], "John")
-        self.assertEqual(cleaned_data["reporter_last_name"], "Doe")
-
-    def test_clean_contact_desired_valid(self):
-        """Test valid submission with contact desired."""
-        form_data = self.base_form_data.copy()
-        form_data.update(
-            {
-                "anonymous": False,
-                "reporter_first_name": "Jane",
-                "reporter_last_name": "Smith",
-                "post_review_contact_desired": True,
-                "reporter_email": "jane@example.com",
-                "insult_id": self.insult3.id,
-            }
+    def test_contact_desired_requires_email(self):
+        """If user wants follow-up contact, email is required."""
+        data = self._base_payload(
+            post_review_contact_desired="on",
+            reporter_email="",  # missing
         )
-        form = InsultReviewForm(data=form_data)
+        form = InsultReviewForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("Email address is required", str(form.errors))
 
-        self.assertTrue(form.is_valid())
-        cleaned_data = form.clean()
-        self.assertEqual(cleaned_data["reporter_email"], "jane@example.com")
-        self.assertTrue(cleaned_data["post_review_contact_desired"])
-
-    def test_clean_blank_first_name_raises_validation_error(self):
-        """Test that blank first name for non-anonymous raises ValidationError."""
-        form_data = self.base_form_data.copy()
-        form_data.update(
-            {
-                "anonymous": False,
-                "reporter_first_name": " ",  # Blank space
-                "reporter_last_name": "Doe",
-            }
+    def test_contact_desired_with_email_is_valid(self):
+        data = self._base_payload(
+            post_review_contact_desired="on",
+            reporter_email="me@example.com",
         )
-        form = InsultReviewForm(data=form_data)
+        form = InsultReviewForm(data=data)
+        self.assertTrue(form.is_valid(), form.errors.as_json())
 
-        with self.assertRaises(ValidationError) as context:
-            form.clean()
+    def test_invalid_when_insult_reference_id_not_found(self):
+        """Invalid if the ref id doesn't resolve via Insult.get_by_reference_id()."""
+        data = self._base_payload(insult_reference_id="NOPE_999")
+        form = InsultReviewForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("Invalid Insult ID", str(form.errors))
 
-        expected_message = (
-            "Name Not Provided - You have selected that you do not wish submit this report "
-            "anonymously, but have not provided a first name. Please change your anonymity "
-            "preference or enter a first name"
-        )
-        self.assertEqual(str(context.exception), expected_message)
+    def test_review_text_min_length_enforced_only_when_provided(self):
+        """min_length=70 should fail if provided but too short; empty is allowed."""
+        # Too short and provided -> invalid
+        data_short = self._base_payload(rationale_for_review="way too short")
+        form_short = InsultReviewForm(data=data_short)
+        self.assertFalse(form_short.is_valid())
+        self.assertIn("Ensure this value has at least 70 characters", str(form_short.errors))
 
-    def test_clean_blank_last_name_raises_validation_error(self):
-        """Test that blank last name for non-anonymous raises ValidationError."""
-        form_data = self.base_form_data.copy()
-        form_data.update(
-            {
-                "anonymous": False,
-                "reporter_first_name": "John",
-                "reporter_last_name": " ",  # Blank space
-            }
-        )
-        form = InsultReviewForm(data=form_data)
+        # Empty is allowed (field is not required)
+        data_empty = self._base_payload(rationale_for_review="")
+        form_empty = InsultReviewForm(data=data_empty)
+        self.assertTrue(form_empty.is_valid(), form_empty.errors.as_json())
 
-        with self.assertRaises(ValidationError) as context:
-            form.clean()
-
-        expected_message = (
-            "Name Not Provided - You have selected that you do not wish submit this report "
-            "anonymously, but have not provided a last name, or last initial. Please change "
-            "your anonymity preference or enter a last name"
-        )
-        self.assertEqual(str(context.exception), expected_message)
-
-    def test_clean_blank_email_with_contact_desired_raises_validation_error(self):
-        """Test that blank email with contact desired raises ValidationError."""
-        form_data = self.base_form_data.copy()
-        form_data.update(
-            {
-                "anonymous": False,
-                "reporter_first_name": "John",
-                "reporter_last_name": "Doe",
-                "post_review_contact_desired": True,
-                "reporter_email": " ",  # Blank space
-            }
-        )
-        form = InsultReviewForm(data=form_data)
-
-        with self.assertRaises(ValidationError) as context:
-            form.clean()
-
-        expected_message = (
-            "Email Not Provided - You have selected that you wish to be contacted to know "
-            "the desired outcome of the review, but have not provided an email address. "
-            "Please change your results contact preference or enter a vaild email addrwss"
-        )
-        self.assertEqual(str(context.exception), expected_message)
-
-    def test_clean_invalid_insult_id_raises_validation_error(self):
-        """Test that invalid insult ID raises ValidationError."""
-        form_data = self.base_form_data.copy()
-        form_data.update(
-            {
-                "insult_id": 999,  # Non-existent ID
-            }
-        )
-        form = InsultReviewForm(data=form_data)
-
-        with self.assertRaises(ValidationError) as context:
-            form.clean()
-
-        expected_message = "Invaild Insult ID - Please confirm Insult ID"
-        self.assertEqual(str(context.exception), expected_message)
-
-    def test_clean_missing_first_name_raises_validation_error(self):
-        """Test that missing first name for non-anonymous raises ValidationError."""
-        form_data = self.base_form_data.copy()
-        form_data.update(
-            {
-                "anonymous": False,
-                "reporter_first_name": None,
-                "reporter_last_name": "Doe",
-            }
-        )
-        form = InsultReviewForm(data=form_data)
-
-        with self.assertRaises(ValidationError) as context:
-            form.clean()
-
-        expected_message = (
-            "Name Not Provided - You have selected that you do not wish submit this report "
-            "anonymously, but have not provided a first name. Please change your anonymity "
-            "preference or enter a first name"
-        )
-        self.assertEqual(str(context.exception), expected_message)
-
-    def test_clean_missing_last_name_raises_validation_error(self):
-        """Test that missing last name for non-anonymous raises ValidationError."""
-        form_data = self.base_form_data.copy()
-        form_data.update(
-            {
-                "anonymous": False,
-                "reporter_first_name": "John",
-                "reporter_last_name": None,
-            }
-        )
-        form = InsultReviewForm(data=form_data)
-
-        with self.assertRaises(ValidationError) as context:
-            form.clean()
-
-        expected_message = (
-            "Name Not Provided - You have selected that you do not wish submit this report "
-            "anonymously, but have not provided a last name, or last initial. Please change "
-            "your anonymity preference or enter a last name"
-        )
-        self.assertEqual(str(context.exception), expected_message)
-
-    def test_clean_missing_email_with_contact_desired_raises_validation_error(self):
-        """Test that missing email with contact desired raises ValidationError."""
-        form_data = self.base_form_data.copy()
-        form_data.update(
-            {
-                "anonymous": False,
-                "reporter_first_name": "John",
-                "reporter_last_name": "Doe",
-                "post_review_contact_desired": True,
-                "reporter_email": None,
-            }
-        )
-        form = InsultReviewForm(data=form_data)
-
-        with self.assertRaises(ValidationError) as context:
-            form.clean()
-
-        expected_message = (
-            "Email Not Provided - You have selected that you wish to be contacted to know "
-            "the desired outcome of the review, but have not provided an email address. "
-            "Please change your results contact preference or enter a vaild email addrwss"
-        )
-        self.assertEqual(str(context.exception), expected_message)
+    def test_clean_sets_string_ref_id_even_if_whitespace(self):
+        """Whitespace should be stripped in clean()."""
+        data = self._base_payload(insult_reference_id=f"  {self.insult.reference_id}  ")
+        form = InsultReviewForm(data=data)
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+        self.assertEqual(form.cleaned_data["insult_reference_id"], self.insult.reference_id)
