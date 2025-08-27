@@ -53,7 +53,7 @@
 
     },
     "python.testing.pytestArgs": [
-        "."
+        "applications"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true

@@ -181,22 +181,28 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         db_index=True,
     )
 
-    def save(self, *args, **kwargs):
+    def set_reference_id(self):
+        """
+        Generates and assigns a unique reference ID for the insult if it does not already have one.
+
+        This method creates a unique reference ID using a random prefix and a base64-encoded insult_id pk,
+        ensuring the reference ID is unique among all insults. The reference ID is then saved to the database.
+
+        Returns:
+            None
+        """
         # Only generate reference_id if it is not set and pk is None (new object)
-        if self.pk is None and not self.reference_id:
-            # Save first to get a PK
-            super().save(*args, **kwargs)
+        if self.insult_id and not self.reference_id:
+            candidate = None
             # Generate a unique reference_id
             while True:
-                candidate = f"{secrets.choice(INSULT_REFERENCE_ID_PREFIX_OPTIONS)}_{encode_base64(self.pk)}"
+                candidate = f"{secrets.choice(INSULT_REFERENCE_ID_PREFIX_OPTIONS)}_{encode_base64(int(self.insult_id))}"
                 if not type(self).objects.filter(reference_id=candidate).exists():
                     self.reference_id = candidate  # pyrefly: ignore
                     break
             # Only update the reference_id field
-            super().save(update_fields=["reference_id"])
-        else:
-            # Prevent regeneration of reference_id if already set
-            super().save(*args, **kwargs)
+            self.save(update_fields=["reference_id"])
+            return candidate
 
     def __str__(self) -> str:
         return f"{self.reference_id} - ({self.category}) - NSFW: {self.nsfw}"
@@ -344,10 +350,8 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
 
 class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
     """
-    Summary:
     Model representing an Insult Review with methods for marking different review types.
 
-    Explanation:
     This model represents an Insult Review with fields like insult_id, anonymous, reporter_first_name, post_review_contact_desired, reporter_email, date_submitted, date_reviewed, rationale_for_review, review_type, and status. It includes methods for marking the review as reclassified, re-categorized, not reclassified, removed, and reclassified.
 
     Methods:
@@ -568,21 +572,11 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             )
 
 
-@receiver(post_save, sender=InsultReview)
-def increment_report_count(sender, instance, created, **kwargs):
-    """
-    Increments the report count for an insult when a new InsultReview is created.
-
-    This signal handler updates the reports_count field of the related Insult instance
-    whenever a new InsultReview is saved. It ensures the report count reflects the
-    current number of reviews associated with the insult.
-    """
+@receiver(post_save, sender=Insult)
+def generate_reference_id(sender, instance, created, **kwargs):
     if created:
-        if instance.insult_id:
-            instance.insult.reports_count = instance.insult.reports.count()
-            instance.insult.save(update_fields=["reports_count"])
-
-
+        ref_id = instance.set_reference_id()
+        logger.info(f"Successfully Created and Set Reference ID for {instance.insult_id} -> {ref_id}")
 @receiver(post_save, sender=InsultReview)
 def flag_insult(sender, instance, created, **kwargs):
     """
@@ -602,9 +596,11 @@ def flag_insult(sender, instance, created, **kwargs):
     """
     if created:
         # Connect InsultReview to Insult
-        instance.set_insult()  # Ensure the related Insult is set
+        if not instance.insult:
+            instance.set_insult()  # Ensure the related Insult is set
         # Set the insult status to FLAGGED
         instance.insult.status = Insult.STATUS.FLAGGED
+        instance.insult.reports_count = instance.insult.reports.count()
         instance.insult.save(update_fields=["status", "reports_count"])
 
 
@@ -618,8 +614,7 @@ def decrement_report_count(sender, instance, **kwargs):
     current number of reviews associated with the insult.
     """
     if instance.insult_id:
-        insult = instance.insult
-        if insult:
+        if insult := instance.insult:
             insult.reports_count = insult.reports.count()
             insult.save(update_fields=["reports_count"])
         return

@@ -434,8 +434,8 @@ class CategorySerializer(serializers.ModelSerializer):
     Simple and efficient category representation.
     """
 
-    category_key = serializers.ReadOnlyField(source="category_key")
-    name = serializers.ReadOnlyField(source="name")
+    category_key = serializers.ReadOnlyField()
+    name = serializers.ReadOnlyField()
     insult_count = serializers.SerializerMethodField(method_name="get_count")
 
     class Meta:
@@ -448,13 +448,16 @@ class CategorySerializer(serializers.ModelSerializer):
             category_key=instance.category_key, status=Insult.STATUS.ACTIVE
         ).count()
         
-    def to_representation(self, data):
-        representation = super().to_representation()
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
         logger.debug(representation)
-        return {"key":representation["category_key"],
+        return {
+            representation["category_key"]: 
+                {
                 "name": representation["category_name"],
-                "insult_count": representation['']
+                "insult_count": representation['insult_count']
                 }
+        }
 
 # Bulk operations serializer for better performance with multiple insults
 class BulkInsultSerializer(serializers.ListSerializer):

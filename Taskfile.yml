@@ -56,8 +56,8 @@ tasks:
     desc: Make and run migrations
     dir: .
     cmds:
-      - doppler run --  python3 run/manage.py makemigrations
-      - doppler run --  python3 run/manage.py migrate
+      - doppler run --mount env --  python3 run/manage.py makemigrations
+      - doppler run --mount env --  python3 run/manage.py migrate
     generates:
       - ./applications/*/migrations/*.py
     sources:
@@ -72,13 +72,13 @@ tasks:
 
     desc: Collect static files in to single directory for production
     cmds:
-      - source .envrc && PYTHONPATH="./core:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run:{{ .TASKFILE_DIR }}" doppler run -- python run/manage.py collectstatic --no-input
+      - source .envrc && PYTHONPATH="./core:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run:{{ .TASKFILE_DIR }}" doppler run --mount env -- python run/manage.py collectstatic --no-input
 
   run:test:
     dir: .
     desc: Run tests
     cmds:
-      - doppler run --  python3 run/manage.py test applications.API
+      - doppler run --mount env --  python3 run/manage.py test applications.API
     requires:
       vars:
         - DOPPLER_TOKEN
@@ -97,14 +97,14 @@ tasks:
       - task: db_sync
 
       - echo 'Starting server...'
-      - doppler run -- python3 -m gunicorn --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}}
+      - doppler run --mount env -- python3 -m gunicorn --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}}
 
   schema-check:
     dir: "{{.TASKFILE_DIR}}"
 
     desc: Check Models and Serializers for schema compliance with OpenAPI .0 Standards and fail on warnings
     cmds:
-      - doppler run --  python3 run/manage.py spectacular  --file schema/schema$(date +"%Y-%m-%d").yaml --validate
+      - doppler run --mount env --  python3 run/manage.py spectacular  --file schema/schema$(date +"%Y-%m-%d").yaml --validate
     internal: true
 
   schema:
@@ -113,7 +113,7 @@ tasks:
 
     desc: Generate OpenAPI 3.0 schema.yaml file from models and serializers
     cmds:
-      - doppler run --  .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
+      - doppler run --mount env --  .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
 
   build-image:
     desc: Build Docker Image
@@ -130,21 +130,21 @@ tasks:
     cmds:
       - echo "🔍 Running Python linting and formatting..."
       - echo "🧹 Running autoflake (unused imports/variables check)..."
-      - doppler run -- .venv/bin/autoflake --check --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
+      - doppler run --mount env -- .venv/bin/autoflake --check --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
       - echo "📋 Running isort (import sorting)..."
-      - doppler run -- .venv/bin/isort . --check-only --diff
+      - doppler run --mount env -- .venv/bin/isort . --check-only --diff
       - echo "⚫ Running black (code formatting)..."
-      - doppler run -- .venv/bin/black . --check --diff
+      - doppler run --mount env -- .venv/bin/black . --check --diff
       - echo "🚀 Running ruff (fast linting)..."
-      - doppler run -- .venv/bin/ruff check .
+      - doppler run --mount env -- .venv/bin/ruff check .
       - echo "🔧 Running pylint (comprehensive linting)..."
-      - doppler run -- .venv/bin/pylint **/*.py --load-plugins=pylint_django,pylint_celery --django-settings-module=core.settings
+      - doppler run --mount env -- .venv/bin/pylint **/*.py --load-plugins=pylint_django,pylint_celery --django-settings-module=core.settings
       - echo "🔒 Running bandit (security linting)..."
-      - doppler run -- .venv/bin/bandit -r . -f json --exclude=./tests,./venv,./.venv
+      - doppler run --mount env -- .venv/bin/bandit -r . -f json --exclude=./tests,./venv,./.venv
       - echo "🎯 Running mypy (type checking)..."
-      - doppler run -- .venv/bin/mypy .
+      - doppler run --mount env -- .venv/bin/mypy .
       - echo "🌟 Running djlint (Django template linting)..."
-      - doppler run -- .venv/bin/djlint --check templates/**/*.html
+      - doppler run --mount env -- .venv/bin/djlint --check templates/**/*.html
       - echo "✅ All linting checks completed!"
     silent: false
     interactive: false
@@ -154,19 +154,19 @@ tasks:
     cmds:
       - echo "🔧 Auto-fixing Python linting and formatting issues..."
       - echo "🧹 Running autoflake (removing unused imports/variables)..."
-      - cmd: doppler run -- .venv/bin/autoflake --in-place --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
+      - cmd: doppler run --mount env -- .venv/bin/autoflake --in-place --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
         ignore_error: true
       - echo "📋 Running isort (import sorting)..."
-      - cmd: doppler run -- .venv/bin/isort .
+      - cmd: doppler run --mount env -- .venv/bin/isort .
         ignore_error: true
       - echo "⚫ Running black (code formatting)..."
-      - cmd: doppler run -- .venv/bin/black .
+      - cmd: doppler run --mount env -- .venv/bin/black .
         ignore_error: true
       - echo "🚀 Running ruff (auto-fix)..."
-      - cmd: doppler run -- .venv/bin/ruff check . --fix
+      - cmd: doppler run --mount env -- .venv/bin/ruff check . --fix
         ignore_error: true
       - echo "🌟 Running djlint (Django template auto-fix)..."
-      - cmd: doppler run -- .venv/bin/djlint --reformat templates/**/*.html
+      - cmd: doppler run --mount env -- .venv/bin/djlint --reformat templates/**/*.html
         ignore_error: true
       - echo "✅ Auto-fix completed! Run 'task lint' to check remaining issues."
     silent: false
@@ -176,6 +176,6 @@ tasks:
     desc: "Wrapper command to simplify the use of Django management commands. Example Usage: task django -- runserver"
     dir: "{{.TASKFILE_DIR}}"
     cmds:
-      - doppler run -- python3 run/manage.py {{.CLI_ARGS}}
+      - doppler run --mount env -- python3 run/manage.py {{.CLI_ARGS}}
     silent: false
     interactive: true

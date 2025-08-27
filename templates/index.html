@@ -29,21 +29,10 @@
           <script src="https://unpkg.com/highlight.run"></script>
           {% comment %} <link rel="stylesheet" href="{% static 'css/styles.css' %}" /> {% endcomment %}
           <style>
-               h1,
-               h2,
-               h3,
-               h4,
-               h5,
-               h6,
-               .uk-accordion-title,
-               .phrase-item,
-               .header-font {
-                    font-family: 'YoMamaHeader';
-               }
-
+        
                @font-face {
                     font-family: YoMamaHeader;
-                    src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/caloriesuitDEMO.woff2') format('woff2');
+                    src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2') format('woff2');
                }
 
                @font-face {
@@ -94,6 +83,22 @@
                     z-index: var(--z-preloader);
                     opacity: 1;
                     transition: opacity var(--transition-standard);
+               }
+       h1,
+               h2,
+               h3,
+               h4,
+               h5,
+               h6,
+               .uk-accordion-title,
+               .phrase-item,
+               .header-font {
+                    font-family: 'YoMamaHeader';
+                      text-shadow:
+    -1px -1px 0 var(--color-primary),  /* Top-left shadow */
+     1px -1px 0 var(--color-primary),  /* Top-right shadow */
+    -1px  1px 0 var(--color-primary),  /* Bottom-left shadow */
+     1px  1px 0 var(--color-primary);  /* Bottom-right shadow */
                }
 
                .loading-container {
@@ -569,6 +574,19 @@
                     transition: transform 200ms var(--transition-standard);
                }
 
+               .nav-underline-purple::after {
+                    content: "";
+                    position: absolute;
+                    left: 1rem;
+                    right: 1rem;
+                    bottom: .35rem;
+                    height: 2px;
+                    transform: scaleX(0);
+                    transform-origin: left;
+                    background: var(--color-purple);
+                    transition: transform 200ms var(--transition-standard);
+               }
+
                .nav-underline:hover::after,
                .nav-underline:focus::after,
                .nav-link[aria-current="page"].nav-underline::after {
@@ -1018,7 +1036,7 @@
                               <section id="key-features"  class="ms-5 desktop-display">
                                    <div class="row">
                                         <div class="col-6 col-m3">
-                                             <h1 class="">Key Features</h1>
+                                             <h1 class="nav-underline-purple">Key Features</h1>
                                              <div class="accordion" id="accordionExample">
   <div class="accordion-item">
     <h2 class="accordion-header" id="headingOne">

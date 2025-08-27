@@ -3,7 +3,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.test import APIRequestFactory, APITestCase, force_authenticate
-
+from loguru import logger
 from applications.API.endpoints import (
     InsultByCategoryEndpoint,
     InsultDetailsEndpoints,
@@ -107,16 +107,16 @@ class EndpointTests(APITestCase):
         self.assertIn("results", resp.data)
         self.assertIsInstance(resp.data.get("results"), list)
         
-        def test_list_insults_excludes_non_active(self):
+    def test_list_insults_excludes_non_active(self):
         """GET /api/insults/ does not include non-active insults."""
         resp = self.get_view_response(InsultListEndpoint, "/api/insults/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         # Ensure the non-active insult is not in the results
-        insult_ids = [insult["id"] for insult in resp.data.get("results", [])]
-        self.assertNotIn(cls.i4.id, insult_ids)
+        logger.debug(resp.data.get("results"))
+        insult_ids = [insult["pk"] for insult in resp.data.get("results", [])]
+        self.assertNotIn(self.i4.pk, insult_ids)
 
- \\
-
+    
     def test_list_insults_reject_category_query_param(self):
         """The list endpoint should steer users to /api/insults/<category> for category filtering."""
         resp = self.get_view_response(InsultListEndpoint, "/api/insults/?category=P")

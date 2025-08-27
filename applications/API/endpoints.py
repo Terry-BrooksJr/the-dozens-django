@@ -498,3 +498,8 @@ class ListCategoryView(GenericAPIView):
     permission_classes = [AllowAny]
     def get_queryset(self):
         return (InsultCategory.objects.exclude(category_key__in=['TEST',"X"]).values())
+    
+    def get(self, request):
+        qs = self.get_queryset()
+        serializer = CategorySerializer(qs)
+        return Response({"help_text": "Here is a list of all available Insult Categories. The API will accept either values and is case insensitive. Ex: `/api/insults/p` and `api/insults/POOR` will yield the same result",  "catergories":serializer.data })
