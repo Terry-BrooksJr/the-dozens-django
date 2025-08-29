@@ -113,8 +113,8 @@ class EndpointTests(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         # Ensure the non-active insult is not in the results
         logger.debug(resp.data.get("results"))
-        insult_ids = [insult["pk"] for insult in resp.data.get("results", [])]
-        self.assertNotIn(self.i4.pk, insult_ids)
+        insult_ids = [insult["reference_id"] for insult in resp.data.get("results", [])]
+        self.assertNotIn(self.i4.reference_id, insult_ids)
 
     
     def test_list_insults_reject_category_query_param(self):

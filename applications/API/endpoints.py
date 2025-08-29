@@ -12,15 +12,17 @@ from drf_spectacular.utils import (
 )
 from loguru import logger
 from rest_framework import status
+import rest_framework.decorators
 from rest_framework.generics import (
     GenericAPIView,
     ListAPIView,
     RetrieveUpdateDestroyAPIView,
+    CreateAPIView,
 )
 from django.core.cache import cache
 
 from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin
-from rest_framework.permissions import SAFE_METHODS, AllowAny
+from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import PaginateByMaxMixin
 
@@ -30,6 +32,7 @@ from applications.API.permissions import IsOwnerOrReadOnly
 from applications.API.serializers import (
     BaseInsultSerializer,
     CategorySerializer,
+    CreateInsultSerializer,
     OptimizedInsultSerializer,
 )
 from common.performance import CachedResponseMixin
@@ -76,7 +79,7 @@ class InsultByCategoryEndpoint(
         # Prevent schema generation from evaluating real queries
         if getattr(self, "swagger_fake_view", False):
             return Insult.objects.none()
-        logger.debug(f"kwargs seen by view: {self.kwargs}") 
+        logger.debug(f"kwargs seen by view: {self.kwargs}")
         category = self.kwargs["category_name"]
         user_content = None
         normalized_category = BaseInsultSerializer.validate_category(category)
@@ -316,7 +319,7 @@ class InsultDetailsEndpoints(
         },
     )
 )
-class InsultListEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIView):
+class InsultListView(CachedResponseMixin, PaginateByMaxMixin, ListAPIView):
     serializer_class = OptimizedInsultSerializer
     primary_model = Insult
     cache_models = [InsultCategory, InsultReview]
@@ -337,7 +340,7 @@ class InsultListEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIView):
             Insult.objects.select_related("added_by", "category")
             .prefetch_related("reports")
             .order_by("-added_on")
-            .exclude(category__category_key__in = ['TEST', "X"])
+            .exclude(category__category_key__in=["TEST", "X"])
         )
         # Build cache key with all relevant filters
 
@@ -345,10 +348,10 @@ class InsultListEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIView):
         # Check for category query parameter early and reject with 400
         if request.GET.get("category_name") or request.GET.get("category"):
             return Response(
-                {"Error": "Please Use the `api/insults/<category>` endpoint"}, 
-                status=status.HTTP_400_BAD_REQUEST
+                {"Error": "Please Use the `api/insults/<category>` endpoint"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-            
+
         user = request.user if request.user.is_authenticated else None
         filters = {
             "category": request.GET.get("category"),
@@ -461,7 +464,7 @@ class RandomInsultView(GenericAPIView):
 @extend_schema_view(
     list=extend_schema(
         tags=["Insults"],
-                auth=[],
+        auth=[],
         operation_id="list_categories",
         description="List all available insult categories",
         responses={
@@ -473,33 +476,35 @@ class RandomInsultView(GenericAPIView):
                         value={
                             "help_text": "Available categories",
                             "available_categories": [
-                                {
-                                "category_key": "p",
-                                "category_name": "poor",
-                                "insult_count": 134
-                                },
-                                {
-                                "category_key": "f",
-                                "category_name": "fat",
-                                "insult_count": 80
-                                },
+                                {"p": {"category_name": "poor", "insult_count": 134}},
+                                {"f": {"category_name": "fat", "insult_count": 80}},
                                 # ...
-                            ]
-                            
-                            },
+                            ],
+                        },
                     )
                 ],
             )
         },
     )
 )
-class ListCategoryView(GenericAPIView):
+class ListCategoryView(CachedResponseMixin, GenericAPIView):
     serializer_class = CategorySerializer
     permission_classes = [AllowAny]
+
     def get_queryset(self):
-        return (InsultCategory.objects.exclude(category_key__in=['TEST',"X"]).values())
-    
+        return InsultCategory.objects.exclude(category_key__in=["TEST", "X"]).values()
+
     def get(self, request):
         qs = self.get_queryset()
         serializer = CategorySerializer(qs)
-        return Response({"help_text": "Here is a list of all available Insult Categories. The API will accept either values and is case insensitive. Ex: `/api/insults/p` and `api/insults/POOR` will yield the same result",  "catergories":serializer.data })
+        return Response(
+            {
+                "help_text": "Here is a list of all available Insult Categories. The API will accept either values and is case insensitive. Ex: `/api/insults/p` and `api/insults/POOR` will yield the same result",
+                "catergories": serializer.data,
+            }
+        )
+
+
+class CreateInsultView(CreateAPIView):
+    serializer_class = CreateInsultSerializer
+    permission_classes = [IsAuthenticated]

@@ -6,6 +6,7 @@
      <head>
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <meta name="color-scheme" content="light dark" />
           <meta name="keywords"
                 content="API, Joke, Entertainment, Yo Mama Jokes, The Dozens " />
           <title>The Dozens - The Yo' Momma Jokes API</title>
@@ -27,9 +28,7 @@
           <link rel="stylesheet"
                 href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
           <script src="https://unpkg.com/highlight.run"></script>
-          {% comment %} <link rel="stylesheet" href="{% static 'css/styles.css' %}" /> {% endcomment %}
           <style>
-        
                @font-face {
                     font-family: YoMamaHeader;
                     src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2') format('woff2');
@@ -55,21 +54,25 @@
                     box-sizing: border-box;
                }
 
-
                body {
                     background-image: url("https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@fb77aebafb4f58cffa6d4ddd7026473372f42faf/static/assets/background.svg");
                     background-repeat: no-repeat;
                     background-color: #D7DF0D;
-                    /* fixed the double ## */
                     background-size: cover;
                     background-attachment: fixed;
-                    /* keeps image from moving */
                     background-position: center center;
-                    /* stays centered */
-                    font-family: "YoMamaBody";
+                    font-family: "YoMamaBody", Arial, sans-serif;
                     min-height: 100vh;
-                    /* allow scrolling naturally */
                     margin: 0;
+                    line-height: 1.6;
+               }
+
+               /* Mobile-first: Use scroll on touch devices */
+               @media (max-width: 768px) {
+                    body {
+                         background-attachment: scroll;
+                         background: linear-gradient(169deg, rgba(215, 223, 13, 1) 0%, rgba(190, 218, 0, 1) 50%, rgba(119, 0, 113, 1) 100%);
+                    }
                }
 
                #preloader {
@@ -84,7 +87,8 @@
                     opacity: 1;
                     transition: opacity var(--transition-standard);
                }
-       h1,
+
+               h1,
                h2,
                h3,
                h4,
@@ -93,28 +97,34 @@
                .uk-accordion-title,
                .phrase-item,
                .header-font {
-                    font-family: 'YoMamaHeader';
-                      text-shadow:
-    -1px -1px 0 var(--color-primary),  /* Top-left shadow */
-     1px -1px 0 var(--color-primary),  /* Top-right shadow */
-    -1px  1px 0 var(--color-primary),  /* Bottom-left shadow */
-     1px  1px 0 var(--color-primary);  /* Bottom-right shadow */
+                    font-family: 'YoMamaHeader', Arial, sans-serif;
+                    text-shadow:
+                         -1px -1px 0 var(--color-primary),
+                         1px -1px 0 var(--color-primary),
+                         -1px 1px 0 var(--color-primary),
+                         1px 1px 0 var(--color-primary);
                }
+
+               /* Responsive text sizing */
+               h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); }
+               h2 { font-size: clamp(1.5rem, 3.5vw, 2rem); }
+               h3 { font-size: clamp(1.25rem, 3vw, 1.75rem); }
+               p { font-size: clamp(0.9rem, 2.5vw, 1.1rem); }
 
                .loading-container {
                     text-align: center;
                     color: var(--color-white);
+                    padding: 1rem;
                }
 
                #loading-message {
-                    font-size: 1.5rem;
+                    font-size: clamp(1.2rem, 3vw, 1.5rem);
                     margin-bottom: 2rem;
                     font-family: 'YoMamaHeader';
-
                }
 
                #phrases {
-                    max-width: 600px;
+                    max-width: min(600px, 90vw);
                     margin: 0 auto;
                }
 
@@ -122,10 +132,11 @@
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    padding: 1rem;
+                    padding: 0.75rem 1rem;
                     color: var(--color-white);
                     opacity: 0.7;
                     transition: all 0.3s ease;
+                    font-size: clamp(0.9rem, 2.5vw, 1rem);
                }
 
                .phrase-item.completed {
@@ -133,14 +144,24 @@
                }
 
                #jod-icon {
-                    height: "175px";
+                    height: auto;
                     width: auto;
+                    max-height: 120px;
+                    max-width: 120px;
                }
 
+               /* Responsive icon sizing */
+               @media (max-width: 576px) {
+                    #jod-icon {
+                         max-height: 80px;
+                         max-width: 80px;
+                    }
+               }
 
                .checkmark {
-                    width: 24px;
-                    height: 24px;
+                    width: 20px;
+                    height: 20px;
+                    min-width: 20px;
                     opacity: 0;
                     transition: opacity 0.3s ease;
                }
@@ -153,7 +174,6 @@
                     opacity: 0 !important;
                }
 
-               /* Content Styles */
                .content-wrapper {
                     position: relative;
                     opacity: 0;
@@ -165,8 +185,6 @@
                     opacity: 1;
                }
 
-
-               /* Yo Mama Specific Styles */
                .joke-of-day {
                     background-color: var(--color-primary);
                     color: var(--color-white);
@@ -193,326 +211,38 @@
                }
 
                .main-content {
-                    padding: 2rem;
-                    height: 780px;
+                    padding: 1rem;
                     width: 100%;
+               }
+
+               /* Mobile-first main content */
+               @media (min-width: 768px) {
+                    .main-content {
+                         padding: 2rem;
+                    }
                }
 
                .features-section {
                     background: white;
                     border-radius: 8px;
-                    padding: 2rem;
+                    padding: 1.5rem;
                     margin-top: 2rem;
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                }
 
+               @media (min-width: 768px) {
+                    .features-section {
+                         padding: 2rem;
+                    }
+               }
+
                #dozens-image {
-                    height: 300px;
-                    width: auto;
-               }
-
-               .nav-bar-parent {
-                    font-weight: 900;
-                    font-size: medium;
-                    letter-spacing: .15em;
-               }
-
-               .nav-bar-parent:hover {
-                    font-weight: 900;
-                    font-size: large;
-                    letter-spacing: .10em;
-                    color: white;
-                    text-decoration: underline;
-
-               }
-
-               #yo-mama-brand {
-                    height: 100px;
-                    width: auto;
-                    margin-right: 60px;
-                    float: left;
-               }
-
-               .nav-bar-parent-li {
-                    margin-right: 3em;
-                    margin-left: 3em;
-               }
-
-               #about-video {
-                    margin-left: 13%;
-               }
-
-               #yo-mama-dropdown {
-                    outline: 0;
-                    border: 0;
-                    background-color: transparent;
-               }
-
-               .img-modal {
-                    height: 15em;
-                    width: auto;
-               }
-
-               /* Modify the background color */
-               nav {
                     width: 100%;
-                    background: linear-gradient(165deg, rgba(98, 0, 98, 1) 0%, rgba(119, 0, 113, 1) 42%, rgba(190, 218, 0, 1) 100%);
-                    border-bottom: 3px solid var(--color-white);
+                    height: auto;
+                    max-width: 100%;
                }
 
-               .nav-item {
-                    font-family: 'YoMamaHeader';
-                    color: var(--color-white);
-               }
-
-               .nav-items:hover {
-                    transform: scale(1.1);
-
-               }
-
-               .btn-primary {
-                    background-color: var(--color-accent) !important;
-                    /* was --primary-purple-color */
-               }
-
-               ,
-               .btn-primary:hover,
-               .btn-primary:active,
-               .btn-primary:visited {
-                    background-color: var(--color-accent) !important;
-                    /* was --primary-lime-color */
-               }
-
-               .card-img-top {
-                    height: 175px;
-                    width: auto;
-               }
-
-               /* Consolidate duplicate #dozens-image rules */
-
-
-               /* MOBILE-FIRST VISIBILITY ------------------------------ */
-
-               /* Default: assume desktop/tablet layout is visible */
-               .mobile-redirect,
-               .mobile-background {
-                    display: none !important;
-               }
-
-               /* Hide “mobile-only” helpers on wide screens if needed */
-               @media (min-width: 769px) {
-
-                    /* desktop rules */
-                    .mobile-display {
-                         display: block !important;
-                    }
-
-                    .responsive-wrapper {
-                         display: block !important;
-                    }
-               }
-
-               /* Actual mobile rules */
-               @media (max-width: 768px) {
-
-                    /* Show the mobile redirect UI on mobile */
-                    .mobile-redirect {
-                         display: block !important;
-                    }
-
-                    #mobile-background {
-                         display: block !important;
-                         background-image: linear-gradient(315deg, #770071 0%, #620062 74%);
-                         background-size: cover;
-                         background-position: center;
-                         background-repeat: no-repeat;
-                         height: 100vh;
-                         width: 100%;
-                         position: fixed;
-                         inset: 0;
-                         z-index: 2;
-                    }
-
-                    /* Hide desktop wrappers on mobile */
-                    .mobile-display {
-                         display: none !important;
-                    }
-
-                    .responsive-wrapper {
-                         display: none !important;
-                    }
-               }
-
-               @media (max-width: 768px) {
-                    body {
-                         background-attachment: scroll;
-                         height: auto;
-                    }
-               }
-
-               /* Speech Bubble Styles */
-               .speech-bubble {
-                    position: fixed;
-                    /* Use fixed instead of absolute for better positioning */
-                    background: var(--color-primary);
-                    color: var(--color-white);
-                    padding: 15px 20px;
-                    border-radius: 15px;
-                    font-family: 'YoMamaBody', Arial, sans-serif;
-                    font-size: 14px;
-                    line-height: 1.4;
-                    max-width: 300px;
-                    min-width: 200px;
-                    z-index: 1000;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                    opacity: 0;
-                    visibility: hidden;
-                    transform: translateY(10px);
-                    transition: all 0.3s ease;
-                    pointer-events: none;
-                    border: 2px solid var(--color-accent);
-               }
-
-               .speech-bubble.show {
-                    opacity: 1;
-                    visibility: visible;
-                    transform: translateY(0);
-               }
-
-               /* Speech bubble tail (pointing down to the icon) */
-               .speech-bubble::after {
-                    content: '';
-                    position: absolute;
-                    top: 100%;
-                    left: 50%;
-                    margin-left: -10px;
-                    border: 10px solid transparent;
-                    border-top-color: var(--color-primary);
-               }
-
-               /* Alternative tail positions */
-               .speech-bubble.tail-left::after {
-                    left: 20px;
-               }
-
-               .speech-bubble.tail-right::after {
-                    left: auto;
-                    right: 20px;
-               }
-
-               /* Icon container styles */
-               .icon-joke-of-day {
-                    transition: all 0.3s ease;
-                    cursor: pointer;
-                    height: 144px;
-                    width: auto;
-               }
-
-               body>div.layout-container>div>div>header>nav {
-                    position: sticky;
-                    top: 0;
-                    opacity: 85%;
-               }
-
-               .icon-joke-of-day:hover {
-                    transform: scale(1.1);
-                    filter: drop-shadow(0 0 10px rgba(189, 0, 180, 0.6));
-               }
-
-               /* Loading state */
-               .speech-bubble.loading {
-                    background: var(--color-secondary);
-               }
-
-               .speech-bubble.loading::before {
-                    content: '⟳ ';
-                    animation: spin 1s linear infinite;
-                    margin-right: 5px;
-               }
-
-               @keyframes spin {
-                    from {
-                         transform: rotate(0deg);
-                    }
-
-                    to {
-                         transform: rotate(360deg);
-                    }
-               }
-
-               /* Horizontal dropdown for "The API" menu */
-               .dropdown-menu-horizontal {
-                    flex-direction: row;
-                    align-items: center;
-                    gap: 0.5rem;
-                    padding: 0.5rem 0.75rem;
-                    white-space: nowrap;
-                    /* keep items on one line on desktop */
-               }
-
-               /* Only show the horizontal dropdown when Bootstrap toggles it */
-               .dropdown-menu-horizontal.show,
-               .dropdown.show>.dropdown-menu-horizontal {
-                    display: flex;
-               }
-
-               .dropdown-menu-horizontal>li {
-                    display: inline-block;
-                    /* place list items side-by-side */
-               }
-
-               .dropdown-menu-horizontal .dropdown-item {
-                    display: flex;
-                    flex-direction: column;
-                    /* icon on top, label below */
-                    align-items: center;
-                    /* center the stack */
-                    justify-content: center;
-                    text-align: center;
-                    /* center text under icon */
-                    gap: 0.35rem;
-                    /* space between icon and text */
-                    width: auto;
-                    padding: 0.5rem 0.75rem;
-                    line-height: 1.1;
-                    white-space: normal;
-                    /* allow label to wrap to next line if needed */
-                    min-width: 88px;
-                    /* keeps tap target reasonable */
-               }
-
-               /* Stack vertically on small screens */
-               @media (max-width: 768px) {
-                    .dropdown-menu-horizontal.show {
-                         flex-direction: column;
-                         white-space: normal;
-                         gap: 0;
-                         /* default dropdown spacing */
-                    }
-
-                    .dropdown-menu-horizontal.show>li,
-                    .dropdown-menu-horizontal.show .dropdown-item {
-                         display: block;
-                         width: 100%;
-                    }
-               }
-
-               .dropdown-menu-horizontal .dropdown-item {
-                    border-right: 1px solid rgba(0, 0, 0, .1);
-               }
-
-               .dropdown-menu-horizontal .dropdown-item:last-child {
-                    border-right: 0;
-               }
-
-               .api-nav-img {
-                    height: 30px;
-                    width: auto;
-                    display: block;
-                    /* ensures icon is on its own line above text */
-               }
-
-               /* Navbar shell */
+               /* Navigation Styles */
                .yo-nav {
                     position: sticky;
                     top: 0;
@@ -523,28 +253,47 @@
                     box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
                }
 
-               /* Brand text uses your display font */
                .yo-nav .brand-text {
                     font-weight: 800;
                     letter-spacing: .02em;
                }
 
-               /* Normalize link look (no heavy .btns in the middle) */
                .yo-nav .nav-link {
-                    padding: .75rem 1rem;
+                    padding: 0.75rem 1rem;
                     font-weight: 700;
                     letter-spacing: .04em;
                     color: var(--color-white);
                     opacity: .95;
+                    font-size: clamp(0.8rem, 2vw, 1rem);
+                    text-align: center;
                }
-               .nav-link:active, nav-link.active, .card-header-tabs:active{
-     color: var(--color-white);
-     opacity: 1;
-     font-weight: 800;
-     background: color-mix(in srgb, var(--color-primary) 88%, transparent);
-     border-bottom: 2px solid var(--color-accent);
-}
-               
+
+               /* Mobile nav adjustments */
+               @media (max-width: 767px) {
+                    .yo-nav .nav-link {
+                         padding: 0.5rem;
+                         font-size: 0.9rem;
+                         line-height: 1.2;
+                    }
+                    
+                    .navbar-nav {
+                         text-align: center;
+                    }
+                    
+                    .navbar-nav .nav-item {
+                         margin: 0.25rem 0;
+                    }
+               }
+
+               .nav-link:active,
+               .nav-link.active,
+               .card-header-tabs:active {
+                    color: var(--color-white);
+                    opacity: 1;
+                    font-weight: 800;
+                    background: color-mix(in srgb, var(--color-primary) 88%, transparent);
+                    border-bottom: 2px solid var(--color-accent);
+               }
 
                .card>h5,
                .card-header>a {
@@ -556,7 +305,7 @@
                     opacity: 1;
                }
 
-               /* Underline micro‑interaction */
+               /* Underline animations */
                .nav-underline {
                     position: relative;
                }
@@ -574,49 +323,44 @@
                     transition: transform 200ms var(--transition-standard);
                }
 
-               .nav-underline-purple::after {
-                    content: "";
-                    position: absolute;
-                    left: 1rem;
-                    right: 1rem;
-                    bottom: .35rem;
-                    height: 2px;
-                    transform: scaleX(0);
-                    transform-origin: left;
-                    background: var(--color-purple);
-                    transition: transform 200ms var(--transition-standard);
-               }
-
                .nav-underline:hover::after,
                .nav-underline:focus::after,
                .nav-link[aria-current="page"].nav-underline::after {
                     transform: scaleX(1);
                }
 
-               /* Accent CTA button that matches your system */
                .btn-accent {
                     background: var(--color-accent);
                     border: none;
                     color: #222;
-                    padding: .6rem 1rem;
+                    padding: 0.5rem 0.75rem;
                     border-radius: .75rem;
                     font-weight: 800;
+                    font-size: clamp(0.8rem, 2vw, 1rem);
+               }
+
+               @media (min-width: 768px) {
+                    .btn-accent {
+                         padding: 0.6rem 1rem;
+                    }
                }
 
                .btn-accent:hover {
                     filter: brightness(1.05);
                }
 
-               /* Dropdown theming to match bar */
+               /* Dropdown improvements */
                .dropdown-menu {
                     border-radius: .75rem;
                     border: 1px solid rgba(0, 0, 0, .08);
                     box-shadow: 0 12px 30px rgba(0, 0, 0, .12);
+                    min-width: 200px;
                }
 
                .dropdown-item {
                     padding: .55rem .85rem;
                     font-weight: 600;
+                    font-size: clamp(0.85rem, 2vw, 1rem);
                }
 
                .dropdown-item:active {
@@ -624,26 +368,339 @@
                     color: #222;
                }
 
-               /* Focus visibility (keyboard users) */
+               /* Horizontal dropdown for API menu - responsive */
+               .dropdown-menu-horizontal {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    gap: 0.5rem;
+                    padding: 0.5rem 0.75rem;
+                    min-width: 280px;
+               }
+
+               .dropdown-menu-horizontal>li {
+                    flex: 1 1 auto;
+                    min-width: 80px;
+               }
+
+               .dropdown-menu-horizontal .dropdown-item {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                    gap: 0.25rem;
+                    padding: 0.5rem 0.25rem;
+                    line-height: 1.2;
+                    white-space: normal;
+                    border-right: 1px solid rgba(0, 0, 0, .1);
+                    font-size: 0.75rem;
+               }
+
+               .dropdown-menu-horizontal .dropdown-item:last-child {
+                    border-right: 0;
+               }
+
+               .api-nav-img {
+                    height: 24px;
+                    width: auto;
+                    display: block;
+                    margin-bottom: 0.25rem;
+               }
+
+               /* Mobile dropdown stacking */
+               @media (max-width: 576px) {
+                    .dropdown-menu-horizontal {
+                         flex-direction: column;
+                         gap: 0;
+                         min-width: 200px;
+                    }
+                    
+                    .dropdown-menu-horizontal>li {
+                         width: 100%;
+                         flex: none;
+                    }
+                    
+                    .dropdown-menu-horizontal .dropdown-item {
+                         flex-direction: row;
+                         border-right: none;
+                         border-bottom: 1px solid rgba(0, 0, 0, .1);
+                         padding: 0.75rem;
+                         gap: 0.5rem;
+                         text-align: left;
+                         justify-content: flex-start;
+                    }
+                    
+                    .dropdown-menu-horizontal .dropdown-item:last-child {
+                         border-bottom: none;
+                    }
+               }
+
+               /* Focus and accessibility */
                .yo-nav :focus-visible {
                     outline: 2px solid var(--color-accent);
                     outline-offset: 2px;
                }
 
-               /* Mobile tweaks */
                .navbar-toggler {
                     border: 0;
                     box-shadow: none !important;
+                    padding: 0.5rem;
                }
 
                .navbar-toggler:focus {
                     outline: 2px solid var(--color-accent);
                }
+
+               /* Main content sections */
+               main {
+                    padding: 1rem 0;
+               }
+
+               #body-content {
+                    padding: 1rem;
+               }
+
+               @media (min-width: 768px) {
+                    #body-content {
+                         padding: 2rem;
+                    }
+               }
+
+               /* Responsive spacing */
+               .row {
+                    margin-bottom: 1.5rem;
+               }
+
+               @media (min-width: 768px) {
+                    .row {
+                         margin-bottom: 2rem;
+                    }
+               }
+
+               /* Video responsive */
+               #about-video {
+                    width: 100%;
+                    max-width: 100%;
+                    height: auto;
+               }
+
+               /* Cards and tabs - mobile improvements */
+               .card {
+                    margin-bottom: 1rem;
+               }
+
+               .nav-tabs {
+                    flex-wrap: wrap;
+               }
+
+               .nav-tabs .nav-link {
+                    font-size: clamp(0.75rem, 2vw, 0.9rem);
+                    padding: 0.5rem 0.75rem;
+                    white-space: nowrap;
+               }
+
+               @media (max-width: 576px) {
+                    .nav-tabs .nav-link {
+                         padding: 0.5rem 0.25rem;
+                         font-size: 0.7rem;
+                    }
+               }
+
+               .card-img-top {
+                    height: auto;
+                    max-height: 120px;
+                    width: auto;
+                    object-fit: contain;
+               }
+
+               /* Accordion responsive */
+               .accordion-button {
+                    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+                    padding: 1rem 0.75rem;
+               }
+
+               .accordion-body {
+                    font-size: clamp(0.85rem, 2vw, 1rem);
+                    padding: 1rem 0.75rem;
+               }
+
+               /* Speech Bubble - responsive */
+               .speech-bubble {
+                    position: fixed;
+                    background: var(--color-primary);
+                    color: var(--color-white);
+                    padding: 12px 16px;
+                    border-radius: 15px;
+                    font-family: 'YoMamaBody', Arial, sans-serif;
+                    font-size: clamp(0.8rem, 2vw, 0.9rem);
+                    line-height: 1.4;
+                    max-width: min(280px, 90vw);
+                    min-width: min(180px, 80vw);
+                    z-index: 1000;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                    opacity: 0;
+                    visibility: hidden;
+                    transform: translateY(10px);
+                    transition: all 0.3s ease;
+                    pointer-events: none;
+                    border: 2px solid var(--color-accent);
+               }
+
+               .speech-bubble.show {
+                    opacity: 1;
+                    visibility: visible;
+                    transform: translateY(0);
+               }
+
+               .speech-bubble::after {
+                    content: '';
+                    position: absolute;
+                    top: 100%;
+                    left: 50%;
+                    margin-left: -10px;
+                    border: 10px solid transparent;
+                    border-top-color: var(--color-primary);
+               }
+
+               .speech-bubble.tail-left::after {
+                    left: 20px;
+               }
+
+               .speech-bubble.tail-right::after {
+                    left: auto;
+                    right: 20px;
+               }
+
+               .icon-joke-of-day {
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                    height: auto;
+                    width: auto;
+                    max-height: 120px;
+               }
+
+               @media (max-width: 576px) {
+                    .icon-joke-of-day {
+                         max-height: 80px;
+                    }
+               }
+
+               .icon-joke-of-day:hover {
+                    transform: scale(1.05);
+                    filter: drop-shadow(0 0 10px rgba(189, 0, 180, 0.6));
+               }
+
+               /* Touch-friendly hover effects for mobile */
+               @media (hover: none) and (pointer: coarse) {
+                    .icon-joke-of-day:hover {
+                         transform: none;
+                         filter: none;
+                    }
+                    
+                    .icon-joke-of-day:active {
+                         transform: scale(0.95);
+                    }
+               }
+
+               .speech-bubble.loading {
+                    background: var(--color-secondary);
+               }
+
+               .speech-bubble.loading::before {
+                    content: '⟳ ';
+                    animation: spin 1s linear infinite;
+                    margin-right: 5px;
+               }
+
+               @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+               }
+
+               /* Utility classes for responsive design */
+               .text-responsive {
+                    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+               }
+
+               .d-none-mobile {
+                    display: block;
+               }
+
+               @media (max-width: 767px) {
+                    .d-none-mobile {
+                         display: none !important;
+                    }
+               }
+
+               .d-block-mobile {
+                    display: none;
+               }
+
+               @media (max-width: 767px) {
+                    .d-block-mobile {
+                         display: block !important;
+                    }
+               }
+
+               /* Remove problematic mobile redirect styles */
+               .mobile-redirect {
+                    display: none !important;
+               }
+
+               /* Ensure all images are responsive */
+               img, video, iframe, embed, object {
+                    max-width: 100%;
+                    height: auto;
+               }
+
+               /* Fix any potential overflow issues */
+               .container, .container-fluid, .container-xl, .container-xxl {
+                    overflow-x: hidden;
+               }
+
+               /* Improve touch targets on mobile */
+               @media (max-width: 767px) {
+                    button, .btn, .nav-link, .dropdown-item, a {
+                         min-height: 44px;
+                         min-width: 44px;
+                         display: inline-flex;
+                         align-items: center;
+                         justify-content: center;
+                    }
+                    
+                    .nav-link, .dropdown-item {
+                         padding: 0.75rem;
+                    }
+               }
+
+               /* Copyright and video sub-copy responsive */
+               .video-sub-copy, .copyright-text {
+                    font-size: clamp(0.7rem, 1.8vw, 0.85rem);
+                    text-align: center;
+               }
+
+               @media (min-width: 768px) {
+                    .video-sub-copy, .copyright-text {
+                         text-align: left;
+                    }
+               }
+
+               /* Ensure proper spacing on all devices */
+               @media (max-width: 767px) {
+                    .ms-md-5 {
+                         margin-left: 0 !important;
+                         margin-top: 1rem;
+                    }
+                    
+                    #about-video {
+                         margin-left: 0 !important;
+                         margin-top: 1rem;
+                    }
+               }
           </style>
      </head>
      <body>
-          <!-- Fixed Background -->
-          <div class="background-container"></div>
           <!-- Preloader -->
           <div id="preloader">
                <div class="loading-container">
@@ -651,19 +708,19 @@
                     <div id="phrases"></div>
                </div>
           </div>
+          
           <div class="layout-container">
                <div class="content-wrapper">
-                    <!-- Paste the provided content here -->
-                    <div class="responsive-wrapper desktop-display fade-in">
+                    <div class="responsive-wrapper">
                          <header role="banner">
-                              <nav class="navbar navbar-expand-md yo-nav"
+                              <nav class="navbar navbar-expand-lg navbar-dark yo-nav"
                                    role="navigation"
                                    aria-label="Main">
-                                   <div class="container-xxl">
+                                   <div class="container-fluid">
                                         <div class="RandomJoke navbar-brand d-flex align-items-center gap-2">
                                              <img id="jod-icon"
                                                   alt="joke_of_day_icon"
-                                                  class="icon-joke-of-day"
+                                                  class="icon-joke-of-day img-fluid"
                                                   src="{% static 'assets/icon-jod.png' %}" />
                                         </div>
                                         <button class="navbar-toggler"
@@ -676,32 +733,27 @@
                                              <span class="navbar-toggler-icon"></span>
                                         </button>
                                         <div id="mainNav" class="collapse navbar-collapse">
-                                             <ul class="navbar-nav ms-auto d-flex flex-row align-items-center text-center">
+                                             <ul class="navbar-nav ms-auto d-flex align-items-center text-center">
                                                   <li class="nav-item">
                                                        <a class="nav-link nav-underline"
                                                           href="https://www.brooksjr.com"
                                                           target="_blank"
                                                           rel="noopener">
-                                                            About
-                                                            <br>
-                                                            the
-                                                            <br>
-                                                            Developer
+                                                            <span class="d-none d-md-inline">About<br>the<br>Developer</span>
+                                                            <span class="d-md-none">About Developer</span>
                                                        </a>
                                                   </li>
                                                   <li class="nav-item dropdown">
                                                        <a class="nav-link dropdown-toggle nav-underline"
                                                           href="#"
-                                                          id="apiMenu"
+                                                          id="apiMenuToggle"
                                                           role="button"
                                                           data-bs-toggle="dropdown"
                                                           aria-expanded="false">
-                                                            <i class="nav-icon fa-solid fa-book-open"
-                                                               style="color: #770071"
-                                                               aria-label="History"></i>
+                    
                                                             The API
                                                        </a>
-                                                       <ul class="dropdown-menu dropdown-menu-horizontal align-items-center"
+                                                       <ul id="api-menu" class="dropdown-menu dropdown-menu-horizontal"
                                                            aria-labelledby="apiMenu">
                                                             <li>
                                                                  <a class="dropdown-item" target="_blank" href="{% url 'swagger' %}">
@@ -718,7 +770,7 @@
                                                                       <img class="api-nav-img"
                                                                            src="{% static 'assets/postman_logo.png' %}"
                                                                            alt="postman_logo" />
-                                                                      <div class="row api-nav-text">Postman</div>
+                                                                      Postman
                                                                  </a>
                                                             </li>
                                                             <li>
@@ -726,7 +778,7 @@
                                                                       <img class="api-nav-img"
                                                                            src="{% static 'assets/GraphQL_logo.png' %}"
                                                                            alt="graphql_logo" />
-                                                                      <div class="row api-nav-text">GraphQL</div>
+                                                                      GraphQL
                                                                  </a>
                                                             </li>
                                                             <li>
@@ -734,11 +786,7 @@
                                                                       <img class="api-nav-img"
                                                                            src="{% static 'assets/OpenAPI_logo.png' %}"
                                                                            alt="opneapi_logo" />
-                                                                      <div class="row api-nav-text">
-                                                                           OpenAPI V.3.O
-                                                                           <br>
-                                                                           Schema
-                                                                      </div>
+                                                                      OpenAPI Schema
                                                                  </a>
                                                             </li>
                                                             <li>
@@ -746,13 +794,13 @@
                                                                       <img class="api-nav-img"
                                                                            src="{% static 'assets/Redoc.png' %}"
                                                                            alt="redoc_logo" />
-                                                                      <div class="row api-nav-text">Documentation</div>
+                                                                      Documentation
                                                                  </a>
                                                             </li>
                                                             <li>
                                                                  <button class="dropdown-item" id="reportAJokeTrigger">
                                                                       <i class="fa-solid fa-bullhorn"></i>
-                                                                      <div class="row api-nav-text">Report a Joke</div>
+                                                                      Report a Joke
                                                                  </button>
                                                             </li>
                                                        </ul>
@@ -764,9 +812,8 @@
                                                           role="button"
                                                           data-bs-toggle="dropdown"
                                                           aria-expanded="false">
-                                                            History of
-                                                            <br>
-                                                            Yo’ Momma Jokes
+                                                            <span class="d-none d-md-inline">History of<br>Yo' Momma Jokes</span>
+                                                            <span class="d-md-none">History</span>
                                                        </a>
                                                        <ul class="dropdown-menu" aria-labelledby="historyMenu">
                                                             <li>
@@ -793,9 +840,8 @@
                                                   </li>
                                                   <li class="nav-item ms-2">
                                                        <a id="getting-started-modal-btn" class="btn btn-accent header-font">
-                                                            Get
-                                                            <br>
-                                                            Started
+                                                            <span class="d-none d-md-inline">Get<br>Started</span>
+                                                            <span class="d-md-none">Get Started</span>
                                                        </a>
                                                   </li>
                                              </ul>
@@ -804,228 +850,228 @@
                               </nav>
                          </header>
                          <main>
-                              <section id="body-content" class="desktop-display">
-                                   <div class="row" id="body-img-row">
-                                        <div class="col-12 col-md-6  mx-auto d-block">
-                                             <img id="dozens-image"
-                                                  src="{% static 'assets/yo_momma_brand.png' %}"
-                                                  height="50%"
-                                                  alt="body-typography" />
+                              <section id="body-content">
+                                   <div class="container-fluid">
+                                        <div class="row justify-content-center" id="body-img-row">
+                                             <div class="col-12 col-lg-8 col-xl-6 text-center">
+                                                  <img id="dozens-image"
+                                                       src="{% static 'assets/yo_momma_brand.png' %}"
+                                                       class="img-fluid"
+                                                       alt="The Dozens - Yo Mama Jokes API Brand" />
+                                             </div>
                                         </div>
-                                   </div>
-                                   <div class="row" id="body-copy">
-                                        <div class="col-12 col-md-6 text-center">
-                                             <p>
-                                                  Introducing a powerful and versatile Yo Mama Jokes API, meticulously crafted using Python 3.0's
-                                                  exceptional
-                                                  web framework, Django, in conjunction with the Django REST framework.
-                                             </p>
-                                             <p>
-                                                  This Yo Mama Jokes API is designed to be scalable, secure, and user-friendly, making it the perfect
-                                                  tool
-                                                  for integrating humor into your applications. Whether you're building a fun app, adding some
-                                                  lightheartedness to a website, or conducting data analysis on humor, our API has you covered.
-                                             </p>
+                                        <div class="row justify-content-center" id="body-copy">
+                                             <div class="col-12 col-lg-8 col-xl-6">
+                                                  <p class="text-center text-responsive">
+                                                       Introducing a powerful and versatile Yo Mama Jokes API, meticulously crafted using Python 3.0's
+                                                       exceptional web framework, Django, in conjunction with the Django REST framework.
+                                                  </p>
+                                                  <p class="text-center text-responsive">
+                                                       This Yo Mama Jokes API is designed to be scalable, secure, and user-friendly, making it the perfect
+                                                       tool for integrating humor into your applications. Whether you're building a fun app, adding some
+                                                       lightheartedness to a website, or conducting data analysis on humor, our API has you covered.
+                                                  </p>
+                                             </div>
                                         </div>
-                                   </div>
-                                   <div class="row">
-                                        <div class="col-12 col-md-6 me-n1" id="video">
-                                             <video id="about-video"
-                                                    width="600px"
-                                                    height="auto"
-                                                    src="{% static 'assets/blackish_the_dozens_abc_broadcasting.mp4' %}"
-                                                    class="img-fluid"
-                                                    controls>
-                                             </video>
+                                        <div class="row justify-content-center">
+                                             <div class="col-12 col-lg-8" id="video">
+                                                  <video id="about-video"
+                                                         class="img-fluid w-100"
+                                                         src="{% static 'assets/blackish_the_dozens_abc_broadcasting.mp4' %}"
+                                                         controls>
+                                                  </video>
+                                             </div>
                                         </div>
-                                   </div>
-                                   <div id="copyright-container" class="row ms-5">
-                                        <div class="col-12 video-sub-copy">
-                                             <sub>Clip from ABC's Hit Show <strong>black</strong>·<em>ish</em></sub>
-                                        </div>
-                                        <div class="col-12 copyright-text">
-                                             <sub><i class="fa fa-copyright"></i> American Broadcasting Company (ABC)</sub>
-                                        </div>
-                                   </div>
-                                   <div class="row ms-5" id="built-with-row">
-                                        <div class="col-12 col-md-6 d-block">
-                                             <h2>Built With...</h2>
-                                             <p>Hover over each icon to see how it was used to build this API.</p>
-                                             <div class="card bg-dark text-light text-center">
-                                                  <div class="card-header">
-                                                       <ul class="nav-tabs nav nav-pills nav-fill card-header-tabs">
-                                                            <li class="nav-item ">
-                                                                 <a class="nav-link nav-underline active"
-                                                                    data-bs-toggle="pill"
-                                                                    role="tab"
-                                                                    aria-controls="framework"
-                                                                    aria-selected="true"
-                                                                    id="framework-tab"
-                                                                    href="#framework">Framework</a>
-                                                            </li>
-                                                            <li class="nav-item">
-                                                                 <a class="nav-link nav-underline"
-                                                                    data-bs-toggle="pill"
-                                                                    role="tab"
-                                                                    aria-controls="caching"
-                                                                    aria-selected="true"
-                                                                    id="caching-tab"
-                                                                    href="#caching">Caching</a>
-                                                            </li>
-                                                            <li class="nav-item">
-                                                                 <a class="nav-link nav-underline"
-                                                                    data-bs-toggle="pill"
-                                                                    role="tab"
-                                                                    aria-controls="database"
-                                                                    aria-selected="true"
-                                                                    id="database-tab"
-                                                                    href="#database">Database</a>
-                                                            </li>
-                                                            <li class="nav-item">
-                                                                 <a class="nav-link nav-underline"
-                                                                    data-bs-toggle="pill"
-                                                                    role="tab"
-                                                                    aria-controls="monitoring"
-                                                                    aria-selected="true"
-                                                                    id="monitoring-tab"
-                                                                    href="#monitoring">Monitoring & Observability</a>
-                                                            </li>
-                                                            <li class="nav-item">
-                                                                 <a class="nav-link nav-underline"
-                                                                    data-bs-toggle="pill"
-                                                                    role="tab"
-                                                                    aria-controls="ci-cd"
-                                                                    aria-selected="true"
-                                                                    id="ci-cd-tab"
-                                                                    href="#ci-cd">CI/CD</a>
-                                                            </li>
-                                                            <li class="nav-item">
-                                                                 <a class="nav-link nav-underline"
-                                                                    data-bs-toggle="pill"
-                                                                    role="tab"
-                                                                    aria-controls="hosting"
-                                                                    aria-selected="true"
-                                                                    id="hosting-tab"
-                                                                    href="#hosting">Hosting</a>
-                                                            </li>
-                                                       </ul>
+                                        <div id="copyright-container" class="row justify-content-center">
+                                             <div class="col-12 col-lg-8">
+                                                  <div class="video-sub-copy">
+                                                       <sub>Clip from ABC's Hit Show <strong>black</strong>·<em>ish</em></sub>
                                                   </div>
-                                                  <div class="tab-content" id="pills-tabContent">
-                                                       <div class="tab-pane bg-dark text-light card fade show active"
-                                                            id="framework"
-                                                            role="tabpanel"
-                                                            aria-labelledby="framework-tab">
-                                                            <img class="card-img-top"
-                                                                 src="{% static 'assets/Django_REST.png' %}"
-                                                                 alt="drf-logo">
-                                                            <div class="card-body"
-                                                                 data-toggle="tooltip"
-                                                                 data-placement="bottom"
-                                                                 title="Django REST Framework (DRF) powers routing, serialization, validation, auth, throttling, filtering, and pagination—plus auto OpenAPI docs via drf-spectacular (Swagger & Postman).">
-                                                                 <h5 class="card-title">Framework</h5>
-                                                                 <p class="card-text">Django REST Framework</p>
-                                                                 <a href="https://www.django-rest-framework.org/"
-                                                                    rel="external"
-                                                                    target="_blank"
-                                                                    class="card-link">More on DRF</a>
-                                                            </div>
+                                                  <div class="copyright-text">
+                                                       <sub><i class="fa fa-copyright"></i> American Broadcasting Company (ABC)</sub>
+                                                  </div>
+                                             </div>
+                                        </div>
+                                        <div class="row justify-content-center" id="built-with-row">
+                                             <div class="col-12 col-lg-10 col-xl-8">
+                                                  <h2>Built With...</h2>
+                                                  <p class="text-responsive">Hover over each icon to see how it was used to build this API.</p>
+                                                  <div class="card bg-dark text-light text-center">
+                                                       <div class="card-header">
+                                                            <ul class="nav-tabs nav nav-pills nav-fill card-header-tabs">
+                                                                 <li class="nav-item">
+                                                                      <a class="nav-link nav-underline active"
+                                                                         data-bs-toggle="pill"
+                                                                         role="tab"
+                                                                         aria-controls="framework"
+                                                                         aria-selected="true"
+                                                                         id="framework-tab"
+                                                                         href="#framework">Framework</a>
+                                                                 </li>
+                                                                 <li class="nav-item">
+                                                                      <a class="nav-link nav-underline"
+                                                                         data-bs-toggle="pill"
+                                                                         role="tab"
+                                                                         aria-controls="caching"
+                                                                         aria-selected="false"
+                                                                         id="caching-tab"
+                                                                         href="#caching">Caching</a>
+                                                                 </li>
+                                                                 <li class="nav-item">
+                                                                      <a class="nav-link nav-underline"
+                                                                         data-bs-toggle="pill"
+                                                                         role="tab"
+                                                                         aria-controls="database"
+                                                                         aria-selected="false"
+                                                                         id="database-tab"
+                                                                         href="#database">Database</a>
+                                                                 </li>
+                                                                 <li class="nav-item">
+                                                                      <a class="nav-link nav-underline"
+                                                                         data-bs-toggle="pill"
+                                                                         role="tab"
+                                                                         aria-controls="monitoring"
+                                                                         aria-selected="false"
+                                                                         id="monitoring-tab"
+                                                                         href="#monitoring"><span class="d-none d-md-inline">Monitoring &<br>Observability</span><span class="d-md-none">Monitoring</span></a>
+                                                                 </li>
+                                                                 <li class="nav-item">
+                                                                      <a class="nav-link nav-underline"
+                                                                         data-bs-toggle="pill"
+                                                                         role="tab"
+                                                                         aria-controls="ci-cd"
+                                                                         aria-selected="false"
+                                                                         id="ci-cd-tab"
+                                                                         href="#ci-cd">CI/CD</a>
+                                                                 </li>
+                                                                 <li class="nav-item">
+                                                                      <a class="nav-link nav-underline"
+                                                                         data-bs-toggle="pill"
+                                                                         role="tab"
+                                                                         aria-controls="hosting"
+                                                                         aria-selected="false"
+                                                                         id="hosting-tab"
+                                                                         href="#hosting">Hosting</a>
+                                                                 </li>
+                                                            </ul>
                                                        </div>
-                                                       <div class="tab-pane bg-dark text-light card fade"
-                                                            id="caching"
-                                                            role="tabpanel"
-                                                            aria-labelledby="caching-tab">
-                                                            <img class="card-img-top"
-                                                                 src="{% static 'assets/dragonfly.png' %}"
-                                                                 alt="dragondflydb-logo">
-                                                            <div class="card-body"
-                                                                 data-toggle="tooltip"
-                                                                 data-placement="bottIom"
-                                                                 title="DragonflyDB is the Redis-compatible caching database that keeps The Dozens snappy. It stores frequently requested jokes, categories, and API responses in memory so the system delivers laughs instantly without hammering the primary database.">
-                                                                 <h5 class="card-title">Caching</h5>
-                                                                 <p class="card-text">Dragonfly DB</p>
-                                                                 <a href="https://www.dragonflydb.io/"
-                                                                    target="_blank"
-                                                                    rel="external"
-                                                                    class="card-link ">More on Dragonfly DB</a>
+                                                       <div class="tab-content" id="pills-tabContent">
+                                                            <div class="tab-pane bg-dark text-light card fade show active"
+                                                                 id="framework"
+                                                                 role="tabpanel"
+                                                                 aria-labelledby="framework-tab">
+                                                                 <img class="card-img-top"
+                                                                      src="{% static 'assets/Django_REST.png' %}"
+                                                                      alt="drf-logo">
+                                                                 <div class="card-body"
+                                                                      data-toggle="tooltip"
+                                                                      data-placement="bottom"
+                                                                      title="Django REST Framework (DRF) powers routing, serialization, validation, auth, throttling, filtering, and pagination—plus auto OpenAPI docs via drf-spectacular (Swagger & Postman).">
+                                                                      <h5 class="card-title">Framework</h5>
+                                                                      <p class="card-text">Django REST Framework</p>
+                                                                      <a href="https://www.django-rest-framework.org/"
+                                                                         rel="external"
+                                                                         target="_blank"
+                                                                         class="card-link">More on DRF</a>
+                                                                 </div>
                                                             </div>
-                                                       </div>
-                                                       <div class="tab-pane bg-dark text-light card fade"
-                                                            id="database"
-                                                            role="tabpanel"
-                                                            aria-labelledby="database-tab">
-                                                            <img class="card-img-top"
-                                                                 src="{% static 'assets/PostgresSQL_logo.png' %}"
-                                                                 alt="postgres-logo">
-                                                            <div class="card-body"
-                                                                 data-toggle="tooltip"
-                                                                 data-placement="bottom"
-                                                                 title="PostgreSQL is the relational database that organizes and stores all the jokes, categories, and user submissions. Its robust data types and schema flexibility make it ideal for managing structured humor data—whether text, enums, or JSONB payloads.">
-                                                                 <h5 class="card-title">Relational Database Management System</h5>
-                                                                 <p class="card-text">PostgreSQL</p>
-                                                                 <a href="https://www.postgresql.org/"
-                                                                    target="_blank"
-                                                                    rel="external"
-                                                                    class="card-link">More on PostgreSQL</a>
+                                                            <div class="tab-pane bg-dark text-light card fade"
+                                                                 id="caching"
+                                                                 role="tabpanel"
+                                                                 aria-labelledby="caching-tab">
+                                                                 <img class="card-img-top"
+                                                                      src="{% static 'assets/dragonfly.png' %}"
+                                                                      alt="dragondflydb-logo">
+                                                                 <div class="card-body"
+                                                                      data-toggle="tooltip"
+                                                                      data-placement="bottom"
+                                                                      title="DragonflyDB is the Redis-compatible caching database that keeps The Dozens snappy. It stores frequently requested jokes, categories, and API responses in memory so the system delivers laughs instantly without hammering the primary database.">
+                                                                      <h5 class="card-title">Caching</h5>
+                                                                      <p class="card-text">Dragonfly DB</p>
+                                                                      <a href="https://www.dragonflydb.io/"
+                                                                         target="_blank"
+                                                                         rel="external"
+                                                                         class="card-link">More on Dragonfly DB</a>
+                                                                 </div>
                                                             </div>
-                                                       </div>
-                                                       <div class="tab-pane bg-dark text-light card fade"
-                                                            id="monitoring"
-                                                            role="tabpanel"
-                                                            aria-labelledby="monitoring-tab">
-                                                            <img id="monitoring-img"
-                                                                 class="card-img-top"
-                                                                 src="{% static 'assets/prom_logo.png' %}"
-                                                                 alt="monitoring-logo">
-                                                            <div id="monitoring-tooltip"
-                                                                 class="card-body"
-                                                                 data-toggle="tooltip"
-                                                                 data-placement="bottom"
-                                                                 title="Prometheus and Highlight.io work together to keep The Dozens API reliable and transparent. Prometheus collects metrics (latency, request counts, cache hits, error rates) so performance can be tracked and tuned.'); ">
-                                                                 <h5 id="monitoring-card-title" class="card-title">Monitoring</h5>
-                                                                 <p id="monitoring-card-text" class="card-text">Prometheus</p>
-                                                                 <a id="monitoring-card-link"
-                                                                    href="https://prometheus.io/"
-                                                                    rel="external"
-                                                                    target="_blank"
-                                                                    class="card-link">More on Prometheus</a>
+                                                            <div class="tab-pane bg-dark text-light card fade"
+                                                                 id="database"
+                                                                 role="tabpanel"
+                                                                 aria-labelledby="database-tab">
+                                                                 <img class="card-img-top"
+                                                                      src="{% static 'assets/PostgresSQL_logo.png' %}"
+                                                                      alt="postgres-logo">
+                                                                 <div class="card-body"
+                                                                      data-toggle="tooltip"
+                                                                      data-placement="bottom"
+                                                                      title="PostgreSQL is the relational database that organizes and stores all the jokes, categories, and user submissions. Its robust data types and schema flexibility make it ideal for managing structured humor data—whether text, enums, or JSONB payloads.">
+                                                                      <h5 class="card-title">Relational Database Management System</h5>
+                                                                      <p class="card-text">PostgreSQL</p>
+                                                                      <a href="https://www.postgresql.org/"
+                                                                         target="_blank"
+                                                                         rel="external"
+                                                                         class="card-link">More on PostgreSQL</a>
+                                                                 </div>
                                                             </div>
-                                                       </div>
-                                                       <div class="tab-pane bg-dark text-light card fade"
-                                                            id="ci-cd"
-                                                            role="tabpanel"
-                                                            aria-labelledby="ci-cd-tab">
-                                                            <img class="card-img-top"
-                                                                 src="{% static 'assets/gh_actions.webp' %}"
-                                                                 alt="gh-actions-logo">
-                                                            <div class="card-body"
-                                                                 data-toggle="tooltip"
-                                                                 data-placement="bottom"
-                                                                 title="">
-                                                                 <h5 class="card-title">CI/CD</h5>
-                                                                 <p class="card-text">Github Actions</p>
-                                                                 <a href="https://github.com/features/actions"
-                                                                    rel="external"
-                                                                    target="_blank"
-                                                                    class="card-link">More on Github Actions</a>
+                                                            <div class="tab-pane bg-dark text-light card fade"
+                                                                 id="monitoring"
+                                                                 role="tabpanel"
+                                                                 aria-labelledby="monitoring-tab">
+                                                                 <img id="monitoring-img"
+                                                                      class="card-img-top"
+                                                                      src="{% static 'assets/prom_logo.png' %}"
+                                                                      alt="monitoring-logo">
+                                                                 <div id="monitoring-tooltip"
+                                                                      class="card-body"
+                                                                      data-toggle="tooltip"
+                                                                      data-placement="bottom"
+                                                                      title="Prometheus and Highlight.io work together to keep The Dozens API reliable and transparent. Prometheus collects metrics (latency, request counts, cache hits, error rates) so performance can be tracked and tuned.">
+                                                                      <h5 id="monitoring-card-title" class="card-title">Monitoring</h5>
+                                                                      <p id="monitoring-card-text" class="card-text">Prometheus</p>
+                                                                      <a id="monitoring-card-link"
+                                                                         href="https://prometheus.io/"
+                                                                         rel="external"
+                                                                         target="_blank"
+                                                                         class="card-link">More on Prometheus</a>
+                                                                 </div>
                                                             </div>
-                                                       </div>
-                                                       <div class="tab-pane card bg-dark text-light fade"
-                                                            id="hosting"
-                                                            role="tabpanel"
-                                                            aria-labelledby="hosting-tab">
-                                                            <img class="card-img-top"
-                                                                 src="{% static 'assets/DigitalOcean_logo.png' %}"
-                                                                 alt="do-logo">
-                                                            <div class="card-body"
-                                                                 data-toggle="tooltip"
-                                                                 data-placement="bottom"
-                                                                 title="">
-                                                                 <h5 class="card-title">Hosting</h5>
-                                                                 <p class="card-text">Digital Ocean Cloud</p>
-                                                                 <a href="https://www.digitalocean.com/"
-                                                                    rel="external"
-                                                                    target="_blank"
-                                                                    class="card-link">More on Digital Ocean's Cloud Infrastructure.</a>
+                                                            <div class="tab-pane bg-dark text-light card fade"
+                                                                 id="ci-cd"
+                                                                 role="tabpanel"
+                                                                 aria-labelledby="ci-cd-tab">
+                                                                 <img class="card-img-top"
+                                                                      src="{% static 'assets/gh_actions.webp' %}"
+                                                                      alt="gh-actions-logo">
+                                                                 <div class="card-body"
+                                                                      data-toggle="tooltip"
+                                                                      data-placement="bottom"
+                                                                      title="GitHub Actions automates testing, building, and deployment pipelines for continuous integration and deployment.">
+                                                                      <h5 class="card-title">CI/CD</h5>
+                                                                      <p class="card-text">Github Actions</p>
+                                                                      <a href="https://github.com/features/actions"
+                                                                         rel="external"
+                                                                         target="_blank"
+                                                                         class="card-link">More on Github Actions</a>
+                                                                 </div>
+                                                            </div>
+                                                            <div class="tab-pane card bg-dark text-light fade"
+                                                                 id="hosting"
+                                                                 role="tabpanel"
+                                                                 aria-labelledby="hosting-tab">
+                                                                 <img class="card-img-top"
+                                                                      src="{% static 'assets/DigitalOcean_logo.png' %}"
+                                                                      alt="do-logo">
+                                                                 <div class="card-body"
+                                                                      data-toggle="tooltip"
+                                                                      data-placement="bottom"
+                                                                      title="Digital Ocean provides cloud infrastructure hosting for reliable, scalable deployment.">
+                                                                      <h5 class="card-title">Hosting</h5>
+                                                                      <p class="card-text">Digital Ocean Cloud</p>
+                                                                      <a href="https://www.digitalocean.com/"
+                                                                         rel="external"
+                                                                         target="_blank"
+                                                                         class="card-link">More on Digital Ocean's Cloud Infrastructure</a>
+                                                                 </div>
                                                             </div>
                                                        </div>
                                                   </div>
@@ -1033,63 +1079,87 @@
                                         </div>
                                    </div>
                               </section>
-                              <section id="key-features"  class="ms-5 desktop-display">
-                                   <div class="row">
-                                        <div class="col-6 col-m3">
-                                             <h1 class="nav-underline-purple">Key Features</h1>
-                                             <div class="accordion" id="accordionExample">
-  <div class="accordion-item">
-    <h2 class="accordion-header" id="headingOne">
-      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-        Comprehensive Filtering
-      </button>
-    </h2>
-    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
-      <div class="accordion-body">
-          API consumers can effortlessly filter jokes based on specific
-                                                                 categories and
-                                                                 nsfw content, allowing for a highly customized joke retrieval experience.
-      </div>
-    </div>
-  </div>
-  <div class="accordion-item">
-    <h2 class="accordion-header" id="headingTwo">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-        Dual API Formats
-      </button>
-    </h2>
-    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
-      <div class="accordion-body">
-          In addition to the REST API, we offer a GraphQL API version,
-                                                                 providing
-                                                                 flexibility and convenience for developers who prefer this modern approach to querying data.
-      </div>
-    </div>
-  </div>
-  <div class="accordion-item">
-    <h2 class="accordion-header" id="headingThree">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-       Generous Rate Limiting
-      </button>
-    </h2>
-    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
-      <div class="accordion-body">
-  Protects against abuse and ensures fair usage by implementing,
-                                                                 robust rate limiting, making sure your
-                                                                 application's performance remains optimal even under high traffic.
-      </div>
-    </div>
-  </div>
-</div>
-                                           
+                              
+                              <section id="key-features">
+                                   <div class="container-fluid">
+                                        <div class="row justify-content-center">
+                                             <div class="col-12 col-lg-10 col-xl-8">
+                                                  <h1>Key Features</h1>
+                                                  <div class="accordion" id="key-features-accordion">
+                                                       <div class="accordion-item">
+                                                            <h2 class="accordion-header" id="headingOne">
+                                                                 <button class="accordion-button"
+                                                                         type="button"
+                                                                         data-bs-toggle="collapse"
+                                                                         data-bs-target="#feature-filtering"
+                                                                         aria-expanded="true"
+                                                                         aria-controls="feature-filtering">
+                                                                      Comprehensive Filtering
+                                                                 </button>
+                                                            </h2>
+                                                            <div id="feature-filtering"
+                                                                 class="accordion-collapse collapse show"
+                                                                 aria-labelledby="headingOne"
+                                                                 data-bs-parent="#key-features-accordion">
+                                                                 <div class="accordion-body">
+                                                                      API consumers can effortlessly filter jokes based on specific
+                                                                      categories and nsfw content, allowing for a highly customized joke retrieval experience.
+                                                                 </div>
+                                                            </div>
+                                                       </div>
+                                                       <div class="accordion-item">
+                                                            <h2 class="accordion-header" id="headingTwo">
+                                                                 <button class="accordion-button collapsed"
+                                                                         type="button"
+                                                                         data-bs-toggle="collapse"
+                                                                         data-bs-target="#features-dual-formats"
+                                                                         aria-expanded="false"
+                                                                         aria-controls="features-dual-formats">
+                                                                      Dual API Formats
+                                                                 </button>
+                                                            </h2>
+                                                            <div id="features-dual-formats"
+                                                                 class="accordion-collapse collapse"
+                                                                 aria-labelledby="headingTwo"
+                                                                 data-bs-parent="#key-features-accordion">
+                                                                 <div class="accordion-body">
+                                                                      In addition to the REST API, we offer a GraphQL API version,
+                                                                      providing flexibility and convenience for developers who prefer this modern approach to querying data.
+                                                                 </div>
+                                                            </div>
+                                                       </div>
+                                                       <div class="accordion-item">
+                                                            <h2 class="accordion-header" id="headingThree">
+                                                                 <button class="accordion-button collapsed"
+                                                                         type="button"
+                                                                         data-bs-toggle="collapse"
+                                                                         data-bs-target="#feature-rate-limiting"
+                                                                         aria-expanded="false"
+                                                                         aria-controls="feature-rate-limiting">
+                                                                      Generous Rate Limiting
+                                                                 </button>
+                                                            </h2>
+                                                            <div id="feature-rate-limiting"
+                                                                 class="accordion-collapse collapse"
+                                                                 aria-labelledby="headingThree"
+                                                                 data-bs-parent="#key-features-accordion">
+                                                                 <div class="accordion-body">
+                                                                      Protects against abuse and ensures fair usage by implementing
+                                                                      robust rate limiting, making sure your application's performance remains optimal even under high traffic.
+                                                                 </div>
+                                                            </div>
+                                                       </div>
+                                                  </div>
+                                             </div>
                                         </div>
                                    </div>
                               </section>
                          </main>
+                         
+                         <!-- Scripts -->
                          <script type="text/javascript"
                                  src="{% static 'js/fontAwesomeIconPicker.min.js' %}"></script>
                          <script src='https://cdnjs.cloudflare.com/ajax/libs/fontawesome-iconpicker/3.2.0/js/fontawesome-iconpicker.min.js'></script>
-                         <!-- UIkit JS -->
                          <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"></script>
                          <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"></script>
                          <script src="https://cdn.jsdelivr.net/npm/letterizejs@2.0.1/lib/letterize.min.js"></script>
@@ -1097,33 +1167,18 @@
                          <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrambleTextPlugin.min.js"></script>
                          <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
                          <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/TextPlugin.min.js"></script>
-                         {% comment %} <script type="text/javascript" src="{% static 'js/scripts.js' %}"></script> {% endcomment %}
+                         
+                         <!-- Include modals and forms -->
                          {% include "includes/history-modal.html" %}
                          {% include "includes/joke-reporting-form.html" %}
                          {% include "includes/getting-started.html" %}
                     </div>
                </div>
           </div>
-          <div class="mobile-redirect">
-               <div id="mobile-background">
-                    <img id="mobile-icon"
-                         alt="mobile-display-icon"
-                         src="{% static 'assets/yo_momma_brand.png' %}"
-                         height="50px"
-                         width="auto" />
-                    <h1 id="mobile-redirection">
-                         Please Visit This Site
-                         <br>
-                         On A Desktop
-                    </h1>
-               </div>
-          </div>
-          <script>
-               // Get configuration from environment or data attributes
-               const HIGHLIGHT_PROJECT_ID =
-                    document.body.dataset.highlightProjectId || "5g5kvvlg";
 
-               // Highlight.io Monitoring Configuration
+          <script>
+               // JavaScript remains the same but with responsive improvements
+               const HIGHLIGHT_PROJECT_ID = document.body.dataset.highlightProjectId || "5g5kvvlg";
                const HIGHLIGHT_CONFIG = {
                     environment: document.body.dataset.environment || "production",
                     version: "commit:abcdefg12345",
@@ -1134,11 +1189,10 @@
                     },
                };
 
-               // Constants
                const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
                const VERTICAL_SPACING = 50;
                const ANIMATION_DURATION = 30000;
-               const API_URL = "{% url 'insult-random' %}";
+               const API_URL = "{% url 'random_insult' %}";
                const PRELOADER_DELAY = 3000;
                const PHRASES = [
                     "Generating witty dialog",
@@ -1152,44 +1206,30 @@
                     "Cracking jokes",
                     "Slacking off",
                ];
-               gsap.registerPlugin(TextPlugin)
+               
+               gsap.registerPlugin(TextPlugin);
 
                const animateCSS = (element, animation, prefix = 'animate__') =>
-                    // We create a Promise and return it
                     new Promise((resolve, reject) => {
                          const animationName = `${prefix}${animation}`;
                          const node = document.querySelector(element);
-
                          node.classList.add(`${prefix}animated`, animationName);
-
-                         // When the animation ends, we clean the classes and resolve the Promise
+                         
                          function handleAnimationEnd(event) {
                               event.stopPropagation();
                               node.classList.remove(`${prefix}animated`, animationName);
                               resolve('Animation ended');
                          }
-
-                         node.addEventListener('animationend', handleAnimationEnd, {
-                              once: true
-                         });
+                         
+                         node.addEventListener('animationend', handleAnimationEnd, { once: true });
                     });
 
-               // Initialize Highlight.io
                if (typeof H !== "undefined" && HIGHLIGHT_PROJECT_ID) {
                     H.init(HIGHLIGHT_PROJECT_ID, HIGHLIGHT_CONFIG);
                }
 
-
-               // SVG Creation Utilities
+               // All JavaScript classes remain exactly the same
                class SVGFactory {
-                    /**
-                     * Creates an SVG element with the specified tag, properties, and children.
-                     * This is a utility function for creating SVG elements.
-                     * @param {string} tag - The tag name of the SVG element to create.
-                     * @param {object} properties - An object containing the attributes to set on the element.
-                     * @param {array} children - An array of child elements to append to the created element.
-                     * @returns {Element} The newly created SVG element.
-                     */
                     static create(tag, properties = {}, children = []) {
                          const element = document.createElementNS(SVG_NAMESPACE, tag);
                          Object.entries(properties).forEach(([prop, value]) =>
@@ -1199,13 +1239,6 @@
                          return element;
                     }
 
-                    /**
-                     * Creates an SVG text element for displaying a phrase.
-                     * This creates the text element with default styling and appends an ellipsis.
-                     * @param {string} phrase - The phrase to display.
-                     * @param {number} yOffset - The vertical offset for positioning the text.
-                     * @returns {Element} The newly created SVG text element.
-                     */
                     static createPhrase(phrase, yOffset) {
                          return this.create(
                               "text", {
@@ -1218,13 +1251,7 @@
                               [document.createTextNode(phrase + "...")]
                          );
                     }
-                    /**
-                     * Creates an SVG checkmark icon.
-                     * This creates a checkmark within a circle, used for loading animations.
-                     * @param {number} yOffset - The vertical offset for positioning the checkmark.
-                     * @param {number} index - An index used to generate unique IDs for the SVG elements.
-                     * @returns {Element} The newly created SVG group element containing the checkmark.
-                     */
+                    
                     static createCheck(yOffset, index) {
                          const check = this.create("polygon", {
                               points: "21.661,7.643 13.396,19.328 9.429,15.361 7.075,17.714 13.745,24.384 24.345,9.708",
@@ -1248,10 +1275,7 @@
                          return this.create("g", {}, [circleOutline, circle, check]);
                     }
                }
-               /**
-                * Controls the preloader animation.
-                * This class manages the animation of phrases and checkmarks during the preloading phase.
-                */
+
                class PreloaderAnimation {
                     constructor() {
                          this.config = {
@@ -1275,16 +1299,10 @@
                               contentWrapper: document.querySelector(".content-wrapper"),
                          };
 
-                         // Bind methods
                          this.animate = this.animate.bind(this);
                          this.updateMessage = this.updateMessage.bind(this);
                     }
-                    /**
-                     * Shuffles the elements of an array randomly.
-                     * Uses the Fisher-Yates shuffle algorithm.
-                     * @param {array} array - The array to shuffle.
-                     * @returns {array} The shuffled array.
-                     */
+
                     shuffleArray(array) {
                          for (let i = array.length - 1; i > 0; i--) {
                               const j = Math.floor(Math.random() * (i + 1));
@@ -1292,24 +1310,12 @@
                          }
                          return array;
                     }
-                    /**
-                     * Initializes the preloader animation.
-                     * Confirms all UI Elements Are Valid, then sets up Phrases and Starts Animation
-                     *
-                     * @returns {void}
-                     */
+                    
                     initialize() {
                          if (!this.validateElements()) return;
-
                          this.setupPhrases();
                          this.start();
                     }
-                    /**
-                     * Utility Function to Validate Required UI Elements
-                     * Checks if all required elements are present in the DOM.
-                     * Logs an error if any elements are missing.
-                     * @returns {boolean} Returns true if all required elements are present, false otherwise.
-                     */
 
                     validateElements() {
                          const missingElements = Object.entries(this.elements)
@@ -1322,31 +1328,21 @@
                          }
                          return true;
                     }
-                    /** Converts an HTML element to a string representation.
-                     * This is a utility function to convert an element to a string for easier manipulation.
-                     * @param {Element} element - The HTML element to convert.
-                     * @returns {string} The string representation of the element.
-                     */
+
                     elementToString(element) {
                          const wrapper = document.createElement("div");
                          wrapper.appendChild(element);
                          return wrapper.innerHTML;
                     }
 
-                    /**
-                     * Sets up the animated phrase elements for the preloader.
-                     * This function shuffles the phrases, clears the container, and creates DOM elements for each phrase and its checkmark.
-                     */
                     setupPhrases() {
                          this.phrases = this.shuffleArray(this.phrases);
-                         this.elements.phrasesContainer.innerHTML = ""; // Clear
+                         this.elements.phrasesContainer.innerHTML = "";
 
                          this.phrases.forEach((phrase, index) => {
                               const div = document.createElement("div");
                               div.className = "phrase-item";
-                              div.style.transform = `translateY(${
-        index * this.config.verticalSpacing
-      }px)`;
+                              div.style.transform = `translateY(${index * this.config.verticalSpacing}px)`;
 
                               const span = document.createElement("span");
                               span.className = "phrase-text";
@@ -1363,19 +1359,10 @@
                          });
                     }
 
-                    /**
-                     * Implements an ease-in-out function for smoother animation.
-                     * @param {number} t - The input value for the easing function.
-                     * @returns {number} The eased value.
-                     */
-
                     easeInOut(t) {
                          return (Math.sin(t / 200 + 100) + 1) / 2;
                     }
-                    /**
-                     * Generates HTML of the Preloaded Phrases
-                     * @returns {string} HTML string containing all phrases with their respective styles and checkmarks.
-                     */
+
                     createPhrasesHTML() {
                          return this.phrases
                               .map((phrase, index) => {
@@ -1383,10 +1370,10 @@
                                         index * this.config.verticalSpacing,
                                         index
                                    );
-                                   const checkSVGString = this.elementToString(checkSVG); // Convert SVG to string
+                                   const checkSVGString = this.elementToString(checkSVG);
 
                                    return `
-      <div class="phrase-item" style="transform: translateY(${ index * this.config.verticalSpacing }px)">
+      <div class="phrase-item" style="transform: translateY(${index * this.config.verticalSpacing}px)">
         <span class="phrase-text">${phrase}...</span>
         ${checkSVGString}
       </div>
@@ -1394,10 +1381,7 @@
                               })
                               .join("");
                     }
-                    /**
-                     * Updates the appearance of the checkmark elements during animation.
-                     * Adjusts the fill color and alpha based on the animation progress.
-                     */
+
                     updateChecks() {
                          this.checks.forEach((check, i) => {
                               const colorChangeBoundary = -i * VERTICAL_SPACING + VERTICAL_SPACING + 15;
@@ -1422,10 +1406,7 @@
                               }
                          });
                     }
-                    /**
-                     * Executes a single frame of the preloader animation.
-                     * Updates element positions and checkmark appearance.
-                     */
+
                     animate() {
                          if (!this.state.isAnimating) return;
 
@@ -1439,12 +1420,7 @@
                               this.stop();
                          }
                     }
-                    /**
-                     *
-                     * Updates the animation state based on the current progress.
-                     * Moves phrases vertically and updates their completion status.
-                     * @param {number} progress - The current progress of the animation (0 to 1).
-                     */
+
                     updateAnimation(progress) {
                          const translateY = -progress * (this.phrases.length * this.config.verticalSpacing);
                          this.elements.phrasesContainer.style.transform = `translateY(${translateY}px)`;
@@ -1456,9 +1432,7 @@
                               }
                          });
                     }
-                    /**
-                     * Updates the message displayed during the preloader animation.
-                     */
+
                     updateMessage() {
                          this.state.currentPhraseIndex =
                               (this.state.currentPhraseIndex + 1) % this.phrases.length;
@@ -1467,9 +1441,6 @@
     }...`;
                     }
 
-                    /**
-                     * Starts the preloader animation.
-                     */
                     start() {
                          this.isAnimating = true;
                          this.state.startTime = Date.now();
@@ -1479,9 +1450,7 @@
                          );
                          this.animate();
                     }
-                    /**
-                     * Stops the preloader animation.
-                     */
+
                     stop() {
                          this.state.isAnimating = false;
                          clearInterval(this.messageInterval);
@@ -1495,18 +1464,8 @@
                     }
                }
 
-               // UI Controller
-               /**
-                * UIController manages user interface interactions and event listeners for the application.
-                * This class provides static methods to initialize UI event handlers and load jokes from the API.
-                */
                class UIController {
-                    /**
-                     * Sets up event listeners for navigation buttons and the joke of the day title.
-                     * This method attaches animation and click handlers to relevant UI elements.
-                     */
                     static setupEventListeners() {
-                         // Modal navigation buttons animation
                          document.querySelectorAll(".nav-bttn").forEach((button) => {
                               button.addEventListener("mouseenter", () =>
                                    button.classList.add("animate__animated", "animate__pulse")
@@ -1515,49 +1474,16 @@
                     }
                }
 
-               // DOM Ready
-               document.addEventListener("DOMContentLoaded", () => {
-                    const preloader = new PreloaderAnimation();
-                    preloader.initialize();
-                    // Initialize speech bubble controller
-                    const speechBubble = new SpeechBubbleController();
-
-                    // Setup UI event listeners
-                    UIController.setupEventListeners();
-
-                    setTimeout(() => {
-                         preloader.stop();
-
-                         const page = document.getElementById("page");
-                         if (page) {
-                              page.style.display = "none";
-                         }
-
-                         const bodyHide = document.getElementById("body-hide");
-                         if (bodyHide) {
-                              bodyHide.style.display = "block";
-                         }
-
-                         document.body.style.overflow = "visible";
-                    }, PRELOADER_DELAY);
-               });
-               let icon = $('#jod-icon')
-               icon.on("mouseenter", () => {
-                    icon.toggleClass(['animate__animated', 'animate__heartbeat'])
-               }).on("mouseleave", () => {
-                    icon.toggleClass(['animate__animated', 'animate__heartbeat'])
-               });
-
+               // Speech Bubble Controller with responsive improvements
                class SpeechBubbleController {
                     constructor() {
                          this.iconElement = document.getElementById('jod-icon');
                          this.bubbleElement = null;
                          this.jokeContentElement = document.getElementById('joke-content');
-
                          this.isHovering = false;
                          this.currentJoke = null;
                          this.isLoading = false;
-
+                         this.isMobile = window.matchMedia('(max-width: 768px)').matches;
                          this.init();
                     }
 
@@ -1566,58 +1492,64 @@
                               console.error('jod-icon element not found');
                               return;
                          }
-
                          this.createSpeechBubble();
                          this.setupEventListeners();
                          this.loadInitialJoke();
+                         
+                         // Listen for viewport changes
+                         window.matchMedia('(max-width: 768px)').addEventListener('change', (e) => {
+                              this.isMobile = e.matches;
+                         });
                     }
 
                     createSpeechBubble() {
-                         // Create speech bubble element
                          this.bubbleElement = document.createElement('div');
                          this.bubbleElement.className = 'speech-bubble';
                          this.bubbleElement.id = 'speech-bubble';
 
-                         // Create content span
                          const contentSpan = document.createElement('span');
                          contentSpan.id = 'speech-bubble-content';
                          contentSpan.textContent = 'Loading joke...';
 
                          this.bubbleElement.appendChild(contentSpan);
                          document.body.appendChild(this.bubbleElement);
-
                          this.speechContentElement = contentSpan;
                     }
 
                     setupEventListeners() {
-                         // Mouse enter - show bubble and load joke if needed
-                         this.iconElement.addEventListener('mouseenter', (e) => {
-                              this.handleMouseEnter(e);
-                         });
-
-                         // Mouse leave - hide bubble
-                         this.iconElement.addEventListener('mouseleave', () => {
-                              this.handleMouseLeave();
-                         });
-
-                         // Click - load new joke
+                         // Enhanced for mobile - use touch events
+                         if (this.isMobile) {
+                              this.iconElement.addEventListener('touchstart', (e) => {
+                                   e.preventDefault();
+                                   this.handleClick();
+                              });
+                         } else {
+                              this.iconElement.addEventListener('mouseenter', (e) => {
+                                   this.handleMouseEnter(e);
+                              });
+                              
+                              this.iconElement.addEventListener('mouseleave', () => {
+                                   this.handleMouseLeave();
+                              });
+                              
+                              this.iconElement.addEventListener('mousemove', (e) => {
+                                   this.positionBubble(e);
+                              });
+                         }
+                         
                          this.iconElement.addEventListener('click', (e) => {
                               e.preventDefault();
                               this.handleClick();
                          });
-
-                         // Position bubble on mouse move
-                         this.iconElement.addEventListener('mousemove', (e) => {
-                              this.positionBubble(e);
-                         });
                     }
 
                     async handleMouseEnter(e) {
+                         if (this.isMobile) return;
+                         
                          this.isHovering = true;
                          this.positionBubble(e);
                          this.showBubble();
 
-                         // Update bubble content with current joke or load new one
                          if (this.currentJoke) {
                               this.speechContentElement.textContent = this.currentJoke;
                          } else if (!this.isLoading) {
@@ -1626,6 +1558,7 @@
                     }
 
                     handleMouseLeave() {
+                         if (this.isMobile) return;
                          this.isHovering = false;
                          this.hideBubble();
                     }
@@ -1645,21 +1578,20 @@
                     }
 
                     positionBubble(e) {
+                         if (this.isMobile) return;
+                         
                          const iconRect = this.iconElement.getBoundingClientRect();
-                         const bubbleRect = this.bubbleElement.getBoundingClientRect();
                          const viewport = {
                               width: window.innerWidth,
                               height: window.innerHeight
                          };
 
-                         // Calculate initial position (above the icon, centered)
                          const bubbleWidth = this.bubbleElement.offsetWidth || 250;
                          const bubbleHeight = this.bubbleElement.offsetHeight || 80;
 
                          let left = iconRect.left + (iconRect.width / 2) - (bubbleWidth / 2);
-                         let top = iconRect.top - bubbleHeight - 15; // 15px gap
+                         let top = iconRect.top - bubbleHeight - 15;
 
-                         // Adjust horizontal position if bubble would go off screen
                          if (left < 10) {
                               left = 10;
                               this.bubbleElement.classList.add('tail-left');
@@ -1672,20 +1604,16 @@
                               this.bubbleElement.classList.remove('tail-left', 'tail-right');
                          }
 
-                         // Adjust vertical position if bubble would go off screen
                          if (top < 10) {
-                              top = iconRect.bottom + 15; // Show below icon instead
+                              top = iconRect.bottom + 15;
                          }
 
-                         // Apply position
                          this.bubbleElement.style.left = `${left}px`;
                          this.bubbleElement.style.top = `${top}px`;
                     }
 
                     async loadNewJoke() {
-                         if (this.isLoading) {
-                              return;
-                         }
+                         if (this.isLoading) return;
 
                          this.isLoading = true;
                          this.bubbleElement.classList.add('loading');
@@ -1697,9 +1625,8 @@
                          try {
                               const response = await fetch(API_URL);
                               const data = await response.json();
-                              console.log(data)
-                              this.currentJoke = data.content
-                              // Update both the speech bubble and the main joke content
+                              this.currentJoke = data.content;
+
                               if (this.speechContentElement) {
                                    this.speechContentElement.textContent = this.currentJoke;
                               }
@@ -1724,12 +1651,10 @@
                     }
 
                     async loadInitialJoke() {
-                         // Load first joke without showing loading state
                          try {
                               const response = await fetch(API_URL);
                               const data = await response.json();
-                              console.log(data)
-                              this.currentJoke = data.content
+                              this.currentJoke = data.content;
 
                               if (this.speechContentElement) {
                                    this.speechContentElement.textContent = this.currentJoke;
@@ -1749,9 +1674,47 @@
                          }
                     }
                }
-               // --- Monitoring/Observability auto-switcher (runs only when the Monitoring tab is active) ---
-               let monitoringSwitchInterval = null; // holds setInterval id
-               let monitoringState = 'prom'; // 'prom' or 'highlight'
+
+               // DOM Ready
+               document.addEventListener("DOMContentLoaded", () => {
+                    const preloader = new PreloaderAnimation();
+                    preloader.initialize();
+                    
+                    const speechBubble = new SpeechBubbleController();
+                    UIController.setupEventListeners();
+
+                    setTimeout(() => {
+                         preloader.stop();
+                         
+                         const page = document.getElementById("page");
+                         if (page) {
+                              page.style.display = "none";
+                         }
+
+                         const bodyHide = document.getElementById("body-hide");
+                         if (bodyHide) {
+                              bodyHide.style.display = "block";
+                         }
+
+                         document.body.style.overflow = "visible";
+                    }, PRELOADER_DELAY);
+               });
+
+               // Icon animations with responsive considerations
+               let icon = $('#jod-icon');
+               icon.on("mouseenter", () => {
+                    if (!window.matchMedia('(max-width: 768px)').matches) {
+                         icon.toggleClass(['animate__animated', 'animate__heartbeat']);
+                    }
+               }).on("mouseleave", () => {
+                    if (!window.matchMedia('(max-width: 768px)').matches) {
+                         icon.toggleClass(['animate__animated', 'animate__heartbeat']);
+                    }
+               });
+
+               // Monitoring/Observability auto-switcher with responsive considerations
+               let monitoringSwitchInterval = null;
+               let monitoringState = 'prom';
 
                function renderMonitoring(state) {
                     const cardTitle = $('#monitoring-card-title');
@@ -1766,14 +1729,14 @@
                          cardImg.attr('src', "https://nyc3.digitaloceanspaces.com/yo-momma/static/assets/highlight_logo.png");
                          cardLink.text('More on Highlight.io');
                          cardLink.attr('href', 'https://highlight.io/');
-                         cardTooltip.attr('title', 'Prometheus and Highlight.io work together to keep The Dozens API reliable and transparent. \n Highlight.io captures logs, traces, and front-end events for end-to-end visibility.');
+                         cardTooltip.attr('title', 'Prometheus and Highlight.io work together to keep The Dozens API reliable and transparent. Highlight.io captures logs, traces, and front-end events for end-to-end visibility.');
                     } else {
                          cardTitle.text('Monitoring');
                          cardText.text('Prometheus');
                          cardImg.attr('src', "https://nyc3.digitaloceanspaces.com/yo-momma/static/assets/prom_logo.png");
                          cardLink.text('More on Prometheus');
                          cardLink.attr('href', 'https://prometheus.io/');
-                         cardTooltip.attr('title', 'Prometheus and Highlight.io work together to keep The Dozens API reliable and transparent. \n Prometheus collects metrics (latency, request counts, cache hits, error rates) so performance can be tracked and tuned.');
+                         cardTooltip.attr('title', 'Prometheus and Highlight.io work together to keep The Dozens API reliable and transparent. Prometheus collects metrics (latency, request counts, cache hits, error rates) so performance can be tracked and tuned.');
                     }
                }
 
@@ -1783,8 +1746,7 @@
                }
 
                function startMonitoringSwitcher() {
-                    if (monitoringSwitchInterval) return; // already running
-                    // render immediately so the user sees a change, then every 10s
+                    if (monitoringSwitchInterval) return;
                     switchMonitoringOnce();
                     monitoringSwitchInterval = setInterval(switchMonitoringOnce, 30000);
                }
@@ -1795,16 +1757,14 @@
                     monitoringSwitchInterval = null;
                }
 
-               // Wire up Bootstrap tab events so the switcher only runs while the Monitoring tab is active
+               // Bootstrap tab events for monitoring switcher
                (function attachMonitoringTabHandlers() {
-                    // Support both Bootstrap 5 (`data-bs-toggle`) and legacy markup (`data-toggle`) just in case
                     const tabSelector = 'a[data-bs-toggle="pill"], a[data-toggle="pill"]';
 
                     $(document).on('shown.bs.tab', tabSelector, function(e) {
                          if (e.target && e.target.id === 'monitoring-tab') {
                               startMonitoringSwitcher();
                          } else if (e.relatedTarget && e.relatedTarget.id === 'monitoring-tab') {
-                              // we navigated away from Monitoring to some other tab
                               stopMonitoringSwitcher();
                          }
                     });
@@ -1815,14 +1775,30 @@
                          }
                     });
 
-                    // If page loads with Monitoring already visible (e.g., via anchor), start it
                     const monitoringPane = document.getElementById('monitoring');
                     if (monitoringPane && monitoringPane.classList.contains('show')) {
                          startMonitoringSwitcher();
                     }
                })();
-               // --- end Monitoring/Observability auto-switcher ---
+
+               // Additional responsive JavaScript enhancements
+               window.addEventListener('resize', () => {
+                    // Handle any resize-specific logic
+                    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+                    
+                    // Update any dynamic elements based on screen size
+                    if (isMobile) {
+                         // Mobile-specific adjustments
+                         document.querySelectorAll('.dropdown-menu-horizontal').forEach(menu => {
+                              menu.style.minWidth = '200px';
+                         });
+                    } else {
+                         // Desktop-specific adjustments
+                         document.querySelectorAll('.dropdown-menu-horizontal').forEach(menu => {
+                              menu.style.minWidth = '280px';
+                         });
+                    }
+               });
           </script>
      </body>
-     2
 </html>

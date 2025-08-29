@@ -562,7 +562,7 @@ class CreateInsultSerializer(BaseInsultSerializer):
     nsfw = serializers.BooleanField(
         default=False, help_text="Indicates if the insult is NSFW (Not Safe For Work)."
     )
-
+    content = serializers.CharField(min_length=60)
 
     class Meta:
         model = Insult
@@ -570,3 +570,5 @@ class CreateInsultSerializer(BaseInsultSerializer):
         extra_kwargs = {
             "content": {"required": True, "allow_blank": False},
         }
+        
+    
