@@ -73,7 +73,7 @@ class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Mod
     name = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
-        return f"{self.category_key} - {self.name}"
+        return f"{self.category_key}"
 
     def lower(self):
         """Returns the name of the category in lowercase."""

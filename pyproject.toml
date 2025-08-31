@@ -357,3 +357,24 @@ redefining-builtins-modules = [
   "builtins",
   "io",
 ]
+
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[tool.coverage.run]
+branch = true
+parallel = true
+concurrency = ["multiprocessing"]
+source = ["applications", "common"]         # adjust to your packages
+omit = [
+  "*/migrations/*",
+  "*/tests/*",
+  "*/.venv/*",
+  "manage.py",
+]
+
+[tool.coverage.report]
+skip_empty = true
+show_missing = true
+fail_under = 80

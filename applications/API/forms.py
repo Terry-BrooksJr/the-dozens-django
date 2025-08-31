@@ -205,18 +205,18 @@ class InsultReviewForm(ModelForm):
         Custom validation with improved error handling.
         """
         cleaned_data = super().clean()
+        logger.debug(f'Type: {type(cleaned_data)} | Value: {cleaned_data}')
 
-        # Get form data
-        anonymous = cleaned_data.get("anonymous", False)
-        reporter_first_name = cleaned_data.get("reporter_first_name", "").strip()
-        reporter_last_name = cleaned_data.get("reporter_last_name", "").strip()
-        post_review_contact_desired = cleaned_data.get(
-            "post_review_contact_desired", False
+        # Normalize and coerce incoming values
+        anonymous = bool(cleaned_data.get("anonymous", False))
+        reporter_first_name = (cleaned_data.get("reporter_first_name") or "").strip()
+        reporter_last_name = (cleaned_data.get("reporter_last_name") or "").strip()
+        post_review_contact_desired = bool(
+            cleaned_data.get("post_review_contact_desired", False)
         )
-        reporter_email = cleaned_data.get("reporter_email", "").strip()
-
+        reporter_email = (cleaned_data.get("reporter_email") or "").strip()
         insult_obj_or_value = cleaned_data.get("insult_reference_id")
-
+        review_basis = (cleaned_data.get("rationale_for_review") or "").strip()
         # Support both ModelChoiceField (object) and pre-populated string values
         if hasattr(insult_obj_or_value, "reference_id"):
             ref_id = insult_obj_or_value.reference_id
@@ -225,13 +225,15 @@ class InsultReviewForm(ModelForm):
 
         if not ref_id or Insult.get_by_reference_id(ref_id) is None:
             raise ValidationError(
-                _("Invalid Insult ID - Please select a valid insult from the dropdown"),
+                _("Invalid Insult ID"),
                 code="invalid-insult-id",
             )
 
         # Ensure downstream code receives the reference-id string
         cleaned_data["insult_reference_id"] = ref_id
-
+        cleaned_data["anonymous"] = anonymous
+        cleaned_data["reporter_first_name"] = reporter_first_name
+        cleaned_data["reporter_last_name"] = reporter_last_name
         # Validate non-anonymous submissions
         if not anonymous:
             if not reporter_first_name:
@@ -248,10 +250,15 @@ class InsultReviewForm(ModelForm):
         # Validate contact preference
         if post_review_contact_desired and not reporter_email:
             raise ValidationError(
-                _("Email address is required if you want to be contacted with results"),
+                _("Email address is required"),
                 code="email-required-for-contact",
             )
-
+            
+        # Validate Min Char Length only when provided
+        if review_basis and len(review_basis) < 70:
+            raise ValidationError(
+                _("Please Ensure The Basis of your review request is 70 characters or more.")
+            )
         return cleaned_data
 
     class Meta:

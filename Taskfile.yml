@@ -78,7 +78,8 @@ tasks:
     dir: .
     desc: Run tests
     cmds:
-      - doppler run --mount env --  python3 run/manage.py test applications.API
+      - doppler run -- python3  run/manage.py test applications.API
+
     requires:
       vars:
         - DOPPLER_TOKEN
@@ -179,3 +180,10 @@ tasks:
       - doppler run --mount env -- python3 run/manage.py {{.CLI_ARGS}}
     silent: false
     interactive: true
+  test:coverage:
+    desc: Run tests with coverage
+    cmds:
+      - doppler run --mount env --  .venv/bin/coverage run --parallel-mode run/manage.py test applications.API
+      - doppler run --mount env --  .venv/bin/coverage combine
+      - doppler run --mount env --  .venv/bin/coverage html
+      - doppler run --mount env --  .venv/bin/coverage report -m

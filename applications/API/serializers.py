@@ -1,3 +1,7 @@
+"""
+module: applications.API.serializers
+# TODO: Write Module Summary 
+"""
 import contextlib
 from asyncio.log import logger
 from datetime import datetime
@@ -113,7 +117,7 @@ class CachedBulkSerializer(serializers.ModelSerializer):
         try:
             cached_value = cache.get(cache_key)
         except Exception as e:  # Dragonfly/Redis flakiness => fail open
-            logger.warning(f"Cache backend unavailable while getting {field_name}: {e}")
+            logger.warning("Cache backend unavailable while getting %s: %s", field_name, e)
             cached_value = None
         if cached_value is not None:
             return cached_value
@@ -131,6 +135,10 @@ class BaseInsultSerializer(CachedBulkSerializer):
     cacher: ClassVar[CategoryCacheManager] = create_category_manager(
         model_class=InsultCategory, key_field="category_key", name_field="name"
     )
+    category = serializers.SlugRelatedField(
+    slug_field="category_key",  # or "name"
+    queryset=InsultCategory.objects.all()
+)
 
     @staticmethod
     def _normalize_category_input(value: str) -> str:
@@ -146,11 +154,8 @@ class BaseInsultSerializer(CachedBulkSerializer):
         """
         # If a model instance is passed (e.g., during serialization), use its key
         with contextlib.suppress(Exception):
-            from applications.API.models import (
-                InsultCategory as _IC,  # local import to avoid cycles
-            )
 
-            if isinstance(value, _IC):
+            if isinstance(value, InsultCategory):
                 return value.category_key
         if not isinstance(value, str):
             return value
@@ -281,7 +286,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
                 f"Category '{category_name}' does not exist."
             ) from e
     @classmethod
-    def validate_category(cls, value: str) -> Dict[str, Union[None, str]]:
+    def resolve_category(cls, value: str) -> Dict[str, Union[None, str]]:
         """
         Validate and resolve a category by key or name.
 
@@ -301,27 +306,32 @@ class BaseInsultSerializer(CachedBulkSerializer):
         if not value:
             return {"category_key": "", "category_name": "Uncategorized"}
 
-        # If a model instance is already present (FK loaded), extract directly
-        from applications.API.models import InsultCategory as _IC
 
-        if isinstance(value, _IC):
-            return {"category_key": value.category_key, "category_name": value.name}
 
+        if isinstance(value, InsultCategory):
+            validated = {"category_key": value.category_key, "category_name": value.name}
+            logger.debug(f"Serializer Resolved {value} to {validated}")
+            return validated
+        
         if isinstance(value, str):
             value = cls._normalize_category_input(value)
 
         # First try as category key
         try:
-            return {
+            validated = {
                 "category_key": cls.cacher.get_category_key_by_name(value),
                 "category_name": value,
             }
+            logger.debug(f'Serializer Resolved {value} to {validated}')
+            return validated
         except serializers.ValidationError:
             try:
-                return {
+                validated = {
                     "category_key": value,
-                    "category_name": cls.cacher.get_category_name_by_key(value).lower(),
+                    "category_name": type(self).cacher.get_category_name_by_key(value).lower(),
                 }
+                logger.debug(f'Serializer Resolved {value} to {validated}')
+                return validated
             except serializers.ValidationError as e:
                 raise serializers.ValidationError(
                     f"Category '{value}' not found. Please provide a valid category key or name."
@@ -375,7 +385,8 @@ class BaseInsultSerializer(CachedBulkSerializer):
             raw_category = data["category_name"]
             
         if raw_category is not None and isinstance(raw_category, str):
-            category = type(self).validate_category(raw_category)
+            category = typeresolve(raw_category)
+
             data["category"] = InsultCategory.objects.get(category_key=category["category_key"])
 
         return super().to_internal_value(data)
@@ -385,7 +396,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         representation = super().to_representation(instance)
 
         # Use cached category lookup instead of additional DB query
-        validated_category = type(self).validate_category(representation['category'])
+        validated_category = typeresolve(representation['category'])
         representation["category"] = validated_category["category_name"]
 
         return representation

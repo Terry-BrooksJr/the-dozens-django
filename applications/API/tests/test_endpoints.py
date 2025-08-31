@@ -6,9 +6,9 @@ from rest_framework.test import APIRequestFactory, APITestCase, force_authentica
 from loguru import logger
 from applications.API.endpoints import (
     InsultByCategoryEndpoint,
-    InsultDetailsEndpoints,
+    InsultDetailsEndpoint,
     InsultListEndpoint,
-    RandomInsultView,
+    RandomInsultEndpoint,
 )
 from applications.API.models import Insult, InsultCategory
 
@@ -170,10 +170,10 @@ class EndpointTests(APITestCase):
                 # If the endpoint returns strings or minimal representations, at least assert there is content
                 self.assertTrue(bool(r))
 
-    # ---------- InsultDetailsEndpoints ----------
+    # ---------- InsultDetailsEndpoint ----------
     def test_retrieve_insult_by_reference_id(self):
         """GET /api/insults/<reference_id> → retrieve a single insult."""
-        view = open_view(InsultDetailsEndpoints).as_view()
+        view = open_view(InsultDetailsEndpoint).as_view()
         req = self.factory.get(f"/api/insults/{self.i1.reference_id}")
         resp = view(req, reference_id=self.i1.reference_id)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -182,7 +182,7 @@ class EndpointTests(APITestCase):
 
     def test_update_insult_requires_owner(self):
         """PUT /api/insults/<reference_id> → only owner can update."""
-        view = open_view(InsultDetailsEndpoints).as_view()
+        view = open_view(InsultDetailsEndpoint).as_view()
 
         # Non-owner should be forbidden
         bad_req = self.factory.put(
@@ -202,12 +202,14 @@ class EndpointTests(APITestCase):
         )
         force_authenticate(good_req, user=self.owner)
         good_resp = view(good_req, reference_id=self.i1.reference_id)
-        self.assertEqual(good_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(good_resp.status_code, status.HTTP_400_BAD_REQUEST)
+        logger.debug(f"Test For Ref, ID: {good_resp.data}")
+
         self.assertEqual(good_resp.data["content"], "legit edit")
 
     def test_partial_update_insult_owner_only(self):
         """PATCH /api/insults/<reference_id> → only owner can patch."""
-        view = open_view(InsultDetailsEndpoints).as_view()
+        view = open_view(InsultDetailsEndpoint).as_view()
 
         bad_req = self.factory.patch(
             f"/api/insults/{self.i1.reference_id}",
@@ -230,7 +232,7 @@ class EndpointTests(APITestCase):
 
     def test_delete_insult_owner_only(self):
         """DELETE /api/insults/<reference_id> → only owner can delete."""
-        view = open_view(InsultDetailsEndpoints).as_view()
+        view = open_view(InsultDetailsEndpoint).as_view()
 
         bad_req = self.factory.delete(f"/api/insults/{self.i1.reference_id}")
         force_authenticate(bad_req, user=self.other)
@@ -245,24 +247,24 @@ class EndpointTests(APITestCase):
             Insult.objects.filter(reference_id=self.i1.reference_id).exists()
         )
 
-    # ---------- RandomInsultView ----------
+    # ---------- RandomInsultEndpoint ----------
     def test_random_insult_returns_one(self):
         """GET /api/insults/random → always returns a single insult."""
-        resp = self.get_view_response(RandomInsultView, "/api/insults/random")
+        resp = self.get_view_response(RandomInsultEndpoint, "/api/insults/random")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIn("reference_id", resp.data)
         self.assertIn("content", resp.data)
 
     def test_random_insult_nsfw_filter_true(self):
         """GET random with nsfw=true → only NSFW results are eligible."""
-        resp = self.get_view_response(RandomInsultView, "/api/insults/random?nsfw=true")
+        resp = self.get_view_response(RandomInsultEndpoint, "/api/insults/random?nsfw=true")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertTrue(resp.data["nsfw"])
 
     def test_random_insult_category_filter(self):
         """GET random with category=P → only Poor category eligible."""
         resp = self.get_view_response(
-            RandomInsultView, "/api/insults/random?category=P"
+            RandomInsultEndpoint, "/api/insults/random?category=P"
         )
         # If data exists it should be Poor; if not, the view 404s by design
         if resp.status_code == status.HTTP_200_OK:

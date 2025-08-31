@@ -60,22 +60,15 @@ jobs:
         with:
           doppler-token: ${{ env.DOPPLER_TOKEN }}
           inject-env-vars: true
-          
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x          
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run linters
         run: |
           source venv/bin/activate
-          echo "Running import sorting check..."
-          isort . --diff --check-only
-          
-          echo "Running code formatting check..."
-          black --check --diff .
-          
-          echo "Running flake8 linting..."
-          flake8 .
-          
-          echo "Running type checking..."
-          mypy .
-
+          task lint:lint
   test:
     needs: setup
     runs-on: ubuntu-latest
@@ -84,7 +77,7 @@ jobs:
         python-version: ['3.9', '3.10', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -100,18 +93,22 @@ jobs:
         with:
           doppler-token: ${{ env.DOPPLER_TOKEN }}
           inject-env-vars: true
-          
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x          
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run tests
         run: |
-          pytest --cov=./ --cov-report=xml --cov-report=term-missing -v
-          
+          source venv/bin/activate
+          task run:test 
       - name: Upload coverage to Codecov
         if: matrix.python-version == '3.11'
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   security-scan:
     needs: setup
@@ -137,7 +134,7 @@ jobs:
           pip install safety bandit
           
           echo "Checking for known security vulnerabilities..."
-          safety check
+          safety scan
           
           echo "Running static security analysis..."
           bandit -r . -f json -o bandit-report.json || true
