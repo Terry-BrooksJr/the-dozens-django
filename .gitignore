@@ -154,7 +154,7 @@ GitHub.sublime-settings
 .postgresql/ca-certificate.crt
 .postgresql/do_cert.crt
 logs
-data
+
 .task/*
 COCKROACH_DB_SSL.crt
 staticfiles/*       # if you meant to ignore your local staticfiles directory

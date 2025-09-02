@@ -103,8 +103,26 @@
                          1px -1px 0 var(--color-primary),
                          -1px 1px 0 var(--color-primary),
                          1px 1px 0 var(--color-primary);
+                    color: var(--color-white);
                }
 
+               h1:hover,
+               h2:hover,
+               h3:hover,
+               h4:hover,
+               h6:hover,
+               .uk-accordion-title:hover,
+               .phrase-item:hover,
+               .header-font:hover {
+                    font-family: 'YoMamaHeader', Arial, sans-serif;
+                    text-shadow:
+                         -1px -1px 0 var(--color-white),
+                         1px -1px 0 var(--color-white),
+                         -1px 1px 0 var(--color-white),
+                         1px 1px 0 var(--color-white);
+                    color: var(--color-primary);
+               }
+               
                /* Responsive text sizing */
                h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); }
                h2 { font-size: clamp(1.5rem, 3.5vw, 2rem); }
@@ -138,7 +156,10 @@
                     transition: all 0.3s ease;
                     font-size: clamp(0.9rem, 2.5vw, 1rem);
                }
+               .bg-silver{
+                      background: linear-gradient(to right, #ccc 0%, #eee 25%, #fff 50%, #eee 75%, #ccc 100%) !important;
 
+               }
                .phrase-item.completed {
                     opacity: 1;
                }
@@ -267,7 +288,10 @@
                     font-size: clamp(0.8rem, 2vw, 1rem);
                     text-align: center;
                }
-
+.card-title {
+     color: unset;
+     background-color: unset;
+}
                /* Mobile nav adjustments */
                @media (max-width: 767px) {
                     .yo-nav .nav-link {
@@ -309,8 +333,13 @@
                .nav-underline {
                     position: relative;
                }
+/* Optional: avoid double underlines when active */
+#built-with-list .nav-link.active {
+  border-bottom: 0;
 
-               .nav-underline::after {
+}   
+
+.nav-underline::after {
                     content: "";
                     position: absolute;
                     left: 1rem;
@@ -344,7 +373,34 @@
                          padding: 0.6rem 1rem;
                     }
                }
+/* Make sure the underline can be positioned */
+#built-with-list .nav-link.nav-underline {
+  position: relative;
+  font-family: "YoMamaHeader" ;
+  text-decoration: none !important;
+}
 
+/* Base underline (hidden by default) */
+#built-with-list .nav-link.nav-underline::after {
+  content: "";
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: .35rem;
+  height: 2px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms var(--transition-standard);
+}
+
+/* Show the underline on hover OR when this tab is the active/selected one */
+#built-with-list .nav-link.nav-underline:hover::after,
+#built-with-list .nav-link.nav-underline:focus::after,
+#built-with-list .nav-link.nav-underline.active::after,
+#built-with-list .nav-link.nav-underline[aria-selected="true"]::after {
+  transform: scaleX(1);
+}
                .btn-accent:hover {
                     filter: brightness(1.05);
                }
@@ -368,22 +424,14 @@
                     color: #222;
                }
 
-               /* Horizontal dropdown for API menu - responsive */
-               .dropdown-menu-horizontal {
-                    display: flex;
-                    flex-wrap: wrap;
-                    align-items: center;
-                    gap: 0.5rem;
-                    padding: 0.5rem 0.75rem;
-                    min-width: 280px;
-               }
+   
 
                .dropdown-menu-horizontal>li {
                     flex: 1 1 auto;
                     min-width: 80px;
                }
 
-               .dropdown-menu-horizontal .dropdown-item {
+               .dropdown-item {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
@@ -466,7 +514,15 @@
                          padding: 2rem;
                     }
                }
-
+#built-with-list > li {
+background-color: unset;
+color: unset;
+}
+#built-with-list > li > .nav-link.active {
+    background-color: unset;
+    color: unset;
+    font-weight: bold;
+}
                /* Responsive spacing */
                .row {
                     margin-bottom: 1.5rem;
@@ -480,8 +536,7 @@
 
                /* Video responsive */
                #about-video {
-                    width: 100%;
-                    max-width: 100%;
+                    max-width: 75%;
                     height: auto;
                }
 
@@ -627,6 +682,7 @@
                     display: block;
                }
 
+               
                @media (max-width: 767px) {
                     .d-none-mobile {
                          display: none !important;
@@ -655,9 +711,7 @@
                }
 
                /* Fix any potential overflow issues */
-               .container, .container-fluid, .container-xl, .container-xxl {
-                    overflow-x: hidden;
-               }
+
 
                /* Improve touch targets on mobile */
                @media (max-width: 767px) {
@@ -694,6 +748,7 @@
                     }
                     
                     #about-video {
+                         max-width: 75%;
                          margin-left: 0 !important;
                          margin-top: 1rem;
                     }
@@ -752,8 +807,8 @@
                                                           aria-expanded="false">
                     
                                                             The API
-                                                       </a>
-                                                       <ul id="api-menu" class="dropdown-menu dropdown-menu-horizontal"
+                                                  </a>
+                                                            <ul id="api-menu" class="d-flex flex-row dropdown-menu "
                                                            aria-labelledby="apiMenu">
                                                             <li>
                                                                  <a class="dropdown-item" target="_blank" href="{% url 'swagger' %}">
@@ -804,6 +859,7 @@
                                                                  </button>
                                                             </li>
                                                        </ul>
+                                                       
                                                   </li>
                                                   <li class="nav-item dropdown">
                                                        <a class="nav-link dropdown-toggle nav-underline"
@@ -858,6 +914,7 @@
                                                        src="{% static 'assets/yo_momma_brand.png' %}"
                                                        class="img-fluid"
                                                        alt="The Dozens - Yo Mama Jokes API Brand" />
+                                                       <h1>Welcome!</h1>
                                              </div>
                                         </div>
                                         <div class="row justify-content-center" id="body-copy">
@@ -894,11 +951,11 @@
                                         </div>
                                         <div class="row justify-content-center" id="built-with-row">
                                              <div class="col-12 col-lg-10 col-xl-8">
-                                                  <h2>Built With...</h2>
+                                                  <h1>Built With...</h1>
                                                   <p class="text-responsive">Hover over each icon to see how it was used to build this API.</p>
-                                                  <div class="card bg-dark text-light text-center">
+                                                  <div class="card bg-silver  text-center">
                                                        <div class="card-header">
-                                                            <ul class="nav-tabs nav nav-pills nav-fill card-header-tabs">
+                                                            <ul id="built-with-list" class="nav-tabs nav nav-pills nav-fill card-header-tabs">
                                                                  <li class="nav-item">
                                                                       <a class="nav-link nav-underline active"
                                                                          data-bs-toggle="pill"
@@ -956,7 +1013,7 @@
                                                             </ul>
                                                        </div>
                                                        <div class="tab-content" id="pills-tabContent">
-                                                            <div class="tab-pane bg-dark text-light card fade show active"
+                                                            <div class="tab-pane bg-silver  card fade show active"
                                                                  id="framework"
                                                                  role="tabpanel"
                                                                  aria-labelledby="framework-tab">
@@ -969,13 +1026,14 @@
                                                                       title="Django REST Framework (DRF) powers routing, serialization, validation, auth, throttling, filtering, and pagination—plus auto OpenAPI docs via drf-spectacular (Swagger & Postman).">
                                                                       <h5 class="card-title">Framework</h5>
                                                                       <p class="card-text">Django REST Framework</p>
+                                                                      <p>Django REST Framework (DRF) powers routing, serialization, validation, auth, throttling, filtering, and pagination—plus auto OpenAPI docs via drf-spectacular (Swagger & Postman).</p>
                                                                       <a href="https://www.django-rest-framework.org/"
                                                                          rel="external"
                                                                          target="_blank"
                                                                          class="card-link">More on DRF</a>
                                                                  </div>
                                                             </div>
-                                                            <div class="tab-pane bg-dark text-light card fade"
+                                                            <div class="tab-pane bg-silver  card fade"
                                                                  id="caching"
                                                                  role="tabpanel"
                                                                  aria-labelledby="caching-tab">
@@ -988,13 +1046,14 @@
                                                                       title="DragonflyDB is the Redis-compatible caching database that keeps The Dozens snappy. It stores frequently requested jokes, categories, and API responses in memory so the system delivers laughs instantly without hammering the primary database.">
                                                                       <h5 class="card-title">Caching</h5>
                                                                       <p class="card-text">Dragonfly DB</p>
+                                                                      <p>DragonflyDB is the Redis-compatible caching database that keeps The Dozens snappy. It stores frequently requested jokes, categories, and API responses in memory so the system delivers laughs instantly without hammering the primary database.</p>
                                                                       <a href="https://www.dragonflydb.io/"
                                                                          target="_blank"
                                                                          rel="external"
                                                                          class="card-link">More on Dragonfly DB</a>
                                                                  </div>
                                                             </div>
-                                                            <div class="tab-pane bg-dark text-light card fade"
+                                                            <div class="tab-pane bg-silver  card fade"
                                                                  id="database"
                                                                  role="tabpanel"
                                                                  aria-labelledby="database-tab">
@@ -1006,6 +1065,7 @@
                                                                       data-placement="bottom"
                                                                       title="PostgreSQL is the relational database that organizes and stores all the jokes, categories, and user submissions. Its robust data types and schema flexibility make it ideal for managing structured humor data—whether text, enums, or JSONB payloads.">
                                                                       <h5 class="card-title">Relational Database Management System</h5>
+                                                                      <p>PostgreSQL is the relational database that organizes and stores all the jokes, categories, and user submissions. Its robust data types and schema flexibility make it ideal for managing structured humor data—whether text, enums, or JSONB payloads.</p>
                                                                       <p class="card-text">PostgreSQL</p>
                                                                       <a href="https://www.postgresql.org/"
                                                                          target="_blank"
@@ -1013,7 +1073,7 @@
                                                                          class="card-link">More on PostgreSQL</a>
                                                                  </div>
                                                             </div>
-                                                            <div class="tab-pane bg-dark text-light card fade"
+                                                            <div class="tab-pane bg-silver  card fade"
                                                                  id="monitoring"
                                                                  role="tabpanel"
                                                                  aria-labelledby="monitoring-tab">
@@ -1028,6 +1088,7 @@
                                                                       title="Prometheus and Highlight.io work together to keep The Dozens API reliable and transparent. Prometheus collects metrics (latency, request counts, cache hits, error rates) so performance can be tracked and tuned.">
                                                                       <h5 id="monitoring-card-title" class="card-title">Monitoring</h5>
                                                                       <p id="monitoring-card-text" class="card-text">Prometheus</p>
+                                                                      <p id="monitoring-card-desc" class="card-text">API reliable and transparent. Prometheus collects metrics (latency, request counts, cache hits, error rates) so performance can be tracked and tuned.</p>
                                                                       <a id="monitoring-card-link"
                                                                          href="https://prometheus.io/"
                                                                          rel="external"
@@ -1035,7 +1096,7 @@
                                                                          class="card-link">More on Prometheus</a>
                                                                  </div>
                                                             </div>
-                                                            <div class="tab-pane bg-dark text-light card fade"
+                                                            <div class="tab-pane bg-silver  card fade"
                                                                  id="ci-cd"
                                                                  role="tabpanel"
                                                                  aria-labelledby="ci-cd-tab">
@@ -1048,13 +1109,14 @@
                                                                       title="GitHub Actions automates testing, building, and deployment pipelines for continuous integration and deployment.">
                                                                       <h5 class="card-title">CI/CD</h5>
                                                                       <p class="card-text">Github Actions</p>
+                                                                      <p>GitHub Actions automates testing, building, and deployment pipelines for continuous integration and deployment.</p>
                                                                       <a href="https://github.com/features/actions"
                                                                          rel="external"
                                                                          target="_blank"
                                                                          class="card-link">More on Github Actions</a>
                                                                  </div>
                                                             </div>
-                                                            <div class="tab-pane card bg-dark text-light fade"
+                                                            <div class="tab-pane card bg-silver  fade"
                                                                  id="hosting"
                                                                  role="tabpanel"
                                                                  aria-labelledby="hosting-tab">
@@ -1468,12 +1530,31 @@
                     static setupEventListeners() {
                          document.querySelectorAll(".nav-bttn").forEach((button) => {
                               button.addEventListener("mouseenter", () =>
-                                   button.classList.add("animate__animated", "animate__pulse")
+                                   button.classList.add("animate__animated", "animate__pulse", "animate__infinite")
                               );
+                              button.addEventListener("mouseleave", () => 
+                                   button.classList.remove("animate__animated", "animate__pulse", "animate__infinite")
+                              )
                          });
-                    }
+                                  document.querySelectorAll("h1").forEach((h1_el) => {
+                              h1_el.addEventListener("mouseenter", () =>
+                                   h1_el.classList.add("animate__animated", "animate__pulse", "animate__infinite")
+                              );
+                              h1_el.addEventListener("mouseleave", () => 
+                                   h1_el.classList.remove("animate__animated", "animate__pulse", "animate__infinite")
+                              )
+                                  });
+                              const icon = document.getElementById("jod-icon")
+                              icon.addEventListener("mouseenter", () =>
+                                   icon.classList.add("animate__animated", "animate__pulse", "animate__infinite")
+                              );
+                              icon.addEventListener("mouseleave", () => 
+                                   icon.classList.remove("animate__animated", "animate__pulse", "animate__infinite")
+                              )
+                         ;
+                         
                }
-
+          }
                // Speech Bubble Controller with responsive improvements
                class SpeechBubbleController {
                     constructor() {
@@ -1722,6 +1803,7 @@
                     const cardImg = $('#monitoring-img');
                     const cardLink = $('#monitoring-card-link');
                     const cardTooltip = $('#monitoring-tooltip');
+                    const cardDesc = $('#monitoring-card-desc')
 
                     if (state === 'highlight') {
                          cardTitle.text('Observability');
@@ -1730,6 +1812,7 @@
                          cardLink.text('More on Highlight.io');
                          cardLink.attr('href', 'https://highlight.io/');
                          cardTooltip.attr('title', 'Prometheus and Highlight.io work together to keep The Dozens API reliable and transparent. Highlight.io captures logs, traces, and front-end events for end-to-end visibility.');
+                         cardDesc.text('Prometheus and Highlight.io work together to keep The Dozens API reliable and transparent. Highlight.io captures logs, traces, and front-end events for end-to-end visibility.')
                     } else {
                          cardTitle.text('Monitoring');
                          cardText.text('Prometheus');
@@ -1737,6 +1820,7 @@
                          cardLink.text('More on Prometheus');
                          cardLink.attr('href', 'https://prometheus.io/');
                          cardTooltip.attr('title', 'Prometheus and Highlight.io work together to keep The Dozens API reliable and transparent. Prometheus collects metrics (latency, request counts, cache hits, error rates) so performance can be tracked and tuned.');
+                         cardDesc.text('Prometheus and Highlight.io work together to keep The Dozens API reliable and transparent. Prometheus collects metrics (latency, request counts, cache hits, error rates) so performance can be tracked and tuned.')
                     }
                }
 

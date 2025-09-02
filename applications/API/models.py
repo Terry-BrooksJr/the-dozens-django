@@ -61,24 +61,23 @@ def encode_base64(number: int) -> str:
         return base64.b64encode(str(number).encode()).decode()
     except Exception as e:
         logger.exception(f"Unable to Encode Reference ID for Insult {number}: {str(e)}")
-        raise Base64EncoderException(str(e))
+        raise Base64EncoderException(str(e)) from e
 
 
 class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Model):
-    """
-    Model representing a"{} category for insults. This model defines an insult category with a unique key and name. It is used to organize insults into different categories for easier management and retrieval.
-    """
+
 
     category_key = models.CharField(max_length=5, unique=True, primary_key=True)
     name = models.CharField(max_length=255, unique=True)
-
+    description = models.CharField(max_length=50000)
     def __str__(self):
         return f"{self.category_key}"
-
     def lower(self):
         """Returns the name of the category in lowercase."""
         return self.name.lower()
-
+    @property
+    def count(self) -> int:
+        return Insult.objects.filter(category=self, status=Insult.STATUS.ACTIVE).count()
     class Meta:
         db_table = "insult_categories"
         verbose_name = _("Insult Category")
@@ -107,27 +106,6 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         - re_categorize(new_category): Re-categorizes the object with a new category.
         - reclassify(nsfw_status): Changes the category of the insult.
     """
-
-    class Meta:
-        db_table = "insults"
-        ordering = ["nsfw", "category"]
-        verbose_name = "Insult/Joke"
-        verbose_name_plural = "Insults/Jokes"
-        managed = True
-        indexes = [
-            models.Index(fields=["category"], name="idx_category"),
-            models.Index(fields=["category", "nsfw"], name="idx_nsfw_category"),
-            models.Index(fields=["nsfw"], name="idx_nsfw"),
-            models.Index(fields=["added_by"], name="idx_added_by"),
-            models.Index(fields=["reference_id"], name="idx_reference_id"),
-            models.Index(
-                fields=["reference_id", "insult_id"], name="idx_reference_id_pk"
-            ),
-            models.Index(
-                fields=["added_by", "status", "category"],
-                name="idx_added_status_cat",
-            ),
-        ]
 
     class STATUS(models.TextChoices):
         """
@@ -346,7 +324,26 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             )
         except Exception as e:
             logger.error(f"Unable to ReClassify Insult {self.reference_id}: {e}")
-
+    class Meta:
+        db_table = "insults"
+        ordering = ["nsfw", "category"]
+        verbose_name = "Insult/Joke"
+        verbose_name_plural = "Insults/Jokes"
+        managed = True
+        indexes = [
+            models.Index(fields=["category"], name="idx_category"),
+            models.Index(fields=["category", "nsfw"], name="idx_nsfw_category"),
+            models.Index(fields=["nsfw"], name="idx_nsfw"),
+            models.Index(fields=["added_by"], name="idx_added_by"),
+            models.Index(fields=["reference_id"], name="idx_reference_id"),
+            models.Index(
+                fields=["reference_id", "insult_id"], name="idx_reference_id_pk"
+            ),
+            models.Index(
+                fields=["added_by", "status", "category"],
+                name="idx_added_status_cat",
+            ),
+        ]
 
 class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
     """
@@ -434,27 +431,6 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         except Exception as e:
             logger.error(f"Generalized Insult Setting Error: {str(e)}")
             raise IntegrityError(f"Generalized Insult Setting Error: {str(e)}") from e
-
-    class Meta:
-        db_table = "reported_jokes"
-        ordering = ["status", "-date_submitted"]
-        verbose_name = "Joke Needing Review"
-        verbose_name_plural = "Jokes Needing Review"
-        get_latest_by = ["-date_submitted"]
-
-        indexes = [
-            models.Index(fields=["review_type"], name="idx_review_type"),
-            models.Index(fields=["status"], name="idx_status"),
-            models.Index(fields=["date_submitted"], name="idx_date_submitted"),
-            models.Index(fields=["date_reviewed"], name="idx_date_reviewed"),
-            models.Index(fields=["reviewer"], name="idx_reviewer"),
-            models.Index(
-                fields=["insult_reference_id"], name="idx_insult_reference_id"
-            ),
-            models.Index(
-                fields=["insult", "insult_reference_id"], name="idx_insult_ref_id"
-            ),
-        ]
 
     def mark_review_not_reclassified(self, reviewer: User):
         """Marks the review as Not reclassified.
@@ -571,6 +547,29 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
                 f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
             )
 
+    class Meta:
+        db_table = "reported_jokes"
+        ordering = ["status", "-date_submitted"]
+        verbose_name = "Joke Needing Review"
+        verbose_name_plural = "Jokes Needing Review"
+        get_latest_by = ["-date_submitted"]
+
+        indexes = [
+            models.Index(fields=["review_type"], name="idx_review_type"),
+            models.Index(fields=["status"], name="idx_status"),
+            models.Index(fields=["date_submitted"], name="idx_date_submitted"),
+            models.Index(fields=["date_reviewed"], name="idx_date_reviewed"),
+            models.Index(fields=["reviewer"], name="idx_reviewer"),
+            models.Index(
+                fields=["insult_reference_id"], name="idx_insult_reference_id"
+            ),
+            models.Index(
+                fields=["insult", "insult_reference_id"], name="idx_insult_ref_id"
+            ),
+            
+        ]
+        
+#SECTION - Model Signals
 
 @receiver(post_save, sender=Insult)
 def generate_reference_id(sender, instance, created, **kwargs):

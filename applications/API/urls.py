@@ -13,22 +13,22 @@ urlpatterns = [
     path("swagger/", SpectacularSwaggerView.as_view(), name="swagger"),
     path("redoc/", SpectacularRedocView.as_view(), name="redoc"),
     # Categories (static-ish)
-    path("api/categories/", ListCategoryEndpoint.as_view(), name="list_categories"),
+    path("categories/", ListCategoryEndpoint.as_view(), name="list_categories"),
     # Insults – collection first
-    path("api/insults/", InsultListEndpoint.as_view(), name="list_insults"),
+    path("insults/", InsultListEndpoint.as_view(), name="list_insults"),
     path(
-        "api/insults/", CreateInsultEndpoint.as_view(), name="create_insult"
+        "insults/new", CreateInsultEndpoint.as_view(), name="create_insult"
     ),  # same path, different method
     # Insults – custom collection routes with distinct prefixes (more specific than generic <reference_id>)
-    path("api/insults/random", RandomInsultEndpoint.as_view(), name="random_insult"),
+    path("insults/random", RandomInsultEndpoint.as_view(), name="random_insult"),
     path(
-        "api/insults/category/<str:category_name>/",
+        "insults/category/<str:category_name>/",
         InsultByCategoryEndpoint.as_view(),
         name="insults_by_category",
     ),
     # Insults – member routes
     path(
-        "api/insults/<str:reference_id>/",
+        "insults/<str:reference_id>/",
         InsultDetailsEndpoint.as_view(),
         name="insult_detail",
     ),

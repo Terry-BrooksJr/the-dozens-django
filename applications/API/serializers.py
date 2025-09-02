@@ -385,7 +385,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
             raw_category = data["category_name"]
             
         if raw_category is not None and isinstance(raw_category, str):
-            category = typeresolve(raw_category)
+            category = type(self).resolve_category(raw_category)
 
             data["category"] = InsultCategory.objects.get(category_key=category["category_key"])
 
@@ -396,7 +396,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         representation = super().to_representation(instance)
 
         # Use cached category lookup instead of additional DB query
-        validated_category = typeresolve(representation['category'])
+        validated_category = type(self).resolve_category(representation['category'])
         representation["category"] = validated_category["category_name"]
 
         return representation
@@ -430,10 +430,10 @@ class MyInsultSerializer(BaseInsultSerializer):
             summary="Available Categories",
             description="List of all available insult categories, and the number of jokes",
             value=[
-                {"category_key": "P", "name": "Poor", "insult_count": 120},
-                {"category_key": "S", "name": "Stupid", "insult_count": 33},
-                {"category_key": "F", "name": "Fat", "insult_count": 30},
-                {"category_key": "L", "name": "Lazy", "insult_count": 10},
+                {"category_key": "P", "name": "Poor", "count": 120},
+                {"category_key": "S", "name": "Stupid", "count": 33},
+                {"category_key": "F", "name": "Fat", "count": 30},
+                {"category_key": "L", "name": "Lazy", "count": 10},
             ],
             response_only=True,
         )
@@ -447,28 +447,11 @@ class CategorySerializer(serializers.ModelSerializer):
 
     category_key = serializers.ReadOnlyField()
     name = serializers.ReadOnlyField()
-    insult_count = serializers.SerializerMethodField(method_name="get_count")
-
+    count = serializers.ReadOnlyField()
+    description = serializers.ReadOnlyField()
     class Meta:
         model = InsultCategory
-        fields = ["category_key", "name", "insult_count"]
-
-    @extend_schema_field(OpenApiTypes.INT)
-    def get_count(self, instance):
-        return Insult.objects.filter(
-            category_key=instance.category_key, status=Insult.STATUS.ACTIVE
-        ).count()
-        
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        logger.debug(representation)
-        return {
-            representation["category_key"]: 
-                {
-                "name": representation["category_name"],
-                "insult_count": representation['insult_count']
-                }
-        }
+        fields = ["category_key", "name", "count", "description"]
 
 # Bulk operations serializer for better performance with multiple insults
 class BulkInsultSerializer(serializers.ListSerializer):
@@ -481,7 +464,6 @@ class BulkInsultSerializer(serializers.ListSerializer):
         """
         Optimize bulk serialization by prefetching related data.
         """
-        # Prefetch related data to avoid N+1 queries
         if hasattr(data, "select_related"):
             data = data.select_related("added_by", "category")
         elif hasattr(data, "__iter__"):

@@ -19,7 +19,7 @@ class InsultType(DjangoObjectType):
         """
         model = Insult
         fields = (
-            "id",
+            "insult_id",
             "content",
             "category",
             "nsfw",

@@ -68,7 +68,6 @@ autoflake = "^2.2.1"
 django-stubs = "^5.0.2"
 django-stubs-ext = "^5.0.2"
 kolo = "^2.37.0"
-sourcery = "^1.21.0"
 djlint = "^1.36.4"
 ruff = "^0.12.7"
 pylint-django = "^2.6.1"
@@ -83,6 +82,8 @@ pytest-cov = "^6.0.0"
 django-discover-runner = "^1.0"
 django-nose = "^1.4.7"
 pytest-django = "^4.8.0"
+bandit = "^1.8.6"
+safety = "^3.6.0"
 
 [build-system]
 requires = ["poetry-core"]
