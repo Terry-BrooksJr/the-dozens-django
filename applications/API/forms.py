@@ -205,7 +205,7 @@ class InsultReviewForm(ModelForm):
         Custom validation with improved error handling.
         """
         cleaned_data = super().clean()
-        logger.debug(f'Type: {type(cleaned_data)} | Value: {cleaned_data}')
+        logger.debug(f"Type: {type(cleaned_data)} | Value: {cleaned_data}")
 
         # Normalize and coerce incoming values
         anonymous = bool(cleaned_data.get("anonymous", False))
@@ -253,11 +253,13 @@ class InsultReviewForm(ModelForm):
                 _("Email address is required"),
                 code="email-required-for-contact",
             )
-            
+
         # Validate Min Char Length only when provided
         if review_basis and len(review_basis) < 70:
             raise ValidationError(
-                _("Please Ensure The Basis of your review request is 70 characters or more.")
+                _(
+                    "Please Ensure The Basis of your review request is 70 characters or more."
+                )
             )
         return cleaned_data
 

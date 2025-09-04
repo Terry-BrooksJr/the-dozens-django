@@ -66,18 +66,21 @@ def encode_base64(number: int) -> str:
 
 class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Model):
 
-
     category_key = models.CharField(max_length=5, unique=True, primary_key=True)
     name = models.CharField(max_length=255, unique=True)
     description = models.CharField(max_length=50000)
+
     def __str__(self):
         return f"{self.category_key}"
+
     def lower(self):
         """Returns the name of the category in lowercase."""
         return self.name.lower()
+
     @property
     def count(self) -> int:
         return Insult.objects.filter(category=self, status=Insult.STATUS.ACTIVE).count()
+
     class Meta:
         db_table = "insult_categories"
         verbose_name = _("Insult Category")
@@ -324,6 +327,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             )
         except Exception as e:
             logger.error(f"Unable to ReClassify Insult {self.reference_id}: {e}")
+
     class Meta:
         db_table = "insults"
         ordering = ["nsfw", "category"]
@@ -344,6 +348,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
                 name="idx_added_status_cat",
             ),
         ]
+
 
 class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
     """
@@ -566,16 +571,21 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             models.Index(
                 fields=["insult", "insult_reference_id"], name="idx_insult_ref_id"
             ),
-            
         ]
-        
-#SECTION - Model Signals
+
+
+# SECTION - Model Signals
+
 
 @receiver(post_save, sender=Insult)
 def generate_reference_id(sender, instance, created, **kwargs):
     if created:
         ref_id = instance.set_reference_id()
-        logger.info(f"Successfully Created and Set Reference ID for {instance.insult_id} -> {ref_id}")
+        logger.info(
+            f"Successfully Created and Set Reference ID for {instance.insult_id} -> {ref_id}"
+        )
+
+
 @receiver(post_save, sender=InsultReview)
 def flag_insult(sender, instance, created, **kwargs):
     """

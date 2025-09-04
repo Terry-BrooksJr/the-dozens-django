@@ -4,8 +4,14 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
-from applications.API.endpoints import CreateInsultEndpoint, ListCategoryEndpoint, InsultListEndpoint, RandomInsultEndpoint, InsultByCategoryEndpoint, InsultDetailsEndpoint
 
+from applications.API.endpoints import (
+    CreateInsultEndpoint,
+    InsultByCategoryEndpoint,
+    InsultDetailsEndpoint,
+    ListCategoryEndpoint,
+    RandomInsultEndpoint,
+)
 
 urlpatterns = [
     # API documentation/schema endpoints
@@ -15,11 +21,7 @@ urlpatterns = [
     # Categories (static-ish)
     path("categories/", ListCategoryEndpoint.as_view(), name="list_categories"),
     # Insults – collection first
-    path("insults/", InsultListEndpoint.as_view(), name="list_insults"),
-    path(
-        "insults/new", CreateInsultEndpoint.as_view(), name="create_insult"
-    ),  # same path, different method
-    # Insults – custom collection routes with distinct prefixes (more specific than generic <reference_id>)
+    path("insults/new", CreateInsultEndpoint.as_view(), name="create_insult"),
     path("insults/random", RandomInsultEndpoint.as_view(), name="random_insult"),
     path(
         "insults/category/<str:category_name>/",

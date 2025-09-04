@@ -5970,19 +5970,6 @@ azuread = ["cryptography (>=2.1.1)"]
 saml = ["python3-saml (>=1.5.0)"]
 
 [[package]]
-name = "sourcery"
-version = "1.33.0"
-description = "Magically refactor Python"
-optional = false
-python-versions = "*"
-groups = ["dev"]
-files = [
-    {file = "sourcery-1.33.0-py2.py3-none-macosx_10_9_universal2.whl", hash = "sha256:451373656791f5e7235aafcaee63fdaae7932513b5f469c5abff09bcd475f315"},
-    {file = "sourcery-1.33.0-py2.py3-none-manylinux1_x86_64.whl", hash = "sha256:dd58cb01aa933ec69a9337159e7c637ade6862fada93cc5a5263ee473e299893"},
-    {file = "sourcery-1.33.0-py2.py3-none-win_amd64.whl", hash = "sha256:9e89548f89d729f6bdbf11339f708c2de5aa32689a8f42999c6f1812cf33b720"},
-]
-
-[[package]]
 name = "spacy"
 version = "3.8.7"
 description = "Industrial-strength Natural Language Processing (NLP) in Python"
@@ -7082,4 +7069,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.14"
-content-hash = "72beb0c6be2540fbb9f2614c3e3dcf93b89a6d416aa50da107b1394d9a8279d9"
+content-hash = "49fee083bdc8593d3d12f9b12aabcacd8b7424edb1a68b9f21feb66cbe51f48a"

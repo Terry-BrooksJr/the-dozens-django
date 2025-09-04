@@ -1,7 +1,8 @@
 # api/schema_extensions.py
-from rest_framework import serializers
 from drf_spectacular.extensions import OpenApiViewExtension
-from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiResponse
+from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
+from rest_framework import serializers
+
 
 class DjoserUserDeleteExtension(OpenApiViewExtension):
     # Target the Djoser view (import path can vary by version)
@@ -15,17 +16,24 @@ class DjoserUserDeleteExtension(OpenApiViewExtension):
                 summary="Delete the current user (requires current_password).",
                 request=inline_serializer(
                     name="UserDeleteRequest",
-                    fields={"current_password": serializers.CharField()}
+                    fields={"current_password": serializers.CharField()},
                 ),
                 responses={204: OpenApiResponse(description="Deleted")},
             )
             def destroy(self, request, *args, **kwargs):
                 return super().perform_destroy(request, *args, **kwargs)
+
             @extend_schema(
                 summary="Create a New User. (Required to Contribute)",
                 request=inline_serializer(
                     name="UserCreateRequest",
-                    fields={"username": serializers.CharField(), "password": serializers.CharField(), "first_name": serializers.CharField(), "last_name": serializers.CharField, "email": serializers.EmailField()}
+                    fields={
+                        "username": serializers.CharField(),
+                        "password": serializers.CharField(),
+                        "first_name": serializers.CharField(),
+                        "last_name": serializers.CharField(),
+                        "email": serializers.EmailField(),
+                    },
                 ),
                 responses={204: OpenApiResponse(description="Deleted")},
             )

@@ -1,9 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from loguru import logger
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.test import APIRequestFactory, APITestCase, force_authenticate
-from loguru import logger
+
 from applications.API.endpoints import (
     InsultByCategoryEndpoint,
     InsultDetailsEndpoint,
@@ -106,7 +107,7 @@ class EndpointTests(APITestCase):
         # Shape sanity
         self.assertIn("results", resp.data)
         self.assertIsInstance(resp.data.get("results"), list)
-        
+
     def test_list_insults_excludes_non_active(self):
         """GET /api/insults/ does not include non-active insults."""
         resp = self.get_view_response(InsultListEndpoint, "/api/insults/")
@@ -116,7 +117,6 @@ class EndpointTests(APITestCase):
         insult_ids = [insult["reference_id"] for insult in resp.data.get("results", [])]
         self.assertNotIn(self.i4.reference_id, insult_ids)
 
-    
     def test_list_insults_reject_category_query_param(self):
         """The list endpoint should steer users to /api/insults/<category> for category filtering."""
         resp = self.get_view_response(InsultListEndpoint, "/api/insults/?category=P")
@@ -257,7 +257,9 @@ class EndpointTests(APITestCase):
 
     def test_random_insult_nsfw_filter_true(self):
         """GET random with nsfw=true → only NSFW results are eligible."""
-        resp = self.get_view_response(RandomInsultEndpoint, "/api/insults/random?nsfw=true")
+        resp = self.get_view_response(
+            RandomInsultEndpoint, "/api/insults/random?nsfw=true"
+        )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertTrue(resp.data["nsfw"])
 

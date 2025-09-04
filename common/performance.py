@@ -14,7 +14,7 @@ Features:
 
 import hashlib
 import os
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Tuple, Union
 
 from django.conf import settings
 from django.core.cache import cache
@@ -73,12 +73,6 @@ class NeverCacheMixin(TemplateView):
 
 
 class CachedResponseMixin(GenericAPIView):
-    """
-    Enhanced mixin class with integration to the generalized caching framework.
-
-    This mixin now leverages the cache manager registry for more consistent
-    caching behavior across the application.
-    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -246,18 +240,19 @@ class CachedResponseMixin(GenericAPIView):
                     metrics.increment_cache(self.primary_model.__name__, "hit")
 
                     # Build fresh queryset from cached IDs if they exist
-                    if cached_data and isinstance(cached_data, list):
-                        pk_field = self.primary_model._meta.pk.name
-                        if cached_data and pk_field in cached_data[0]:
-                            object_ids = [item[pk_field] for item in cached_data]
-                            fresh_queryset = self.get_optimized_queryset().filter(
-                                **{f"{pk_field}__in": object_ids}
-                            )
-                            extra_data = {
-                                "total_count": len(object_ids),
-                                "timestamp": timezone.now().isoformat(),
-                            }
-                            return fresh_queryset, extra_data
+                if cached_data and isinstance(cached_data, list)and len(cached_data)>0:
+                    pk_field = self.primary_model._meta.pk.name
+                    
+                    if pk_field in cached_data[0]:
+                        object_ids = [item[pk_field] for item in cached_data]
+                        fresh_queryset = self.get_optimized_queryset().filter(
+                            **{f"{pk_field}__in": object_ids}
+                        )
+                        extra_data = {
+                            "total_count": len(object_ids),
+                            "timestamp": timezone.now().isoformat(),
+                        }
+                        return fresh_queryset, extra_data
             except Exception as e:
                 logger.warning(f"Error using cache manager, falling back: {e}")
 
@@ -375,8 +370,10 @@ class CacheInvalidationMixin:
     Enhanced mixin to handle cache invalidation using the generalized cache framework.
     """
 
-    cache_invalidation_patterns: List[str] = []
-    cache_manager_names: List[str] = []  # Names of cache managers to invalidate
+    cache_invalidation_patterns: ClassVar[List[str]] = []
+    cache_manager_names: ClassVar[List[str]] = (
+        []
+    )  # Names of cache managers to invalidate
 
     def invalidate_bulk_caches(self, patterns: Optional[List[str]] = None) -> None:
         """
@@ -385,8 +382,7 @@ class CacheInvalidationMixin:
         # Invalidate specific cache managers
         manager_names = self.cache_manager_names or []
         for manager_name in manager_names:
-            manager = cache_registry.get(manager_name)
-            if manager:
+            if manager := cache_registry.get(manager_name):
                 try:
                     manager.invalidate_cache("mutation_triggered")
                     logger.debug(f"Invalidated cache manager: {manager_name}")

@@ -29,7 +29,6 @@ from django.db.models.signals import post_delete, post_save
 from django.db.utils import ProgrammingError
 from loguru import logger
 
-from applications.API.models import InsultCategory
 from common.metrics import metrics
 
 
@@ -449,7 +448,6 @@ class CategoryCacheManager(BaseCacheManager):
         cache.delete_many(keys_to_delete)
 
 
-        
 # ===================================================================
 # Cache Manager Registry
 # ===================================================================
@@ -557,6 +555,7 @@ def create_category_manager(
     manager = CategoryCacheManager(model_class, key_field, name_field)
     cache_registry.register(f"{model_class.__name__}_categories", manager)
     return manager
+
 
 def get_cache_performance_summary() -> Dict[str, Any]:
     """

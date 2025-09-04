@@ -2,20 +2,23 @@
 module: applications.API.tests.test_forms
 TODO: Complete Summary 
 """
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.utils import timezone
-from loguru import logger
+
 from applications.API.forms import InsultReviewForm
 from applications.API.models import Insult, InsultCategory
 
 User = get_user_model()
 
+
 @override_settings(ROOT_URLCONF="applications.API.tests.urls")
 class InsultReviewFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create( username="owner", email="owner@example.com", password="pass1234"
+        cls.user = User.objects.create(
+            username="owner", email="owner@example.com", password="pass1234"
         )
         cls.cat = InsultCategory.objects.create(category_key="P", name="Poor")
         cls.insult = Insult.objects.create(
@@ -24,7 +27,7 @@ class InsultReviewFormTests(TestCase):
             nsfw=False,
             status="A",  # ACTIVE
             added_on=timezone.now(),
-            added_by=cls.user
+            added_by=cls.user,
         )
 
     def _base_payload(self, **overrides):
@@ -36,7 +39,7 @@ class InsultReviewFormTests(TestCase):
             "post_review_contact_desired": "false",
             "reporter_email": "",
             "rationale_for_review": "x" * 70,  # meets min_length
-            "review_type": "RE", 
+            "review_type": "RE",
         }
         base.update(overrides)
         return base
@@ -46,15 +49,18 @@ class InsultReviewFormTests(TestCase):
         form = InsultReviewForm(data=self._base_payload())
         self.assertTrue(form.is_valid())
         # clean() should coerce insult_reference_id to the string ref id
-        self.assertEqual(form.cleaned_data["insult_reference_id"], self.insult.reference_id)
+        self.assertEqual(
+            form.cleaned_data["insult_reference_id"], self.insult.reference_id
+        )
 
     def test_invalid_when_non_anonymous_missing_names(self):
         """Non-anonymous requires first and last name."""
-        data = self._base_payload(anonymous="", reporter_first_name="", reporter_last_name="")
+        data = self._base_payload(
+            anonymous="", reporter_first_name="", reporter_last_name=""
+        )
         form = self.assert_form_invalid_and_error_present(
             data, "First name is required when not submitting anonymously"
         )
-
 
     def test_valid_when_non_anonymous_with_names(self):
         """Non-anonymous becomes valid once names are provided."""
@@ -87,9 +93,7 @@ class InsultReviewFormTests(TestCase):
     def test_invalid_when_insult_reference_id_not_found(self):
         """Invalid if the ref id doesn't resolve via Insult.get_by_reference_id()."""
         data = self._base_payload(insult_reference_id="NOPE_999")
-        form = self.assert_form_invalid_and_error_present(
-            data, "Invalid Insult ID"
-        )
+        form = self.assert_form_invalid_and_error_present(data, "Invalid Insult ID")
 
     def test_review_text_min_length_enforced_only_when_provided(self):
         """min_length=70 should fail if provided but too short; empty is allowed."""
@@ -103,6 +107,7 @@ class InsultReviewFormTests(TestCase):
         data_empty = self._base_payload(rationale_for_review="")
         form_empty = InsultReviewForm(data=data_empty)
         self.assertFalse(form_empty.is_valid(), form_empty.errors.as_json())
+
     def assert_form_invalid_and_error_present(self, form_data, expected_error):
         """
         Helper method to test that the InsultReviewForm is invalid and contains the expected error message.
@@ -125,4 +130,6 @@ class InsultReviewFormTests(TestCase):
         data = self._base_payload(insult_reference_id=f"  {self.insult.reference_id}  ")
         form = InsultReviewForm(data=data)
         self.assertTrue(form.is_valid(), form.errors.as_json())
-        self.assertEqual(form.cleaned_data["insult_reference_id"], self.insult.reference_id)
+        self.assertEqual(
+            form.cleaned_data["insult_reference_id"], self.insult.reference_id
+        )
