@@ -1,4 +1,8 @@
-# api/schema_extensions.py
+"""
+module: applications.API.schema_extensions
+
+This module contains schema extensions for the Djoser UserViewSet to enhance API documentation.
+"""
 from drf_spectacular.extensions import OpenApiViewExtension
 from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
 from rest_framework import serializers

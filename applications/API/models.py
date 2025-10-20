@@ -97,7 +97,34 @@ class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Mod
             models.Index(fields=["name"], name="idx_name"),
         ]
 
+        class Theme(models.Model):
+            theme_key = models.CharField(max_length=5, unique=True, primary_key=True)
+            theme_name = models.CharField(max_length=255, unique=True)
+            category = models.ForeignKey(InsultCategory, on_delete=models.CASCADE, related_name="theme")
+            description = models.CharField(max_length=50000)
 
+            def __str__(self):
+                return f"{self.category.name}: {self.theme_name}({self.theme_key})"
+
+            def lower(self):
+                """Returns the name of the theme in lowercase."""
+                return self.theme_name.lower()
+
+            class Meta:
+                db_table = "themes"
+                verbose_name = _("Theme")
+                verbose_name_plural = _("Themes")
+                managed = True
+                ordering = ["name"]
+                constraints = [
+                    models.UniqueConstraint(
+                        fields=["theme_key", "name"], name="unique_theme_key_name"
+                    ),
+                ]
+                indexes = [
+                    models.Index(fields=["theme_key"], name="idx_theme_key"),
+                    models.Index(fields=["name"], name="idx_theme_name"),
+                ]
 class Insult(ExportModelOperationsMixin("insult"), models.Model):
     """
     Model representing an Insult with various attributes and methods for manipulation. This model represents an Insult with fields like content, category, nsfw, added_on, added_by, last_modified, and status. It includes methods for removing, approving, marking for review, re-categorizing, and reclassifying insults.
@@ -147,7 +174,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         db_comment="Unique reference ID for the insult, generated from the primary key.",
         help_text="Unique identifier for the insult, generated from the primary key.",
     )
-    category = models.ForeignKey(InsultCategory, on_delete=models.PROTECT)
+    theme = models.ForeignKey(InsultCategory.Theme, on_delete=models.PROTECT)
     nsfw = models.BooleanField()
     added_on = models.DateField(null=False, blank=False, auto_now_add=True)
     reports_count = models.PositiveIntegerField(default=0, blank=True, null=True)
