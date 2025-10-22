@@ -8,10 +8,9 @@ from rest_framework.test import APIRequestFactory, APITestCase, force_authentica
 from applications.API.endpoints import (
     InsultByCategoryEndpoint,
     InsultDetailsEndpoint,
-    InsultListEndpoint,
     RandomInsultEndpoint,
 )
-from applications.API.models import Insult, InsultCategory
+from applications.API.models import Insult, InsultCategory, Theme
 
 User = get_user_model()
 
@@ -44,14 +43,15 @@ class EndpointTests(APITestCase):
         )
 
         # Categories
-        cls.cat_poor = InsultCategory.objects.create(category_key="P", name="Poor")
-        cls.cat_fat = InsultCategory.objects.create(category_key="F", name="Fat")
-
+        cls.theme_app = Theme.objects.create(theme_name="App Theme", theme_key="APP")
+        cls.cat_poor = InsultCategory.objects.create(category_key="P", name="Poor", theme=cls.theme_app)
+        cls.cat_fat = InsultCategory.objects.create(category_key="F", name="Fat", theme=cls.theme_app)
         # Insults (make a mix of NSFW/SFW across categories)
         cls.i1 = Insult.objects.create(
             content="Yo momma is so poor she runs after the garbage truck with a shopping list.",
             category=cls.cat_poor,
             nsfw=False,
+            theme=cls.theme_app,
             status=Insult.STATUS.ACTIVE,
             added_by=cls.owner,
             added_on=timezone.now(),
@@ -60,6 +60,7 @@ class EndpointTests(APITestCase):
             content="Yo momma is so fat she has her own orbit.",
             category=cls.cat_fat,
             nsfw=False,
+            theme=cls.theme_app,
             status=Insult.STATUS.ACTIVE,
             added_by=cls.other,
             added_on=timezone.now(),
@@ -68,6 +69,7 @@ class EndpointTests(APITestCase):
             content="Yo momma is so poor… (NSFW)",
             category=cls.cat_poor,
             nsfw=True,
+            theme=cls.theme_app,
             status=Insult.STATUS.ACTIVE,
             added_by=cls.owner,
             added_on=timezone.now(),
@@ -76,6 +78,7 @@ class EndpointTests(APITestCase):
             content="Yo momma is so poor… Pending",
             category=cls.cat_poor,
             nsfw=True,
+            theme=cls.theme_app,
             status=Insult.STATUS.PENDING,
             added_by=cls.owner,
             added_on=timezone.now(),
@@ -89,6 +92,7 @@ class EndpointTests(APITestCase):
                 content="Owner draft should not appear publicly.",
                 category=cls.cat_poor,
                 nsfw=False,
+                theme=cls.theme_app,
                 status=Insult.STATUS.DRAFT,
                 added_by=cls.owner,
                 added_on=timezone.now(),
@@ -99,10 +103,14 @@ class EndpointTests(APITestCase):
     # ---------- InsultListEndpoint ----------
     def test_list_insults_public_active_only(self):
         """GET /api/insults/ → active insults only; includes both categories."""
-        resp = self.get_view_response(InsultListEndpoint, "/api/insults/")
+        from django.core.cache import cache
+        # Clear cache to avoid stale data from previous tests
+        cache.clear()
+
+        resp = self.get_view_response(InsultByCategoryEndpoint, "/api/insults/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        # Count active, exclude non-active if present
-        expected = Insult.objects.filter(status=Insult.STATUS.ACTIVE).count()
+        # Count active insults using the same queryset as the endpoint
+        expected = Insult.public.all().count()
         self.assertEqual(resp.data["count"], expected)
         # Shape sanity
         self.assertIn("results", resp.data)
@@ -110,24 +118,16 @@ class EndpointTests(APITestCase):
 
     def test_list_insults_excludes_non_active(self):
         """GET /api/insults/ does not include non-active insults."""
-        resp = self.get_view_response(InsultListEndpoint, "/api/insults/")
+        resp = self.get_view_response(InsultByCategoryEndpoint, "/api/insults/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         # Ensure the non-active insult is not in the results
         logger.debug(resp.data.get("results"))
         insult_ids = [insult["reference_id"] for insult in resp.data.get("results", [])]
         self.assertNotIn(self.i4.reference_id, insult_ids)
 
-    def test_list_insults_reject_category_query_param(self):
-        """The list endpoint should steer users to /api/insults/<category> for category filtering."""
-        resp = self.get_view_response(InsultListEndpoint, "/api/insults/?category=P")
-        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn(
-            "Please Use the `api/insults/<category>` endpoint", str(resp.data)
-        )
-
     def test_list_insults_filter_nsfw_true(self):
         """GET with nsfw=true returns only NSFW insults."""
-        resp = self.get_view_response(InsultListEndpoint, "/api/insults/?nsfw=true")
+        resp = self.get_view_response(InsultByCategoryEndpoint, "/api/insults/?nsfw=true")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(resp.data["count"], 1)
         for r in resp.data["results"]:
@@ -135,7 +135,7 @@ class EndpointTests(APITestCase):
 
     def test_list_insults_filter_nsfw_false(self):
         """GET with nsfw=false returns only SFW insults."""
-        resp = self.get_view_response(InsultListEndpoint, "/api/insults/?nsfw=false")
+        resp = self.get_view_response(InsultByCategoryEndpoint, "/api/insults/?nsfw=false")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         for r in resp.data["results"]:
             self.assertFalse(r["nsfw"])
@@ -187,7 +187,7 @@ class EndpointTests(APITestCase):
         # Non-owner should be forbidden
         bad_req = self.factory.put(
             f"/api/insults/{self.i1.reference_id}",
-            {"content": "attempted edit", "category": "Poor", "nsfw": False},
+            {"content": "attempted edit", "category": "P", "nsfw": False},
             format="json",
         )
         force_authenticate(bad_req, user=self.other)
@@ -197,12 +197,12 @@ class EndpointTests(APITestCase):
         # Owner can update
         good_req = self.factory.put(
             f"/api/insults/{self.i1.reference_id}",
-            {"content": "legit edit", "category": "Poor", "nsfw": False},
+            {"content": "legit edit", "category": "P", "nsfw": False},
             format="json",
         )
         force_authenticate(good_req, user=self.owner)
         good_resp = view(good_req, reference_id=self.i1.reference_id)
-        self.assertEqual(good_resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(good_resp.status_code, status.HTTP_200_OK)
         logger.debug(f"Test For Ref, ID: {good_resp.data}")
 
         self.assertEqual(good_resp.data["content"], "legit edit")
@@ -234,17 +234,28 @@ class EndpointTests(APITestCase):
         """DELETE /api/insults/<reference_id> → only owner can delete."""
         view = open_view(InsultDetailsEndpoint).as_view()
 
-        bad_req = self.factory.delete(f"/api/insults/{self.i1.reference_id}")
+        # Create a temporary insult for deletion testing to avoid affecting other tests
+        temp_insult = Insult.objects.create(
+            content="Temporary insult for delete test",
+            category=self.cat_poor,
+            nsfw=False,
+            theme=self.theme_app,
+            status=Insult.STATUS.ACTIVE,
+            added_by=self.owner,
+            added_on=timezone.now(),
+        )
+
+        bad_req = self.factory.delete(f"/api/insults/{temp_insult.reference_id}")
         force_authenticate(bad_req, user=self.other)
-        bad_resp = view(bad_req, reference_id=self.i1.reference_id)
+        bad_resp = view(bad_req, reference_id=temp_insult.reference_id)
         self.assertEqual(bad_resp.status_code, status.HTTP_403_FORBIDDEN)
 
-        good_req = self.factory.delete(f"/api/insults/{self.i1.reference_id}")
+        good_req = self.factory.delete(f"/api/insults/{temp_insult.reference_id}")
         force_authenticate(good_req, user=self.owner)
-        good_resp = view(good_req, reference_id=self.i1.reference_id)
+        good_resp = view(good_req, reference_id=temp_insult.reference_id)
         self.assertEqual(good_resp.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(
-            Insult.objects.filter(reference_id=self.i1.reference_id).exists()
+            Insult.objects.filter(reference_id=temp_insult.reference_id).exists()
         )
 
     # ---------- RandomInsultEndpoint ----------

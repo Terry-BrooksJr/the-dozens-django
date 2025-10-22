@@ -1,273 +1,803 @@
-    @font-face {
-      font-family: YoMamaHeader;
-      src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/caloriesuitDEMO.woff2') format('woff2');
-    }
+/* ==========================================================================
+   The Dozens - Mobile-First Stylesheet
+   ========================================================================== */
 
-    @font-face {
-      font-family: YoMamaBody;
-      src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2') format('woff2');
-    }
+/* ==========================================================================
+   1. CSS Custom Properties (Design Tokens)
+   ========================================================================== */
+:root {
+  /* Colors */
+  --color-primary: #770071;
+  --color-secondary: #bd00b4;
+  --color-accent: #beda00;
+  --color-white: #ffffff;
+  --color-background: #d7df0d;
+  --color-text: #333333;
 
-    :root {
-      --color-primary: #770071;
-      --color-secondary: #bd00b4;
-      --color-accent: #beda00;
-      --color-white: #ffffff;
-      --z-preloader: 9999;
-      --transition-standard: 300ms ease;
-    }
+  /* Z-Index Scale */
+  --z-preloader: 9999;
+  --z-modal: 1000;
+  --z-nav: 1030;
+  --z-speech-bubble: 1000;
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+  /* Transitions */
+  --transition-standard: 300ms ease;
+  --transition-fast: 150ms ease;
 
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
 
-    body {
-      background-image: url("https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/assets/background.svg");
-      background-repeat: no-repeat;
-      background-color: #d1d937;
-      background-size: cover;
+  /* Border Radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
 
-      font-family: "YoMamaBody";
-      background-attachment: fixed;
-      background-position: center;
+  /* Typography Scale */
+  --font-size-xs: clamp(0.75rem, 2vw, 0.875rem);
+  --font-size-sm: clamp(0.875rem, 2vw, 1rem);
+  --font-size-base: clamp(1rem, 2.5vw, 1.125rem);
+  --font-size-lg: clamp(1.125rem, 2.5vw, 1.25rem);
+  --font-size-xl: clamp(1.25rem, 3vw, 1.5rem);
+  --font-size-2xl: clamp(1.5rem, 3.5vw, 2rem);
+  --font-size-3xl: clamp(1.75rem, 4vw, 2.5rem);
+}
 
-      height: 135vh;
+/* ==========================================================================
+   2. Font Faces
+   ========================================================================== */
+@font-face {
+  font-family: 'YoMamaHeader';
+  src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/caloriesuitDEMO.woff2') format('woff2');
+  font-display: swap;
+}
 
+@font-face {
+  font-family: 'YoMamaBody';
+  src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2') format('woff2');
+  font-display: swap;
+}
 
-    }
+/* ==========================================================================
+   3. CSS Reset & Base Styles (Mobile-First)
+   ========================================================================== */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-    #preloader {
-      position: fixed;
-      inset: 0;
-      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: var(--z-preloader);
-      opacity: 1;
-      transition: opacity var(--transition-standard);
-    }
-      
-    .loading-container {
-      text-align: center;
-      color: var(--color-white);
-    }
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-    #loading-message {
-      font-size: 1.5rem;
-      margin-bottom: 2rem;
-    }
+body {
+  /* Mobile-first: gradient background */
+  background: linear-gradient(169deg, rgba(215, 223, 13, 1) 0%, rgba(190, 218, 0, 1) 50%, rgba(119, 0, 113, 1) 100%);
+  background-color: var(--color-background);
+  font-family: 'YoMamaBody', Arial, sans-serif;
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  color: var(--color-text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
-    #phrases {
-      max-width: 600px;
-      margin: 0 auto;
-    }
+/* Desktop: fixed background image */
+@media (min-width: 769px) {
+  body {
+    background-image: url("https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/assets/background.svg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center center;
+  }
+}
 
-    .phrase-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1rem;
-      color: var(--color-white);
-      opacity: 0.7;
-      transition: all 0.3s ease;
-    }
+/* ==========================================================================
+   4. Typography (Mobile-First)
+   ========================================================================== */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.header-font {
+  font-family: 'YoMamaHeader', Arial, sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: var(--spacing-md);
+}
 
-    .phrase-item.completed {
-      opacity: 1;
-    }
+h1 {
+  font-size: var(--font-size-3xl);
+}
 
-    .checkmark {
-      width: 24px;
-      height: 24px;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
+h2 {
+  font-size: var(--font-size-2xl);
+}
 
-    .phrase-item.completed .checkmark {
-      opacity: 1;
-    }
+h3 {
+  font-size: var(--font-size-xl);
+}
 
-    .fade-out {
-      opacity: 0 !important;
-    }
+h4 {
+  font-size: var(--font-size-lg);
+}
 
-    /* Content Styles */
-    .content-wrapper {
-      position: relative;
-      z-index: 1;
-      opacity: 0;
-      transition: opacity var(--transition-standard);
-      min-height: 100vh;
-    }
+p {
+  font-size: var(--font-size-base);
+  margin-bottom: var(--spacing-md);
+}
 
-    .content-wrapper.show {
-      opacity: 1;
-    }
+/* ==========================================================================
+   5. Preloader Styles
+   ========================================================================== */
+#preloader {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: var(--z-preloader);
+  opacity: 1;
+  transition: opacity var(--transition-standard);
+}
 
-    /* Yo Mama Specific Styles */
-    .joke-of-day {
-      background-color: var(--color-primary);
-      color: var(--color-white);
-      border-radius: 25px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
+.loading-container {
+  text-align: center;
+  color: var(--color-white);
+  padding: var(--spacing-md);
+}
 
-    .joke-title {
-      background-color: var(--color-accent);
-      color: #333;
-      border-radius: 15px;
-      padding: 1rem;
-      transition: background-color 0.3s ease;
-    }
+#loading-message {
+  font-family: 'YoMamaHeader', Arial, sans-serif;
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing-xl);
+}
 
-    .joke-title:hover {
-      background-color: var(--color-secondary);
-      color: var(--color-white);
-    }
+#phrases {
+  max-width: min(600px, 90vw);
+  margin: 0 auto;
+}
 
-    .scale-font {
-      font-size: clamp(1rem, 2vw, 1.5rem);
-    }
+.phrase-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--color-white);
+  opacity: 0.7;
+  transition: all var(--transition-standard);
+  font-size: var(--font-size-sm);
+}
 
-    .main-content {
-      padding: 2rem;
-        height: 780px;
+.phrase-item.completed {
+  opacity: 1;
+}
+
+.checkmark {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  opacity: 0;
+  transition: opacity var(--transition-standard);
+}
+
+.phrase-item.completed .checkmark {
+  opacity: 1;
+}
+
+.fade-out {
+  opacity: 0 !important;
+}
+
+@media (min-width: 576px) {
+  .phrase-item {
+    padding: var(--spacing-md);
+    font-size: var(--font-size-base);
+  }
+
+  .checkmark {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* ==========================================================================
+   6. Layout & Content Wrapper
+   ========================================================================== */
+.content-wrapper {
+  position: relative;
+  opacity: 0;
+  transition: opacity var(--transition-standard);
+  min-height: 100vh;
+}
+
+.content-wrapper.show {
+  opacity: 1;
+}
+
+.main-content {
+  padding: var(--spacing-md);
   width: 100%;
-    }
-
-    .features-section {
-      background: white;
-      border-radius: 8px;
-      padding: 2rem;
-      margin-top: 2rem;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-#copy-right{
-  position: fixed;
-  bottom: 225px;
-  left: 15px;
-}
-.video-sub-copy{
-  position: fixed;
-  bottom: 190px;
-  left: 15px;
-}
-#dozens-image{
-
-}
-.nav-bar-parent {
-  font-weight: 900;
-  font-size: medium;
-  letter-spacing: .15em;
 }
 
-.nav-bar-parent:hover {
-  font-weight: 900;
-  font-size: large;
-  letter-spacing: .10em;
-  color: white;
-  text-decoration: underline;
-
+@media (min-width: 768px) {
+  .main-content {
+    padding: var(--spacing-xl);
+  }
 }
-#yo-mama-brand {
-  height: 100px;
+
+/* ==========================================================================
+   7. Navigation Styles (Mobile-First)
+   ========================================================================== */
+.yo-nav {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-nav);
+  background: var(--color-primary);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Desktop: add backdrop filter */
+@media (min-width: 768px) {
+  .yo-nav {
+    backdrop-filter: saturate(140%) blur(8px);
+    background: color-mix(in srgb, var(--color-primary) 88%, transparent);
+  }
+}
+
+.yo-nav .brand-text {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.yo-nav .nav-link {
+  padding: var(--spacing-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-white);
+  opacity: 0.95;
+  font-size: var(--font-size-sm);
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+@media (min-width: 768px) {
+  .yo-nav .nav-link {
+    padding: 0.75rem var(--spacing-md);
+    font-size: var(--font-size-base);
+  }
+}
+
+.yo-nav .nav-link:hover,
+.yo-nav .nav-link:focus {
+  opacity: 1;
+}
+
+.nav-link:active,
+.nav-link.active {
+  color: var(--color-white);
+  opacity: 1;
+  font-weight: 800;
+  background: color-mix(in srgb, var(--color-primary) 88%, transparent);
+  border-bottom: 2px solid var(--color-accent);
+}
+
+/* Navigation Underline Animation */
+.nav-underline {
+  position: relative;
+}
+
+.nav-underline::after {
+  content: "";
+  position: absolute;
+  left: var(--spacing-md);
+  right: var(--spacing-md);
+  bottom: 0.35rem;
+  height: 2px;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: var(--color-accent);
+  transition: transform 200ms var(--transition-standard);
+}
+
+.nav-underline:hover::after,
+.nav-underline:focus::after,
+.nav-link[aria-current="page"].nav-underline::after,
+.nav-link.active.nav-underline::after {
+  transform: scaleX(1);
+}
+
+/* Mobile nav adjustments */
+@media (max-width: 767px) {
+  .navbar-nav {
+    text-align: center;
+  }
+
+  .navbar-nav .nav-item {
+    margin: var(--spacing-xs) 0;
+  }
+}
+
+/* Navbar Toggler */
+.navbar-toggler {
+  border: 0;
+  box-shadow: none !important;
+  padding: var(--spacing-sm);
+}
+
+.navbar-toggler:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   8. Buttons (Mobile-First)
+   ========================================================================== */
+.btn-accent {
+  background: var(--color-accent);
+  border: none;
+  color: var(--color-text);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  font-weight: 800;
+  font-size: var(--font-size-sm);
+  transition: filter var(--transition-fast);
+  cursor: pointer;
+  min-height: 44px; /* Touch target size */
+}
+
+.btn-accent:hover,
+.btn-accent:focus {
+  filter: brightness(1.05);
+}
+
+@media (min-width: 768px) {
+  .btn-accent {
+    padding: 0.6rem var(--spacing-md);
+    font-size: var(--font-size-base);
+  }
+}
+
+/* ==========================================================================
+   9. Dropdown Menus (Mobile-First)
+   ========================================================================== */
+.dropdown-menu {
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  min-width: 200px;
+}
+
+.dropdown-item {
+  padding: 0.55rem 0.85rem;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  transition: background-color var(--transition-fast);
+}
+
+.dropdown-item:active {
+  background: var(--color-accent);
+  color: var(--color-text);
+}
+
+/* Horizontal dropdown for API menu - mobile stacks vertically */
+.dropdown-menu-horizontal {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 200px;
+}
+
+.dropdown-menu-horizontal > li {
+  width: 100%;
+}
+
+.dropdown-menu-horizontal .dropdown-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  gap: var(--spacing-sm);
+  padding: 0.75rem;
+  line-height: 1.2;
+  white-space: normal;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 0.85rem;
+}
+
+.dropdown-menu-horizontal .dropdown-item:last-child {
+  border-bottom: none;
+}
+
+/* Desktop: horizontal layout */
+@media (min-width: 577px) {
+  .dropdown-menu-horizontal {
+    flex-direction: row;
+    min-width: 280px;
+  }
+
+  .dropdown-menu-horizontal > li {
+    flex: 1 1 auto;
+    min-width: 80px;
+  }
+
+  .dropdown-menu-horizontal .dropdown-item {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    border-bottom: none;
+    padding: var(--spacing-sm) var(--spacing-xs);
+    font-size: 0.75rem;
+  }
+
+  .dropdown-menu-horizontal .dropdown-item:last-child {
+    border-right: none;
+  }
+}
+
+.api-nav-img {
+  height: 24px;
   width: auto;
-  margin-right: 60px;
-  float: left;
+  display: block;
+  margin-bottom: var(--spacing-xs);
 }
-.nav-bar-parent-li{
-  margin-right: 3em;
-  margin-left: 3em;
+
+/* ==========================================================================
+   10. Cards & Content Sections (Mobile-First)
+   ========================================================================== */
+.features-section {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  margin-top: var(--spacing-xl);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 768px) {
+  .features-section {
+    padding: var(--spacing-xl);
+  }
+}
+
+.card {
+  margin-bottom: var(--spacing-md);
+  border-radius: var(--radius-md);
+}
+
+.card-img-top {
+  height: auto;
+  max-height: 120px;
+  width: auto;
+  object-fit: contain;
+  padding: var(--spacing-md);
+}
+
+.bg-silver {
+  background: linear-gradient(to right, #ccc 0%, #eee 25%, #fff 50%, #eee 75%, #ccc 100%) !important;
+}
+
+/* Card Tabs */
+.nav-tabs {
+  flex-wrap: wrap;
+  border-bottom: none;
+}
+
+.nav-tabs .nav-link {
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-sm);
+  white-space: nowrap;
+  border: none;
+}
+
+@media (min-width: 577px) {
+  .nav-tabs .nav-link {
+    padding: var(--spacing-sm) 0.75rem;
+    font-size: var(--font-size-sm);
+  }
+}
+
+#built-with-list .nav-link.nav-underline {
+  position: relative;
+  font-family: "YoMamaHeader";
+  text-decoration: none !important;
+}
+
+#built-with-list .nav-link.active {
+  font-weight: bold;
+}
+
+/* ==========================================================================
+   11. Images & Media (Mobile-First)
+   ========================================================================== */
+img,
+video,
+iframe,
+embed,
+object {
+  max-width: 100%;
+  height: auto;
+}
+
+#dozens-image {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+#jod-icon {
+  height: auto;
+  width: auto;
+  max-height: 80px;
+  max-width: 80px;
+}
+
+@media (min-width: 577px) {
+  #jod-icon {
+    max-height: 120px;
+    max-width: 120px;
+  }
 }
 
 #about-video {
-  left: 25px;
-  bottom: 275px;
-}
-
-#yo-mama-dropdown{
-  outline:0;
-  border:0;
-  background-color: transparent;
-}
-
-.img-modal {
-  height: 15em;
-  width: auto;
-}
-/* Modify the background color */
-nav {
+  max-width: 100%;
   width: 100%;
-  background-color: var(--color-primary); /* was --primary-purple-color */
+  height: auto;
 }
 
-.btn-primary {
-  background-color: var(--color-primary) !important; /* was --primary-purple-color */
-}
-.btn-primary:hover,
-.btn-primary:active,
-.btn-primary:visited {
-  background-color: var(--color-accent) !important; /* was --primary-lime-color */
+@media (min-width: 768px) {
+  #about-video {
+    max-width: 75%;
+  }
 }
 
-/* Consolidate duplicate #dozens-image rules */
-#dozens-image {
+/* ==========================================================================
+   12. Speech Bubble (Mobile-First)
+   ========================================================================== */
+.speech-bubble {
   position: fixed;
-  left: -205px;
-  top: 3em;
-  margin-left: 130px; /* if you still want this offset, keep it here */
+  background: var(--color-primary);
+  color: var(--color-white);
+  padding: 12px 16px;
+  border-radius: var(--radius-xl);
+  font-family: 'YoMamaBody', Arial, sans-serif;
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  max-width: min(280px, 90vw);
+  min-width: min(180px, 80vw);
+  z-index: var(--z-speech-bubble);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all var(--transition-standard);
+  pointer-events: none;
+  border: 2px solid var(--color-accent);
 }
 
-/* MOBILE-FIRST VISIBILITY ------------------------------ */
+.speech-bubble.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
 
-/* Default: assume desktop/tablet layout is visible */
-.mobile-redirect,
-.mobile-background {
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -10px;
+  border: 10px solid transparent;
+  border-top-color: var(--color-primary);
+}
+
+.speech-bubble.tail-left::after {
+  left: 20px;
+}
+
+.speech-bubble.tail-right::after {
+  left: auto;
+  right: 20px;
+}
+
+.speech-bubble.loading {
+  background: var(--color-secondary);
+}
+
+.speech-bubble.loading::before {
+  content: '⟳ ';
+  animation: spin 1s linear infinite;
+  margin-right: 5px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+   13. Interactive Elements (Mobile-First)
+   ========================================================================== */
+.icon-joke-of-day {
+  transition: all var(--transition-standard);
+  cursor: pointer;
+  height: auto;
+  width: auto;
+  max-height: 80px;
+}
+
+@media (min-width: 577px) {
+  .icon-joke-of-day {
+    max-height: 120px;
+  }
+}
+
+/* Desktop: hover effects */
+@media (hover: hover) and (pointer: fine) {
+  .icon-joke-of-day:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 10px rgba(189, 0, 180, 0.6));
+  }
+}
+
+/* Mobile: touch effects */
+@media (hover: none) and (pointer: coarse) {
+  .icon-joke-of-day:active {
+    transform: scale(0.95);
+  }
+}
+
+/* ==========================================================================
+   14. Accessibility & Focus States
+   ========================================================================== */
+.yo-nav :focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Touch targets - minimum 44x44px */
+@media (max-width: 767px) {
+  button,
+  .btn,
+  .nav-link,
+  .dropdown-item,
+  a[role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* ==========================================================================
+   15. Accordion (Mobile-First)
+   ========================================================================== */
+.accordion-button {
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-md);
+}
+
+.accordion-body {
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+  .accordion-button {
+    font-size: var(--font-size-base);
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+
+  .accordion-body {
+    font-size: var(--font-size-base);
+  }
+}
+
+/* ==========================================================================
+   16. Utility Classes
+   ========================================================================== */
+.text-responsive {
+  font-size: var(--font-size-base);
+}
+
+.d-none-mobile {
   display: none !important;
 }
 
-/* Hide “mobile-only” helpers on wide screens if needed */
-@media (min-width: 769px) {
-  /* desktop rules */
-  .mobile-display { display: block !important; }
-  .responsive-wrapper { display: block !important; }
+@media (min-width: 768px) {
+  .d-none-mobile {
+    display: block !important;
+  }
 }
 
-/* Actual mobile rules */
-@media (max-width: 768px) {
-  /* Show the mobile redirect UI on mobile */
-  .mobile-redirect {
-    display: block !important;
-  }
+.d-block-mobile {
+  display: block !important;
+}
 
-  .mobile-background {
-    display: block !important;
-    background-image: linear-gradient(315deg, #770071 0%, #620062 74%);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    height: 100vh;
-    width: 100%;
-    position: fixed;
-    inset: 0;
-    z-index: 2;
-  }
-
-  /* Hide desktop wrappers on mobile */
-  .mobile-display {
-    display: none !important;
-  }
-  .responsive-wrapper {
+@media (min-width: 768px) {
+  .d-block-mobile {
     display: none !important;
   }
 }
-@media (max-width: 768px) {
-  body { background-attachment: scroll; height: auto; }
+
+/* Spacing utilities */
+.row {
+  margin-bottom: var(--spacing-lg);
+}
+
+@media (min-width: 768px) {
+  .row {
+    margin-bottom: var(--spacing-xl);
+  }
+}
+
+/* Copyright & Video Sub-copy */
+.video-sub-copy,
+.copyright-text {
+  font-size: var(--font-size-xs);
+  text-align: center;
+  padding: var(--spacing-sm);
+}
+
+@media (min-width: 768px) {
+  .video-sub-copy,
+  .copyright-text {
+    text-align: left;
+    padding: 0;
+  }
+}
+
+/* Mobile spacing adjustments */
+@media (max-width: 767px) {
+  .ms-md-5 {
+    margin-left: 0 !important;
+    margin-top: var(--spacing-md);
+  }
+
+  #about-video {
+    margin-left: 0 !important;
+    margin-top: var(--spacing-md);
+  }
+}
+
+/* ==========================================================================
+   17. Print Styles
+   ========================================================================== */
+@media print {
+  .yo-nav,
+  .btn,
+  .speech-bubble,
+  #preloader {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
 }

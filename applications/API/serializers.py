@@ -1,10 +1,12 @@
 """
 module: applications.API.serializers
-# TODO: Write Module Summary 
+
+This module provides serializers for the API layer of the application.
+It includes serializers and mixins for handling insults, insult categories, and bulk operations, with optimizations for caching and efficient database access.
 """
 
 import contextlib
-from asyncio.log import logger
+from loguru import logger
 from datetime import datetime
 from functools import lru_cache
 from typing import Any, ClassVar, Dict, Optional, Union
@@ -106,7 +108,8 @@ class CachedBulkSerializer(serializers.ModelSerializer):
         This method ensures efficient access to expensive field computations by leveraging caching.
 
         Args:
-            obj: The object for which the field value is being retrieved.
+            obj: The ob───────────────────────────────────
+>  ject for which the field value is being retrieved.
             field_name: The name of the field to cache.
             compute_method_name: The name of the method used to compute the field value.
 
@@ -138,7 +141,8 @@ class BaseInsultSerializer(CachedBulkSerializer):
         model_class=InsultCategory, key_field="category_key", name_field="name"
     )
     category = serializers.SlugRelatedField(
-        slug_field="category_key", queryset=InsultCategory.objects.all() 
+        slug_field="category_key",
+        queryset=InsultCategory.objects.all()
     )
 
     @staticmethod
@@ -288,7 +292,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
             ) from e
 
     @classmethod
-    def resolve_category(cls, value: str) -> Dict[str, Union[None, str]]:
+    def resolve_category(cls, value: str) -> Dict[str, str]:
         """
         Validate and resolve a category by key or name.
 
@@ -321,23 +325,24 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
         # First try as category key
         try:
+            category_name = cls.cacher.get_category_name_by_key(value)
             validated = {
-                "category_key": cls.cacher.get_category_key_by_name(value),
-                "category_name": value,
+                "category_key": value,
+                "category_name": category_name,
             }
             logger.debug(f"Serializer Resolved {value} to {validated}")
             return validated
-        except serializers.ValidationError:
+        except (serializers.ValidationError, AttributeError, KeyError):
+            # If not a key, try as category name
             try:
+                category_key = cls.cacher.get_category_key_by_name(value)
                 validated = {
-                    "category_key": value,
-                    "category_name": type(self)
-                    .cacher.get_category_name_by_key(value)
-                    .lower(),
+                    "category_key": category_key,
+                    "category_name": value,
                 }
                 logger.debug(f"Serializer Resolved {value} to {validated}")
                 return validated
-            except serializers.ValidationError as e:
+            except (serializers.ValidationError, AttributeError, KeyError) as e:
                 raise serializers.ValidationError(
                     f"Category '{value}' not found. Please provide a valid category key or name."
                 ) from e
@@ -398,8 +403,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
         return super().to_internal_value(data)
 
-    def to_representation(self, instance) -> Dict[str, Any]:  # pyrefly: ignore
-
+    def to_representation(self, instance) -> Dict[str, Any]:  # type: ignore
         representation = super().to_representation(instance)
 
         # Use cached category lookup instead of additional DB query
@@ -475,9 +479,7 @@ class BulkInsultSerializer(serializers.ListSerializer):
         """
         if hasattr(data, "select_related"):
             data = data.select_related("added_by", "category")
-        elif hasattr(data, "__iter__"):
-            # For querysets, prefetch related objects
-            [obj.insult_id for obj in data if hasattr(obj, "insult_id")]
+        # Note: Django automatically handles prefetching for querysets
         return super().to_representation(data)
 
 

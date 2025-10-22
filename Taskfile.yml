@@ -9,7 +9,6 @@ tasks:
   default:
     cmds:
       - task -l
-    silent: true
 
   venv:
     desc: Make a new virtual environment
@@ -23,8 +22,7 @@ tasks:
     dir: .
     cmds:
       - echo "Completing Pre-Start Environment Check For Development..."
-      - source .envrc && PYTHONPATH="${PYTHON_PATH}" doppler run  -- python3 .venv/bin/gunicorn -t 1 -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{.CLI_ARGS}} --reload
-      - defer: rm -r ${TEMP_STATIC_DIR}
+      - source .envrc && PYTHONPATH="${PYTHON_PATH}"  python3 .venv/bin/gunicorn -t 1 -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{.CLI_ARGS}} --reload
     interactive: false
     silent: false
 
@@ -39,9 +37,9 @@ tasks:
   freeze:
     desc: Pin current dependencies
     cmds:
-      - doppler run  -- poetry sync
-      - doppler run  -- poetry export --without dev,test --without-hashes --without-urls > ./requirements/base.txt
-      - doppler run  -- poetry export  --without-hashes --without-urls > ./requirements/dev.txt
+      - -- poetry sync
+      - -- poetry export --without dev,test --without-hashes --without-urls > ./requirements/base.txt
+      - -- poetry export  --without-hashes --without-urls > ./requirements/dev.txt
     generates:
       - ./requirements/dev.txt
       - ./requirements/base.txt
@@ -56,8 +54,8 @@ tasks:
     desc: Make and run migrations
     dir: .
     cmds:
-      - doppler run --  python3 run/manage.py makemigrations
-      - doppler run --  python3 run/manage.py migrate
+      - python3 run/manage.py makemigrations
+      - python3 run/manage.py migrate
     generates:
       - ./applications/*/migrations/*.py
     sources:
@@ -72,13 +70,13 @@ tasks:
 
     desc: Collect static files in to single directory for production
     cmds:
-      - source .envrc && PYTHONPATH="./core:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run:{{ .TASKFILE_DIR }}" doppler run -- python run/manage.py collectstatic --no-input
+      - source .envrc && PYTHONPATH="./core:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run:{{ .TASKFILE_DIR }}"  python run/manage.py collectstatic --no-input
 
   run:test:
     dir: .
     desc: Run tests
     cmds:
-      - doppler run -- python3  run/manage.py test applications.API
+      - -- python3  run/manage.py test applications.API
 
     requires:
       vars:
@@ -87,7 +85,7 @@ tasks:
 
   run:prod:
     dir: .
-
+    silent: false
     desc: Command to Start Production Level Services including Install requirements, apply migrations, then start development server
     cmds:
       - echo 'Starting Production Level Services...'
@@ -98,14 +96,14 @@ tasks:
       - task: db_sync
 
       - echo 'Starting server...'
-      - doppler run -- python3 -m gunicorn --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}}
+      - python3 -m gunicorn --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}}
 
   schema-check:
     dir: "{{.TASKFILE_DIR}}"
 
     desc: Check Models and Serializers for schema compliance with OpenAPI .0 Standards and fail on warnings
     cmds:
-      - doppler run --  python3 run/manage.py spectacular  --file schema/schema$(date +"%Y-%m-%d").yaml --validate
+      - python3 run/manage.py spectacular  --file schema/schema$(date +"%Y-%m-%d").yaml --validate
     internal: true
 
   schema:
@@ -114,7 +112,7 @@ tasks:
 
     desc: Generate OpenAPI 3.0 schema.yaml file from models and serializers
     cmds:
-      - doppler run --  .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
+      - .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
 
   build-image:
     desc: Build Docker Image
@@ -131,21 +129,21 @@ tasks:
     cmds:
       - echo "🔍 Running Python linting and formatting..."
       - echo "🧹 Running autoflake (unused imports/variables check)..."
-      - doppler run -- .venv/bin/autoflake --check --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
+      - .venv/bin/autoflake --check --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
       - echo "📋 Running isort (import sorting)..."
-      - doppler run -- .venv/bin/isort . --check-only --diff
+      - .venv/bin/isort . --check-only --diff
       - echo "⚫ Running black (code formatting)..."
-      - doppler run -- .venv/bin/black . --check --diff
+      - .venv/bin/black . --check --diff
       - echo "🚀 Running ruff (fast linting)..."
-      - doppler run -- .venv/bin/ruff check .
+      - .venv/bin/ruff check .
       - echo "🔧 Running pylint (comprehensive linting)..."
-      - doppler run -- .venv/bin/pylint **/*.py --load-plugins=pylint_django,pylint_celery --django-settings-module=core.settings
+      - .venv/bin/pylint **/*.py --load-plugins=pylint_django,pylint_celery --django-settings-module=core.settings
       - echo "🔒 Running bandit (security linting)..."
-      - doppler run -- .venv/bin/bandit -r . -f json --exclude=./tests,./venv,./.venv
+      - .venv/bin/bandit -r . -f json --exclude=./tests,./venv,./.venv
       - echo "🎯 Running mypy (type checking)..."
-      - doppler run -- .venv/bin/mypy .
+      - .venv/bin/mypy .
       - echo "🌟 Running djlint (Django template linting)..."
-      - doppler run -- .venv/bin/djlint --check templates/**/*.html
+      - .venv/bin/djlint --check templates/**/*.html
       - echo "✅ All linting checks completed!"
     silent: false
     interactive: false
@@ -155,19 +153,19 @@ tasks:
     cmds:
       - echo "🔧 Auto-fixing Python linting and formatting issues..."
       - echo "🧹 Running autoflake (removing unused imports/variables)..."
-      - cmd: doppler run -- .venv/bin/autoflake --in-place --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
+      - cmd: .venv/bin/autoflake --in-place --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
         ignore_error: true
       - echo "📋 Running isort (import sorting)..."
-      - cmd: doppler run -- .venv/bin/isort .
+      - cmd: .venv/bin/isort .
         ignore_error: true
       - echo "⚫ Running black (code formatting)..."
-      - cmd: doppler run -- .venv/bin/black .
+      - cmd: .venv/bin/black .
         ignore_error: true
       - echo "🚀 Running ruff (auto-fix)..."
-      - cmd: doppler run -- .venv/bin/ruff check . --fix
+      - cmd: .venv/bin/ruff check . --fix
         ignore_error: true
       - echo "🌟 Running djlint (Django template auto-fix)..."
-      - cmd: doppler run -- .venv/bin/djlint --reformat templates/**/*.html
+      - cmd: .venv/bin/djlint --reformat templates/**/*.html
         ignore_error: true
       - echo "✅ Auto-fix completed! Run 'task lint' to check remaining issues."
     silent: false
@@ -177,13 +175,13 @@ tasks:
     desc: "Wrapper command to simplify the use of Django management commands. Example Usage: task django -- runserver"
     dir: "{{.TASKFILE_DIR}}"
     cmds:
-      - doppler run -- python3 run/manage.py {{.CLI_ARGS}}
+      - python3 run/manage.py {{.CLI_ARGS}}
     silent: false
     interactive: true
   test:coverage:
     desc: Run tests with coverage
     cmds:
-      - doppler run --  .venv/bin/coverage run --parallel-mode run/manage.py test applications.API
-      - doppler run --  .venv/bin/coverage combine
-      - doppler run --  .venv/bin/coverage html
-      - doppler run --  .venv/bin/coverage report -m
+      - .venv/bin/coverage run --parallel-mode run/manage.py test applications.API
+      - .venv/bin/coverage combine
+      - .venv/bin/coverage html
+      - .venv/bin/coverage report -m

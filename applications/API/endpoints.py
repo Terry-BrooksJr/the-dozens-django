@@ -28,7 +28,7 @@ from rest_framework.response import Response
 from rest_framework_extensions.mixins import PaginateByMaxMixin
 
 from applications.API.filters import InsultFilter
-from applications.API.models import Insult, InsultCategory, InsultReview
+from applications.API.models import Insult, InsultCategory, InsultReview, Theme
 from applications.API.permissions import IsOwnerOrReadOnly
 from applications.API.serializers import (
     BaseInsultSerializer,
@@ -127,6 +127,9 @@ User = get_user_model()
             ),
             500: OpenApiResponse(description="Server Error. Try Request again."),
             403: OpenApiResponse(description="Method Not Allowed."),
+            429: OpenApiResponse(
+                description="Rate Limited Exceeded. Requests Throttled."
+            ),
         },
     )
 )
@@ -193,20 +196,14 @@ class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIV
         # Prevent schema generation from evaluating real queries
         if getattr(self, "swagger_fake_view", False):
             return Insult.objects.none()
-        logger.debug(f"kwargs seen by view: {self.kwargs}")
-        if category := self.kwargs["category_name"]:
-            return self._get_categorized_queryset(category)
+        if self.kwargs:
+            logger.debug(f"kwargs seen by view: {self.kwargs}")
+            if category := self.kwargs["category_name"]:
+                return self._get_categorized_queryset(category)
         return (
-            Insult.objects.filter(added_by=self.request.user).union(
-                Insult.objects.filter(status=Insult.STATUS.ACTIVE).exclude(
-                    category__category_key__in=["TEST", "X"]
-                )
-            )
+            Insult.objects.filter(added_by=self.request.user).union(Insult.public.all())
             if self.request.user.is_authenticated
-            else Insult.objects.filter(status=Insult.STATUS.ACTIVE)
-            .prefetch_related("reports")
-            .order_by("?")
-            .exclude(category__category_key__in=["TEST", "X"])
+            else Insult.public.all().prefetch_related("reports").order_by("?")
         )
 
     def _get_categorized_queryset(self, category):
@@ -233,22 +230,18 @@ class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIV
             .exclude(category__category_key__in=["TEST", "X"])
             .union(
                 # Joins User Submission with All other Matching Insults that are active
-                Insult.objects.filter(
-                    status=Insult.STATUS.ACTIVE,
+                Insult.public.filter(
                     category=normalized_category["category_key"],
                 )
                 .prefetch_related("reports")
                 .order_by("?")
-                .exclude(category__category_key__in=["TEST", "X"])
             )
             if self.request.user.is_authenticated
-            else Insult.objects.filter(
-                status=Insult.STATUS.ACTIVE,
+            else Insult.public.filter(
                 category=normalized_category["category_key"],
             )
             .prefetch_related("reports")
             .order_by("?")
-            .exclude(category__category_key__in=["TEST", "X"])
         )
 
     def list(self, request, *args, **kwargs):
@@ -429,7 +422,7 @@ class InsultDetailsEndpoint(
          Authentication: `Token <API_TOKEN>`
 
     ### Path Parameters
-         reference_id (string): Prefixed Base64 identifier, for example
+         reference_id (string): Prefixed Base64 identifier, for exampleimport
              "SNICKER_NDc4".
 
     ### Notes
@@ -444,7 +437,6 @@ class InsultDetailsEndpoint(
     cache_models = [InsultCategory, InsultReview]
     bulk_select_related = ["added_by", "category"]
     bulk_prefetch_related = ["reports"]
-    filter_backends = [DjangoFilterBackend]
 
     bulk_cache_timeout = 1800
     cache_invalidation_patterns = [
@@ -707,13 +699,13 @@ class RandomInsultEndpoint(GenericAPIView):
     def get(self, request):
         """Get a random insult."""
         queryset = (
-            Insult.objects.select_related("added_by", "category")
+            Insult.public.select_related("added_by", "category")
             .prefetch_related("reports")
             .order_by("?")
             .all()
         )
 
-        # Filter by explicity level (NSFW) if provided
+        # Filter by explicitly level (NSFW) if provided
         nsfw_param = request.query_params.get("nsfw")
         if nsfw_param is not None:
             nsfw = nsfw_param.lower() in ["true", "1", "yes"]
@@ -760,9 +752,9 @@ class RandomInsultEndpoint(GenericAPIView):
         },
     )
 )
-class ListCategoryEndpoint(CachedResponseMixin, GenericAPIView):
+class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
     """
-    ##  List All Categories
+    ##  List All Themes and Categories
 
     ###  URL
 
@@ -770,8 +762,7 @@ class ListCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 
     ### Description
 
-        Returns all available insult categories intended for public use. Internal or excluded
-        categories (e.g., keys `TEST` and `X`) are omitted. Each category includes a human‑
+        Returns all available insult categories intended for public use. Each category includes a human‑
         readable name, description, and a count of ACTIVE insults currently assigned.
 
     ### Authentication
@@ -795,7 +786,7 @@ class ListCategoryEndpoint(CachedResponseMixin, GenericAPIView):
         Returns:
             QuerySet: A queryset of insult categories excluding 'TEST' and 'X'.
         """
-        return InsultCategory.objects.exclude(category_key__in=["TEST", "X"])
+        return InsultCategory.public.all().prefetch_related("theme")
 
     def get(self, request):
         """Return a list of all available insult categories.
@@ -809,20 +800,28 @@ class ListCategoryEndpoint(CachedResponseMixin, GenericAPIView):
             Response: A response object containing the list of categories and help text.
         """
         qs = self.get_queryset()
+        theme_qs = Theme.objects.all().exclude(theme_key="INTL")
         serializer = CategorySerializer(qs, many=True)
         logger.debug(serializer.data)
-        data = {
-            row["category_key"]: {
-                "name": row["name"],
-                "description": row["description"],
-                "count": row["count"],
-            }
-            for row in serializer.data
-        }
+        output = {}
+        for row in serializer.data:
+            theme = next((t for t in theme_qs if t.theme_key == row["theme_id"]), None)
+            if theme:
+                if theme.theme_key not in output:
+                    output[theme.theme_key] = {
+                        "theme_name": theme.name,
+                        "theme_description": theme.description,
+                        "categories": {},
+                    }
+                output[theme.theme_key]["categories"][row["category_key"]] = {
+                    "name": row["name"],
+                    "description": row["description"],
+                    "count": row["count"],
+                }
         return Response(
             {
                 "help_text": "Here is a list of all available Insult Categories. The API will accept either values and is case insensitive. Ex: `/api/insults/p` and `api/insults/POOR` will yield the same result",
-                "categories": data,
+                "results": output,
             }
         )
 
@@ -891,7 +890,7 @@ class CreateInsultEndpoint(CreateAPIView):
     ### Request Body Keys\
         
         - content(string): String of alphanumeric characters comprising the content of the insult must be UTF-8, 
-        - nsfw(bool): Determination of the explicity of the content. `true` means it is not safe for work.  
+        - nsfw(bool): Determination of the explicitly of the content. `true` means it is not safe for work.  
         - category(string):
 
     Notes

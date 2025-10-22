@@ -12,24 +12,17 @@ from __future__ import annotations
 import base64
 import binascii
 import secrets
-from typing import List, Optional
+from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import IntegrityError, models
+from django.db.models import F
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from django_prometheus.models import ExportModelOperationsMixin
 from loguru import logger
-
-INSULT_REFERENCE_ID_PREFIX_OPTIONS: List[str] = [
-    "GIGGLE",
-    "CHUCKLE",
-    "SNORT",
-    "SNICKER",
-    "CACKLE",
-]
 
 
 class Base64DecoderException(Exception):
@@ -64,11 +57,23 @@ def encode_base64(number: int) -> str:
         raise Base64EncoderException(str(e)) from e
 
 
+class PublicInsultCategoryManager(models.Manager):
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .exclude(category_key__in=settings.IGNORED_INSULT_CATEGORIES)
+        )
+
+
 class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Model):
 
     category_key = models.CharField(max_length=5, unique=True, primary_key=True)
     name = models.CharField(max_length=255, unique=True)
-    description = models.CharField(max_length=50000)
+    description = models.TextField()
+    theme = models.ForeignKey(
+        "Theme", on_delete=models.CASCADE, related_name="insult_categories"
+    )
 
     def __str__(self):
         return f"{self.category_key}"
@@ -79,7 +84,23 @@ class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Mod
 
     @property
     def count(self) -> int:
+        """
+        Returns the count of active insults in this category.
+
+        NOTE: This property can cause N+1 queries when serializing multiple categories.
+        Consider using QuerySet annotation instead:
+
+        Example:
+            from django.db.models import Count, Q
+            categories = InsultCategory.objects.annotate(
+                active_insult_count=Count('insult', filter=Q(insult__status=Insult.STATUS.ACTIVE))
+            )
+            # Then access: category.active_insult_count instead of category.count
+        """
         return Insult.objects.filter(category=self, status=Insult.STATUS.ACTIVE).count()
+
+    public = PublicInsultCategoryManager()
+    objects = models.Manager()
 
     class Meta:
         db_table = "insult_categories"
@@ -97,34 +118,46 @@ class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Mod
             models.Index(fields=["name"], name="idx_name"),
         ]
 
-        class Theme(models.Model):
-            theme_key = models.CharField(max_length=5, unique=True, primary_key=True)
-            theme_name = models.CharField(max_length=255, unique=True)
-            category = models.ForeignKey(InsultCategory, on_delete=models.CASCADE, related_name="theme")
-            description = models.CharField(max_length=50000)
 
-            def __str__(self):
-                return f"{self.category.name}: {self.theme_name}({self.theme_key})"
+class Theme(models.Model):
+    theme_key = models.CharField(max_length=5, unique=True, primary_key=True)
+    theme_name = models.CharField(max_length=255, unique=True)
+    description = models.TextField()
 
-            def lower(self):
-                """Returns the name of the theme in lowercase."""
-                return self.theme_name.lower()
+    def __str__(self):
+        return f"{self.theme_name}({self.theme_key})"
 
-            class Meta:
-                db_table = "themes"
-                verbose_name = _("Theme")
-                verbose_name_plural = _("Themes")
-                managed = True
-                ordering = ["name"]
-                constraints = [
-                    models.UniqueConstraint(
-                        fields=["theme_key", "name"], name="unique_theme_key_name"
-                    ),
-                ]
-                indexes = [
-                    models.Index(fields=["theme_key"], name="idx_theme_key"),
-                    models.Index(fields=["name"], name="idx_theme_name"),
-                ]
+    def lower(self):
+        """Returns the name of the theme in lowercase."""
+        return self.theme_name.lower()
+
+    class Meta:
+        db_table = "themes"
+        verbose_name = _("Theme")
+        verbose_name_plural = _("Themes")
+        managed = True
+        ordering = ["theme_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["theme_key", "theme_name"], name="unique_theme_key_name"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["theme_key"], name="idx_theme_key"),
+            models.Index(fields=["theme_name"], name="idx_theme_name"),
+        ]
+
+
+class PublicInsultManager(models.Manager):
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .filter(status=Insult.STATUS.ACTIVE)
+            .exclude(category__category_key__in=settings.IGNORED_INSULT_CATEGORIES)
+        )
+
+
 class Insult(ExportModelOperationsMixin("insult"), models.Model):
     """
     Model representing an Insult with various attributes and methods for manipulation. This model represents an Insult with fields like content, category, nsfw, added_on, added_by, last_modified, and status. It includes methods for removing, approving, marking for review, re-categorizing, and reclassifying insults.
@@ -155,8 +188,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         REJECTED = "R", _("Rejected")
         FLAGGED = "F", _("Flagged for Review")
 
-    content = models.CharField(
-        max_length=65535,
+    content = models.TextField(
         null=False,
         blank=False,
         error_messages={"required": "Insults must have content"},
@@ -174,10 +206,11 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         db_comment="Unique reference ID for the insult, generated from the primary key.",
         help_text="Unique identifier for the insult, generated from the primary key.",
     )
-    theme = models.ForeignKey(InsultCategory.Theme, on_delete=models.PROTECT)
+    theme = models.ForeignKey(Theme, on_delete=models.PROTECT)
+    category = models.ForeignKey(InsultCategory, on_delete=models.PROTECT)
     nsfw = models.BooleanField()
     added_on = models.DateField(null=False, blank=False, auto_now_add=True)
-    reports_count = models.PositiveIntegerField(default=0, blank=True, null=True)
+    reports_count = models.PositiveIntegerField(default=0, null=True)
     added_by = models.ForeignKey(User, on_delete=models.PROTECT)
     last_modified = models.DateTimeField(auto_now=True, blank=True, null=True)
     status = models.CharField(
@@ -193,27 +226,70 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         """
         Generates and assigns a unique reference ID for the insult if it does not already have one.
 
-        This method creates a unique reference ID using a random prefix and a base64-encoded insult_id pk,
-        ensuring the reference ID is unique among all insults. The reference ID is then saved to the database.
+        This method creates a unique reference ID using a random prefix and a base64-encoded insult_id pk.
+        Since the insult_id is unique, the reference ID will be unique by design.
 
         Returns:
-            None
+            str: The generated reference ID
         """
-        # Only generate reference_id if it is not set and pk is None (new object)
+        # Only generate reference_id if it is not set and insult_id exists
         if self.insult_id and not self.reference_id:
-            candidate = None
-            # Generate a unique reference_id
-            while True:
-                candidate = f"{secrets.choice(INSULT_REFERENCE_ID_PREFIX_OPTIONS)}_{encode_base64(int(self.insult_id))}"
-                if not type(self).objects.filter(reference_id=candidate).exists():
-                    self.reference_id = candidate  # pyrefly: ignore
-                    break
+            # Generate reference_id - unique by design since based on unique PK
+            prefix = secrets.choice(settings.INSULT_REFERENCE_ID_PREFIX_OPTIONS)
+            self.reference_id = f"{prefix}_{encode_base64(int(self.insult_id))}"
             # Only update the reference_id field
             self.save(update_fields=["reference_id"])
-            return candidate
+            return self.reference_id
 
     def __str__(self) -> str:
         return f"{self.reference_id} - ({self.category}) - NSFW: {self.nsfw}"
+
+    def clean(self):
+        """
+        Validates that the insult's theme matches its category's theme.
+
+        This method is called during form validation and when full_clean() is called.
+        It ensures data consistency by enforcing that an insult's theme must always
+        match the theme of its category.
+
+        Raises:
+            ValidationError: If theme doesn't match category's theme.
+        """
+        super().clean()
+        if self.category and self.theme:
+            if self.category.theme_id != self.theme_id:
+                from django.core.exceptions import ValidationError
+                raise ValidationError({
+                    'theme': f'Insult theme must match category theme. '
+                            f'Category "{self.category.name}" belongs to theme "{self.category.theme.theme_name}", '
+                            f'but insult is assigned to theme "{self.theme.theme_name}".'
+                })
+
+    def save(self, *args, **kwargs):
+        """
+        Override save to automatically set theme from category.
+
+        This ensures that the insult's theme always matches its category's theme,
+        preventing data inconsistency. If a category is set, the theme will be
+        automatically derived from it.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        # Automatically set theme from category to ensure consistency
+        if self.category_id and not self.theme_id:
+            self.theme = self.category.theme
+        elif self.category_id and self.theme_id:
+            # If both are set, ensure they match
+            if self.category.theme_id != self.theme_id:
+                logger.warning(
+                    f"Insult theme mismatch detected for {self.reference_id or 'new insult'}. "
+                    f"Automatically updating theme to match category's theme."
+                )
+                self.theme = self.category.theme
+
+        super().save(*args, **kwargs)
 
     @property
     def open_report_count(self) -> int:
@@ -233,7 +309,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         Returns:
             Optional[Insult]: The Insult instance if found, otherwise None.
         """
-        for prefix in INSULT_REFERENCE_ID_PREFIX_OPTIONS:
+        for prefix in settings.INSULT_REFERENCE_ID_PREFIX_OPTIONS:
             if reference_id.startswith(prefix):
                 # Extract base64 part and decode to PK
                 if reference_id.startswith(f"{prefix}_"):
@@ -311,29 +387,31 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
     def re_categorize(self, new_category):
         """Re-categorizes the object with a new category.
 
+        Also automatically updates the theme to match the new category's theme,
+        ensuring data consistency.
+
         Args:
-            new_category (str): The new category to assign to the Insult.
+            new_category (InsultCategory): The new category to assign to the Insult.
 
         Logs:
             Exception: If an error occurs while re-categorizing the object.
 
         Returns:
             None
-
-
         """
-
         try:
             self.category = new_category
+            # Automatically update theme to match new category's theme
+            self.theme = new_category.theme
             self.last_modified = settings.GLOBAL_NOW
-            self.save(update_fields=["category", "last_modified"])
+            self.save(update_fields=["category", "theme", "last_modified"])
             logger.success(
-                f"Successfully Re-Categorized {self.reference_id} to {self.category}"
+                f"Successfully Re-Categorized {self.reference_id} to {self.category} "
+                f"(theme: {self.theme.theme_name})"
             )
-        except Exception:
-            self.save(update_fields=["category", "last_modified"])
-            logger.success(
-                f"Successfully Re-Categorized {self.reference_id} to {self.category}"
+        except Exception as e:
+            logger.error(
+                f"Unable to Re-Categorize {self.reference_id} to {new_category}: {e}"
             )
 
     def reclassify(self, nsfw_status):
@@ -354,6 +432,10 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             )
         except Exception as e:
             logger.error(f"Unable to ReClassify Insult {self.reference_id}: {e}")
+
+    # NOTE: Add the PublicInsultManager to the Insult model
+    public = PublicInsultManager()
+    objects = models.Manager()
 
     class Meta:
         db_table = "insults"
@@ -419,7 +501,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
     reviewer = models.ForeignKey(
         User, on_delete=models.DO_NOTHING, null=True, blank=True
     )
-    review_type = models.CharField(choices=REVIEW_TYPE.choices, null=False, blank=False)
+    review_type = models.CharField(max_length=2, choices=REVIEW_TYPE.choices, null=False, blank=False)
     status = models.CharField(
         max_length=3,  # Add max_length based on your choices
         choices=STATUS.choices,
@@ -451,7 +533,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
                 f"Insult with reference ID {self.insult_reference_id} does not exist."
             )
             raise IntegrityError(
-                f"Reviews Must Be Associated with a VAILD Insult. Insult with reference ID {self.insult_reference_id} does not exist."
+                f"Reviews Must Be Associated with a VALID Insult. Insult with reference ID {self.insult_reference_id} does not exist."
             ) from e
         except Base64DecoderException as base64_error:
             logger.error(
@@ -486,9 +568,6 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             logger.error(
                 f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
             )
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
 
     def mark_review_recategorized(self, reviewer: User):
         try:
@@ -496,22 +575,19 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             self.reviewer = reviewer
             self.date_reviewed = settings.GLOBAL_NOW
             logger.success(f"Marked {self.insult_reference_id} as Recategorized")
-            self.save()
+            self.save(update_fields=["status", "reviewer", "date_reviewed"])
         except Exception as e:
             logger.error(
                 f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
             )
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
 
-    def mark_review_not_recatagoized(self):
-        """Marks the review as reclassified.
+    def mark_review_not_recatagoized(self, reviewer: Optional[User] = None):
+        """Marks the review as not requiring recategorization.
 
-        This method sets the status of the review to "SJC" (Same Joke Category) and updates the date_reviewed field to the current date and time. It also logs a success message indicating that the review has been marked as reclassified.
+        This method sets the status of the review to "SJC" (Same Joke Category) and updates the date_reviewed field to the current date and time. It also logs a success message indicating that the review has been marked as not recategorized.
 
         Args:
-            reviewer(User) User Type Representation of the API Administrator making the determination of the review.
+            reviewer (User, optional): User Type Representation of the API Administrator making the determination of the review.
 
         Logs:
             Exception: If there is an error updating the review.
@@ -519,23 +595,23 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
 
         try:
             self.status = self.STATUS.SAME_CATEGORY
+            if reviewer:
+                self.reviewer = reviewer
             self.date_reviewed = settings.GLOBAL_NOW
-            self.save(update_fields=["status", "date_reviewed"])
-            logger.success(f"Marked {self.insult_reference_id} as Reclassified")
+            self.save(update_fields=["status", "reviewer", "date_reviewed"])
+            logger.success(f"Marked {self.insult_reference_id} as Not Recategorized")
         except Exception as e:
             logger.error(
                 f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
             )
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
 
-    def mark_review_removed(self):
+    def mark_review_removed(self, reviewer: Optional[User] = None):
         """Marks the review as removed.
 
-        This method sets the status of the review to "x" and updates the date_reviewed field to the current date and time. It also logs a success message indicating that the review has been marked as reclassified.
+        This method sets the status of the review to "REMOVED" and updates the date_reviewed field to the current date and time. It also logs a success message indicating that the review has been marked as removed.
+
         Args:
-            reviewer(User) User Type Representation of the API Administrator making the determination of the review.
+            reviewer (User, optional): User Type Representation of the API Administrator making the determination of the review.
 
         Logs:
             Exception: If there is an error updating the review.
@@ -543,13 +619,12 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
 
         try:
             self.status = self.STATUS.REMOVED
+            if reviewer:
+                self.reviewer = reviewer
             self.date_reviewed = settings.GLOBAL_NOW
-            self.save(update_fields=["status", "date_reviewed"])
-            logger.success(f"Marked {self.insult_reference_id} as Reclassified")
+            self.save(update_fields=["status", "reviewer", "date_reviewed"])
+            logger.success(f"Marked {self.insult_reference_id} as Removed")
         except Exception as e:
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
             logger.error(
                 f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
             )
@@ -575,9 +650,6 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             logger.error(
                 f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
             )
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
 
     class Meta:
         db_table = "reported_jokes"
@@ -598,6 +670,8 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             models.Index(
                 fields=["insult", "insult_reference_id"], name="idx_insult_ref_id"
             ),
+            # Composite indexes for common queries
+            models.Index(fields=["status", "-date_submitted"], name="idx_status_date_sub"),
         ]
 
 
@@ -634,10 +708,13 @@ def flag_insult(sender, instance, created, **kwargs):
         # Connect InsultReview to Insult
         if not instance.insult:
             instance.set_insult()  # Ensure the related Insult is set
-        # Set the insult status to FLAGGED
-        instance.insult.status = Insult.STATUS.FLAGGED
-        instance.insult.reports_count = instance.insult.reports.count()
-        instance.insult.save(update_fields=["status", "reports_count"])
+
+        # Use atomic update with F() expression for performance
+        if instance.insult_id:
+            Insult.objects.filter(pk=instance.insult_id).update(
+                status=Insult.STATUS.FLAGGED,
+                reports_count=F('reports_count') + 1
+            )
 
 
 @receiver(post_delete, sender=InsultReview)
@@ -650,7 +727,7 @@ def decrement_report_count(sender, instance, **kwargs):
     current number of reviews associated with the insult.
     """
     if instance.insult_id:
-        if insult := instance.insult:
-            insult.reports_count = insult.reports.count()
-            insult.save(update_fields=["reports_count"])
-        return
+        # Use atomic update with F() expression for performance
+        Insult.objects.filter(pk=instance.insult_id).update(
+            reports_count=F('reports_count') - 1
+        )

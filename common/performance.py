@@ -240,9 +240,13 @@ class CachedResponseMixin(GenericAPIView):
                     metrics.increment_cache(self.primary_model.__name__, "hit")
 
                     # Build fresh queryset from cached IDs if they exist
-                if cached_data and isinstance(cached_data, list)and len(cached_data)>0:
+                if (
+                    cached_data
+                    and isinstance(cached_data, list)
+                    and len(cached_data) > 0
+                ):
                     pk_field = self.primary_model._meta.pk.name
-                    
+
                     if pk_field in cached_data[0]:
                         object_ids = [item[pk_field] for item in cached_data]
                         fresh_queryset = self.get_optimized_queryset().filter(

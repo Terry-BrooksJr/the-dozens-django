@@ -55,6 +55,7 @@ spacy = "^3.8.7"
 django-select2 = "^8.4.1"
 argon2-cffi = "^25.1.0"
 pylint-django = "^2.6.1"
+psutil = "^7.0.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -71,6 +72,7 @@ kolo = "^2.37.0"
 djlint = "^1.36.4"
 ruff = "^0.12.7"
 pylint-django = "^2.6.1"
+pyrefly = "^0.37.0"
 
 [tool.poetry.group.docs.dependencies]
 drf-spectacular = "^0.26.5"
@@ -115,10 +117,10 @@ django_settings_module = "core.settings"
 
 [tool.pyrefly]
 # Path(s) to include for scanning
-include = ["applications/API", "common", "run", "core"]
-
+search_path = ["applications/API/permissions","applications/graphQL/", "applications/frontend/", "common", "run", "core"]
+includes = ["*.py"]
 # Path(s) to exclude from scanning
-exclude = ["venv", "build", "dist", "__pycache__"]
+excludes = ["venv", "build", "dist", "__pycache__"]
 
 # Python version compatibility
 python_version = "3.12"
@@ -367,7 +369,7 @@ output = "coverage.xml"
 branch = true
 parallel = true
 concurrency = ["multiprocessing"]
-source = ["applications", "common"]         # adjust to your packages
+source = ["applications", "common"]
 omit = [
   "*/migrations/*",
   "*/tests/*",

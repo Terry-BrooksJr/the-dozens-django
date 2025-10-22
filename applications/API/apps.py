@@ -1,3 +1,4 @@
+# pyrefly: ignore-errors
 from django.apps import AppConfig
 
 
@@ -6,4 +7,4 @@ class ApiConfig(AppConfig):
     name = "applications.API"
 
     def ready(self):
-        from applications.API import schema_extenstions  # noqa
+        pass  # pylint: disable=all

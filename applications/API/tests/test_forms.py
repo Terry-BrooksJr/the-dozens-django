@@ -8,7 +8,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from applications.API.forms import InsultReviewForm
-from applications.API.models import Insult, InsultCategory
+from applications.API.models import Insult, InsultCategory, Theme
 
 User = get_user_model()
 
@@ -20,10 +20,12 @@ class InsultReviewFormTests(TestCase):
         cls.user = User.objects.create(
             username="owner", email="owner@example.com", password="pass1234"
         )
-        cls.cat = InsultCategory.objects.create(category_key="P", name="Poor")
+        cls.theme = Theme.objects.create(theme_name="Test Theme", theme_key="TEST")
+        cls.cat = InsultCategory.objects.create(category_key="P", name="Poor", theme=cls.theme)
         cls.insult = Insult.objects.create(
             content="Yo momma is so poor she bought a ticket to nowhere.",
             category=cls.cat,
+            theme=cls.theme,
             nsfw=False,
             status="A",  # ACTIVE
             added_on=timezone.now(),
@@ -58,7 +60,7 @@ class InsultReviewFormTests(TestCase):
         data = self._base_payload(
             anonymous="", reporter_first_name="", reporter_last_name=""
         )
-        form = self.assert_form_invalid_and_error_present(
+        self.assert_form_invalid_and_error_present(  # noqa
             data, "First name is required when not submitting anonymously"
         )
 
@@ -78,9 +80,7 @@ class InsultReviewFormTests(TestCase):
             post_review_contact_desired="true",
             reporter_email="",  # missing
         )
-        form = self.assert_form_invalid_and_error_present(
-            data, "Email address is required"
-        )
+        self.assert_form_invalid_and_error_present(data, "Email address is required")
 
     def test_contact_desired_with_email_is_valid(self):
         data = self._base_payload(
@@ -93,7 +93,7 @@ class InsultReviewFormTests(TestCase):
     def test_invalid_when_insult_reference_id_not_found(self):
         """Invalid if the ref id doesn't resolve via Insult.get_by_reference_id()."""
         data = self._base_payload(insult_reference_id="NOPE_999")
-        form = self.assert_form_invalid_and_error_present(data, "Invalid Insult ID")
+        self.assert_form_invalid_and_error_present(data, "Invalid Insult ID")
 
     def test_review_text_min_length_enforced_only_when_provided(self):
         """min_length=70 should fail if provided but too short; empty is allowed."""
@@ -106,7 +106,9 @@ class InsultReviewFormTests(TestCase):
         # Empty is allowed (field is not required)
         data_empty = self._base_payload(rationale_for_review="")
         form_empty = InsultReviewForm(data=data_empty)
+        # form_short = InsultReviewForm(data=form_short)
         self.assertFalse(form_empty.is_valid(), form_empty.errors.as_json())
+        # self.assertFalse(form_short.is_valid(), form_short.errors.as_json())
 
     def assert_form_invalid_and_error_present(self, form_data, expected_error):
         """

@@ -78,8 +78,21 @@ BASE_DIR = values.PathValue(
     Path(__file__).resolve().parent.parent.parent, environ=False
 )
 
+IGNORED_INSULT_CATEGORIES = values.ListValue(["TEST", "X"], environ=False)
+INSULT_REFERENCE_ID_PREFIX_OPTIONS = values.ListValue(
+    ["GIGGLE", "CHUCKLE", "SNORT", "SNICKER", "CACKLE"], environ=False
+)
+
 
 class Base(Configuration):
+    """
+    Base configuration class for Django settings in the thedozens project.
+    Provides core settings for application definition, logging, database, static files, authentication, and integrations.
+
+    This class centralizes environment-based and default values for the Django project, including logging, database, static/media storage, REST API documentation, GraphQL, and email settings.
+    It is intended to be subclassed for specific environments such as Production, Development, Offline, and Testing.
+    """
+
     # SECTION Start - Application definition
     SECRET_KEY = values.SecretValue(
         environ=True, environ_prefix=None, environ_name="SECRET_KEY"
@@ -516,6 +529,21 @@ class Production(Base):
 
 class Testing(Base):
     pass
+
+
+# Configure logger for Testing environment
+# Must be done at module level AFTER class definition
+# Disable loguru's diagnostic features to avoid conflicts with coverage tracing
+if os.getenv("DJANGO_CONFIGURATION") == "Testing":
+    logger.remove()
+    logger.add(
+        Base.DEFAULT_HANDLER,
+        format=Base.LOG_FORMAT,
+        level="WARNING",
+        diagnose=False,
+        catch=False,
+        backtrace=False,
+    )
 
 
 class Offline(Base):
