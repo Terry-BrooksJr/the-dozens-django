@@ -26,27 +26,21 @@ class InsultThemeConsistencyTests(TestCase):
         )
 
         # Create themes
-        cls.theme1 = Theme.objects.create(
-            theme_name="Theme 1",
-            theme_key="T1"
-        )
-        cls.theme2 = Theme.objects.create(
-            theme_name="Theme 2",
-            theme_key="T2"
-        )
+        cls.theme1 = Theme.objects.create(theme_name="Theme 1", theme_key="T1")
+        cls.theme2 = Theme.objects.create(theme_name="Theme 2", theme_key="T2")
 
         # Create categories
         cls.category_theme1 = InsultCategory.objects.create(
             category_key="C1",
             name="Category 1",
             description="Category in Theme 1",
-            theme=cls.theme1
+            theme=cls.theme1,
         )
         cls.category_theme2 = InsultCategory.objects.create(
             category_key="C2",
             name="Category 2",
             description="Category in Theme 2",
-            theme=cls.theme2
+            theme=cls.theme2,
         )
 
     def test_create_insult_without_theme_auto_sets_from_category(self):
@@ -109,7 +103,7 @@ class InsultThemeConsistencyTests(TestCase):
             insult.full_clean()
 
         # Check that the error is about theme mismatch
-        self.assertIn('theme', cm.exception.error_dict)
+        self.assertIn("theme", cm.exception.error_dict)
 
     def test_re_categorize_updates_theme(self):
         """Test that re_categorize() also updates the theme."""
@@ -162,16 +156,16 @@ class InsultThemeConsistencyTests(TestCase):
     def test_bulk_create_consistency(self):
         """Test that bulk creation doesn't bypass theme consistency."""
         # Bulk create with mismatched themes
-        insults = Insult.objects.bulk_create([
-            Insult(
-                content=f"Bulk insult {i}",
-                category=self.category_theme1,
-                theme=self.theme2 if i % 2 else self.theme1,  # Mixed themes
-                nsfw=False,
-                added_by=self.user,
-                added_on=timezone.now(),
-            )
-            for i in range(3)
-        ])
-
-    
+        insults = Insult.objects.bulk_create(
+            [
+                Insult(
+                    content=f"Bulk insult {i}",
+                    category=self.category_theme1,
+                    theme=self.theme2 if i % 2 else self.theme1,  # Mixed themes
+                    nsfw=False,
+                    added_by=self.user,
+                    added_on=timezone.now(),
+                )
+                for i in range(3)
+            ]
+        )

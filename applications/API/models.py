@@ -259,11 +259,14 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         if self.category and self.theme:
             if self.category.theme_id != self.theme_id:
                 from django.core.exceptions import ValidationError
-                raise ValidationError({
-                    'theme': f'Insult theme must match category theme. '
-                            f'Category "{self.category.name}" belongs to theme "{self.category.theme.theme_name}", '
-                            f'but insult is assigned to theme "{self.theme.theme_name}".'
-                })
+
+                raise ValidationError(
+                    {
+                        "theme": f"Insult theme must match category theme. "
+                        f'Category "{self.category.name}" belongs to theme "{self.category.theme.theme_name}", '
+                        f'but insult is assigned to theme "{self.theme.theme_name}".'
+                    }
+                )
 
     def save(self, *args, **kwargs):
         """
@@ -501,7 +504,9 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
     reviewer = models.ForeignKey(
         User, on_delete=models.DO_NOTHING, null=True, blank=True
     )
-    review_type = models.CharField(max_length=2, choices=REVIEW_TYPE.choices, null=False, blank=False)
+    review_type = models.CharField(
+        max_length=2, choices=REVIEW_TYPE.choices, null=False, blank=False
+    )
     status = models.CharField(
         max_length=3,  # Add max_length based on your choices
         choices=STATUS.choices,
@@ -671,7 +676,9 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
                 fields=["insult", "insult_reference_id"], name="idx_insult_ref_id"
             ),
             # Composite indexes for common queries
-            models.Index(fields=["status", "-date_submitted"], name="idx_status_date_sub"),
+            models.Index(
+                fields=["status", "-date_submitted"], name="idx_status_date_sub"
+            ),
         ]
 
 
@@ -712,8 +719,7 @@ def flag_insult(sender, instance, created, **kwargs):
         # Use atomic update with F() expression for performance
         if instance.insult_id:
             Insult.objects.filter(pk=instance.insult_id).update(
-                status=Insult.STATUS.FLAGGED,
-                reports_count=F('reports_count') + 1
+                status=Insult.STATUS.FLAGGED, reports_count=F("reports_count") + 1
             )
 
 
@@ -729,5 +735,5 @@ def decrement_report_count(sender, instance, **kwargs):
     if instance.insult_id:
         # Use atomic update with F() expression for performance
         Insult.objects.filter(pk=instance.insult_id).update(
-            reports_count=F('reports_count') - 1
+            reports_count=F("reports_count") - 1
         )

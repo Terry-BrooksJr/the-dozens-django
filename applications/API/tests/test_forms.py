@@ -21,7 +21,9 @@ class InsultReviewFormTests(TestCase):
             username="owner", email="owner@example.com", password="pass1234"
         )
         cls.theme = Theme.objects.create(theme_name="Test Theme", theme_key="TEST")
-        cls.cat = InsultCategory.objects.create(category_key="P", name="Poor", theme=cls.theme)
+        cls.cat = InsultCategory.objects.create(
+            category_key="P", name="Poor", theme=cls.theme
+        )
         cls.insult = Insult.objects.create(
             content="Yo momma is so poor she bought a ticket to nowhere.",
             category=cls.cat,

@@ -6,10 +6,9 @@ It includes serializers and mixins for handling insults, insult categories, and 
 """
 
 import contextlib
-from loguru import logger
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, ClassVar, Dict, Optional, Union
+from typing import Any, ClassVar, Dict, Optional
 
 from django.core.cache import cache
 from django.utils.text import capfirst
@@ -19,6 +18,7 @@ from drf_spectacular.utils import (
     extend_schema_serializer,
 )
 from humanize import naturaltime
+from loguru import logger
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
@@ -104,17 +104,17 @@ class CachedBulkSerializer(serializers.ModelSerializer):
 
     def get_cached_field_value(self, obj, field_name: str, compute_method_name: str):
         """
-        Retrieve a cached value for a computed field, or compute and cache it if not present.
-        This method ensures efficient access to expensive field computations by leveraging caching.
+                Retrieve a cached value for a computed field, or compute and cache it if not present.
+                This method ensures efficient access to expensive field computations by leveraging caching.
 
-        Args:
-            obj: The ob───────────────────────────────────
->  ject for which the field value is being retrieved.
-            field_name: The name of the field to cache.
-            compute_method_name: The name of the method used to compute the field value.
+                Args:
+                    obj: The ob───────────────────────────────────
+        >  ject for which the field value is being retrieved.
+                    field_name: The name of the field to cache.
+                    compute_method_name: The name of the method used to compute the field value.
 
-        Returns:
-            The cached or newly computed value for the specified field.
+                Returns:
+                    The cached or newly computed value for the specified field.
         """
         cache_key = self.get_cache_key(obj, field_name)
         try:
@@ -141,8 +141,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         model_class=InsultCategory, key_field="category_key", name_field="name"
     )
     category = serializers.SlugRelatedField(
-        slug_field="category_key",
-        queryset=InsultCategory.objects.all()
+        slug_field="category_key", queryset=InsultCategory.objects.all()
     )
 
     @staticmethod

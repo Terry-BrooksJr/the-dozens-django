@@ -44,8 +44,12 @@ class EndpointTests(APITestCase):
 
         # Categories
         cls.theme_app = Theme.objects.create(theme_name="App Theme", theme_key="APP")
-        cls.cat_poor = InsultCategory.objects.create(category_key="P", name="Poor", theme=cls.theme_app)
-        cls.cat_fat = InsultCategory.objects.create(category_key="F", name="Fat", theme=cls.theme_app)
+        cls.cat_poor = InsultCategory.objects.create(
+            category_key="P", name="Poor", theme=cls.theme_app
+        )
+        cls.cat_fat = InsultCategory.objects.create(
+            category_key="F", name="Fat", theme=cls.theme_app
+        )
         # Insults (make a mix of NSFW/SFW across categories)
         cls.i1 = Insult.objects.create(
             content="Yo momma is so poor she runs after the garbage truck with a shopping list.",
@@ -104,6 +108,7 @@ class EndpointTests(APITestCase):
     def test_list_insults_public_active_only(self):
         """GET /api/insults/ → active insults only; includes both categories."""
         from django.core.cache import cache
+
         # Clear cache to avoid stale data from previous tests
         cache.clear()
 
@@ -127,7 +132,9 @@ class EndpointTests(APITestCase):
 
     def test_list_insults_filter_nsfw_true(self):
         """GET with nsfw=true returns only NSFW insults."""
-        resp = self.get_view_response(InsultByCategoryEndpoint, "/api/insults/?nsfw=true")
+        resp = self.get_view_response(
+            InsultByCategoryEndpoint, "/api/insults/?nsfw=true"
+        )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(resp.data["count"], 1)
         for r in resp.data["results"]:
@@ -135,7 +142,9 @@ class EndpointTests(APITestCase):
 
     def test_list_insults_filter_nsfw_false(self):
         """GET with nsfw=false returns only SFW insults."""
-        resp = self.get_view_response(InsultByCategoryEndpoint, "/api/insults/?nsfw=false")
+        resp = self.get_view_response(
+            InsultByCategoryEndpoint, "/api/insults/?nsfw=false"
+        )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         for r in resp.data["results"]:
             self.assertFalse(r["nsfw"])
