@@ -369,7 +369,7 @@ output = "coverage.xml"
 branch = true
 parallel = true
 concurrency = ["multiprocessing"]
-source = ["applications", "common"]
+source = ["applications/API/*", "common/*"]
 omit = [
   "*/migrations/*",
   "*/tests/*",

@@ -615,6 +615,9 @@ class UIController {
 
     // Setup mobile-friendly interactions
     this.setupMobileInteractions();
+
+    // Setup API menu dropdown behavior
+    this.setupApiMenuDropdown();
   }
 
   /**
@@ -660,6 +663,159 @@ class UIController {
         }, { passive: false });
       });
     }
+  }
+
+  /**
+   * Sets up API menu dropdown behavior
+   */
+  static setupApiMenuDropdown() {
+    const apiMenuToggle = document.getElementById('apiMenuToggle');
+    const apiMenu = document.getElementById('api-menu');
+
+    if (!apiMenuToggle || !apiMenu) {
+      console.warn('[UIController] API menu elements not found');
+      return;
+    }
+
+    // Listen for Bootstrap dropdown events
+    apiMenuToggle.addEventListener('show.bs.dropdown', () => {
+      // Add horizontal class when dropdown is about to show
+      apiMenu.classList.add('dropdown-menu-horizontal');
+    });
+
+    apiMenuToggle.addEventListener('hide.bs.dropdown', () => {
+      // Remove horizontal class when dropdown is about to hide
+      apiMenu.classList.remove('dropdown-menu-horizontal');
+    });
+
+    // Fallback: Also listen for direct clicks in case Bootstrap events don't fire
+    apiMenuToggle.addEventListener('click', () => {
+      // Use setTimeout to check state after Bootstrap processes the click
+      setTimeout(() => {
+        if (apiMenu.classList.contains('show')) {
+          apiMenu.classList.add('dropdown-menu-horizontal');
+        } else {
+          apiMenu.classList.remove('dropdown-menu-horizontal');
+        }
+      }, 10);
+    });
+  }
+}
+
+// =============================================================================
+// Heading Letter Bounce Animation
+// =============================================================================
+
+/**
+ * Manages individual letter bounce animations for heading elements
+ */
+class HeadingLetterBounce {
+  constructor() {
+    this.headingSelectors = 'h1, h2, h3, h4, h5, h6';
+    this.animationClass = 'animate__bounce';
+    this.animatedClass = 'animate__animated';
+    this.originalContent = new Map();
+    this.init();
+  }
+
+  /**
+   * Initializes the letter bounce animation system
+   */
+  init() {
+    // Only initialize on devices that support hover
+    if (!Utils.supportsHover()) return;
+
+    this.setupHeadings();
+  }
+
+  /**
+   * Sets up all heading elements for letter animations
+   */
+  setupHeadings() {
+    const headings = document.querySelectorAll(this.headingSelectors);
+
+    headings.forEach((heading) => {
+      // Store original content
+      this.originalContent.set(heading, heading.textContent);
+
+      // Split text into individual letters
+      this.splitIntoLetters(heading);
+
+      // Add event listeners
+      this.addEventListeners(heading);
+    });
+  }
+
+  /**
+   * Splits heading text into individual letter spans
+   * @param {HTMLElement} heading - The heading element
+   */
+  splitIntoLetters(heading) {
+    const text = heading.textContent;
+    const letters = text.split('').map((letter, index) => {
+      if (letter === ' ') {
+        return `<span class="letter-space" data-index="${index}">&nbsp;</span>`;
+      }
+      return `<span class="letter" data-index="${index}">${letter}</span>`;
+    });
+
+    heading.innerHTML = letters.join('');
+  }
+
+  /**
+   * Adds hover event listeners to heading elements
+   * @param {HTMLElement} heading - The heading element
+   */
+  addEventListeners(heading) {
+    heading.addEventListener('mouseenter', () => {
+      this.startBounceSequence(heading);
+    });
+
+    heading.addEventListener('mouseleave', () => {
+      this.resetLetters(heading);
+    });
+  }
+
+  /**
+   * Starts the bounce animation sequence for all letters
+   * @param {HTMLElement} heading - The heading element
+   */
+  startBounceSequence(heading) {
+    const letters = heading.querySelectorAll('.letter');
+
+    letters.forEach((letter, index) => {
+      // Stagger the animation with a delay
+      setTimeout(() => {
+        letter.classList.add(this.animatedClass, this.animationClass);
+
+        // Remove animation classes after animation completes
+        setTimeout(() => {
+          letter.classList.remove(this.animatedClass, this.animationClass);
+        }, 1000); // animate.css bounce duration is ~1s
+
+      }, index * 100); // 100ms delay between each letter
+    });
+  }
+
+  /**
+   * Resets all letters in a heading to their normal state
+   * @param {HTMLElement} heading - The heading element
+   */
+  resetLetters(heading) {
+    const letters = heading.querySelectorAll('.letter');
+    letters.forEach((letter) => {
+      letter.classList.remove(this.animatedClass, this.animationClass);
+    });
+  }
+
+  /**
+   * Restores original text content of headings
+   */
+  destroy() {
+    this.originalContent.forEach((content, heading) => {
+      heading.textContent = content;
+    });
+    this.originalContent.clear();
   }
 }
 
@@ -795,6 +951,9 @@ function initializeApp() {
   // Initialize UI controller
   UIController.setupEventListeners();
 
+  // Initialize heading letter bounce animation
+  const headingLetterBounce = new HeadingLetterBounce();
+
   // Initialize monitoring switcher
   const monitoringSwitcher = new MonitoringSwitcher();
 
@@ -852,6 +1011,7 @@ if (typeof module !== 'undefined' && module.exports) {
     PreloaderAnimation,
     SpeechBubbleController,
     UIController,
+    HeadingLetterBounce,
     MonitoringSwitcher,
   };
 }

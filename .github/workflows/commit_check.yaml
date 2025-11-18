@@ -14,33 +14,11 @@ jobs:
       python-version: ${{ env.PYTHON_VERSION }}
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 -
-        
-      - name: Add Poetry to PATH
-        run: echo "${HOME}/.local/bin" >> $GITHUB_PATH
-        
-      - uses: actions/setup-python@v5
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'poetry'
-
-      - name: Cache virtual environment
-        uses: actions/cache@v4
-        id: venv-cache
-        with:
-          path: venv
-          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
-
-      - name: Create virtual environment
-        if: steps.venv-cache.outputs.cache-hit != 'true'
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install poetry
-          poetry install
 
   lint:
     needs: setup
@@ -48,36 +26,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 -
-        
-      - name: Add Poetry to PATH
-        run: echo "${HOME}/.local/bin" >> $GITHUB_PATH
-      - uses: actions/setup-python@v5
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ needs.setup.outputs.python-version }}
-          cache: 'poetry'
-
-      - name: Restore virtual environment
-        uses: actions/cache@v4
-        with:
-          path: venv
-          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
-
-      - name: Install Doppler CLI
-        uses: dopplerhq/cli-action@v2
-
-      - name: Fetch environment variables
-        uses: dopplerhq/secrets-fetch-action@v1.1.3
-        with:
+          install-task: 'true'
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
-          inject-env-vars: true
-
-      - name: Install Task
-        uses: arduino/setup-task@v2
-        with:
-          version: 3.x
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run linters
         run: |
@@ -105,48 +60,15 @@ jobs:
           - 5432:5432
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 -
-        
-      - name: Add Poetry to PATH
-        run: echo "${HOME}/.local/bin" >> $GITHUB_PATH
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'poetry'
-
-      - name: Cache virtual environment
-        uses: actions/cache@v4
-        id: venv-cache
-        with:
-          path: venv
-          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
-
-      - name: Install Doppler CLI
-        uses: dopplerhq/cli-action@v2
-
-      - name: Fetch environment variables
-        uses: dopplerhq/secrets-fetch-action@v1.1.3
-        with:
+          cache-suffix: '-test'
+          install-task: 'true'
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
-          inject-env-vars: true
-
-      - name: Install Task
-        uses: arduino/setup-task@v2
-        with:
-          version: 3.x
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup virtual environment
-        if: steps.venv-cache.outputs.cache-hit != 'true'
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install poetry
-          poetry install
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tests
         run: |
@@ -167,32 +89,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 -
-        
-      - name: Add Poetry to PATH
-        run: echo "${HOME}/.local/bin" >> $GITHUB_PATH
-        
-      - uses: actions/setup-python@v5
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ needs.setup.outputs.python-version }}
-          cache: 'poetry'
-
-      - name: Restore virtual environment
-        uses: actions/cache@v4
-        with:
-          path: venv
-          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
-
-      - name: Setup virtual environment if not cached
-        run: |
-          if [ ! -d "venv" ] || [ ! -f "venv/bin/activate" ]; then
-            python -m venv venv
-            source venv/bin/activate
-            python -m pip install --upgrade pip
-            pip install poetry
-            poetry install
-          fi
+          cache-suffix: '-security'
 
       - name: Run Safety CLI to check for vulnerabilities
         uses: pyupio/safety-action@v1

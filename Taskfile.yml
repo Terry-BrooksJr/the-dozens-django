@@ -100,7 +100,6 @@ tasks:
 
   schema-check:
     dir: "{{.TASKFILE_DIR}}"
-
     desc: Check Models and Serializers for schema compliance with OpenAPI .0 Standards and fail on warnings
     cmds:
       - python3 run/manage.py spectacular  --file schema/schema$(date +"%Y-%m-%d").yaml --validate
@@ -178,6 +177,7 @@ tasks:
       - python3 run/manage.py {{.CLI_ARGS}}
     silent: false
     interactive: true
+
   test:coverage:
     desc: Run tests with coverage
     cmds:

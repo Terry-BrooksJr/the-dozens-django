@@ -161,6 +161,9 @@ class Base(Configuration):
     warnings.filterwarnings("default")
     warnings.showwarning = log_warning
     #!SECTION END - Logging
+
+    # Track if logger has been configured to prevent duplicate handlers
+    _logger_configured = False
     DATABASES = values.DictValue(
         {
             "default": {
@@ -313,10 +316,6 @@ class Base(Configuration):
     # SECTION Start - REST API.SWAGGER DOCUMENTATION SETTINGS
     SPECTACULAR_SETTINGS = {
         "TITLE": "Yo' Momma - The Joke API",
-        "DESCRIPTION": "\
-    <p>Welcome to the Yo' Momma Joke API! This is a RESTful service that provides humorous insults categorized by  types like 'Poor,' 'Stupid,' or ;'Fat,;' with programmatic access to both retrieve and contribute content.</p>\
-    <p>API Consumers can fetch random insults, filter by category or NSFW status, and authenticated users can create, update, and manage their own contributions through comprehensive endpoints. The API includes a complete user management system with authentication, account activation, and password reset functionality. All responses are properly paginated with comprehensive documentation available through Swagger UI, and the service maintains moderation through status flags (active, pending, rejected) to ensure quality control.</p>\
-    ",
         "VERSION": "1.0.0",
         "SERVE_INCLUDE_SCHEMA": True,
         "OAS_VERSION": "3.0.3",
@@ -495,9 +494,10 @@ class Production(Base):
             "DEFAULT_AUTHENTICATION_CLASSES": (
                 "rest_framework.authentication.TokenAuthentication",
             ),
-            # "DEFAULT_THROTTLE_CLASSES": [
-            #     "rest_framework.throttling.AnonRateThrottle",
-            # ],
+            "EXCEPTION_HANDLER": "applications.API.errors.yo_momma_exception_handler",
+            "DEFAULT_THROTTLE_CLASSES": [
+                "rest_framework.throttling.AnonRateThrottle",
+            ],
             "DEFAULT_THROTTLE_RATES": {"anon": "4/minute", "user": "12/minute"},
             "DEFAULT_FILTER_BACKENDS": [
                 "django_filters.rest_framework.DjangoFilterBackend",
@@ -510,21 +510,23 @@ class Production(Base):
 
     # SECTION Start - Logging
 
-    H = highlight_io.H(
-        os.environ["HIGHLIGHT_IO_API_KEY"],
-        integrations=[DjangoIntegration()],
-        instrument_logging=False,
-        service_name="my-app",
-        service_version="git-sha",
-        environment="production",
-    )
+    if not Base._logger_configured:
+        H = highlight_io.H(
+            os.environ["HIGHLIGHT_IO_API_KEY"],
+            integrations=[DjangoIntegration()],
+            instrument_logging=False,
+            service_name="my-app",
+            service_version="git-sha",
+            environment="production",
+        )
 
-    logger.add(
-        sink=H.logging_handler, level="INFO", **Base.DEFAULT_LOGGER_CONFIG
-    )  # pyrefly: ignore
-    logger.add(
-        sink=Base.PRIMARY_LOG_FILE, **Base.DEFAULT_LOGGER_CONFIG, level="INFO"
-    )  # pyrefly: ignore
+        logger.add(
+            sink=H.logging_handler, level="INFO", **Base.DEFAULT_LOGGER_CONFIG
+        )  # pyrefly: ignore
+        logger.add(
+            sink=Base.PRIMARY_LOG_FILE, **Base.DEFAULT_LOGGER_CONFIG, level="INFO"
+        )  # pyrefly: ignore
+        Base._logger_configured = True
 
 
 class Testing(Base):
@@ -534,7 +536,7 @@ class Testing(Base):
 # Configure logger for Testing environment
 # Must be done at module level AFTER class definition
 # Disable loguru's diagnostic features to avoid conflicts with coverage tracing
-if os.getenv("DJANGO_CONFIGURATION") == "Testing":
+if os.getenv("DJANGO_CONFIGURATION") == "Testing" and not Base._logger_configured:
     logger.remove()
     logger.add(
         Base.DEFAULT_HANDLER,
@@ -544,6 +546,7 @@ if os.getenv("DJANGO_CONFIGURATION") == "Testing":
         catch=False,
         backtrace=False,
     )
+    Base._logger_configured = True
 
 
 class Offline(Base):
@@ -630,23 +633,17 @@ class Offline(Base):
         environ=False,
     )
 
-    logger.add(
-        Base.DEBUG_LOG_FILE,
-        format=Base.LOG_FORMAT,
-        diagnose=True,
-        catch=True,
-        backtrace=True,
-        level="DEBUG",
-    )
-
-    logger.add(
-        Base.DEFAULT_HANDLER,
-        format=Base.LOG_FORMAT,
-        diagnose=True,
-        catch=True,
-        backtrace=False,
-        level="DEBUG",
-    )
+    # Single combined handler for console output with file rotation for debug logs
+    if not Base._logger_configured:
+        logger.add(
+            Base.DEFAULT_HANDLER,
+            format=Base.LOG_FORMAT,
+            diagnose=True,
+            catch=True,
+            backtrace=False,
+            level="DEBUG",
+        )
+        Base._logger_configured = True
 
 
 class Development(Base):
@@ -741,15 +738,8 @@ class Development(Base):
     #!SECTION End - DRF Settings
 
     # SECTION Start - Logging
-    logger.add(
-        Base.DEBUG_LOG_FILE,
-        format=Base.LOG_FORMAT,
-        diagnose=True,
-        catch=True,
-        backtrace=True,
-        level="DEBUG",
-    )
-
+    # Single combined handler for console output
+    # Force logger configuration for Development environment
     logger.add(
         Base.DEFAULT_HANDLER,
         format=Base.LOG_FORMAT,
@@ -758,6 +748,7 @@ class Development(Base):
         backtrace=False,
         level="DEBUG",
     )
+    Base._logger_configured = True
 
 
 # --- Coerce APPEND_COMPONENTS for all configurations ---

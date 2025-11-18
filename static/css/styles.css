@@ -53,7 +53,7 @@
    ========================================================================== */
 @font-face {
   font-family: 'YoMamaHeader';
-  src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/caloriesuitDEMO.woff2') format('woff2');
+  src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2') format('woff2');
   font-display: swap;
 }
 
@@ -396,12 +396,26 @@ p {
   color: var(--color-text);
 }
 
+/* API Menu specific fixes */
+#api-menu {
+  /* Ensure proper Bootstrap dropdown behavior */
+  display: none;
+}
+
+#api-menu.show {
+  display: flex;
+}
+
 /* Horizontal dropdown for API menu - mobile stacks vertically */
 .dropdown-menu-horizontal {
-  display: flex;
+  display: none; /* Hidden by default, shown by Bootstrap */
   flex-direction: column;
   gap: 0;
   min-width: 200px;
+}
+
+.dropdown-menu-horizontal.show {
+  display: flex;
 }
 
 .dropdown-menu-horizontal > li {
@@ -428,7 +442,7 @@ p {
 
 /* Desktop: horizontal layout */
 @media (min-width: 577px) {
-  .dropdown-menu-horizontal {
+  .dropdown-menu-horizontal.show {
     flex-direction: row;
     min-width: 280px;
   }
@@ -786,7 +800,150 @@ a:focus-visible {
 }
 
 /* ==========================================================================
-   17. Print Styles
+   17. Heading Letter Bounce Animation
+   ========================================================================== */
+/* Letter bounce animation styles */
+.letter {
+  display: inline-block;
+  transition: transform 0.1s ease;
+}
+
+.letter-space {
+  display: inline-block;
+}
+
+/* ==========================================================================
+   18. Additional Styles from index.html
+   ========================================================================== */
+/* Hover effects for headers and elements */
+h1:hover,
+h2:hover,
+h3:hover,
+h4:hover,
+h6:hover,
+.uk-accordion-title:hover,
+.phrase-item:hover,
+.header-font:hover {
+  font-family: 'YoMamaHeader', Arial, sans-serif;
+  text-shadow:
+    -1px -1px 0 var(--color-white),
+    1px -1px 0 var(--color-white),
+    -1px 1px 0 var(--color-white),
+    1px 1px 0 var(--color-white);
+  color: var(--color-primary);
+}
+
+/* Joke content styles */
+.joke-of-day {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border-radius: 25px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.joke-title {
+  background-color: var(--color-accent);
+  color: #333;
+  border-radius: 15px;
+  padding: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.joke-title:hover {
+  background-color: var(--color-secondary);
+  color: var(--color-white);
+}
+
+.scale-font {
+  font-size: clamp(1rem, 2vw, 1.5rem);
+}
+
+/* Card specific overrides */
+.card-title {
+  color: unset;
+  background-color: unset;
+}
+
+.card > h5,
+.card-header > a {
+  color: var(--color-primary);
+}
+
+/* Tab-specific styles */
+#built-with-list > li {
+  background-color: unset;
+  color: unset;
+}
+
+#built-with-list > li > .nav-link.active {
+  background-color: unset;
+  color: unset;
+  font-weight: bold;
+}
+
+/* Underline animations for built-with tabs */
+#built-with-list .nav-link.nav-underline::after {
+  content: "";
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: .35rem;
+  height: 2px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms var(--transition-standard);
+}
+
+#built-with-list .nav-link.nav-underline:hover::after,
+#built-with-list .nav-link.nav-underline:focus::after,
+#built-with-list .nav-link.nav-underline.active::after,
+#built-with-list .nav-link.nav-underline[aria-selected="true"]::after {
+  transform: scaleX(1);
+}
+
+/* Optional: avoid double underlines when active */
+#built-with-list .nav-link.active {
+  border-bottom: 0;
+}
+
+/* Navigation link spacing and focus states */
+.nav-link:active,
+.nav-link.active,
+.card-header-tabs:active {
+  color: var(--color-white);
+  opacity: 1;
+  font-weight: 800;
+  background: color-mix(in srgb, var(--color-primary) 88%, transparent);
+  border-bottom: 2px solid var(--color-accent);
+}
+
+/* Main content sections */
+main {
+  padding: 1rem 0;
+}
+
+#body-content {
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  #body-content {
+    padding: 2rem;
+  }
+}
+
+/* Touch-friendly improvements for mobile */
+@media (max-width: 767px) {
+  .nav-link,
+  .dropdown-item {
+    padding: 0.75rem;
+  }
+}
+
+/* ==========================================================================
+   19. Print Styles
    ========================================================================== */
 @media print {
   .yo-nav,
@@ -800,4 +957,9 @@ a:focus-visible {
     background: white;
     color: black;
   }
+}
+
+#built-with-list .nav-link.active {
+  font-weight: bold;
+  color: var(--color-primary);
 }

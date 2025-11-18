@@ -1,8 +1,11 @@
-"""
-module: applications.API.serializers
+"""API Serializers Module
 
-This module provides serializers for the API layer of the application.
-It includes serializers and mixins for handling insults, insult categories, and bulk operations, with optimizations for caching and efficient database access.
+Provides Django REST Framework serializers for the insults API.
+
+This module contains optimized serializers for handling insult data, categories,
+and bulk operations with built-in caching capabilities for improved performance.
+Includes base classes with common functionality and specialized serializers
+for different use cases.
 """
 
 import contextlib
@@ -27,28 +30,39 @@ from common.cache_managers import CategoryCacheManager, create_category_manager
 
 
 class BulkSerializationMixin:
-    """
-    Mixin to handle bulk serialization with optimized ListSerializer.
+    """Mixin for handling bulk serialization operations.
+
+    Provides optimized methods for bulk serialization with enhanced
+    ListSerializer support and metadata handling.
     """
 
     def get_bulk_serializer_class(self):
-        """
-        Return the serializer class optimized for bulk operations.
-        Override this method to return your optimized serializer.
+        """Get the serializer class optimized for bulk operations.
+
+        Returns:
+            class: The serializer class configured for bulk operations.
         """
         return getattr(self, "bulk_serializer_class", self.get_serializer_class())
 
     def get_bulk_serializer(self, *args, **kwargs):
-        """
-        Return a serializer instance optimized for bulk operations.
+        """Get a serializer instance configured for bulk operations.
+
+        Returns:
+            Serializer: A serializer instance optimized for bulk data.
         """
         serializer_class = self.get_bulk_serializer_class()
         kwargs.setdefault("context", self.get_serializer_context())
         return serializer_class(*args, **kwargs)
 
     def bulk_serialize_response(self, queryset, extra_data: Optional[Dict] = None):
-        """
-        Serialize bulk data with additional metadata.
+        """Serialize bulk data with optional metadata.
+
+        Args:
+            queryset: The data to serialize
+            extra_data: Optional metadata to include in response
+
+        Returns:
+            Response: Serialized data with count and metadata
         """
         serializer = self.get_bulk_serializer(queryset, many=True)
         response_data = {"results": serializer.data, "count": len(serializer.data)}
@@ -94,8 +108,13 @@ class CachedBulkSerializer(serializers.ModelSerializer):
     def set_cached_field_value(
         self, obj, field_name: str, value, cache_timeout: int = 300
     ):
-        """
-        Set a cached value for an expensive field computation.
+        """Store a computed field value in cache.
+
+        Args:
+            obj: The model instance
+            field_name: Name of the field being cached
+            value: The computed value to cache
+            cache_timeout: Cache expiration time in seconds
         """
         if field_name not in self.cached_fields:
             return
@@ -103,18 +122,18 @@ class CachedBulkSerializer(serializers.ModelSerializer):
         cache.set(cache_key, value, cache_timeout)
 
     def get_cached_field_value(self, obj, field_name: str, compute_method_name: str):
-        """
-                Retrieve a cached value for a computed field, or compute and cache it if not present.
-                This method ensures efficient access to expensive field computations by leveraging caching.
+        """Retrieve or compute a cached field value.
 
-                Args:
-                    obj: The ob───────────────────────────────────
-        >  ject for which the field value is being retrieved.
-                    field_name: The name of the field to cache.
-                    compute_method_name: The name of the method used to compute the field value.
+        Retrieves a cached value for expensive field computations, or computes
+        and caches it if not present.
 
-                Returns:
-                    The cached or newly computed value for the specified field.
+        Args:
+            obj: The model instance
+            field_name: Name of the field to cache
+            compute_method_name: Method name for computing the field value
+
+        Returns:
+            The cached or newly computed field value
         """
         cache_key = self.get_cache_key(obj, field_name)
         try:
@@ -137,6 +156,12 @@ class CachedBulkSerializer(serializers.ModelSerializer):
 
 
 class BaseInsultSerializer(CachedBulkSerializer):
+    """Base serializer for insult data with category management.
+
+    Provides common functionality for insult serialization including
+    category resolution, caching, and field formatting.
+    """
+
     cacher: ClassVar[CategoryCacheManager] = create_category_manager(
         model_class=InsultCategory, key_field="category_key", name_field="name"
     )
@@ -146,15 +171,13 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
     @staticmethod
     def _normalize_category_input(value: str) -> str:
-        """
-        Normalize the input value for a category key or name.
-        Returns the category key if a model instance is provided, or a cleaned string otherwise.
+        """Normalize category input values.
 
         Args:
-            value: The category key, name, or model instance.
+            value: Category key, name, or model instance
 
         Returns:
-            str: The normalized category key or name.
+            str: Normalized category key or name
         """
         # If a model instance is passed (e.g., during serialization), use its key
         with contextlib.suppress(Exception):
@@ -172,18 +195,16 @@ class BaseInsultSerializer(CachedBulkSerializer):
         return v
 
     def get_category_by_key(self, category_key: str) -> Dict[str, str]:
-        """
-        Retrieve category information by its key, using cache for efficiency.
-        Returns a dictionary containing the category key and name, or raises a validation error if not found.
+        """Retrieve category information by key.
 
         Args:
-            category_key: The key of the category to look up.
+            category_key: Category key to look up
 
         Returns:
-            Dict[str, str]: A dictionary with 'category_key' and 'category_name'.
+            Dict containing category_key and category_name
 
         Raises:
-            serializers.ValidationError: If the category key does not exist.
+            ValidationError: If category key does not exist
         """
         if not category_key:
             return {"category_key": "", "category_name": "Uncategorized"}
@@ -419,9 +440,10 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
 
 class MyInsultSerializer(BaseInsultSerializer):
-    """
-    Simplified serializer for user's own insults.
-    Optimized for common user operations.
+    """Serializer for user's personal insults.
+
+    Simplified serializer optimized for displaying a user's own insults
+    with essential fields and status information.
     """
 
     status = serializers.CharField(source="get_status_display", read_only=True)
@@ -450,9 +472,10 @@ class MyInsultSerializer(BaseInsultSerializer):
     ]
 )
 class CategorySerializer(serializers.ModelSerializer):
-    """
-    Serializer for InsultCategory model.
-    Simple and efficient category representation.
+    """Serializer for insult categories.
+
+    Provides read-only access to category information including
+    key, name, count, and description.
     """
 
     category_key = serializers.ReadOnlyField()
@@ -467,14 +490,20 @@ class CategorySerializer(serializers.ModelSerializer):
 
 # Bulk operations serializer for better performance with multiple insults
 class BulkInsultSerializer(serializers.ListSerializer):
-    """
-    Custom ListSerializer for bulk operations.
-    Optimizes database queries when handling multiple insults.
+    """Optimized list serializer for bulk insult operations.
+
+    Provides query optimization for handling multiple insults efficiently
+    with proper prefetching of related data.
     """
 
     def to_representation(self, data):
-        """
-        Optimize bulk serialization by prefetching related data.
+        """Optimize bulk serialization with prefetching.
+
+        Args:
+            data: Queryset or data to serialize
+
+        Returns:
+            Serialized representation of the data
         """
         if hasattr(data, "select_related"):
             data = data.select_related("added_by", "category")
@@ -520,8 +549,10 @@ class BulkInsultSerializer(serializers.ListSerializer):
     ]
 )
 class OptimizedInsultSerializer(BaseInsultSerializer):
-    """
-    Version of InsultSerializer optimized for bulk operations.
+    """Performance-optimized insult serializer.
+
+    Enhanced serializer for bulk operations with caching,
+    prefetching, and optimized field selection.
     """
 
     # Optimization settings
@@ -552,9 +583,10 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
 
 
 class CreateInsultSerializer(BaseInsultSerializer):
-    """
-    Serializer for creating new insults.
-    Handles category validation and formatting.
+    """Serializer for creating new insults.
+
+    Handles insult creation with category validation,
+    content requirements, and NSFW classification.
     """
 
     category = serializers.CharField(
