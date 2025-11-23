@@ -7,6 +7,7 @@ and bulk operations with built-in caching capabilities for improved performance.
 Includes base classes with common functionality and specialized serializers
 for different use cases.
 """
+from __future__ import annotations
 
 import contextlib
 from datetime import datetime
@@ -14,6 +15,7 @@ from functools import lru_cache
 from typing import Any, ClassVar, Dict, Optional
 
 from django.core.cache import cache
+from django.conf import settings
 from django.utils.text import capfirst
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -21,13 +23,13 @@ from drf_spectacular.utils import (
     extend_schema_serializer,
 )
 from humanize import naturaltime
+from django.utils.translation import gettext_lazy as _
 from loguru import logger
 from rest_framework import serializers, status
 from rest_framework.response import Response
-
-from applications.API.models import Insult, InsultCategory
+import arrow
+from applications.API.models import Insult, InsultCategory,InsultReview
 from common.cache_managers import CategoryCacheManager, create_category_manager
-
 
 class BulkSerializationMixin:
     """Mixin for handling bulk serialization operations.
@@ -242,7 +244,8 @@ class BaseInsultSerializer(CachedBulkSerializer):
         if not dt:
             return ""
         try:
-            return dt.strftime("%Y-%m-%d %H:%M:%S %Z")
+            formatted_dt = arrow.get(dt)
+            return formatted_dt.humanize(settings.GLOBAL_NOW)
         except Exception:
             return str(dt)
 
@@ -292,7 +295,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
             # If a model instance or other type is passed in by mistake, fail fast here
             raise serializers.ValidationError("Category name must be a string.")
 
-        if category_key := type(self).cacher.get_category_key_by_name(normalized_name):
+        if category_key := type(self).cacher.get_category_key_by_name(normalized_name.title()):
             return {"category_key": category_key, "category_name": normalized_name}
 
         # Fallback to database
@@ -318,7 +321,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
         This method checks if the provided value is a valid category key, name, or model instance,
         and returns a dictionary with the resolved category key and name. If the category cannot be
-        resolved, a validation error is raised.
+        resolved, a validation error is raised. Supports case-insensitive matching for both keys and names.
 
         Args:
             value: The category key, name, or InsultCategory instance to validate.
@@ -337,35 +340,53 @@ class BaseInsultSerializer(CachedBulkSerializer):
                 "category_key": value.category_key,
                 "category_name": value.name,
             }
-            logger.debug(f"Serializer Resolved {value} to {validated}")
-            return validated
+            if value.category_key is not None and value.name is not None:
+                logger.debug(f"Serializer Resolved {value} to {validated}")
+                return validated
 
         if isinstance(value, str):
             value = cls._normalize_category_input(value)
 
-        # First try as category key
-        try:
-            category_name = cls.cacher.get_category_name_by_key(value)
+        # Try case-sensitive category key lookup first (cached)
+        if category_name := cls.cacher.get_category_name_by_key(value):
             validated = {
                 "category_key": value,
                 "category_name": category_name,
             }
             logger.debug(f"Serializer Resolved {value} to {validated}")
             return validated
-        except (serializers.ValidationError, AttributeError, KeyError):
-            # If not a key, try as category name
-            try:
-                category_key = cls.cacher.get_category_key_by_name(value)
-                validated = {
-                    "category_key": category_key,
-                    "category_name": value,
-                }
-                logger.debug(f"Serializer Resolved {value} to {validated}")
-                return validated
-            except (serializers.ValidationError, AttributeError, KeyError) as e:
-                raise serializers.ValidationError(
-                    f"Category '{value}' not found. Please provide a valid category key or name."
-                ) from e
+
+        # Try case-sensitive category name lookup (cached)
+        if category_key := cls.cacher.get_category_key_by_name(value):
+            validated = {
+                "category_key": category_key,
+                "category_name": value,
+            }
+            logger.debug(f"Serializer Resolved {value} to {validated}")
+            return validated
+
+        # Try case-insensitive key lookup via database
+        with contextlib.suppress(InsultCategory.DoesNotExist):
+            category = InsultCategory.objects.get(category_key__iexact=value)
+            validated = {
+                "category_key": category.category_key,
+                "category_name": category.name,
+            }
+            logger.debug(f"Serializer Resolved {value} to {validated} (case-insensitive key)")
+            return validated
+        # Try case-insensitive name lookup via database
+        with contextlib.suppress(InsultCategory.DoesNotExist):
+            category = InsultCategory.objects.get(name__iexact=value)
+            validated = {
+                "category_key": category.category_key,
+                "category_name": category.name,
+            }
+            logger.debug(f"Serializer Resolved {value} to {validated} (case-insensitive name)")
+            return validated
+        # If all lookups fail, raise validation error
+        raise serializers.ValidationError(
+            f"Category '{value}' not found. Please provide a valid category key or name."
+        )
 
     # If you need just the name (for backward compatibility):
     def get_category_name_by_key(self, category_key: str) -> str:
@@ -379,8 +400,12 @@ class BaseInsultSerializer(CachedBulkSerializer):
         Returns:
             str: The formatted category name.
         """
-        category_info = type(self).cacher.get_category_by_key(category_key)
-        return BaseInsultSerializer.format_category(category_info["category_name"])
+        if category_name := type(self).cacher.get_category_name_by_key(
+            category_key
+        ):
+            return BaseInsultSerializer.format_category(category_name)
+        else:
+            raise serializers.ValidationError(f"Category key '{category_key}' not found.")
 
     @staticmethod
     @lru_cache(maxsize=128)
@@ -401,6 +426,16 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
     @extend_schema_field(serializers.CharField())
     def get_added_on_display(self, obj) -> str:
+        """Return a formatted display string for the 'added_on' datetime of an object.
+
+        This method retrieves a cached, human-readable representation of the object's 'added_on' field.
+        
+        Args:
+            obj: The object containing the 'added_on' attribute.
+
+        Returns:
+            str: The formatted date string for display.
+        """
         return self.get_cached_field_value(
             obj,
             "added_on",
@@ -408,6 +443,16 @@ class BaseInsultSerializer(CachedBulkSerializer):
         )
 
     def to_internal_value(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert input data to native Python objects for validation and deserialization.
+
+        This method processes the input data, resolves the insult category, and prepares the data for further validation.
+
+        Args:
+            data: The input data dictionary to be deserialized.
+
+        Returns:
+            Dict[str, Any]: The validated and deserialized data dictionary.
+        """
         raw_category = None
         if "category" in data:
             raw_category = data["category"]
@@ -424,6 +469,16 @@ class BaseInsultSerializer(CachedBulkSerializer):
         return super().to_internal_value(data)
 
     def to_representation(self, instance) -> Dict[str, Any]:  # type: ignore
+        """Convert a model instance to its serialized representation.
+
+        This method returns a dictionary representation of the instance, replacing the category field with its display name using cached lookup.
+
+        Args:
+            instance: The model instance to serialize.
+
+        Returns:
+            Dict[str, Any]: The serialized representation of the instance.
+        """
         representation = super().to_representation(instance)
 
         # Use cached category lookup instead of additional DB query
@@ -434,6 +489,16 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
     @extend_schema_field(serializers.CharField())
     def get_added_by_display(self, obj) -> Optional[str]:
+        """Return a formatted display string for the user who added the insult.
+
+        This method retrieves a cached, human-readable representation of the object's 'added_by' field.
+
+        Args:
+            obj: The object containing the 'added_by' attribute.
+
+        Returns:
+            Optional[str]: The formatted display name for the user who added the insult.
+        """
         return self.get_cached_field_value(
             obj, "added_by", compute_method_name="_compute_added_by_display"
         )
@@ -485,7 +550,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InsultCategory
-        fields = ["category_key", "name", "count", "description"]
+        fields = ["category_key", "name", "count", "description", "theme_id"]
 
 
 # Bulk operations serializer for better performance with multiple insults
@@ -526,7 +591,7 @@ class BulkInsultSerializer(serializers.ListSerializer):
                     "reports_count": 0,
                 },
                 {
-                    "reference_id": "GIGGLE_Nzk1",
+                    "reference_id": "CACKLE_Xy12",
                     "category": "Stupid",
                     "content": "Yo momma so stupid, she went to the dentist to get Bluetooth.",
                     "status": "Pending",
@@ -562,8 +627,8 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
 
     # nsfw = serializers.BooleanField()
     # reference_id = serializers.ReadOnlyField()
-    added_by = serializers.SerializerMethodField(method_name="get_added_by_display")
-    added_on = serializers.SerializerMethodField(method_name="get_added_on_display")
+    by = serializers.SerializerMethodField(method_name="get_added_by_display")
+    added = serializers.SerializerMethodField(method_name="get_added_on_display")
     # category = serializers.CharField()
     # content = serializers.CharField()
 
@@ -571,13 +636,13 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
         list_serializer_class = BulkInsultSerializer
         model = Insult
         fields = [
-            "reference_id",
             "content",
+            "reference_id",
             "category",
-            "status",
             "nsfw",
-            "added_by",
-            "added_on",
+            "status",
+            "added",
+            "by",
         ]
         read_only_fields = ["reference_id", "status", "added_by", "added_on"]
 
@@ -605,3 +670,173 @@ class CreateInsultSerializer(BaseInsultSerializer):
         extra_kwargs = {
             "content": {"required": True, "allow_blank": False},
         }
+
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "Submit Anonymous Insult Review",
+            summary="Submit an anonymous review for an insult",
+            description=(
+                "Example request payload for submitting an anonymous review using "
+                "a known insult reference ID. Since this review is anonymous, no "
+                "reporter name or email details are required."
+            ),
+            value={
+                "insult_reference_id": "BURN_1234AB",
+                "anonymous": True,
+                "review_type": "FLAG_FOR_REVIEW",
+                "rationale_for_review": (
+                    "The insult targets a protected characteristic and may violate "
+                    "community guidelines. Please review and consider removing it "
+                    "from public listings based on the platform's content standards."
+                ),
+                "post_review_contact_desired": False,
+            },
+            request_only=True,
+        ),
+        OpenApiExample(
+            "Submit Contactable Insult Review",
+            summary="Submit a non-anonymous review with contact details",
+            description=(
+                "Example request payload for a reviewer who is willing to be contacted "
+                "about their report. When 'anonymous' is false, first and last name "
+                "are required. If 'post_review_contact_desired' is true, an email "
+                "address must also be supplied."
+            ),
+            value={
+                "insult_reference_id": "SNAP_9XZ21",
+                "anonymous": False,
+                "review_type": "Joke Reclassification",
+                "rationale_for_review": (
+                    "This insult includes personally identifying information and could "
+                    "lead to targeted harassment. I am requesting that it be removed "
+                    "or restricted, in line with your moderation and safety policies."
+                ),
+                "reporter_first_name": "Jordan",
+                "reporter_last_name": "Brooks",
+                "reporter_email": "jordan.brooks@example.com",
+                "post_review_contact_desired": True,
+            },
+            request_only=True,
+        ),
+        OpenApiExample(
+            "Insult Review Response",
+            summary="Serialized insult review after successful submission",
+            description=(
+                "Example of the data structure returned by the API once an insult "
+                "review has been successfully created and stored."
+            ),
+            value={
+                "id": 42,
+                "insult_reference_id": "SNAP_9XZ21",
+                "anonymous": False,
+                "review_type": "Joke Removal",
+                "rationale_for_review": (
+                    "This insult includes personally identifying information and could "
+                    "lead to targeted harassment. I am requesting that it be removed "
+                    "or restricted, in line with your moderation and safety policies."
+                ),
+                "reporter_first_name": "Jordan",
+                "reporter_last_name": "Brooks",
+                "reporter_email": "jordan.brooks@example.com",
+                "post_review_contact_desired": True,
+            },
+            response_only=True,
+        ),
+    ]
+)
+class InsultReviewSerializer(serializers.ModelSerializer):
+    """Serializer for submitting insult reviews.
+
+    Validates review submissions including insult reference,
+    review type, and rationale.
+    """
+
+    insult_reference_id = serializers.CharField(
+        help_text="Reference ID of the insult being reviewed.",
+        required=True,
+
+    )
+
+    anonymous = serializers.BooleanField(
+        required=False,
+        help_text="Check if you want to remain anonymous",
+
+    )
+
+    review_type = serializers.ChoiceField(
+        choices=InsultReview.REVIEW_TYPE.choices,
+        help_text="Type of review being submitted.",
+        required=True,
+    )
+    rationale_for_review = serializers.CharField(
+        help_text="Detailed rationale for the review. (Minimum 70 characters.)",
+        required=True,
+        min_length=70,
+    )
+    
+    class Meta:
+        model = InsultReview
+        exclude =["date_submitted", "status", "insult","reviewer" ]
+    def validate(self, attrs: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Custom validation with improved error handling.
+        """
+        cleaned_data = super().validate(attrs)
+        logger.debug(f"Type: {type(cleaned_data)} | Value: {cleaned_data}")
+
+        # Normalize and coerce incoming values
+        anonymous = bool(cleaned_data.get("anonymous", False))
+        reporter_first_name = (cleaned_data.get("reporter_first_name") or "").strip()
+        reporter_last_name = (cleaned_data.get("reporter_last_name") or "").strip()
+        post_review_contact_desired = bool(
+            cleaned_data.get("post_review_contact_desired", False)
+        )
+        reporter_email = (cleaned_data.get("reporter_email") or "").strip()
+        insult_obj_or_value = cleaned_data.get("insult_reference_id")
+        review_basis = (cleaned_data.get("rationale_for_review") or "").strip()
+        # Support both ModelChoiceField (object) and pre-populated string values
+        if hasattr(insult_obj_or_value, "reference_id"):
+            ref_id = insult_obj_or_value.reference_id
+        else:
+            ref_id = str(insult_obj_or_value or "").strip()
+
+        if not ref_id or Insult.get_by_reference_id(ref_id) is None:
+            raise serializers.ValidationError(
+                _("Invalid Insult ID"),
+                code="invalid-insult-id",
+            )
+
+        # Ensure downstream code receives the reference-id string
+        cleaned_data["insult_reference_id"] = ref_id
+        cleaned_data["anonymous"] = anonymous
+        cleaned_data["reporter_first_name"] = reporter_first_name
+        cleaned_data["reporter_last_name"] = reporter_last_name
+        # Validate non-anonymous submissions
+        if not anonymous:
+            if not reporter_first_name:
+                raise serializers.ValidationError(
+                    _("First name is required when not submitting anonymously"),
+                    code="first-name-required",
+                )
+            if not reporter_last_name:
+                raise serializers.ValidationError(
+                    _("Last name is required when not submitting anonymously"),
+                    code="last-name-required",
+                )
+
+        # Validate contact preference
+        if post_review_contact_desired and not reporter_email:
+            raise serializers.ValidationError(
+                _("Email address is required"),
+                code="email-required-for-contact",
+            )
+
+        # Validate Min Char Length only when provided
+        if review_basis and len(review_basis) < 70:
+            raise serializers.ValidationError(
+                _(
+                    "Please Ensure The Basis of your review request is 70 characters or more."
+                )
+            )
+        return cleaned_data

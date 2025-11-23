@@ -41,14 +41,11 @@ jobs:
   test:
     needs: setup
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.10', '3.11', '3.12']
     services:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: postgres
+          POSTGRES_USER: root
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_db
         options: >-
@@ -64,7 +61,7 @@ jobs:
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.11
           cache-suffix: '-test'
           install-task: 'true'
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
@@ -76,12 +73,10 @@ jobs:
           task django -- test applications.API 
 
       - name: Upload coverage to Codecov
-        if: matrix.python-version == '3.11'
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
-          fail_ci_if_error: false
 
   security-scan:
     needs: setup

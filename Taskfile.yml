@@ -22,7 +22,8 @@ tasks:
     dir: .
     cmds:
       - echo "Completing Pre-Start Environment Check For Development..."
-      - source .envrc && PYTHONPATH="${PYTHON_PATH}"  python3 .venv/bin/gunicorn -t 1 -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{.CLI_ARGS}} --reload
+      - echo "DJango Configuration:${DJANGO_CONFIGURATION}"
+      - source .envrc && PYTHONPATH="${PYTHON_PATH}"   .venv/bin/python3 -m gunicorn -t 1 -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{or .CLI_ARGS 8000}} --reload
     interactive: false
     silent: false
 
@@ -96,7 +97,7 @@ tasks:
       - task: db_sync
 
       - echo 'Starting server...'
-      - python3 -m gunicorn --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}}
+      - DJANGO_CONFIGURATION=Production .venv/bin/python3 -m gunicorn --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}}
 
   schema-check:
     dir: "{{.TASKFILE_DIR}}"

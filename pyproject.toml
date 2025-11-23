@@ -56,6 +56,7 @@ django-select2 = "^8.4.1"
 argon2-cffi = "^25.1.0"
 pylint-django = "^2.6.1"
 psutil = "^7.0.0"
+prospector = {extras = ["with-everything"], version = "^1.17.3"}
 
 
 [tool.poetry.group.dev.dependencies]
@@ -179,7 +180,7 @@ prefer-stubs = false
 py-version = "3.11"
 recursive = false
 suggestion-mode = true
-unsafe-load-any-extension = false
+unsafe-load-any-extension = true
 
 [tool.pylint.BASIC]
 argument-naming-style = "snake_case"

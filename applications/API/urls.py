@@ -24,7 +24,7 @@ urlpatterns = [
     ),
     # Insults – collection first
     path("insults/new", CreateInsultEndpoint.as_view(), name="create_insult"),
-    path("insults/random", RandomInsultEndpoint.as_view(), name="random_insult"),
+    path("insults/random/", RandomInsultEndpoint.as_view(), name="random_insult"),
     path(
         "insults/category/<str:category_name>/",
         InsultByCategoryEndpoint.as_view(),

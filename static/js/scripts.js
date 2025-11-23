@@ -715,6 +715,7 @@ class HeadingLetterBounce {
     this.animationClass = 'animate__bounce';
     this.animatedClass = 'animate__animated';
     this.originalContent = new Map();
+    this.activeAnimations = new Map(); // Track active animations per heading
     this.init();
   }
 
@@ -743,6 +744,13 @@ class HeadingLetterBounce {
 
       // Add event listeners
       this.addEventListeners(heading);
+
+      // Initialize animation state
+      this.activeAnimations.set(heading, {
+        isAnimating: false,
+        timeouts: [],
+        intervals: []
+      });
     });
   }
 
@@ -768,33 +776,80 @@ class HeadingLetterBounce {
    */
   addEventListeners(heading) {
     heading.addEventListener('mouseenter', () => {
-      this.startBounceSequence(heading);
+      this.startLoopingBounce(heading);
     });
 
     heading.addEventListener('mouseleave', () => {
-      this.resetLetters(heading);
+      this.stopLoopingBounce(heading);
     });
   }
 
   /**
-   * Starts the bounce animation sequence for all letters
+   * Starts the looping bounce animation sequence
    * @param {HTMLElement} heading - The heading element
    */
-  startBounceSequence(heading) {
+  startLoopingBounce(heading) {
+    const animationState = this.activeAnimations.get(heading);
+    if (animationState.isAnimating) return; // Already animating
+
+    animationState.isAnimating = true;
     const letters = heading.querySelectorAll('.letter');
 
-    letters.forEach((letter, index) => {
-      // Stagger the animation with a delay
-      setTimeout(() => {
-        letter.classList.add(this.animatedClass, this.animationClass);
+    const startWave = () => {
+      letters.forEach((letter, index) => {
+        // Stagger the animation with a delay
+        const timeout = setTimeout(() => {
+          if (animationState.isAnimating) {
+            letter.classList.add(this.animatedClass, this.animationClass);
 
-        // Remove animation classes after animation completes
-        setTimeout(() => {
-          letter.classList.remove(this.animatedClass, this.animationClass);
-        }, 1000); // animate.css bounce duration is ~1s
+            // Remove animation classes after animation completes
+            const removeTimeout = setTimeout(() => {
+              if (animationState.isAnimating) {
+                letter.classList.remove(this.animatedClass, this.animationClass);
+              }
+            }, 1000); // animate.css bounce duration is ~1s
 
-      }, index * 100); // 100ms delay between each letter
-    });
+            animationState.timeouts.push(removeTimeout);
+          }
+        }, index * 80); // 80ms delay between each letter (slightly faster for looping)
+
+        animationState.timeouts.push(timeout);
+      });
+    };
+
+    // Start immediately
+    startWave();
+
+    // Then repeat every 2.5 seconds (gives time for all letters to complete + small gap)
+    const interval = setInterval(() => {
+      if (animationState.isAnimating) {
+        startWave();
+      }
+    }, 2500);
+
+    animationState.intervals.push(interval);
+  }
+
+  /**
+   * Stops the looping bounce animation
+   * @param {HTMLElement} heading - The heading element
+   */
+  stopLoopingBounce(heading) {
+    const animationState = this.activeAnimations.get(heading);
+    if (!animationState.isAnimating) return;
+
+    animationState.isAnimating = false;
+
+    // Clear all timeouts
+    animationState.timeouts.forEach(timeout => clearTimeout(timeout));
+    animationState.timeouts = [];
+
+    // Clear all intervals
+    animationState.intervals.forEach(interval => clearInterval(interval));
+    animationState.intervals = [];
+
+    // Reset all letters immediately
+    this.resetLetters(heading);
   }
 
   /**
@@ -812,10 +867,18 @@ class HeadingLetterBounce {
    * Restores original text content of headings
    */
   destroy() {
+    // Stop all animations first
+    this.activeAnimations.forEach((animationState, heading) => {
+      this.stopLoopingBounce(heading);
+    });
+
+    // Restore original content
     this.originalContent.forEach((content, heading) => {
       heading.textContent = content;
     });
+
     this.originalContent.clear();
+    this.activeAnimations.clear();
   }
 }
 

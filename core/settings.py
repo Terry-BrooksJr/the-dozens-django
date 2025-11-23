@@ -17,6 +17,7 @@ import highlight_io
 from configurations import Configuration, values
 from highlight_io.integrations.django import DjangoIntegration
 from loguru import logger
+from ghapi.all import GhApi
 
 
 # --- drf-spectacular postprocessing hook to inject TokenAuth without using APPEND_COMPONENTS ---
@@ -100,7 +101,22 @@ class Base(Configuration):
     SITE_ID = values.PositiveIntegerValue(
         environ=True, environ_prefix=None, environ_name="SITE_ID"
     )
+    GITHUB_API_OWNER = values.Value("terry-brooks-lrn", environ=False)
+    GITHUB_API_REPO = values.Value("the-dozens-django", environ=False)
+    GITHUB_API_TOKEN = values.SecretValue(
+        environ=True,
+        environ_prefix=None,
+        environ_name="GITHUB_ACCESS_TOKEN",
+    )
+    _logger_configured = False
 
+    @classmethod
+    def get_github_api(cls) -> GhApi:
+        return GhApi(
+            owner=cls.GITHUB_API_OWNER,
+            repo=cls.GITHUB_API_REPO,
+            token=cls.GITHUB_API_TOKEN,
+        )
     ROOT_URLCONF = values.Value("core.urls", environ=False)
     WSGI_APPLICATION = values.Value("core.wsgi.application", environ=False)
 
@@ -137,13 +153,13 @@ class Base(Configuration):
     #!SECTION End - Media, Files and Static Assests Storage
 
     # SECTION Start- Logging
-    LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <bold><level>{message}</level></bold>"
+    LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <white>{message}</white>"
     DEFAULT_LOGGER_CONFIG = {
         "format": LOG_FORMAT,
         "diagnose": False,
         "catch": True,
         "backtrace": False,
-        "serialize": True,
+        "serialize": False,
     }
     PRIMARY_LOG_FILE = Path(
         os.path.join(BASE_DIR, "logs", "primary_ops.log")
@@ -160,10 +176,14 @@ class Base(Configuration):
     logger.remove()
     warnings.filterwarnings("default")
     warnings.showwarning = log_warning
+    current_sinks = [PRIMARY_LOG_FILE, CRITICAL_LOG_FILE, DEBUG_LOG_FILE, DEFAULT_HANDLER]
+    for sink in current_sinks:
+        logger.add(sink, **DEFAULT_LOGGER_CONFIG)
+        
+    _default_logger_configured = True
     #!SECTION END - Logging
 
     # Track if logger has been configured to prevent duplicate handlers
-    _logger_configured = False
     DATABASES = values.DictValue(
         {
             "default": {
@@ -323,7 +343,189 @@ class Base(Configuration):
         "SECURITY": [{"TokenAuth": []}],
         "AUTHENTICATION_WHITELIST": [],
         "SERVE_AUTHENTICATION": None,
-        "APPEND_COMPONENTS": {},
+        "APPEND_COMPONENTS": {
+            "schemas": {
+                "ErrorResponse": {
+                    "type": "object",
+                    "properties": {
+                        "detail": {
+                            "type": "string",
+                            "description": "Human-readable error message"
+                        },
+                        "code": {
+                            "type": "string",
+                            "description": "Machine-readable error code"
+                        },
+                        "status_code": {
+                            "type": "integer",
+                            "description": "HTTP status code"
+                        }
+                    },
+                    "required": ["detail", "code", "status_code"]
+                },
+                "ValidationErrorResponse": {
+                    "type": "object",
+                    "properties": {
+                        "detail": {
+                            "type": "string",
+                            "description": "Human-readable error message"
+                        },
+                        "code": {
+                            "type": "string",
+                            "description": "Machine-readable error code"
+                        },
+                        "status_code": {
+                            "type": "integer",
+                            "description": "HTTP status code"
+                        },
+                        "errors": {
+                            "type": "object",
+                            "description": "Field-specific validation errors",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "required": ["detail", "code", "status_code", "errors"]
+                }
+            },
+            "responses": {
+                "401": {
+                    "description": "Authentication credentials required",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/ErrorResponse"},
+                            "examples": {
+                                "authentication_required": {
+                                    "summary": "Missing or invalid authentication credentials",
+                                    "description": "This endpoint requires valid authentication. Provide a valid token in the Authorization header.",
+                                    "value": {
+                                        "detail": "Yo momma so unknown, the server said 'New phone, who this?'",
+                                        "code": "authentication_failed",
+                                        "status_code": 401
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "403": {
+                    "description": "Insufficient permissions to access this resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/ErrorResponse"},
+                            "examples": {
+                                "permission_denied": {
+                                    "summary": "User lacks required permissions",
+                                    "description": "The authenticated user does not have permission to perform this action on the requested resource.",
+                                    "value": {
+                                        "detail": "Yo momma so restricted, even admin don't have clearance.",
+                                        "code": "permission_denied",
+                                        "status_code": 403
+                                    }
+                                },
+                                "owner_only_access": {
+                                    "summary": "Only resource owner can modify",
+                                    "description": "This resource can only be modified by its owner. You can only modify insults that you created.",
+                                    "value": {
+                                        "detail": "You can only modify resources that you own.",
+                                        "code": "permission_denied",
+                                        "status_code": 403
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "The requested resource could not be found",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/ErrorResponse"},
+                            "examples": {
+                                "resource_not_found": {
+                                    "summary": "Requested resource does not exist",
+                                    "description": "The resource with the specified identifier was not found or may have been removed.",
+                                    "value": {
+                                        "detail": "Yo momma so lost, she tried to route to this page with Apple Maps.",
+                                        "code": "not_found",
+                                        "status_code": 404
+                                    }
+                                },
+                                "insult_not_found": {
+                                    "summary": "Insult with specified ID does not exist",
+                                    "description": "The insult with the provided reference_id was not found in our database.",
+                                    "value": {
+                                        "detail": "Insult not found.",
+                                        "code": "not_found",
+                                        "status_code": 404
+                                    }
+                                },
+                                "category_not_found": {
+                                    "summary": "Category with specified key/name does not exist",
+                                    "description": "The category with the provided key or name was not found. Check available categories using the /api/categories endpoint.",
+                                    "value": {
+                                        "detail": "Category not found.",
+                                        "code": "not_found",
+                                        "status_code": 404
+                                    }
+                                },
+                                "no_results_found": {
+                                    "summary": "No resources match the specified filters",
+                                    "description": "No resources were found that match your search criteria. Try adjusting your filters or search parameters.",
+                                    "value": {
+                                        "detail": "No results found matching the provided criteria.",
+                                        "code": "not_found",
+                                        "status_code": 404
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "429": {
+                    "description": "API rate limit exceeded",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/ErrorResponse"},
+                            "examples": {
+                                "rate_limit_exceeded": {
+                                    "summary": "Too many requests in given time period",
+                                    "description": "You have exceeded the API rate limit. Please wait before making additional requests.",
+                                    "value": {
+                                        "detail": "Request was throttled. Expected available in 60 seconds.",
+                                        "code": "throttled",
+                                        "status_code": 429
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "500": {
+                    "description": "Internal server error occurred",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/ErrorResponse"},
+                            "examples": {
+                                "internal_server_error": {
+                                    "summary": "Unexpected server error",
+                                    "description": "An unexpected error occurred on the server. Please try again later or contact support if the problem persists.",
+                                    "value": {
+                                        "detail": "Yo momma broke the server just by showing up.",
+                                        "code": "server_error",
+                                        "status_code": 500
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "POSTPROCESSING_HOOKS": ["core.settings.add_token_auth_scheme"],
         "SWAGGER_UI_SETTINGS": {
             "deepLinking": True,
@@ -458,7 +660,7 @@ class Production(Base):
     MIDDLEWARE = values.ListValue(
         [
             "django_prometheus.middleware.PrometheusBeforeMiddleware",
-            # "django.middleware.cache.UpdateCacheMiddleware",
+            "django.middleware.cache.UpdateCacheMiddleware",
             "django.middleware.security.SecurityMiddleware",
             "whitenoise.middleware.WhiteNoiseMiddleware",
             "django.contrib.sessions.middleware.SessionMiddleware",
@@ -468,16 +670,16 @@ class Production(Base):
             "django.contrib.auth.middleware.AuthenticationMiddleware",
             "django.contrib.messages.middleware.MessageMiddleware",
             "django.middleware.clickjacking.XFrameOptionsMiddleware",
-            # "django.middleware.cache.FetchFromCacheMiddleware",
+            "django.middleware.cache.FetchFromCacheMiddleware",
             "django_prometheus.middleware.PrometheusAfterMiddleware",
         ],
         environ=False,
     )
-    DEBUG = values.BooleanValue(False, environ=False)
+    DEBUG = False # Production should never run in debug mode
     CSRF_TRUSTED_ORIGINS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_ORIGINS"
     )
-    CORS_ALLOWED_ORIGINS = json.loads(os.getenv("ALLOWED_ORIGINS"))
+    CORS_ALLOWED_ORIGINS = list(os.getenv("ALLOWED_ORIGINS")).extend(["http://localhost:3000","https://yo-momma.io"])
     # SECTION Start - Production Database
 
     #!SECTION End - Database and Caching
@@ -510,7 +712,8 @@ class Production(Base):
 
     # SECTION Start - Logging
 
-    if not Base._logger_configured:
+    if Base._logger_configured:
+        logger.remove()
         H = highlight_io.H(
             os.environ["HIGHLIGHT_IO_API_KEY"],
             integrations=[DjangoIntegration()],
@@ -552,7 +755,8 @@ if os.getenv("DJANGO_CONFIGURATION") == "Testing" and not Base._logger_configure
 class Offline(Base):
     INTERNAL_IPS = ["*"]
     ALLOWED_HOSTS = ["*"]
-    DEBUG = values.BooleanValue(True, environ=False)
+    DEBUG = True
+    CORS_ALLOW_ALL_ORIGINS = True
     INSTALLED_APPS = values.ListValue(
         [
             # Django-Installed Apps
@@ -651,7 +855,7 @@ class Development(Base):
     ALLOWED_HOSTS = values.ListValue(["*", "localhost"], environ=False)
     CORS_ALLOW_ALL_ORIGINS = values.BooleanValue(True, environ=False)
     CSRF_TRUSTED_ORIGINS = ["https://*", "http://*"]
-    DEBUG = values.BooleanValue(True, environ=False)
+    DEBUG = True
     INSTALLED_APPS = values.ListValue(
         [
             # Django-Installed Apps

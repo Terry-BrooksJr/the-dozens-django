@@ -3,53 +3,74 @@
 import os
 
 from django.http import HttpRequest
-from django.views.generic import TemplateView
-from django.views.generic.edit import FormView
-from ghapi.all import GhApi
+from rest_framework.generics import CreateAPIView
+from rest_framework.request import Request
 from loguru import logger
 from rest_framework import status
 from rest_framework.response import Response
-
+from django.conf import settings
 from applications.API.forms import InsultReviewForm
+from typing import Dict, Any
+from applications.API.serializers import InsultReviewSerializer
 
 
-class HomePage(TemplateView):
-    template_name = "index.html"
-    extra_context = {"title": "The Dozens"}
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["form"] = InsultReviewForm()
-        return context
+class ReportJokeView(CreateAPIView):
+    """API view to handle joke reporting."""
 
+    serializer_class = InsultReviewSerializer
 
-class GitHubCreateIssueEndPoint(FormView):
-    form_class = InsultReviewForm
+    def format_issue(self, issue_data:Dict[str, Any]) -> Dict[str,str]:
+        """Creates a dictionary containing the title and body for a joke review issue.
+        
+        This function extracts relevant information from a validated form to format an issue for review.
 
-    def post(self, request: HttpRequest, *args, **kwargs) -> Response | None:
-        form = InsultReviewForm(request.POST)
-        if form.is_valid():
+        Args:
+            form: A validated Django form containing joke review data.
+
+        Returns:
+            Dict[str, str]: A dictionary with 'issue_title' and 'issue_body' keys.
+        """
+        if not isinstance(issue_data, dict):
+            raise ValueError("issue_data must be an instance of InsultReviewForm.")
+        issue_body = issue_data["rationale_for_review"]
+        issue_title = f"New Joke Review (Joke Id: {issue_data['insult_reference_id']}) - {issue_data['review_type']}"
+
+        return {"issue_title": issue_title, "issue_body": issue_body}
+
+    def post(self, request: Request, *_args, **_kwargs) -> Response:
+        """Handle POST requests to report a joke for review.
+
+            This view processes a joke report form, creates a GitHub issue for review, and returns an appropriate HTTP response.
+
+        Args:
+            request: The HTTP request object containing POST data.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Response | None: A DRF Response object indicating the result of the operation.
+        """
+        logger.debug("Received request to report joke.")
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
             try:
-                return self.format_issue(form)
+                formatted_issue = self.format_issue(dict(serializer.validated_data))
+                settings.BASE.get_github_api().create_issue(formatted_issue.get("issue_title"), body=formatted_issue.get("issue_body"))
+                return Response(
+                    data={"status": "SUCCESS"},
+                    status=status.HTTP_201_CREATED,
+                )
             except Exception as e:
                 logger.error(
-                    f"Unable to Submit {form.cleaned_data['insult_id']} For Review: {str(e)}"
+                    f"Unable to Submit {serializer.data.get('reference_id','Unknown Reference_ID')} For Review: {str(e)}"
                 )
                 return Response(
-                    data={"status": "FAILED"},
+                    data={"status": f"FAILED - {str(e)}",  "errors": serializer.errors},
                     status=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )
-
-    def format_issue(self, form):
-        issue_body = form.cleaned_data["rationale_for_review"]
-        issue_title = f"New Joke Review (Joke Id: {form.cleaned_data['insult_id']}) - {form.cleaned_data['review_type']}"
-        GITHUB_API = GhApi(
-            owner="terry-brooks-lrn",
-            repo="the-dozens-django",
-            token=os.environ["GITHUB_ACCESS_TOKEN"],
+        logger.warning("Invalid form submission for joke review.")
+        return Response(
+            data={"status": "FAILED", "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
         )
-        GITHUB_API.issue.create(title=issue_title, body=issue_body)
-        logger.success(
-            f"Successfully Submitted Joke: {form.cleaned_data['insult_id']} for review"
-        )
-        return Response(data={"status": "OK"}, status=status.HTTP_201_CREATED)

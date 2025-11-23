@@ -33,8 +33,12 @@ ERROR_TEMPLATES: Dict[int, Dict[str, str]] = {
         "detail": "Yo momma so lost, she tried to route to this page with Apple Maps.",
         "code": "not_found",
     },
+    status.HTTP_400_BAD_REQUEST: {
+        "detail": "Yo momma sent a request so messy neither server nor Jerry Springer would touch it.",
+        "code": "bad_request",
+    },
     status.HTTP_405_METHOD_NOT_ALLOWED: {
-        "detail": "Method not allowed.",
+        "detail": "Just like yo momma at every all-you-can-eat buffet: NOT ALLOWED.",
         "code": "method_not_allowed",
     },
     status.HTTP_429_TOO_MANY_REQUESTS: {
@@ -248,6 +252,27 @@ class StandardErrorResponses:
         ],
     )
 
+    # 400 Bad Request
+    BAD_REQUEST = OpenApiResponse(
+        description="The request was malformed or invalid",
+        examples=[
+            OpenApiExample(
+                name="Bad Request",
+                summary="Malformed or invalid request",
+                description=(
+                    "Your request could not be processed due to invalid syntax "
+                    "or missing required data. "
+                    "Double check your payload and try again."
+                ),
+                value={
+                    **ERROR_TEMPLATES[status.HTTP_400_BAD_REQUEST],
+                    "status_code": status.HTTP_400_BAD_REQUEST,
+                },
+                response_only=True,
+            )
+        ],
+    )
+
     # 429 Rate Limit Exceeded
     RATE_LIMIT_EXCEEDED = OpenApiResponse(
         description="API rate limit exceeded",
@@ -340,6 +365,7 @@ class StandardErrorResponses:
             status.HTTP_401_UNAUTHORIZED: cls.UNAUTHORIZED,
             status.HTTP_403_FORBIDDEN: cls.OWNER_ONLY_ACCESS,
             status.HTTP_404_NOT_FOUND: cls.RESOURCE_NOT_FOUND,
+            status.HTTP_400_BAD_REQUEST: cls.BAD_REQUEST,
             status.HTTP_405_METHOD_NOT_ALLOWED: cls.METHOD_NOT_ALLOWED,
             **cls.get_common_error_responses(),
         }
@@ -350,6 +376,7 @@ class StandardErrorResponses:
         Get error responses for list/search endpoints.
         """
         return {
+            status.HTTP_400_BAD_REQUEST: cls.BAD_REQUEST,
             status.HTTP_404_NOT_FOUND: cls.NO_RESULTS_FOUND,
             status.HTTP_429_TOO_MANY_REQUESTS: cls.RATE_LIMIT_EXCEEDED,
             **cls.get_common_error_responses(),
@@ -396,6 +423,7 @@ YO_MOMMA_OVERRIDES: Dict[int, Dict[str, str]] = {
     status.HTTP_401_UNAUTHORIZED: ERROR_TEMPLATES[status.HTTP_401_UNAUTHORIZED],
     status.HTTP_403_FORBIDDEN: ERROR_TEMPLATES[status.HTTP_403_FORBIDDEN],
     status.HTTP_404_NOT_FOUND: ERROR_TEMPLATES[status.HTTP_404_NOT_FOUND],
+    status.HTTP_400_BAD_REQUEST: ERROR_TEMPLATES[status.HTTP_400_BAD_REQUEST],
     status.HTTP_500_INTERNAL_SERVER_ERROR: ERROR_TEMPLATES[status.HTTP_500_INTERNAL_SERVER_ERROR],
 }
 
