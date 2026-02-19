@@ -1,0 +1,73 @@
+---
+name: 'Setup Python Environment'
+description: 'Setup Python, Poetry, and virtual environment with caching'
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: true
+  cache-suffix:
+    description: 'Additional cache key suffix'
+    required: false
+    default: ''
+  install-task:
+    description: 'Whether to install Task CLI'
+    required: false
+    default: 'false'
+  doppler-token:
+    description: 'Doppler token for environment variables'
+    required: false
+  github-token:
+    description: 'GitHub token for Task installation'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Poetry
+      shell: bash
+      run: curl -sSL https://install.python-poetry.org | python3 -
+
+    - name: Add Poetry to PATH
+      shell: bash
+      run: echo "${HOME}/.local/bin" >> $GITHUB_PATH
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: 'poetry'
+
+    - name: Cache virtual environment
+      uses: actions/cache@v4
+      id: venv-cache
+      with:
+        path: venv
+        key: venv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('poetry.lock') }}${{ inputs.cache-suffix }}
+
+    - name: Create virtual environment
+      if: steps.venv-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        python -m pip install --upgrade pip
+        pip install poetry
+        poetry install
+
+    - name: Install Doppler CLI
+      if: inputs.doppler-token != ''
+      uses: dopplerhq/cli-action@v2
+
+    - name: Fetch environment variables
+      if: inputs.doppler-token != ''
+      uses: dopplerhq/secrets-fetch-action@v1.1.3
+      with:
+        doppler-token: ${{ inputs.doppler-token }}
+        inject-env-vars: true
+
+    - name: Install Task
+      if: inputs.install-task == 'true'
+      uses: arduino/setup-task@v2
+      with:
+        version: 3.x
+        repo-token: ${{ inputs.github-token }}

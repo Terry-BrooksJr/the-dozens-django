@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+
+    volumes:
+      - ../..:/workspaces:cached
+
+    # Overrides default command so things don't shut down after the process ends.
+    command: sleep infinity
+    tty: true
+
+    # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
+    networks:
+      - dozens-ecosystem
+    ports:
+      - '8000:8000'
+
+    environment:
+      - DOPPLER_TOKEN=dp.st.dev.Kc9JBDsA0y48ZXHf5hXsmqKwGMzBwQUOqAM9AzFpcdH
+  redis:
+    image: redis:latest
+    container_name: cache_database_dozens
+    restart: unless-stopped
+    networks:
+      - dozens-ecosystem
+    volumes:
+      - /home/terry-brooks/Github/the-dozens-django/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - /home/terry-brooks/Github/the-dozens-django/users.acl:/usr/local/etc/redis/users.acl:ro
+
+    ports:
+      - '3001:6379'
+    healthcheck:
+      test: ["CMD", "redis-cli", "PING"]
+      interval: 5m
+      timeout: 2m
+      retries: 5
+      start_period: 2m
+      start_interval: 2m
+  db:
+    image: postgres:latest
+    container_name: database_dozens
+    restart: unless-stopped
+    networks:
+      - dozens-ecosystem
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=dozens
+      - POSTGRES_PASSWORD=dozens
+      - POSTGRES_DB=dozens
+    healthcheck:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dozens"]
+      interval: 5m
+      timeout: 2m
+      retries: 5
+      start_period: 2m
+      start_interval: 2m
+volumes:
+  primary_hhd_dozens:
+
+networks:
+  dozens-ecosystem:
+    external: true

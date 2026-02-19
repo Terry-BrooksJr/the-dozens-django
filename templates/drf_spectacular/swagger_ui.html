@@ -1,0 +1,311 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>{{ title|default:"The Dozens API Documentation - Swagger UI" }}</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description"
+              content="Interactive API documentation for The Dozens - Yo Mama Jokes API">
+        <!-- Favicon -->
+        <link rel="icon" type="image/x-icon" href="{% static 'assets/favicon.ico' %}">
+        <!-- Preconnect to external resources -->
+        <link rel="preconnect" href="https://cdn.jsdelivr.net">
+        <!-- Preload critical fonts -->
+        <link rel="preload"
+              href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2"
+              as="font"
+              type="font/woff2"
+              crossorigin>
+        <link rel="preload"
+              href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2"
+              as="font"
+              type="font/woff2"
+              crossorigin>
+        <!-- Swagger UI CSS -->
+        <link rel="stylesheet" href="{{ swagger_ui_css }}">
+        <!-- Custom styling to match The Dozens theme -->
+        <style>
+             /* Font definitions */
+             @font-face {
+                  font-family: YoMamaHeader;
+                  src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2') format('woff2');
+                  font-display: swap;
+             }
+
+             @font-face {
+                  font-family: YoMamaBody;
+                  src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2') format('woff2');
+                  font-display: swap;
+             }
+
+             /* Color scheme matching The Dozens */
+             :root {
+                  --color-primary: #770071;
+                  --color-secondary: #bd00b4;
+                  --color-accent: #beda00;
+                  --color-white: #ffffff;
+                  --color-background: #D7DF0D;
+             }
+
+             /* Base styling */
+             html {
+                  box-sizing: border-box;
+                  overflow-y: scroll;
+                  background: linear-gradient(169deg, rgba(215, 223, 13, 1) 0%, rgba(190, 218, 0, 1) 50%, rgba(119, 0, 113, 1) 100%);
+                  min-height: 100vh;
+             }
+
+             *,
+             *:after,
+             *:before {
+                  box-sizing: inherit;
+             }
+
+             body {
+                  background: transparent;
+                  margin: 0;
+                  font-family: "YoMamaBody", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+                  line-height: 1.6;
+             }
+
+             /* Header styling */
+             .swagger-ui .topbar {
+                  background: var(--color-primary);
+                  border-bottom: 3px solid var(--color-accent);
+             }
+
+             .swagger-ui .topbar .download-url-wrapper {
+                  display: flex;
+                  align-items: center;
+             }
+
+             .swagger-ui .topbar .download-url-wrapper input[type=text] {
+                  min-width: 350px;
+                  margin: 0;
+                  border: 2px solid var(--color-accent);
+                  border-radius: 4px;
+                  outline: none;
+             }
+
+             /* Custom header for The Dozens branding */
+             .dozens-header {
+                  background: var(--color-primary);
+                  color: var(--color-white);
+                  padding: 1rem;
+                  text-align: center;
+                  border-bottom: 3px solid var(--color-accent);
+             }
+
+             .dozens-header h1 {
+                  font-family: 'YoMamaHeader', Arial, sans-serif;
+                  font-size: 2rem;
+                  margin: 0.5rem 0;
+                  text-shadow: -1px -1px 0 var(--color-secondary),
+                       1px -1px 0 var(--color-secondary),
+                       -1px 1px 0 var(--color-secondary),
+                       1px 1px 0 var(--color-secondary);
+             }
+
+             .dozens-header p {
+                  font-family: 'YoMamaBody', Arial, sans-serif;
+                  margin: 0.5rem 0;
+                  opacity: 0.9;
+             }
+
+             .dozens-header .back-link {
+                  display: inline-block;
+                  background: var(--color-accent);
+                  color: var(--color-primary);
+                  padding: 0.5rem 1rem;
+                  border-radius: 0.5rem;
+                  text-decoration: none;
+                  font-family: 'YoMamaHeader', Arial, sans-serif;
+                  font-weight: bold;
+                  margin-top: 0.5rem;
+                  transition: all 0.3s ease;
+             }
+
+             .dozens-header .back-link:hover {
+                  background: var(--color-white);
+                  transform: translateY(-2px);
+             }
+
+             /* Main content styling */
+             .swagger-ui {
+                  max-width: 1200px;
+                  margin: 0 auto;
+                  background: var(--color-white);
+                  border-radius: 8px;
+                  box-shadow: 0 4px 20px rgba(119, 0, 113, 0.3);
+                  margin-top: 2rem;
+                  margin-bottom: 2rem;
+             }
+
+             /* Typography improvements */
+             .swagger-ui h1,
+             .swagger-ui h2,
+             .swagger-ui h3,
+             .swagger-ui h4,
+             .swagger-ui h5,
+             .swagger-ui h6 {
+                  font-family: 'YoMamaHeader', Arial, sans-serif !important;
+                  color: var(--color-primary);
+             }
+
+             .swagger-ui .info .title {
+                  font-family: 'YoMamaHeader', Arial, sans-serif;
+                  color: var(--color-primary);
+             }
+
+             .swagger-ui .scheme-container {
+                  background: var(--color-accent);
+                  border-radius: 4px;
+                  padding: 1rem;
+             }
+
+             /* Button styling */
+             .swagger-ui .btn {
+                  font-family: 'YoMamaBody', Arial, sans-serif;
+                  border-radius: 4px;
+                  font-weight: 600;
+             }
+
+             .swagger-ui .btn.authorize {
+                  background: var(--color-secondary);
+                  border-color: var(--color-secondary);
+             }
+
+             .swagger-ui .btn.authorize:hover {
+                  background: var(--color-primary);
+                  border-color: var(--color-primary);
+             }
+
+             /* Operation styling */
+             .swagger-ui .opblock {
+                  border: 2px solid transparent;
+                  border-radius: 8px;
+                  margin-bottom: 1rem;
+                  transition: all 0.3s ease;
+             }
+
+             .swagger-ui .opblock:hover {
+                  border-color: var(--color-accent);
+                  box-shadow: 0 2px 8px rgba(190, 218, 0, 0.3);
+             }
+
+             .swagger-ui .opblock.opblock-get {
+                  border-left-color: var(--color-secondary);
+             }
+
+             .swagger-ui .opblock.opblock-post {
+                  border-left-color: var(--color-accent);
+             }
+
+             .swagger-ui .opblock.opblock-put {
+                  border-left-color: var(--color-primary);
+             }
+
+             .swagger-ui .opblock.opblock-delete {
+                  border-left-color: #d32f2f;
+             }
+
+             /* Response styling */
+             .swagger-ui .responses-inner h4,
+             .swagger-ui .responses-inner h5 {
+                  font-family: 'YoMamaHeader', Arial, sans-serif;
+                  color: var(--color-primary);
+             }
+
+             /* Mobile responsiveness */
+             @media (max-width: 768px) {
+                  .swagger-ui {
+                       margin: 1rem;
+                       border-radius: 4px;
+                  }
+
+                  .dozens-header h1 {
+                       font-size: 1.5rem;
+                  }
+
+                  .dozens-header .back-link {
+                       padding: 0.4rem 0.8rem;
+                       font-size: 0.9rem;
+                  }
+             }
+
+             /* Loading animation */
+             @keyframes loading {
+                  0% {
+                       opacity: 0.5;
+                  }
+
+                  50% {
+                       opacity: 1;
+                  }
+
+                  100% {
+                       opacity: 0.5;
+                  }
+             }
+
+             .swagger-ui .loading {
+                  animation: loading 1.5s ease-in-out infinite;
+             }
+
+             /* Custom scrollbar */
+             ::-webkit-scrollbar {
+                  width: 8px;
+             }
+
+             ::-webkit-scrollbar-track {
+                  background: #f1f1f1;
+             }
+
+             ::-webkit-scrollbar-thumb {
+                  background: var(--color-primary);
+                  border-radius: 4px;
+             }
+
+             ::-webkit-scrollbar-thumb:hover {
+                  background: var(--color-secondary);
+             }
+        </style>
+    </head>
+    <body>
+        <!-- Custom header -->
+        <div class="dozens-header">
+          <h1>Welcome to the Yo' Momma Joke API!</h1>
+            <h3>Interactive Documentation</h3>
+            <p> This is a RESTful service that provides humorous insults categorized by  types like 'Poor,' 'Stupid,' or ;'Fat,;' with programmatic access to both retrieve and contribute content.</p>    <p>API Consumers can fetch random insults, filter by category or NSFW status, and authenticated users can create, update, and manage their own contributions through comprehensive endpoints. The API includes a complete user management system with authentication, account activation, and password reset functionality. All responses are properly paginated with comprehensive documentation available through Swagger UI, and the service maintains moderation through status flags (active, pending, rejected) to ensure quality control.</p>    
+            <a href="localhost:3000/" class="back-link">← Back to Main Site</a>
+        </div>
+        <!-- Swagger UI container -->
+        <div id="swagger-ui"></div>
+        <!-- Swagger UI JavaScript -->
+        <script src="{{ swagger_ui_bundle }}"></script>
+        <script src="{{ swagger_ui_standalone }}"></script>
+        {% if script_url %}
+            <script src="{{ script_url }}"></script>
+        {% else %}
+            <script>
+                 {% include template_name_js %}
+            </script>
+        {% endif %}
+        <!-- Custom initialization script -->
+        <script>
+             document.addEventListener('DOMContentLoaded', function() {
+                  // Add loading class initially
+                  const swaggerContainer = document.getElementById('swagger-ui');
+                  if (swaggerContainer) {
+                       swaggerContainer.classList.add('loading');
+
+                       // Remove loading class once Swagger UI is initialized
+                       setTimeout(() => {
+                            swaggerContainer.classList.remove('loading');
+                       }, 2000);
+                  }
+             });
+        </script>
+    </body>
+</html>

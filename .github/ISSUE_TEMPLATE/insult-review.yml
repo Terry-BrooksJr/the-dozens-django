@@ -1,0 +1,54 @@
+name: Report API Insult
+description: Request a content review for an API insult (reclassification, recategorization, or removal).
+title: Report API Insult - [INSULT ID]
+labels:
+  - content review request
+assignees:
+  - Terry-BrooksJr
+body:
+  - type: input
+    id: insult_id
+    attributes:
+      label: Insult ID
+      description: Identifier of the content being reviewed (4-digit ID or UUID shown in API responses).
+      placeholder: "0000 or 550e8400-e29b-41d4-a716-446655440000"
+    validations:
+      required: true
+  - type: dropdown
+    id: review_type
+    attributes:
+      label: Type of Review
+      description: Intended purpose for the review.
+      options:
+        - Reclassification
+        - Recategorization
+        - Removal
+        - General Review
+      default: 3
+    validations:
+      required: true
+  - type: checkboxes
+    id: followup
+    attributes:
+      label: Post-Review Follow-up?
+      options:
+        - label: Yes — I want to know the outcome
+        - label: No — I do not need to know the outcome
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Information (Optional)
+      description: Required if selecting follow-up. Provide an email address or GitHub username.
+      placeholder: "@Terry-BrooksJr or api@yo-momma.net"
+  - type: textarea
+    id: basis
+    attributes:
+      label: Basis for Requesting Review
+      description: Provide any information, comments, or context to justify the request.
+    validations:
+      required: true
+  - type: input
+    id: new_category
+    attributes:
+      label: New Category
+      description: If choosing "Recategorization", which category should it be?

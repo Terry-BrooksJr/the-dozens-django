@@ -12,10 +12,16 @@ node_modules
 __pycache__
 db.sqlite3
 media
-
+.venv/
+.task/
 # Backup files #
 *.bak
-
+*.pem
+*.crt
+*.key
+*.p12
+*.pfx
+*.p7b
 # If you are using PyCharm #
 # User-specific stuff
 .idea/**/workspace.xml
@@ -106,7 +112,6 @@ celerybeat-schedule.*
 
 # Environments
 .env
-.venv
 env/
 venv/
 ENV/
@@ -146,3 +151,18 @@ GitHub.sublime-settings
 !.vscode/extensions.json
 .history
 *.log
+.postgresql/ca-certificate.crt
+.postgresql/do_cert.crt
+logs
+
+.task/*
+COCKROACH_DB_SSL.crt
+staticfiles/*       # if you meant to ignore your local staticfiles directory
+AIVIN_SSL_CERT.pem
+users.acl
+
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md
+.ruff_cache
+.task/checksum/freeze

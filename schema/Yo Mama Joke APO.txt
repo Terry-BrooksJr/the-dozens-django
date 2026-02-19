@@ -1,0 +1,1657 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Untitled API Document",
+    "description": "",
+    "version": "1.0.0",
+    "contact": {
+      "name": "TerryBrooksJr",
+      "email": "Terry.Arthur@brooksjr.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://echo.paw.cloud/",
+      "description": ""
+    }
+  ],
+  "paths": {
+    "/`/": {
+      "get": {
+        "summary": "Request",
+        "description": "",
+        "operationId": "25a9990f-5590-4abe-b5c2-5862c0a03d9d",
+        "parameters": [],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/api/insult/": {
+      "get": {
+        "summary": "/api/insult",
+        "description": "",
+        "operationId": "6de66a6b-dc8e-4161-8731-cb66080a76b4",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/api/insults/{id}/": {
+      "get": {
+        "summary": "/api/insults/{id}",
+        "description": "",
+        "operationId": "30b1240b-46b8-4aef-b229-c22955156827",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/api/insults/categories/": {
+      "get": {
+        "summary": "/api/insults/categories",
+        "description": "API GET Endpoint returning all the Insults Submitted by the Authenticated User. Will Return ",
+        "operationId": "f5b0ece9-7afe-4b73-bdcc-fd06237018dc",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "*",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "API GET Endpoint returning all the Insults Submitted by the Authenticated User. Will Return ",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/api/insults/category/{category}/": {
+      "get": {
+        "summary": "/api/insults/category/{category}",
+        "description": "",
+        "operationId": "65f61188-a2fa-4123-baca-634fefa0b88d",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "B",
+              "description": ""
+            }
+          },
+          {
+            "name": "nsfw",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "false",
+              "description": ""
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "category",
+            "in": "path",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "B",
+              "description": "* `P` - poor\n* `F` - fat\n* `U` - ugly\n* `S` - stupid\n* `SNWF` - snowflake\n* `O` - old\n* `DO` - old_daddy\n* `DS` - stupid_daddy\n* `N` - nasty\n* `T` - tall\n* `TEST` - testing\n* `SKN` - skinny\n* `B` - bald\n* `H` - hairy\n* `L` - lazy\n* `SRT` - short"
+            }
+          },
+          {
+            "name": "category",
+            "in": "path",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "B",
+              "description": "* `P` - poor\n* `F` - fat\n* `U` - ugly\n* `S` - stupid\n* `SNWF` - snowflake\n* `O` - old\n* `DO` - old_daddy\n* `DS` - stupid_daddy\n* `N` - nasty\n* `T` - tall\n* `TEST` - testing\n* `SKN` - skinny\n* `B` - bald\n* `H` - hairy\n* `L` - lazy\n* `SRT` - short"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/api/schema/": {
+      "get": {
+        "summary": "/api/schema",
+        "description": "OpenApi3 schema for this API. Format can be selected via content negotiation.\n\n- YAML: application/vnd.oai.openapi\n- JSON: application/vnd.oai.openapi+json",
+        "operationId": "676963a4-9526-48e9-a541-094dbdd655d6",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "json",
+              "description": ""
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "af",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/vnd.oai.openapi",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "OpenApi3 schema for this API. Format can be selected via content negotiation.\n\n- YAML: application/vnd.oai.openapi\n- JSON: application/vnd.oai.openapi+json",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/api/user/insults/": {
+      "post": {
+        "summary": "/api/user/insults/",
+        "description": "",
+        "operationId": "7150614b-5263-4350-9342-f95dc0abfa85",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "category": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "status": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "put": {
+        "summary": "/api/user/insults/",
+        "description": "",
+        "operationId": "9540704a-50cb-44c2-9eb3-5383439102d9",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "category": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "status": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "summary": "/api/user/insults/",
+        "description": "",
+        "operationId": "0283b989-3175-4ea7-b43f-9d53f7a0eeb9",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "*",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/": {
+      "get": {
+        "summary": "/auth/users/",
+        "description": "",
+        "operationId": "4bddcf05-3287-4cd9-8fc4-e60087f0c3ff",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "summary": "/auth/users/",
+        "description": "",
+        "operationId": "50fe202b-0fd3-4e3f-95b5-e6af1b9e7913",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "username": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/{id}/": {
+      "get": {
+        "summary": "/auth/users/{id}/",
+        "description": "",
+        "operationId": "bf7e4148-1fff-412e-9ab6-08eabbde0dcf",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": "A unique integer value identifying this user."
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "put": {
+        "summary": "/auth/users/{id}/",
+        "description": "",
+        "operationId": "a49fa4ff-3ce7-4bf6-a3b5-94d0e9389e20",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": "A unique integer value identifying this user."
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "username": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "patch": {
+        "summary": "/auth/users/{id}/",
+        "description": "",
+        "operationId": "f5a19549-ba15-4eca-b325-4a0b3052d2f1",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": "A unique integer value identifying this user."
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "username": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "summary": "/auth/users/{id}/",
+        "description": "",
+        "operationId": "e40b8830-992f-4794-9f2f-3c0211417d85",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "*",
+              "description": ""
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "0",
+              "description": "A unique integer value identifying this user."
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/activation/": {
+      "post": {
+        "summary": "/auth/users/activation/",
+        "description": "",
+        "operationId": "94d231aa-b226-426f-90d9-01d3eeb9b8d0",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "uid": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "token": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/me/": {
+      "get": {
+        "summary": "/auth/users/me/",
+        "description": "",
+        "operationId": "19d597c3-5aff-41a0-86d6-1bc78eb3f0b7",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "put": {
+        "summary": "/auth/users/me/",
+        "description": "",
+        "operationId": "012b44e7-3c76-43c5-8ae6-20a978e87c7f",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "username": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "patch": {
+        "summary": "/auth/users/me/",
+        "description": "",
+        "operationId": "07048ea1-538f-48c3-ab8f-2523048501ab",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "username": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "summary": "/auth/users/me/",
+        "description": "",
+        "operationId": "0bc04bc8-2771-49ac-8b89-b76ba4b55d2e",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "*",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "text/plain": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/resend_activation/": {
+      "post": {
+        "summary": "/auth/users/resend_activation/",
+        "description": "",
+        "operationId": "7c5274d8-04e3-4b8e-b713-1439add3e987",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/reset_password/": {
+      "post": {
+        "summary": "/auth/users/reset_password/",
+        "description": "",
+        "operationId": "e84da829-72a1-43e0-ac3e-9d471dbb7b12",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/reset_password_confirm/": {
+      "post": {
+        "summary": "/auth/users/reset_password_confirm/",
+        "description": "",
+        "operationId": "27718a9f-a87a-4ec6-96e0-125b89d94455",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "uid": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "token": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "new_password": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/reset_username/": {
+      "post": {
+        "summary": "/auth/users/reset_username/",
+        "description": "",
+        "operationId": "d09d4db7-b42b-4490-9c54-fbb6b124ba11",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/reset_username_confirm/": {
+      "post": {
+        "summary": "/auth/users/reset_username_confirm/",
+        "description": "",
+        "operationId": "c76fe4a4-c799-48b3-bed2-f49b32565373",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "new_username": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/set_password/": {
+      "post": {
+        "summary": "/auth/users/set_password/",
+        "description": "",
+        "operationId": "55214855-1e14-4ed8-826d-5ef944c4f31e",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "current_password": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "new_password": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/auth/users/set_username/": {
+      "post": {
+        "summary": "/auth/users/set_username/",
+        "description": "",
+        "operationId": "3cb6bea2-d17b-4c5e-afc0-b83fd6148010",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "new_username": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "current_password": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/{baseURL}/report-joke/": {
+      "post": {
+        "summary": "/report-joke",
+        "description": "",
+        "operationId": "940af861-27db-4320-a686-93070c0b9784",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "Basic Og==",
+              "description": ""
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "default": "application/json",
+              "description": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "review_type": {
+                    "type": "string",
+                    "example": "RE"
+                  },
+                  "post_review_contact_desired": {
+                    "type": "boolean"
+                  },
+                  "reporter_email": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "insult_id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 0
+                  },
+                  "anonymous": {
+                    "type": "boolean"
+                  },
+                  "date_reviewed": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "date_submitted": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "reporter_first_name": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "rationale_for_review": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "reporter_last_name": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {}
+}

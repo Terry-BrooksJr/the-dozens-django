@@ -1,5 +1,64 @@
 {
     "cSpell.words": [
-        "recaptha"
-    ]
+        "Abrahams",
+        "Amuzie",
+        "Applicatiom",
+        "Assests",
+        "Baraka",
+        "bttn",
+        "Chimezie",
+        "cockroachdb",
+        "corsheaders",
+        "Dollard",
+        "dopplerhq",
+        "dropnav",
+        "Dundes",
+        "Dweck",
+        "Folklife",
+        "graphene",
+        "Graphene",
+        "GRAPHENE",
+        "graphQL",
+        "Ikocha",
+        "Ivey",
+        "Jeffries",
+        "JSTOR",
+        "Lefever",
+        "Mointoring",
+        "Monteria",
+        "Nkocha",
+        "OTHERTINGS",
+        "Percelay",
+        "Phylon",
+        "Pimpdaddy's",
+        "Preformance",
+        "recaptha",
+        "Reconceptualization",
+        "Redoc",
+        "Saloy",
+        "sniffio",
+        "sqlglot",
+        "thedozens",
+        "unanimate",
+        "validatio"
+    ],
+    "eslint.enable": false,
+    "cSpell.ignoreWords": [
+        "kvvlg"
+    ],
+    "doppler.autocomplete.enable": true,
+    "doppler.hover.enable": true,
+    "python.analysis.autoImportCompletions": true,
+    "task": {
+        "path":"/opt/homebrew/bin/task"
+
+    },
+    "python.testing.pytestArgs": [
+        "applications"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+   
+        
+    
 }
