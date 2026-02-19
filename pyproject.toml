@@ -5,6 +5,7 @@ description = "Conversion of the Dozens Roast API from Flask RestX to Django DRF
 authors = ["Terry Brooks"]
 license = "MIT"
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
