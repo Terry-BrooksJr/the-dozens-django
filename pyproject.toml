@@ -36,6 +36,8 @@ django-recaptcha = "^3.0.0"
 
 [tool.poetry.group.test.dependencies]
 pytest-django = "^4.5.2"
+coverage = "^7.0"
+pytest-cov = "^5.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.3.0"
