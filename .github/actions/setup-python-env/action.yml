@@ -52,7 +52,7 @@ runs:
         source venv/bin/activate
         python -m pip install --upgrade pip
         pip install poetry
-        poetry install
+        poetry install --with test,dev
 
     - name: Install Doppler CLI
       if: inputs.doppler-token != ''
