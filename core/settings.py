@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import TextIO
 
 from configurations import Configuration, values
-from loguru import logger
 from ghapi.all import GhApi
+from loguru import logger
 
 
 # --- drf-spectacular postprocessing hook to inject TokenAuth without using APPEND_COMPONENTS ---
@@ -73,9 +73,7 @@ NSFW_WORD_LIST_URI = values.URLValue(
 )
 GLOBAL_NOW = datetime.now(tz=timezone.utc)
 
-BASE_DIR = values.PathValue(
-    Path(__file__).resolve().parent.parent, environ=False
-)
+BASE_DIR = values.PathValue(Path(__file__).resolve().parent.parent, environ=False)
 
 IGNORED_INSULT_CATEGORIES = values.ListValue(["TEST", "X"], environ=False)
 INSULT_REFERENCE_ID_PREFIX_OPTIONS = values.ListValue(
@@ -115,6 +113,7 @@ class Base(Configuration):
             repo=cls.GITHUB_API_REPO,
             token=cls.GITHUB_API_TOKEN,
         )
+
     ROOT_URLCONF = values.Value("core.urls", environ=False)
     WSGI_APPLICATION = values.Value("core.wsgi.application", environ=False)
 
@@ -176,10 +175,15 @@ class Base(Configuration):
     logger.remove()
     warnings.filterwarnings("default")
     warnings.showwarning = log_warning
-    current_sinks = [PRIMARY_LOG_FILE, CRITICAL_LOG_FILE, DEBUG_LOG_FILE, DEFAULT_HANDLER]
+    current_sinks = [
+        PRIMARY_LOG_FILE,
+        CRITICAL_LOG_FILE,
+        DEBUG_LOG_FILE,
+        DEFAULT_HANDLER,
+    ]
     for sink in current_sinks:
         logger.add(sink, **DEFAULT_LOGGER_CONFIG)
-        
+
     _default_logger_configured = True
     #!SECTION END - Logging
 
@@ -224,9 +228,7 @@ class Base(Configuration):
     ]
     STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
     template_dir = values.ListValue(
-        [
-            Path(os.path.join(BASE_DIR, "templates"))
-        ],  # pyrefly: ignore
+        [Path(os.path.join(BASE_DIR, "templates"))],  # pyrefly: ignore
         environ=False,
     )
     STORAGES = {
@@ -350,47 +352,45 @@ class Base(Configuration):
                     "properties": {
                         "detail": {
                             "type": "string",
-                            "description": "Human-readable error message"
+                            "description": "Human-readable error message",
                         },
                         "code": {
                             "type": "string",
-                            "description": "Machine-readable error code"
+                            "description": "Machine-readable error code",
                         },
                         "status_code": {
                             "type": "integer",
-                            "description": "HTTP status code"
-                        }
+                            "description": "HTTP status code",
+                        },
                     },
-                    "required": ["detail", "code", "status_code"]
+                    "required": ["detail", "code", "status_code"],
                 },
                 "ValidationErrorResponse": {
                     "type": "object",
                     "properties": {
                         "detail": {
                             "type": "string",
-                            "description": "Human-readable error message"
+                            "description": "Human-readable error message",
                         },
                         "code": {
                             "type": "string",
-                            "description": "Machine-readable error code"
+                            "description": "Machine-readable error code",
                         },
                         "status_code": {
                             "type": "integer",
-                            "description": "HTTP status code"
+                            "description": "HTTP status code",
                         },
                         "errors": {
                             "type": "object",
                             "description": "Field-specific validation errors",
                             "additionalProperties": {
                                 "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        }
+                                "items": {"type": "string"},
+                            },
+                        },
                     },
-                    "required": ["detail", "code", "status_code", "errors"]
-                }
+                    "required": ["detail", "code", "status_code", "errors"],
+                },
             },
             "responses": {
                 "401": {
@@ -405,12 +405,12 @@ class Base(Configuration):
                                     "value": {
                                         "detail": "Yo momma so unknown, the server said 'New phone, who this?'",
                                         "code": "authentication_failed",
-                                        "status_code": 401
-                                    }
+                                        "status_code": 401,
+                                    },
                                 }
-                            }
+                            },
                         }
-                    }
+                    },
                 },
                 "403": {
                     "description": "Insufficient permissions to access this resource",
@@ -424,8 +424,8 @@ class Base(Configuration):
                                     "value": {
                                         "detail": "Yo momma so restricted, even admin don't have clearance.",
                                         "code": "permission_denied",
-                                        "status_code": 403
-                                    }
+                                        "status_code": 403,
+                                    },
                                 },
                                 "owner_only_access": {
                                     "summary": "Only resource owner can modify",
@@ -433,12 +433,12 @@ class Base(Configuration):
                                     "value": {
                                         "detail": "You can only modify resources that you own.",
                                         "code": "permission_denied",
-                                        "status_code": 403
-                                    }
-                                }
-                            }
+                                        "status_code": 403,
+                                    },
+                                },
+                            },
                         }
-                    }
+                    },
                 },
                 "404": {
                     "description": "The requested resource could not be found",
@@ -452,8 +452,8 @@ class Base(Configuration):
                                     "value": {
                                         "detail": "Yo momma so lost, she tried to route to this page with Apple Maps.",
                                         "code": "not_found",
-                                        "status_code": 404
-                                    }
+                                        "status_code": 404,
+                                    },
                                 },
                                 "insult_not_found": {
                                     "summary": "Insult with specified ID does not exist",
@@ -461,8 +461,8 @@ class Base(Configuration):
                                     "value": {
                                         "detail": "Insult not found.",
                                         "code": "not_found",
-                                        "status_code": 404
-                                    }
+                                        "status_code": 404,
+                                    },
                                 },
                                 "category_not_found": {
                                     "summary": "Category with specified key/name does not exist",
@@ -470,8 +470,8 @@ class Base(Configuration):
                                     "value": {
                                         "detail": "Category not found.",
                                         "code": "not_found",
-                                        "status_code": 404
-                                    }
+                                        "status_code": 404,
+                                    },
                                 },
                                 "no_results_found": {
                                     "summary": "No resources match the specified filters",
@@ -479,12 +479,12 @@ class Base(Configuration):
                                     "value": {
                                         "detail": "No results found matching the provided criteria.",
                                         "code": "not_found",
-                                        "status_code": 404
-                                    }
-                                }
-                            }
+                                        "status_code": 404,
+                                    },
+                                },
+                            },
                         }
-                    }
+                    },
                 },
                 "429": {
                     "description": "API rate limit exceeded",
@@ -498,12 +498,12 @@ class Base(Configuration):
                                     "value": {
                                         "detail": "Request was throttled. Expected available in 60 seconds.",
                                         "code": "throttled",
-                                        "status_code": 429
-                                    }
+                                        "status_code": 429,
+                                    },
                                 }
-                            }
+                            },
                         }
-                    }
+                    },
                 },
                 "500": {
                     "description": "Internal server error occurred",
@@ -517,14 +517,14 @@ class Base(Configuration):
                                     "value": {
                                         "detail": "Yo momma broke the server just by showing up.",
                                         "code": "server_error",
-                                        "status_code": 500
-                                    }
+                                        "status_code": 500,
+                                    },
                                 }
-                            }
+                            },
                         }
-                    }
-                }
-            }
+                    },
+                },
+            },
         },
         "POSTPROCESSING_HOOKS": ["core.settings.add_token_auth_scheme"],
         "SWAGGER_UI_SETTINGS": {
@@ -563,10 +563,23 @@ class Base(Configuration):
     #!SECTION End - GraphQL Settings (Graphene-Django)
 
     # SECTION - Email Settings (Django-Mailer)
-    MAILER_EMAIL_BACKEND = values.Value(
-        "django.core.mail.backends.smtp.EmailBackend", environ=False
-    )
+    MAILER_EMAIL_BACKEND = values.Value("mailer.backend.DbBackend", environ=False)
     EMAIL_BACKEND = MAILER_EMAIL_BACKEND
+    EMAIL_HOST = values.Value(
+        environ=True, environ_prefix=None, environ_name="EMAIL_SERVER"
+    )
+    EMAIL_PORT = values.PositiveIntegerValue(
+        environ=True, environ_prefix=None, environ_name="EMAIL_SSL_PORT"
+    )
+    EMAIL_USE_TLS = False
+    EMAIL_HOST_USER = values.Value(
+        environ=True, environ_prefix=None, environ_name="NOTIFICATION_SENDER_EMAIL"
+    )
+    EMAIL_HOST_PASSWORD = values.SecretValue(
+        environ=True, environ_prefix=None, environ_name="EMAIL_ACCT_PASSWORD"
+    )
+    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
     CACHES = values.DictValue(
         {
             "default": {
@@ -641,6 +654,7 @@ class Production(Base):
             "rest_framework.authtoken",
             "django_filters",
             "corsheaders",
+            "mailer",
             "storages",
             "djoser",
             "graphene_django",
@@ -679,10 +693,7 @@ class Production(Base):
     CSRF_TRUSTED_ORIGINS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_ORIGINS"
     )
-    CORS_ALLOWED_ORIGINS = values.ListValue(
-        ["http://localhost:3000", "https://yo-momma.io"],
-        environ=True, environ_prefix=None, environ_name="ALLOWED_ORIGINS"
-    )
+    CORS_ALLOWED_ORIGINS = json.loads(os.environ.get("ALLOWED_ORIGINS", "[]"))
     # SECTION Start - Production Database
 
     #!SECTION End - Database and Caching
@@ -858,6 +869,7 @@ class Development(Base):
             "storages",
             "djoser",
             "graphene_django",
+            "mailer",
             "crispy_forms",
             "crispy_bootstrap5",
             "django_prometheus",

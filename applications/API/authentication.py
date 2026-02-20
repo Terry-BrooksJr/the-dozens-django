@@ -31,6 +31,7 @@ class FlexibleTokenAuthentication(TokenAuthentication):
 
         # Fallback: treat a bare Authorization value as the token key.
         from rest_framework.authentication import get_authorization_header
+
         auth = get_authorization_header(request).split()
 
         if len(auth) == 1:

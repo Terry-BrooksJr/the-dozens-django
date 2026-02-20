@@ -8,7 +8,9 @@
         <meta name="description"
               content="Interactive API documentation for The Dozens - Yo Mama Jokes API">
         <!-- Favicon -->
-        <link rel="icon" type="image/x-icon" href="{% static 'assets/favicon.ico' %}">
+        <link rel="icon"
+              type="image/x-icon"
+              href="{% static 'assets/favicon.ico' %}">
         <!-- Preconnect to external resources -->
         <link rel="preconnect" href="https://cdn.jsdelivr.net">
         <!-- Preload critical fonts -->
@@ -275,9 +277,14 @@
     <body>
         <!-- Custom header -->
         <div class="dozens-header">
-          <h1>Welcome to the Yo' Momma Joke API!</h1>
+            <h1>Welcome to the Yo' Momma Joke API!</h1>
             <h3>Interactive Documentation</h3>
-            <p> This is a RESTful service that provides humorous insults categorized by  types like 'Poor,' 'Stupid,' or ;'Fat,;' with programmatic access to both retrieve and contribute content.</p>    <p>API Consumers can fetch random insults, filter by category or NSFW status, and authenticated users can create, update, and manage their own contributions through comprehensive endpoints. The API includes a complete user management system with authentication, account activation, and password reset functionality. All responses are properly paginated with comprehensive documentation available through Swagger UI, and the service maintains moderation through status flags (active, pending, rejected) to ensure quality control.</p>    
+            <p>
+                This is a RESTful service that provides humorous insults categorized by  types like 'Poor,' 'Stupid,' or ;'Fat,;' with programmatic access to both retrieve and contribute content.
+            </p>
+            <p>
+                API Consumers can fetch random insults, filter by category or NSFW status, and authenticated users can create, update, and manage their own contributions through comprehensive endpoints. The API includes a complete user management system with authentication, account activation, and password reset functionality. All responses are properly paginated with comprehensive documentation available through Swagger UI, and the service maintains moderation through status flags (active, pending, rejected) to ensure quality control.
+            </p>
             <a href="localhost:3000/" class="back-link">← Back to Main Site</a>
         </div>
         <!-- Swagger UI container -->
@@ -289,7 +296,10 @@
             <script src="{{ script_url }}"></script>
         {% else %}
             <script>
-                 {% include template_name_js %}
+                 {
+                      %
+                      include template_name_js %
+                 }
             </script>
         {% endif %}
         <!-- Custom initialization script -->

@@ -120,11 +120,32 @@ tasks:
     desc: Build Docker Image
     dir: "{{.TASKFILE_DIR}}"
     cmds:
-      - docker buildx build --platform linux/amd64,linux/arm64 --push -f .deploy/Dockerfile -t thedozens:latest .
+      - docker buildx build --platform linux/amd64,linux/arm64 --push -f .deploy/Dockerfile -t terrybrooks/thedozens:latest .
     requires:
       vars:
         - DOPPLER_TOKEN
         - PATH_TO_DB_ROOT_CERT
+
+  build-frontend-image:
+    desc: Build Nginx frontend Docker image
+    dir: "{{.TASKFILE_DIR}}"
+    cmds:
+      - docker build -f .deploy/Dockerfile.nginx -t terrybrooks/thedozens-frontend:latest .
+
+  compose:up:
+    desc: Start all services (API + Nginx frontend) with Docker Compose
+    dir: "{{.TASKFILE_DIR}}"
+    cmds:
+      - docker compose up --build {{.CLI_ARGS}}
+    requires:
+      vars:
+        - DOPPLER_TOKEN
+
+  compose:down:
+    desc: Stop and remove all Docker Compose services
+    dir: "{{.TASKFILE_DIR}}"
+    cmds:
+      - docker compose down {{.CLI_ARGS}}
   lint:lint:
     desc: Run all linting and formatting tools
     dir: .

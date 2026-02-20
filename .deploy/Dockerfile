@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /src
 
 COPY requirements.txt ./
-RUN python -m pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --no-cache-dir --timeout=300 -r requirements.txt
 
 # -----------------------------------------------------------
 FROM python:3.11-slim-bookworm
@@ -42,6 +42,7 @@ COPY --chown=api:api run ./run
 COPY --chown=api:api schema ./schema
 COPY --chown=api:api static ./static
 COPY --chown=api:api templates ./templates
+COPY --chown=api:api .deploy/gunicorn.ini ./.deploy/gunicorn.ini
 
 ENV PYTHONPATH="/src:/src/applications/API:/src/applications/graphQL:/src/applications/frontend:/src/common:/src/run"
 
@@ -51,4 +52,4 @@ USER api
 
 EXPOSE 9090
 
-CMD ["gunicorn", "--workers=2", "--threads=2", "--timeout=120", "--bind=0.0.0.0:9090", "core.wsgi:application"]
+CMD ["gunicorn", "-c", ".deploy/gunicorn.ini"]

@@ -14,9 +14,8 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import EmptyResultSet
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
-from django.db.models import QuerySet  
+from django.db.models import QuerySet
 from django.views.decorators.cache import never_cache
-from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -142,8 +141,8 @@ class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIV
 
     API endpoint for retrieving insults filtered by category.
 
-    - Supports category keys (e.g., `P`) and names (e.g., `Poor`) in a case‑insensitive manner  
-    - Authenticated users see **their own insults** plus all active insults  
+    - Supports category keys (e.g., `P`) and names (e.g., `Poor`) in a case‑insensitive manner
+    - Authenticated users see **their own insults** plus all active insults
     - Unauthenticated users see **only active insults**
 
     ## Endpoint
@@ -152,18 +151,18 @@ class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIV
 
     ## Query Parameters
 
-    - `nsfw` *(bool, optional)*: Filter explicit content.  
-      - `true` → only NSFW insults  
-      - `false` → only SFW insults  
-      - omitted → both are returned  
-    - `page` *(int, optional)*: Page number for pagination  
+    - `nsfw` *(bool, optional)*: Filter explicit content.
+      - `true` → only NSFW insults
+      - `false` → only SFW insults
+      - omitted → both are returned
+    - `page` *(int, optional)*: Page number for pagination
     - `page_size` *(int, optional)*: Number of items per page
     """
 
     lookup_field = "category"
     serializer_class = OptimizedInsultSerializer
     primary_model = Insult
-    filter_backends = [DjangoFilterBackend] #pyrefly: ignore
+    filter_backends = [DjangoFilterBackend]  # pyrefly: ignore
     cache_models = [InsultCategory]
     bulk_select_related = ["added_by", "category"]
     bulk_prefetch_related = ["reports"]
@@ -175,12 +174,12 @@ class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIV
         "users:*:insults*",
     ]
 
-    def get_queryset(self) ->   Optional[QuerySet]: #pyrefly: ignore
+    def get_queryset(self) -> Optional[QuerySet]:  # pyrefly: ignore
         """
         Build the base queryset for this view.
 
-        - If `category_name` is provided in the URL, returns the category‑filtered queryset  
-        - If the user is authenticated, includes their insults plus all active insults  
+        - If `category_name` is provided in the URL, returns the category‑filtered queryset
+        - If the user is authenticated, includes their insults plus all active insults
         - If unauthenticated, returns only active insults
 
         **Returns**
@@ -204,7 +203,7 @@ class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIV
         """
         Helper to build the category‑filtered queryset.
 
-        - Includes the requesting user's insults for the category (if authenticated)  
+        - Includes the requesting user's insults for the category (if authenticated)
         - Always merges in active public insults for the same category
 
         **Args**
@@ -399,19 +398,19 @@ class InsultDetailsEndpoint(
 
     API endpoint for CRUD operations on a single insult.
 
-    - All users can read insults  
+    - All users can read insults
     - Only the owner can update or delete their insult
 
     ## Endpoints
 
-    - `GET /api/insult/<reference_id>`: Retrieve insult  
-    - `PUT /api/insult/<reference_id>`: Update insult *(owner only)*  
-    - `PATCH /api/insult/<reference_id>`: Partially update insult *(owner only)*  
-    - `DELETE /api/insult/<reference_id>`: Delete insult *(owner only)*  
+    - `GET /api/insult/<reference_id>`: Retrieve insult
+    - `PUT /api/insult/<reference_id>`: Update insult *(owner only)*
+    - `PATCH /api/insult/<reference_id>`: Partially update insult *(owner only)*
+    - `DELETE /api/insult/<reference_id>`: Delete insult *(owner only)*
 
     ## Authentication
 
-    - Token authentication required for **PUT**, **PATCH**, and **DELETE**  
+    - Token authentication required for **PUT**, **PATCH**, and **DELETE**
     - Optional for **GET**
     """
 
@@ -458,6 +457,7 @@ class InsultDetailsEndpoint(
         insult = Insult.get_by_reference_id(reference_id)
         serializer = self.get_serializer(insult)
         return Response(serializer.data)
+
 
 @extend_schema_view(
     get=extend_schema(
@@ -649,7 +649,7 @@ class RandomInsultEndpoint(GenericAPIView):
 
     API endpoint for retrieving a single random insult.
 
-    - By default returns from the active public insults  
+    - By default returns from the active public insults
     - Can be filtered by NSFW status and category
 
     ## Endpoint
@@ -658,7 +658,7 @@ class RandomInsultEndpoint(GenericAPIView):
 
     ## Query Parameters
 
-    - `nsfw` *(bool, optional)*: Filter explicit content (`true` / `false`)  
+    - `nsfw` *(bool, optional)*: Filter explicit content (`true` / `false`)
     - `category` *(str, optional)*: Category key or name to filter by
     """
 
@@ -773,8 +773,8 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 
     API endpoint for listing insult categories organized by theme.
 
-    - Returns all public insult categories, grouped under their themes  
-    - Includes metadata such as insult counts and descriptions  
+    - Returns all public insult categories, grouped under their themes
+    - Includes metadata such as insult counts and descriptions
 
     ## Endpoint
 
@@ -782,8 +782,8 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 
     ## Features
 
-    - No authentication required  
-    - Cached responses for performance  
+    - No authentication required
+    - Cached responses for performance
     - Case‑insensitive category matching support
     """
 
@@ -868,7 +868,7 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
                             "nsfw": False,
                             "status": "Pending",
                             "added_by": "DevJoker",
-                            "added_on": "2 minutes ago"
+                            "added_on": "2 minutes ago",
                         },
                     )
                 ],
@@ -880,21 +880,21 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 )
 class CreateInsultEndpoint(CreateAPIView):
     """
-    # Create New Insult (Must Be Registered User)
-    
-    Creates new insults owned by authenticated users. New insults
-    default to 'Pending' status pending approval.
+      # Create New Insult (Must Be Registered User)
 
-   ## Endpoints:
-        POST /api/insults/new
+      Creates new insults owned by authenticated users. New insults
+      default to 'Pending' status pending approval.
 
-   ## Authentication:
-        Token authentication required
+     ## Endpoints:
+          POST /api/insults/new
 
-  ##  Request Body:
-        content (str): Insult content (minimum 60 characters, UTF-8)
-        nsfw (bool): Explicit content flag
-        category (str): Category key or name
+     ## Authentication:
+          Token authentication required
+
+    ##  Request Body:
+          content (str): Insult content (minimum 60 characters, UTF-8)
+          nsfw (bool): Explicit content flag
+          category (str): Category key or name
     """
 
     serializer_class = CreateInsultSerializer
