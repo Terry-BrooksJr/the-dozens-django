@@ -664,6 +664,7 @@ class RandomInsultEndpoint(GenericAPIView):
 
     serializer_class = OptimizedInsultSerializer
     permission_classes = [AllowAny]
+    throttle_classes = []
 
     @method_decorator(never_cache)
     @extend_schema(

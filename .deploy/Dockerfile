@@ -42,7 +42,7 @@ COPY --chown=api:api run ./run
 COPY --chown=api:api schema ./schema
 COPY --chown=api:api static ./static
 COPY --chown=api:api templates ./templates
-COPY --chown=api:api .deploy/gunicorn.ini ./.deploy/gunicorn.ini
+COPY --chown=api:api .deploy/gunicorn.conf.py  ./.deploy/gunicorn.conf.py 
 
 ENV PYTHONPATH="/src:/src/applications/API:/src/applications/graphQL:/src/applications/frontend:/src/common:/src/run"
 
@@ -52,4 +52,4 @@ USER api
 
 EXPOSE 9090
 
-CMD ["gunicorn", "-c", ".deploy/gunicorn.ini"]
+CMD ["gunicorn", "-c", ".deploy/gunicorn.conf.py", "core.wsgi:application"]

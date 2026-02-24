@@ -16,6 +16,7 @@ from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.mail import mail_admins
 from django.db import IntegrityError, models
 from django.db.models import F
 from django.db.models.signals import post_delete, post_save
@@ -229,6 +230,9 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         This method creates a unique reference ID using a random prefix and a base64-encoded insult_id pk.
         Since the insult_id is unique, the reference ID will be unique by design.
 
+        After stamping the ID, notifies admins by email when the insult is in
+        PENDING status so they can review it promptly.
+
         Returns:
             str: The generated reference ID
         """
@@ -239,7 +243,53 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             self.reference_id = f"{prefix}_{encode_base64(int(self.insult_id))}"
             # Only update the reference_id field
             self.save(update_fields=["reference_id"])
+            if self.status == Insult.STATUS.PENDING:
+                self._notify_admins_pending()
             return self.reference_id
+
+    def _notify_admins_pending(self):
+        """
+        Emails settings.ADMINS that this new insult requires approval.
+
+        Called exclusively from set_reference_id() so self.reference_id is
+        always populated before the email is composed.
+
+        Logs:
+            Info:  Confirmation that the notification was dispatched.
+            Error: Any exception raised during send, without re-raising so that
+                   a mail failure never breaks the insult-creation flow.
+        """
+        try:
+            submitter = self.added_by
+            submitter_name = submitter.get_full_name() or submitter.username
+
+            subject = f"New Insult Pending Approval [{self.reference_id}]"
+            message = (
+                f"A new insult has been submitted and is awaiting your approval.\n\n"
+                f"Details\n"
+                f"-------\n"
+                f"Reference ID : {self.reference_id}\n"
+                f"Submitted By : {submitter_name} (@{submitter.username})\n"
+                f"Category     : {self.category}\n"
+                f"NSFW         : {'Yes' if self.nsfw else 'No'}\n"
+                f"Submitted On : {self.added_on}\n\n"
+                f"Content\n"
+                f"-------\n"
+                f"{self.content}\n\n"
+                f"Admin Review\n"
+                f"------------\n"
+                f"/admin/API/insult/{self.insult_id}/change/\n"
+            )
+
+            mail_admins(subject, message, fail_silently=False)
+            logger.info(
+                f"Admin notification sent for pending insult {self.reference_id}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to send admin notification for pending insult "
+                f"{self.reference_id!r}: {e}"
+            )
 
     def __str__(self) -> str:
         return f"{self.reference_id} - ({self.category}) - NSFW: {self.nsfw}"
@@ -737,3 +787,5 @@ def decrement_report_count(sender, instance, **kwargs):
         Insult.objects.filter(pk=instance.insult_id).update(
             reports_count=F("reports_count") - 1
         )
+
+

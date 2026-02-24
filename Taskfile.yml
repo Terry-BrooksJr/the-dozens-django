@@ -38,9 +38,9 @@ tasks:
   freeze:
     desc: Pin current dependencies
     cmds:
-      - -- poetry sync
-      - -- poetry export --without dev,test --without-hashes --without-urls > ./requirements/base.txt
-      - -- poetry export  --without-hashes --without-urls > ./requirements/dev.txt
+      - poetry sync
+      - poetry export --without dev,test --without-hashes --without-urls > ./requirements/base.txt
+      - poetry export  --without-hashes --without-urls > ./requirements/dev.txt
     generates:
       - ./requirements/dev.txt
       - ./requirements/base.txt

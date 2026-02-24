@@ -160,7 +160,7 @@ class GenericDataCacheManager(BaseCacheManager):
         db_start_time = time.time()
 
         try:
-            with metrics.time_database_query(self.cache_prefix, "success"):
+            with metrics.time_database_query(self.cache_prefix):
                 built_data = self.build_data_from_db()
                 data = built_data.get(cache_key)
 

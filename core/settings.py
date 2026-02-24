@@ -5,14 +5,17 @@ Django settings for thedozens project.
 
 """
 
+import contextlib
 import json
 import os
 import sys
+import threading
 import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TextIO
 
+import ldobserve.observe as observe
 from configurations import Configuration, values
 from ghapi.all import GhApi
 from loguru import logger
@@ -20,7 +23,21 @@ from loguru import logger
 
 # --- drf-spectacular postprocessing hook to inject TokenAuth without using APPEND_COMPONENTS ---
 def add_token_auth_scheme(result, generator, request, public):
-    try:
+    """
+    Add a TokenAuth security scheme to the generated OpenAPI schema. This hook ensures that token-based authentication is documented without requiring direct settings overrides.
+
+    The function safely mutates the schema result to include an apiKey-based authorization header definition. It is designed to be resilient to schema generation errors and will silently fail if modifications cannot be applied.
+
+    Args:
+        result: The current OpenAPI schema representation being built or post-processed.
+        generator: The schema generator instance invoking this hook.
+        request: The HTTP request associated with schema generation, if available.
+        public: A boolean indicating whether the schema is being generated for public consumption.
+
+    Returns:
+        The OpenAPI schema result with the TokenAuth security scheme injected when possible.
+    """
+    with contextlib.suppress(Exception):
         components = result.setdefault("components", {})
         security_schemes = components.setdefault("securitySchemes", {})
         security_schemes["TokenAuth"] = {
@@ -32,13 +49,21 @@ def add_token_auth_scheme(result, generator, request, public):
                 "`Authorization: Token <your_token>`"
             ),
         }
-    except Exception:  # keep schema generation resilient
-        pass
     return result
 
 
-# --- Safety: normalize APPEND_COMPONENTS in case an env var or override sets it as a string ---
 def _normalize_append_components(settings_dict: dict) -> dict:
+    """
+    Normalize the APPEND_COMPONENTS value in a settings dictionary. This function ensures the configuration is always stored as a dictionary for consistent downstream usage.
+
+    The function converts JSON string representations to dictionaries and replaces invalid or missing values with an empty dictionary. It returns the updated settings dictionary so that callers can work with a predictable APPEND_COMPONENTS structure.
+
+    Args:
+        settings_dict: A settings mapping that may contain an APPEND_COMPONENTS entry in various formats.
+
+    Returns:
+        The same settings dictionary with APPEND_COMPONENTS normalized to a dictionary.
+    """
     ac = settings_dict.get("APPEND_COMPONENTS")
     if isinstance(ac, str):
         try:
@@ -61,11 +86,107 @@ def log_warning(
     file: TextIO | None = None,
     line: str | None = None,
 ) -> None:
+    """
+    Format and route Python warning messages through the application's structured logger. This helper replaces the default warnings.showwarning to provide consistent, contextual log output.
+
+    The function builds a single log line containing file, line number, warning category, message, and the original source line when available. It then emits the warning using the configured loguru logger at the warning level.
+
+    Args:
+        message: The warning message text to be logged.
+        category: The class of the warning being emitted.
+        filename: The name of the file where the warning originated.
+        lineno: The line number in the source file where the warning was triggered.
+        file: Optional file-like stream associated with the warning output, if any.
+        line: Optional source code line that caused the warning, if available.
+
+    Returns:
+        None. The function performs logging as a side effect.
+    """
     file_info = f" [{getattr(file, 'name', '')}]" if file else ""
     line_info = f" | {line.strip()}" if line else ""
     logger.warning(
         f"{filename}:{lineno}{file_info} - {category.__name__}: {message}{line_info}"
     )
+
+
+# --- LaunchDarkly Observability: Loguru sink ---
+# OpenTelemetry attributes must be primitives / sequences / mappings of primitives.
+# Django sometimes attaches a full WSGIRequest object to log records (e.g., key "request").
+# We strip/flatten that to safe values before sending to LaunchDarkly Observability.
+
+
+def _otel_safe_value(value, *, _depth: int = 0):
+    if value is None or isinstance(value, (bool, int, float, str, bytes)):
+        return value
+
+    # Avoid deep / huge structures
+    if _depth >= 3:
+        return str(value)
+
+    if isinstance(value, (list, tuple, set)):
+        return [_otel_safe_value(v, _depth=_depth + 1) for v in list(value)[:50]]
+
+    if isinstance(value, dict):
+        out = {}
+        for k, v in list(value.items())[:50]:
+            out[str(k)] = _otel_safe_value(v, _depth=_depth + 1)
+        return out
+
+    # Fallback: stringify unknown objects (e.g. WSGIRequest)
+    return str(value)
+
+
+def ld_loguru_sink(message):
+    """Loguru sink that forwards logs to LaunchDarkly Observability safely."""
+    record = message.record
+
+    # Map Loguru level names to standard logging level numbers.
+    level_name = record["level"].name
+    level_map = {
+        "TRACE": 5,
+        "DEBUG": 10,
+        "INFO": 20,
+        "SUCCESS": 20,
+        "WARNING": 30,
+        "ERROR": 40,
+        "CRITICAL": 50,
+    }
+    level_no = level_map.get(level_name, 20)
+
+    attrs = {
+        "logger.name": record.get("name"),
+        "code.filepath": record.get("file").path if record.get("file") else None,
+        "code.function": record.get("function"),
+        "code.lineno": record.get("line"),
+    }
+
+    # Include Loguru extras, but ensure they are OTEL-safe.
+    extra = dict(record.get("extra") or {})
+
+    # Special-case Django request objects: flatten the useful bits.
+    req = extra.pop("request", None)
+    if req is not None:
+        attrs["http.target"] = getattr(req, "path", None)
+        attrs["http.method"] = getattr(req, "method", None)
+        attrs["http.host"] = getattr(
+            getattr(req, "get_host", None), "__call__", lambda: None
+        )()
+
+    for k, v in extra.items():
+        attrs[str(k)] = _otel_safe_value(v)
+
+    # Attach exception info if present
+    exc = record.get("exception")
+    if exc:
+        attrs["exception.type"] = _otel_safe_value(getattr(exc, "type", None))
+        attrs["exception.value"] = _otel_safe_value(getattr(exc, "value", None))
+        attrs["exception.traceback"] = _otel_safe_value(getattr(exc, "traceback", None))
+
+    # Remove nulls to keep payload clean
+    attrs = {k: v for k, v in attrs.items() if v is not None}
+
+    # Send to LaunchDarkly Observability
+    observe.record_log(str(record.get("message")), level_no, attributes=attrs)
 
 
 NSFW_WORD_LIST_URI = values.URLValue(
@@ -104,7 +225,22 @@ class Base(Configuration):
         environ_prefix=None,
         environ_name="GITHUB_ACCESS_TOKEN",
     )
-    _logger_configured = False
+    logger_configured = False
+    logger_lock = threading.Lock()
+
+    @classmethod
+    def configure_base_logger(cls) -> bool:
+        """Configure the base logger exactly once per process.
+
+        Returns:
+            True if configuration should proceed (first caller).
+            False if already configured.
+        """
+        with cls.logger_lock:
+            if cls.logger_configured:
+                return False
+            cls.logger_configured = True
+            return True
 
     @classmethod
     def get_github_api(cls) -> GhApi:
@@ -123,6 +259,14 @@ class Base(Configuration):
     VIEW_CACHE_TTL = values.PositiveIntegerValue(
         environ=True, environ_prefix=None, environ_name="CACHE_TTL"
     )
+
+    LAUNCHDARKLY_SDK_KEY = os.getenv("LAUNCHDARKLY_SDK_KEY")
+    LAUNCHDARKLY_ENABLED = os.getenv("LAUNCHDARKLY_ENABLED").lower() == "true"
+    LAUNCHDARKLY_OBSERVABILITY_ENABLED = os.getenv(
+        "LAUNCHDARKLY_OBSERVABILITY_ENABLED", ""
+    ).lower() in ("1", "true", "yes", "on")
+    LAUNCHDARKLY_SERVICE_NAME = os.getenv("LAUNCHDARKLY_SERVICE_NAME")
+
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
     SESSION_CACHE_ALIAS = "default"
     TIME_ZONE = values.Value("America/Chicago", environ=False)
@@ -169,22 +313,29 @@ class Base(Configuration):
     DEBUG_LOG_FILE = Path(
         os.path.join(BASE_DIR, "logs", "utility.log")
     )  # pyrefly: ignore
+    DEBUG_PROPAGATE_EXCEPTIONS = True
     DEFAULT_HANDLER = sys.stdout
-    for _p in (PRIMARY_LOG_FILE, CRITICAL_LOG_FILE, DEBUG_LOG_FILE):
-        _p.parent.mkdir(parents=True, exist_ok=True)
-    logger.remove()
-    warnings.filterwarnings("default")
-    warnings.showwarning = log_warning
-    current_sinks = [
-        PRIMARY_LOG_FILE,
-        CRITICAL_LOG_FILE,
-        DEBUG_LOG_FILE,
-        DEFAULT_HANDLER,
-    ]
-    for sink in current_sinks:
-        logger.add(sink, **DEFAULT_LOGGER_CONFIG)
+    with logger_lock:
+        if not logger_configured:
+            for _p in (PRIMARY_LOG_FILE, CRITICAL_LOG_FILE, DEBUG_LOG_FILE):
+                _p.parent.mkdir(parents=True, exist_ok=True)
 
-    _default_logger_configured = True
+            logger.remove()
+            warnings.filterwarnings("default")
+            warnings.showwarning = log_warning
+
+            current_sinks = [
+                PRIMARY_LOG_FILE,
+                CRITICAL_LOG_FILE,
+                DEBUG_LOG_FILE,
+                DEFAULT_HANDLER,
+            ]
+            if LAUNCHDARKLY_OBSERVABILITY_ENABLED:
+                current_sinks.append(ld_loguru_sink)
+            for sink in current_sinks:
+                logger.add(sink, **DEFAULT_LOGGER_CONFIG)
+
+            _logger_configured = True
     #!SECTION END - Logging
 
     # Track if logger has been configured to prevent duplicate handlers
@@ -591,9 +742,7 @@ class Base(Configuration):
                     "SOCKET_TIMEOUT": 0.5,
                     "RETRY_ON_TIMEOUT": False,
                     "PARSER_CLASS": "redis.connection._HiredisParser",
-                    "CONNECTION_POOL_KWARGS": {
-                        "max_connections": 10  # Example: Limit the pool to 10 connections
-                    },
+                    "CONNECTION_POOL_KWARGS": {"max_connections": 10},
                 },
                 "TIMEOUT": 300,
             },
@@ -641,7 +790,9 @@ class Production(Base):
     )
     INSTALLED_APPS = values.ListValue(
         [
-            # Django-Installed Apps
+            # 0) Instrumentation that wants to wrap others early
+            "django_prometheus",
+            # 1) Django built-ins
             "django.contrib.admin",
             "django.contrib.auth",
             "django.contrib.contenttypes",
@@ -649,24 +800,29 @@ class Production(Base):
             "django.contrib.sites",
             "django.contrib.messages",
             "django.contrib.staticfiles",
-            # Third-Party Apps
+            # 2) DRF UI skin — must come BEFORE rest_framework so Django's template
+            #    loader finds rest_wind's rest_framework/base.html first
+            "rest_wind",
+            # 3) Core framework add-ons (foundation pieces)
             "rest_framework",
             "rest_framework.authtoken",
             "django_filters",
+            # 4) Third-party apps (features)
             "corsheaders",
-            "mailer",
             "storages",
+            "mailer",
             "djoser",
             "graphene_django",
             "crispy_forms",
             "crispy_bootstrap5",
-            "django_prometheus",
-            "drf_spectacular",
             "django_select2",
-            # Project Apps
+            # 5) API schema tooling (after DRF)
+            "drf_spectacular",
+            "drf_spectacular_sidecar",
+            # 6) Your project apps (stuff you own)
             "applications.API",
             "applications.graphQL",
-            "drf_spectacular_sidecar",
+            "applications.ld_integration",
         ],
         environ=False,
     )
@@ -674,11 +830,11 @@ class Production(Base):
     MIDDLEWARE = values.ListValue(
         [
             "django_prometheus.middleware.PrometheusBeforeMiddleware",
+            "corsheaders.middleware.CorsMiddleware",
             "django.middleware.cache.UpdateCacheMiddleware",
             "django.middleware.security.SecurityMiddleware",
             "whitenoise.middleware.WhiteNoiseMiddleware",
             "django.contrib.sessions.middleware.SessionMiddleware",
-            "corsheaders.middleware.CorsMiddleware",
             "django.middleware.common.CommonMiddleware",
             "django.middleware.csrf.CsrfViewMiddleware",
             "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -686,6 +842,7 @@ class Production(Base):
             "django.middleware.clickjacking.XFrameOptionsMiddleware",
             "django.middleware.cache.FetchFromCacheMiddleware",
             "django_prometheus.middleware.PrometheusAfterMiddleware",
+            "applications.ld_integration.middleware.LaunchDarklyContextMiddleware",
         ],
         environ=False,
     )
@@ -693,7 +850,8 @@ class Production(Base):
     CSRF_TRUSTED_ORIGINS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_ORIGINS"
     )
-    CORS_ALLOWED_ORIGINS = json.loads(os.environ.get("ALLOWED_ORIGINS", "[]"))
+
+    CORS_ALLOW_ALL_ORIGINS = True
     # SECTION Start - Production Database
 
     #!SECTION End - Database and Caching
@@ -725,25 +883,10 @@ class Production(Base):
     #!SECTION End - DRF Settings
 
     # SECTION Start - Logging
+    LAUNCHDARKLY_SERVICE_VERSION = os.getenv("LAUNCHDARKLY_SERVICE_VERSION")
 
     if Base._logger_configured:
         logger.remove()
-        H = highlight_io.H(
-            os.environ["HIGHLIGHT_IO_API_KEY"],
-            integrations=[DjangoIntegration()],
-            instrument_logging=False,
-            service_name="my-app",
-            service_version="git-sha",
-            environment="production",
-        )
-
-        logger.add(
-            sink=H.logging_handler, level="INFO", **Base.DEFAULT_LOGGER_CONFIG
-        )  # pyrefly: ignore
-        logger.add(
-            sink=Base.PRIMARY_LOG_FILE, **Base.DEFAULT_LOGGER_CONFIG, level="INFO"
-        )  # pyrefly: ignore
-        Base._logger_configured = True
 
 
 class Offline(Base):
@@ -753,7 +896,9 @@ class Offline(Base):
     CORS_ALLOW_ALL_ORIGINS = True
     INSTALLED_APPS = values.ListValue(
         [
-            # Django-Installed Apps
+            # 0) Instrumentation that wants to wrap others early
+            "django_prometheus",
+            # 1) Django built-ins
             "django.contrib.admin",
             "django.contrib.auth",
             "django.contrib.contenttypes",
@@ -761,24 +906,31 @@ class Offline(Base):
             "django.contrib.sites",
             "django.contrib.messages",
             "django.contrib.staticfiles",
-            # Third-Party Apps
+            # 2) DRF UI skin — must come BEFORE rest_framework so Django's template
+            #    loader finds rest_wind's rest_framework/base.html first
+            "rest_wind",
+            # 3) Core framework add-ons (foundation pieces)
             "rest_framework",
             "rest_framework.authtoken",
             "django_filters",
+            # 4) Third-party apps (features)
             "corsheaders",
-            "debug_toolbar",
             "storages",
+            "mailer",
             "djoser",
             "graphene_django",
             "crispy_forms",
             "crispy_bootstrap5",
-            "django_prometheus",
-            "drf_spectacular",
             "django_select2",
-            # Project Apps
+            # 5) API schema tooling (after DRF)
+            "drf_spectacular",
+            "drf_spectacular_sidecar",
+            # 6) Dev-only tooling
+            "debug_toolbar",
+            # 7) Your project apps (stuff you own)
             "applications.API",
             "applications.graphQL",
-            "drf_spectacular_sidecar",
+            "applications.ld_integration",
         ],
         environ=False,
     )
@@ -786,11 +938,11 @@ class Offline(Base):
     MIDDLEWARE = values.ListValue(
         [
             "django_prometheus.middleware.PrometheusBeforeMiddleware",
+            "corsheaders.middleware.CorsMiddleware",
             "django.middleware.cache.UpdateCacheMiddleware",
             "django.middleware.security.SecurityMiddleware",
             "whitenoise.middleware.WhiteNoiseMiddleware",
             "django.contrib.sessions.middleware.SessionMiddleware",
-            "corsheaders.middleware.CorsMiddleware",
             "django.middleware.common.CommonMiddleware",
             "debug_toolbar.middleware.DebugToolbarMiddleware",
             "django.middleware.csrf.CsrfViewMiddleware",
@@ -852,7 +1004,9 @@ class Development(Base):
     DEBUG = True
     INSTALLED_APPS = values.ListValue(
         [
-            # Django-Installed Apps
+            # 0) Instrumentation that wants to wrap others early
+            "django_prometheus",
+            # 1) Django built-ins
             "django.contrib.admin",
             "django.contrib.auth",
             "django.contrib.contenttypes",
@@ -860,25 +1014,31 @@ class Development(Base):
             "django.contrib.sites",
             "django.contrib.messages",
             "django.contrib.staticfiles",
-            # Third-Party Apps
+            # 2) DRF UI skin — must come BEFORE rest_framework so Django's template
+            #    loader finds rest_wind's rest_framework/base.html first
+            "rest_wind",
+            # 3) Core framework add-ons (foundation pieces)
             "rest_framework",
             "rest_framework.authtoken",
             "django_filters",
+            # 4) Third-party apps (features)
             "corsheaders",
-            "debug_toolbar",
             "storages",
+            "mailer",
             "djoser",
             "graphene_django",
-            "mailer",
             "crispy_forms",
             "crispy_bootstrap5",
-            "django_prometheus",
-            "drf_spectacular",
             "django_select2",
-            # Project Apps
+            # 5) API schema tooling (after DRF)
+            "drf_spectacular",
+            "drf_spectacular_sidecar",
+            # 6) Dev-only tooling
+            "debug_toolbar",
+            # 7) Your project apps (stuff you own)
             "applications.API",
             "applications.graphQL",
-            "drf_spectacular_sidecar",
+            "applications.ld_integration",
         ],
         environ=False,
     )
@@ -886,11 +1046,11 @@ class Development(Base):
     MIDDLEWARE = values.ListValue(
         [
             "django_prometheus.middleware.PrometheusBeforeMiddleware",
+            "corsheaders.middleware.CorsMiddleware",
             "django.middleware.cache.UpdateCacheMiddleware",
             "django.middleware.security.SecurityMiddleware",
             "whitenoise.middleware.WhiteNoiseMiddleware",
             "django.contrib.sessions.middleware.SessionMiddleware",
-            "corsheaders.middleware.CorsMiddleware",
             "django.middleware.common.CommonMiddleware",
             "debug_toolbar.middleware.DebugToolbarMiddleware",
             "django.middleware.csrf.CsrfViewMiddleware",
@@ -899,6 +1059,7 @@ class Development(Base):
             "django.middleware.clickjacking.XFrameOptionsMiddleware",
             "django.middleware.cache.FetchFromCacheMiddleware",
             "django_prometheus.middleware.PrometheusAfterMiddleware",
+            "applications.ld_integration.middleware.LaunchDarklyContextMiddleware",
         ],
         environ=False,
     )
@@ -967,7 +1128,7 @@ class Testing(Development):
 # Configure logger for Testing environment
 # Must be done at module level AFTER class definition
 # Disable loguru's diagnostic features to avoid conflicts with coverage tracing
-if os.getenv("DJANGO_CONFIGURATION") == "Testing" and not Base._logger_configured:
+if os.getenv("DJANGO_CONFIGURATION") == "Testing" and Base.configure_base_logger():
     logger.remove()
     logger.add(
         Base.DEFAULT_HANDLER,
@@ -977,7 +1138,6 @@ if os.getenv("DJANGO_CONFIGURATION") == "Testing" and not Base._logger_configure
         catch=False,
         backtrace=False,
     )
-    Base._logger_configured = True
 
 
 # --- Coerce APPEND_COMPONENTS for all configurations ---
