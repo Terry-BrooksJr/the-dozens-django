@@ -686,7 +686,7 @@ class Base(Configuration):
             "requestSnippetsEnabled": False,
             "syntaxHighlight.theme": "arta",
         },
-        "SWAGGER_UI_DIST": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest",
+        "SWAGGER_UI_DIST": "SIDECAR",
         "CONTACT": {
             "name": "Terry A. Brooks, Jr.",
             "url": "https://brooksjr.com",
@@ -894,6 +894,15 @@ class Offline(Base):
     ALLOWED_HOSTS = ["*"]
     DEBUG = True
     CORS_ALLOW_ALL_ORIGINS = True
+    STATIC_URL = "/static/"
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
     INSTALLED_APPS = values.ListValue(
         [
             # 0) Instrumentation that wants to wrap others early
@@ -1002,6 +1011,15 @@ class Development(Base):
     CORS_ALLOW_ALL_ORIGINS = values.BooleanValue(True, environ=False)
     CSRF_TRUSTED_ORIGINS = ["https://*", "http://*"]
     DEBUG = True
+    STATIC_URL = "/static/"
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
     INSTALLED_APPS = values.ListValue(
         [
             # 0) Instrumentation that wants to wrap others early

@@ -297,7 +297,7 @@ class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIV
 
 @extend_schema_view(
     get=extend_schema(
-        tags=["Insults "],
+        tags=["Insults"],
         auth=[],
         operation_id="retrieve_insult",
         summary="Retrieve a specific insult by ID.",
@@ -459,93 +459,6 @@ class InsultDetailsEndpoint(
         return Response(serializer.data)
 
 
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Insults"],
-        operation_id="list_insults",
-        auth=[],
-        summary="List all insults. Returns active insults for all users, authenticated users can see their own insults in any status.",
-        parameters=[
-            OpenApiParameter(
-                name="nsfw",
-                type=OpenApiTypes.BOOL,
-                location=OpenApiParameter.QUERY,
-                description="Filter explicit content. `true` returns only NSFW insults; `false` returns only SFW. If omitted, both are returned.",
-                required=False,
-            ),
-        ],
-        responses={
-            200: OpenApiResponse(
-                description="Successful 200 response returning a paginated list of insults. The payload includes a top‑level `count` and a `results` array of insult objects. Supports optional filtering via `category` and `nsfw` query parameters.",
-                response=OptimizedInsultSerializer,
-                examples=[
-                    OpenApiExample(
-                        name="Success Response - Unfiltered (NSFW) and Uncategorized (Category)",
-                        description="Example 200 response payload showing a list of insults without NSFW filtering applied and without any category restrictions. This represents the default unfiltered response.",
-                        value={
-                            "count": 133,
-                            "results": [
-                                {
-                                    "reference_id": "SNICKER_NDc4",
-                                    "content": "Yo momma is so ugly... when they took her to the beautician it took 12 hours for a quote!",
-                                    "category": "Ugly",
-                                    "nsfw": False,
-                                    "added_by": "John D.",
-                                    "added_on": "2 days ago",
-                                },
-                                {
-                                    "reference_id": "CACKLE_NDQ5",
-                                    "content": "Yo momma is so fat... when she dives into the ocean, there is a tsunami-warning!'",
-                                    "category": "Fat",
-                                    "nsfw": False,
-                                    "added_by": "Linda p.",
-                                    "added_on": "12 days ago",
-                                },
-                                {
-                                    "reference_id": "CHUCKLE_NDUz",
-                                    "content": "Yo momma is so old her driver's license is written with Roman numerals.",
-                                    "category": "Old",
-                                    "nsfw": False,
-                                    "added_by": "John D.",
-                                    "added_on": "4 Weeks Ago",
-                                },
-                            ],
-                        },
-                    ),
-                    OpenApiExample(
-                        name="Success Response - categorized (Category) & filtered(NSFW)",
-                        description="Example 200 response payload filtered to show only NSFW insults in the 'Poor' category. Demonstrates combined filtering via `category=P` and `nsfw=true`.",
-                        value={
-                            "count": 1,
-                            "results": [
-                                {
-                                    "reference_id": "CACKLE_NDY2",
-                                    "content": "Yo momma is so poor... she accepts food stamps for sex!",
-                                    "category": "Poor",
-                                    "nsfw": True,
-                                    "added_by": "John D.",
-                                    "added_on": "2 days ago",
-                                }
-                            ],
-                        },
-                    ),
-                ],
-            ),
-            404: OpenApiResponse(
-                description="No insults found matching the provided filters or resource not available.",
-                examples=[
-                    OpenApiExample(
-                        name="No Insults Found",
-                        description="Example 404 response when no insults match the provided filters (e.g., `category=XYZ` with `nsfw=true`).",
-                        value={
-                            "detail": "No insults found matching the provided filters or resource not available."
-                        },
-                    )
-                ],
-            ),
-        },
-    )
-)
 # class InsultListEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIView):
 #     """
 #     List All Insults
@@ -644,24 +557,6 @@ class InsultDetailsEndpoint(
 
 
 class RandomInsultEndpoint(GenericAPIView):
-    """
-    # Random Insult
-
-    API endpoint for retrieving a single random insult.
-
-    - By default returns from the active public insults
-    - Can be filtered by NSFW status and category
-
-    ## Endpoint
-
-    - `GET /api/insults/random`
-
-    ## Query Parameters
-
-    - `nsfw` *(bool, optional)*: Filter explicit content (`true` / `false`)
-    - `category` *(str, optional)*: Category key or name to filter by
-    """
-
     serializer_class = OptimizedInsultSerializer
     permission_classes = [AllowAny]
     throttle_classes = []
@@ -691,7 +586,7 @@ class RandomInsultEndpoint(GenericAPIView):
                 required=False,
             ),
             OpenApiParameter(
-                name="category_name",
+                name="category",
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
                 description="Filter insult to a category such as fat, poor, etc. ",
@@ -701,15 +596,22 @@ class RandomInsultEndpoint(GenericAPIView):
     )
     def get(self, request):
         """
-        Retrieve a random insult with optional filters.
+        
+        # Random Insult
 
-        **Args**
+        API endpoint for retrieving a single random insult.
 
-        - `request`: HTTP request with optional query parameters
+        - By default returns from the active public insults
+        - Can be filtered by NSFW status and category
 
-        **Returns**
+        ## Endpoint
 
-        - `Response`: Random insult data or `404` if no matches are found
+        - `GET /api/insults/random`
+
+        ## Query Parameters
+
+        - `nsfw` *(bool, optional)*: Filter explicit content (`true` / `false`)
+        - `category` *(str, optional)*: Category key or name to filter by
         """
         queryset = (
             Insult.public.select_related("added_by", "category")
@@ -726,10 +628,10 @@ class RandomInsultEndpoint(GenericAPIView):
             queryset = queryset.filter(nsfw=nsfw)
         # Filter by category if provided
 
-        if category := request.query_params.get("category_name"):
+        if category := request.query_params.get("category"):
             logger.debug(f"Filtering random insult by category: {category}")
             category = BaseInsultSerializer.resolve_category(category.upper())
-            queryset = queryset.filter(category=category["category_key"])
+            queryset = queryset.filter(category__category_key=category["category_key"])
 
         if not queryset.exists():
             return Response(
@@ -769,25 +671,6 @@ class RandomInsultEndpoint(GenericAPIView):
     )
 )
 class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
-    """
-    # Categories &amp; Themes
-
-    API endpoint for listing insult categories organized by theme.
-
-    - Returns all public insult categories, grouped under their themes
-    - Includes metadata such as insult counts and descriptions
-
-    ## Endpoint
-
-    - `GET /api/categories`
-
-    ## Features
-
-    - No authentication required
-    - Cached responses for performance
-    - Case‑insensitive category matching support
-    """
-
     serializer_class = CategorySerializer
     permission_classes = [AllowAny]
 
@@ -803,15 +686,24 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 
     def get(self, request):
         """
-        Return a list of insult categories grouped by theme.
+        
+          # Categories & Themes
 
-        **Args**
+        API endpoint for listing insult categories organized by theme.
 
-        - `request`: HTTP request object
+        - Returns all public insult categories, grouped under their themes
+        - Includes metadata such as insult counts and descriptions
 
-        **Returns**
+        ## Endpoint
 
-        - `Response`: JSON payload containing a `help_text` and a `results` mapping
+        - `GET /api/categories`
+
+        ## Features
+
+        - No authentication required
+        - Cached responses for performance
+        - Case‑insensitive category matching support
+
         """
         qs = self.get_queryset()
         theme_qs = Theme.objects.all().exclude(theme_key="INTL")

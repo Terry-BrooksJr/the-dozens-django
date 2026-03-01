@@ -79,7 +79,7 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Testing
     cmds:
-      - -- python3  run/manage.py test applications.API
+      - python3  run/manage.py test applications.API
 
     requires:
       vars:
@@ -203,11 +203,26 @@ tasks:
     interactive: true
 
   test:coverage:
-    desc: Run tests with coverage
+    desc: Run Django tests with coverage and generate reports
     env:
       DJANGO_CONFIGURATION: Testing
     cmds:
-      - .venv/bin/coverage run --parallel-mode run/manage.py test applications.API
-      - .venv/bin/coverage combine
-      - .venv/bin/coverage html
+      - .venv/bin/coverage erase
+      - .venv/bin/coverage run --source=applications run/manage.py test applications.API
+      - .venv/bin/coverage combine || true
       - .venv/bin/coverage report -m
+      - .venv/bin/coverage xml -o cobertura.xml
+    sources:
+      - "**/*.py"
+    generates:
+      - ".coverage"
+      - "cobertura.xml"
+
+  coverage:upload:
+    desc: Upload coverage report to Codacy (requires CODACY_PROJECT_TOKEN env var)
+    deps: [test:coverage]
+    cmds:
+      - bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml
+    requires:
+      vars:
+        - CODACY_PROJECT_TOKEN
