@@ -79,7 +79,7 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Testing
     cmds:
-      - python3  run/manage.py test applications.API
+      - python3  run/manage.py test applications.API applications.graphQL
 
     requires:
       vars:
@@ -220,7 +220,7 @@ tasks:
 
   coverage:upload:
     desc: Upload coverage report to Codacy (requires CODACY_PROJECT_TOKEN env var)
-    deps: [test:coverage]
+    deps: [ test:coverage ]
     cmds:
       - bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml
     requires:

@@ -596,7 +596,7 @@ class RandomInsultEndpoint(GenericAPIView):
     )
     def get(self, request):
         """
-        
+
         # Random Insult
 
         API endpoint for retrieving a single random insult.
@@ -686,7 +686,7 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 
     def get(self, request):
         """
-        
+
           # Categories & Themes
 
         API endpoint for listing insult categories organized by theme.

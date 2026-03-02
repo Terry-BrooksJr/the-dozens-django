@@ -707,6 +707,10 @@ class Base(Configuration):
             "MIDDLEWARE": [
                 "graphene_django.debug.DjangoDebugMiddleware",
             ],
+            # Show the Headers panel in the GraphiQL playground.
+            "GRAPHIQL_HEADER_EDITOR_ENABLED": True,
+            # Persist headers the developer enters across page reloads.
+            "GRAPHIQL_SHOULD_PERSIST_HEADERS": True,
         },
         environ=False,
     )
@@ -852,6 +856,22 @@ class Production(Base):
     )
 
     CORS_ALLOW_ALL_ORIGINS = True
+
+    # SECTION Start - GraphQL Settings (Production overrides)
+    # Remove DjangoDebugMiddleware in production — it leaks SQL query details in responses.
+    GRAPHENE = values.DictValue(
+        {
+            "SCHEMA": "applications.graphQL.schema.schema",
+            "MIDDLEWARE": [],
+            # Keep the playground headers panel available in production.
+            "GRAPHIQL_HEADER_EDITOR_ENABLED": True,
+            # Persist headers the developer enters across page reloads.
+            "GRAPHIQL_SHOULD_PERSIST_HEADERS": True,
+        },
+        environ=False,
+    )
+    #!SECTION End - GraphQL Settings (Production overrides)
+
     # SECTION Start - Production Database
 
     #!SECTION End - Database and Caching
@@ -1138,6 +1158,51 @@ class Testing(Development):
                 "ENGINE": "django.db.backends.sqlite3",
                 "NAME": os.path.join(str(BASE_DIR), "test_db.sqlite3"),
             }
+        },
+        environ=False,
+    )
+
+    # Use an in-process memory cache so throttle counters and response caches
+    # do not persist across test runs (Redis would survive between runs and
+    # accumulate throttle hits from previous executions within the same window).
+    CACHES = values.DictValue(
+        {
+            "default": {
+                "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+                "LOCATION": "testing-cache",
+            }
+        },
+        environ=False,
+    )
+
+    # Explicitly disable all throttle classes so no test ever receives a 429.
+    # Development leaves DEFAULT_THROTTLE_CLASSES absent (relying on DRF's
+    # default of []), but keeping DEFAULT_THROTTLE_RATES in the inherited dict
+    # alongside a persistent Redis cache can still produce spurious 429s when
+    # tests are re-run within the throttle window.
+    REST_FRAMEWORK = values.DictValue(
+        {
+            "DEFAULT_PERMISSION_CLASSES": [
+                "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
+            ],
+            "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+            "PAGE_SIZE": 10,
+            "DEFAULT_RENDERER_CLASSES": [
+                "rest_framework.renderers.JSONRenderer",
+                "rest_framework.renderers.BrowsableAPIRenderer",
+            ],
+            "DEFAULT_AUTHENTICATION_CLASSES": (
+                "applications.API.authentication.FlexibleTokenAuthentication",
+            ),
+            "DEFAULT_THROTTLE_CLASSES": [],
+            "DEFAULT_THROTTLE_RATES": {"anon": "1000/minute", "user": "1000/minute"},
+            "DEFAULT_PARSER_CLASSES": [
+                "rest_framework.parsers.JSONParser",
+            ],
+            "DEFAULT_FILTER_BACKENDS": [
+                "django_filters.rest_framework.DjangoFilterBackend",
+            ],
+            "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
         },
         environ=False,
     )

@@ -3,6 +3,8 @@
 Root URL configuration for thedozens project.
 """
 
+import contextlib
+
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path, re_path
@@ -10,12 +12,11 @@ from django.views.decorators.csrf import csrf_exempt
 
 import applications.API.urls as API_URLS
 import applications.graphQL.urls as GRAPHQL_URL
-import contextlib
 from applications.API.auth.auth_endpoints import TokenDestroyView
 from applications.frontend.views import ReportJokeView, page_not_found_view
 
 urlpatterns = [
-    path("graphql", include(GRAPHQL_URL), name="GraphQL"),
+    path("graphql/", include(GRAPHQL_URL), name="GraphQL"),
     path("admin/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),
     path("", include("django_prometheus.urls")),
