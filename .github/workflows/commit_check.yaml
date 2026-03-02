@@ -36,7 +36,7 @@ jobs:
 
       - name: Run linters
         run: |
-          source venv/bin/activate
+          source .venv/bin/activate
           task lint:fix
   test:
     needs: setup
@@ -69,7 +69,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          source venv/bin/activate
+          source .venv/bin/activate
           task test:coverage
 
       - name: Upload coverage to Codacy
@@ -103,7 +103,7 @@ jobs:
 
       - name: Run Bandit Report
         run: |
-          source venv/bin/activate
+          source .venv/bin/activate
           # Install security tools if not in requirements
           pip install safety bandit
 
