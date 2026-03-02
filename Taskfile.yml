@@ -75,12 +75,18 @@ tasks:
 
   run:test:
     dir: .
-    desc: Run tests
+    desc: Run tests with coverage and generate cobertura.xml
     env:
       DJANGO_CONFIGURATION: Testing
     cmds:
-      - python3  run/manage.py test applications.API applications.graphQL
-
+      - .venv/bin/coverage erase
+      - .venv/bin/coverage run --source=applications run/manage.py test applications.API applications.graphQL
+      - .venv/bin/coverage combine || true
+      - .venv/bin/coverage report -m
+      - .venv/bin/coverage xml -o cobertura.xml
+    generates:
+      - ".coverage"
+      - "cobertura.xml"
     requires:
       vars:
         - DOPPLER_TOKEN
