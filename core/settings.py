@@ -750,24 +750,8 @@ class Base(Configuration):
                 },
                 "TIMEOUT": 300,
             },
-            "select2": {
-                "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
-                "LOCATION": f"{os.environ['REDIS_CACHE_TOKEN']}/2",
-                "OPTIONS": {
-                    "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                    "SOCKET_CONNECT_TIMEOUT": 0.5,
-                    "SOCKET_TIMEOUT": 0.5,
-                    "RETRY_ON_TIMEOUT": False,
-                    "PARSER_CLASS": "redis.connection._HiredisParser",
-                    "CONNECTION_POOL_KWARGS": {
-                        "max_connections": 5  # Example: Limit the pool to 10 connections
-                    },
-                },
-                "TIMEOUT": 300,
-            },
         }
     )
-    SELECT2_CACHE_BACKEND = "select2"
 
     EMAIL_HOST = values.Value(
         environ=True, environ_prefix=None, environ_name="EMAIL_SERVER"
@@ -819,7 +803,6 @@ class Production(Base):
             "graphene_django",
             "crispy_forms",
             "crispy_bootstrap5",
-            "django_select2",
             # 5) API schema tooling (after DRF)
             "drf_spectacular",
             "drf_spectacular_sidecar",
@@ -950,7 +933,6 @@ class Offline(Base):
             "graphene_django",
             "crispy_forms",
             "crispy_bootstrap5",
-            "django_select2",
             # 5) API schema tooling (after DRF)
             "drf_spectacular",
             "drf_spectacular_sidecar",
@@ -1067,7 +1049,6 @@ class Development(Base):
             "graphene_django",
             "crispy_forms",
             "crispy_bootstrap5",
-            "django_select2",
             # 5) API schema tooling (after DRF)
             "drf_spectacular",
             "drf_spectacular_sidecar",

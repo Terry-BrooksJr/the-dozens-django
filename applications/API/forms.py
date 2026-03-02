@@ -11,7 +11,6 @@ from django.core.exceptions import ValidationError
 from django.forms import BooleanField, CharField, ChoiceField, ModelForm, widgets
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django_select2 import forms as s2forms
 from loguru import logger
 
 from applications.API.models import Insult, InsultReview
@@ -36,26 +35,6 @@ insult_choices_manager = create_form_choices_manager(
     filter_kwargs={"status": "A"},  # Only active insults
     cache_prefix="Insult",
 )
-
-
-# ===================================================================
-# Select2 Widget
-# ===================================================================
-
-
-class InsultReferenceSelect2(s2forms.ModelSelect2Widget):
-    """Select2 widget for Insult reference with AJAX search."""
-
-    search_fields = [
-        "reference_id__icontains",
-    ]
-    attrs = {
-        "data-minimum-input-length": 3,
-        "data-placeholder": "Select an Insult by Ref ID…",
-        "data-close-on-select": "true",
-        "data-allow-clear": "true",
-        "style": "width: 100%;",
-    }
 
 
 # ===================================================================
