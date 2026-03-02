@@ -32,6 +32,7 @@ _ADMIN_URLS = "applications.API.tests.admin_test_urls"
 # Shared test-data mixin
 # ---------------------------------------------------------------------------
 
+
 class _InsultAdminBase(TestCase):
     """Creates the minimum DB objects shared across all admin test classes."""
 
@@ -98,6 +99,7 @@ class _InsultAdminBase(TestCase):
 # approve_insult
 # ===========================================================================
 
+
 class ApproveInsultActionTests(_InsultAdminBase):
 
     def test_sets_status_active(self):
@@ -139,6 +141,7 @@ class ApproveInsultActionTests(_InsultAdminBase):
 # remove_insult
 # ===========================================================================
 
+
 class RemoveInsultActionTests(_InsultAdminBase):
 
     def test_sets_status_removed(self):
@@ -167,6 +170,7 @@ class RemoveInsultActionTests(_InsultAdminBase):
 # ===========================================================================
 # mark_insult_for_review
 # ===========================================================================
+
 
 class MarkForReviewActionTests(_InsultAdminBase):
 
@@ -199,23 +203,20 @@ class MarkForReviewActionTests(_InsultAdminBase):
 # reclassify_as_nsfw / reclassify_as_sfw
 # ===========================================================================
 
+
 class ReclassifyActionTests(_InsultAdminBase):
 
     def test_reclassify_as_nsfw_sets_flag(self):
         """reclassify_as_nsfw sets nsfw=True on every selected insult."""
         target = self._make_insult(nsfw=False)
-        self.ma.reclassify_as_nsfw(
-            self._request(), Insult.objects.filter(pk=target.pk)
-        )
+        self.ma.reclassify_as_nsfw(self._request(), Insult.objects.filter(pk=target.pk))
         target.refresh_from_db()
         self.assertTrue(target.nsfw)
 
     def test_reclassify_as_sfw_clears_flag(self):
         """reclassify_as_sfw sets nsfw=False on every selected insult."""
         target = self._make_insult(nsfw=True)
-        self.ma.reclassify_as_sfw(
-            self._request(), Insult.objects.filter(pk=target.pk)
-        )
+        self.ma.reclassify_as_sfw(self._request(), Insult.objects.filter(pk=target.pk))
         target.refresh_from_db()
         self.assertFalse(target.nsfw)
 
@@ -252,9 +253,7 @@ class ReclassifyActionTests(_InsultAdminBase):
     def test_reclassify_does_not_change_status(self):
         """Reclassifying NSFW flag must not alter the insult's approval status."""
         target = self._make_insult(nsfw=False, status=Insult.STATUS.ACTIVE)
-        self.ma.reclassify_as_nsfw(
-            self._request(), Insult.objects.filter(pk=target.pk)
-        )
+        self.ma.reclassify_as_nsfw(self._request(), Insult.objects.filter(pk=target.pk))
         target.refresh_from_db()
         self.assertEqual(target.status, Insult.STATUS.ACTIVE)
 
@@ -262,6 +261,7 @@ class ReclassifyActionTests(_InsultAdminBase):
 # ===========================================================================
 # re_categorize  (intermediate-form action)
 # ===========================================================================
+
 
 class ReCategorizeActionTests(_InsultAdminBase):
 
@@ -375,9 +375,7 @@ class ReCategorizeActionTests(_InsultAdminBase):
                 "_selected_ids": [str(target.pk)],
             }
         )
-        response = self.ma.re_categorize(
-            request, Insult.objects.filter(pk=target.pk)
-        )
+        response = self.ma.re_categorize(request, Insult.objects.filter(pk=target.pk))
         self.assertIsInstance(response, TemplateResponse)
 
     def test_invalid_form_does_not_change_category(self):
@@ -398,6 +396,7 @@ class ReCategorizeActionTests(_InsultAdminBase):
 # ===========================================================================
 # view_reports_link  (requires admin URLs to be resolvable)
 # ===========================================================================
+
 
 @override_settings(ROOT_URLCONF=_ADMIN_URLS)
 class ViewReportsLinkTests(_InsultAdminBase):

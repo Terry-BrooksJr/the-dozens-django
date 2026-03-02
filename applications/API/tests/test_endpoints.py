@@ -32,6 +32,12 @@ def canon_cat(value):
 
 
 class EndpointTests(APITestCase):
+    def setUp(self):
+        """Clear the cache before every test to prevent throttle-counter bleed-through."""
+        from django.core.cache import cache
+
+        cache.clear()
+
     @classmethod
     def setUpTestData(cls):
         # Users
@@ -107,11 +113,6 @@ class EndpointTests(APITestCase):
     # ---------- InsultListEndpoint ----------
     def test_list_insults_public_active_only(self):
         """GET /api/insults/ → active insults only; includes both categories."""
-        from django.core.cache import cache
-
-        # Clear cache to avoid stale data from previous tests
-        cache.clear()
-
         resp = self.get_view_response(InsultByCategoryEndpoint, "/api/insults/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         # Count active insults using the same queryset as the endpoint

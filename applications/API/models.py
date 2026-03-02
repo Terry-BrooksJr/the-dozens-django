@@ -787,5 +787,3 @@ def decrement_report_count(sender, instance, **kwargs):
         Insult.objects.filter(pk=instance.insult_id).update(
             reports_count=F("reports_count") - 1
         )
-
-
