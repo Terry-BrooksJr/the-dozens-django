@@ -1,3 +1,4 @@
+[![CI Pipeline](https://github.com/Terry-BrooksJr/the-dozens-django/actions/workflows/commit_check.yaml/badge.svg)](https://github.com/Terry-BrooksJr/the-dozens-django/actions/workflows/commit_check.yaml)
 # The Dozens — Django/DRF API
 
 A playful, production‑ready REST API for “yo momma” style jokes (aka *Insults*), built with **Django 5** and **Django REST Framework**. It ships with token auth, robust filtering, schema‑first API docs (OpenAPI 3 via **drf‑spectacular**), caching, pagination, linting/type‑checking, and a container‑friendly runtime. 
