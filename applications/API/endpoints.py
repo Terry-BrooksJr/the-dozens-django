@@ -12,7 +12,9 @@ from typing import Optional
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import EmptyResultSet
+from django.db import connection
 from django.shortcuts import redirect
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.db.models import QuerySet
 from django.views.decorators.cache import never_cache
@@ -797,3 +799,94 @@ class CreateInsultEndpoint(CreateAPIView):
     def perform_create(self, serializer):
         """Set the authenticated user as the insult owner."""
         serializer.save(added_by=self.request.user)
+
+
+@extend_schema(
+    tags=["Health"],
+    auth=[],
+    operation_id="health_check",
+    summary="Service health heartbeat",
+    description=(
+        "Returns the aggregated health status of the service, including database "
+        "connectivity, GraphQL schema availability, and LaunchDarkly client state."
+    ),
+    responses={
+        200: OpenApiResponse(
+            description="All checks healthy",
+            examples=[
+                OpenApiExample(
+                    "Healthy",
+                    value={
+                        "status": "ok",
+                        "database": "ok",
+                        "graphql": "ok",
+                        "launchdarkly": "ok",
+                        "timestamp": "2026-03-04T12:00:00Z",
+                    },
+                )
+            ],
+        ),
+        503: OpenApiResponse(
+            description="One or more checks degraded",
+            examples=[
+                OpenApiExample(
+                    "Degraded",
+                    value={
+                        "status": "degraded",
+                        "database": "unavailable",
+                        "graphql": "ok",
+                        "launchdarkly": "not_initialized",
+                        "timestamp": "2026-03-04T12:00:00Z",
+                    },
+                )
+            ],
+        ),
+    },
+)
+class HealthEndpoint(GenericAPIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = []
+    serializer_class = None
+
+    def _check_database(self) -> str:
+        try:
+            connection.ensure_connection()
+            return "ok"
+        except Exception:
+            return "unavailable"
+
+    def _check_graphql(self) -> str:
+        try:
+            from applications.graphQL.schema import schema
+            result = schema.execute("{ __typename }")
+            return "error" if result.errors else "ok"
+        except Exception:
+            return "error"
+
+    def _check_launchdarkly(self) -> str:
+        from django.conf import settings
+        if not getattr(settings, "LAUNCHDARKLY_ENABLED", False):
+            return "disabled"
+        try:
+            from applications.ld_integration.client import get_client
+            client = get_client()
+            return "ok" if (client and client.is_initialized()) else "not_initialized"
+        except Exception:
+            return "unavailable"
+
+    def get(self, request):
+        checks = {
+            "database": self._check_database(),
+            "graphql": self._check_graphql(),
+            "launchdarkly": self._check_launchdarkly(),
+        }
+        degraded = any(v not in ("ok", "disabled") for v in checks.values())
+        return Response(
+            {
+                "status": "degraded" if degraded else "ok",
+                **checks,
+                "timestamp": timezone.now().isoformat(),
+            },
+            status=503 if degraded else 200,
+        )

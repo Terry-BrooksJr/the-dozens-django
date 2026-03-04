@@ -7,6 +7,7 @@ from drf_spectacular.views import (
 
 from applications.API.endpoints import (
     CreateInsultEndpoint,
+    HealthEndpoint,
     InsultByCategoryEndpoint,
     InsultDetailsEndpoint,
     ListThemesAndCategoryEndpoint,
@@ -14,6 +15,8 @@ from applications.API.endpoints import (
 )
 
 urlpatterns = [
+    # Health
+    path("health/", HealthEndpoint.as_view(), name="health"),
     # API documentation/schema endpoints
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path("swagger/", SpectacularSwaggerView.as_view(), name="swagger"),
