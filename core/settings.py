@@ -15,7 +15,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TextIO
 
-import ldobserve.observe as observe
+try:
+    import ldobserve.observe as observe
+except ImportError:
+    observe = None
 from configurations import Configuration, values
 from ghapi.all import GhApi
 from loguru import logger
@@ -185,8 +188,9 @@ def ld_loguru_sink(message):
     # Remove nulls to keep payload clean
     attrs = {k: v for k, v in attrs.items() if v is not None}
 
-    # Send to LaunchDarkly Observability
-    observe.record_log(str(record.get("message")), level_no, attributes=attrs)
+    # Send to LaunchDarkly Observability (no-op if ldobserve is not installed)
+    if observe is not None:
+        observe.record_log(str(record.get("message")), level_no, attributes=attrs)
 
 
 NSFW_WORD_LIST_URI = values.URLValue(
