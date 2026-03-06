@@ -12,8 +12,14 @@ import os
 import threading
 from dataclasses import dataclass
 
-import ldclient as ld_client
-from ldclient.config import Config
+try:
+    import ldclient as ld_client
+    from ldclient.config import Config
+    LDCLIENT_AVAILABLE = True
+except ImportError:
+    ld_client = None
+    Config = None
+    LDCLIENT_AVAILABLE = False
 
 try:
     from ldobserve import (
@@ -76,6 +82,13 @@ def configure_launchdarkly(
     """
     global _configured
 
+    if not LDCLIENT_AVAILABLE:
+        return LDInitResult(
+            enabled=False,
+            configured=False,
+            reason="LaunchDarkly SDK (ldclient) not installed",
+        )
+
     if not enabled:
         return LDInitResult(
             enabled=False,
@@ -120,7 +133,10 @@ def configure_launchdarkly(
 def get_client():
     """
     Assumes configure_launchdarkly() already ran via AppConfig.ready().
+    Returns None if the LaunchDarkly SDK is not installed.
     """
+    if not LDCLIENT_AVAILABLE:
+        return None
     return ld_client.get()
 
 
