@@ -1,0 +1,271 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Yo' Momma API — Documentation Hub</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="API documentation hub for The Dozens — Yo Mama Jokes API">
+        <link rel="icon" type="image/x-icon" href="{% static 'assets/favicon.ico' %}">
+        <link rel="preconnect" href="https://cdn.jsdelivr.net">
+        <link rel="preload"
+              href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2"
+              as="font" type="font/woff2" crossorigin>
+        <link rel="preload"
+              href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2"
+              as="font" type="font/woff2" crossorigin>
+        <style>
+            @font-face {
+                font-family: YoMamaHeader;
+                src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2') format('woff2');
+                font-display: swap;
+            }
+
+            @font-face {
+                font-family: YoMamaBody;
+                src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2') format('woff2');
+                font-display: swap;
+            }
+
+            :root {
+                --color-primary: #770071;
+                --color-secondary: #bd00b4;
+                --color-accent: #beda00;
+                --color-white: #ffffff;
+                --color-background: #D7DF0D;
+            }
+
+            *, *:after, *:before {
+                box-sizing: border-box;
+            }
+
+            html {
+                box-sizing: border-box;
+                overflow-y: scroll;
+                background: linear-gradient(169deg, rgba(215, 223, 13, 1) 0%, rgba(190, 218, 0, 1) 50%, rgba(119, 0, 113, 1) 100%);
+                min-height: 100vh;
+            }
+
+            body {
+                background: transparent;
+                margin: 0;
+                font-family: "YoMamaBody", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+                line-height: 1.6;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* ---- Header ---- */
+            .dozens-header {
+                background: var(--color-primary);
+                color: var(--color-white);
+                padding: 1.5rem 1rem;
+                text-align: center;
+                border-bottom: 3px solid var(--color-accent);
+            }
+
+            .dozens-header h1 {
+                font-family: 'YoMamaHeader', Arial, sans-serif;
+                font-size: 2.5rem;
+                margin: 0.25rem 0;
+                text-shadow: -1px -1px 0 var(--color-secondary),
+                             1px -1px 0 var(--color-secondary),
+                             -1px  1px 0 var(--color-secondary),
+                              1px  1px 0 var(--color-secondary);
+            }
+
+            .dozens-header p {
+                font-family: 'YoMamaBody', Arial, sans-serif;
+                margin: 0.5rem auto;
+                opacity: 0.9;
+                max-width: 680px;
+                font-size: 0.95rem;
+            }
+
+            /* ---- Main content ---- */
+            .hub-container {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 3rem 1rem;
+            }
+
+            .hub-subtitle {
+                font-family: 'YoMamaHeader', Arial, sans-serif;
+                font-size: 1.3rem;
+                color: var(--color-primary);
+                background: var(--color-white);
+                padding: 0.4rem 1.2rem;
+                border-radius: 2rem;
+                margin-bottom: 2.5rem;
+                box-shadow: 0 2px 8px rgba(119, 0, 113, 0.2);
+            }
+
+            /* ---- Cards ---- */
+            .card-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1.75rem;
+                max-width: 960px;
+                width: 100%;
+            }
+
+            .doc-card {
+                background: var(--color-white);
+                border-radius: 12px;
+                padding: 2rem 1.5rem;
+                text-align: center;
+                text-decoration: none;
+                color: inherit;
+                box-shadow: 0 4px 20px rgba(119, 0, 113, 0.2);
+                border: 2px solid transparent;
+                transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1rem;
+            }
+
+            .doc-card:hover {
+                transform: translateY(-5px);
+                border-color: var(--color-accent);
+                box-shadow: 0 8px 30px rgba(119, 0, 113, 0.35);
+            }
+
+            .card-icon {
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.75rem;
+                flex-shrink: 0;
+            }
+
+            .card-icon--swagger  { background: rgba(190, 218, 0, 0.25); }
+            .card-icon--browsable { background: rgba(119, 0, 113, 0.12); }
+            .card-icon--redoc    { background: rgba(189, 0, 180, 0.12); }
+
+            .card-title {
+                font-family: 'YoMamaHeader', Arial, sans-serif;
+                font-size: 1.3rem;
+                color: var(--color-primary);
+                margin: 0;
+            }
+
+            .card-desc {
+                font-family: 'YoMamaBody', Arial, sans-serif;
+                font-size: 0.875rem;
+                color: #555;
+                margin: 0;
+                line-height: 1.5;
+            }
+
+            .card-badge {
+                display: inline-block;
+                background: var(--color-accent);
+                color: var(--color-primary);
+                font-family: 'YoMamaHeader', Arial, sans-serif;
+                font-size: 0.75rem;
+                font-weight: bold;
+                padding: 0.25rem 0.75rem;
+                border-radius: 1rem;
+                margin-top: auto;
+            }
+
+            /* ---- Scrollbar ---- */
+            ::-webkit-scrollbar { width: 8px; }
+            ::-webkit-scrollbar-track { background: #f1f1f1; }
+            ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 4px; }
+            ::-webkit-scrollbar-thumb:hover { background: var(--color-secondary); }
+
+            /* ---- Responsive ---- */
+            @media (max-width: 768px) {
+                .card-grid {
+                    grid-template-columns: 1fr;
+                    max-width: 400px;
+                }
+
+                .dozens-header h1 { font-size: 1.75rem; }
+            }
+
+            @media (min-width: 769px) and (max-width: 1024px) {
+                .card-grid { max-width: 720px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="dozens-header">
+            <h1>Yo' Momma — The Joke API</h1>
+            <p>
+                A RESTful service delivering humorous insults by category, NSFW status, and more.
+                Choose an interface below to explore the API.
+            </p>
+        </div>
+
+        <main class="hub-container">
+            <span class="hub-subtitle">Select a Documentation Interface</span>
+
+            <div class="card-grid">
+                <!-- Swagger UI -->
+                <a class="doc-card" href="{% url 'swagger' %}">
+                    <div class="card-icon card-icon--swagger">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                             stroke="#770071" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                    </div>
+                    <h2 class="card-title">Swagger UI</h2>
+                    <p class="card-desc">
+                        Interactive documentation with try-it-out support.
+                        Explore endpoints, authorize, and fire live requests right in the browser.
+                    </p>
+                    <span class="card-badge">Interactive</span>
+                </a>
+
+                <!-- Browsable API -->
+                <a class="doc-card" href="/api/insults/random/">
+                    <div class="card-icon card-icon--browsable">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                             stroke="#770071" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                    </div>
+                    <h2 class="card-title">Browsable API</h2>
+                    <p class="card-desc">
+                        Django REST Framework's built-in browser interface.
+                        Navigate responses, submit forms, and authenticate without leaving the browser.
+                    </p>
+                    <span class="card-badge">Built-in</span>
+                </a>
+
+                <!-- ReDoc -->
+                <a class="doc-card" href="{% url 'redoc' %}">
+                    <div class="card-icon card-icon--redoc">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                             stroke="#770071" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                        </svg>
+                    </div>
+                    <h2 class="card-title">ReDoc</h2>
+                    <p class="card-desc">
+                        Clean, three-panel API reference documentation.
+                        Ideal for reading the full schema in a structured, readable layout.
+                    </p>
+                    <span class="card-badge">Reference</span>
+                </a>
+            </div>
+        </main>
+    </body>
+</html>

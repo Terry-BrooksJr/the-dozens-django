@@ -815,7 +815,7 @@ class InsultReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InsultReview
-        exclude = ["date_submitted", "status", "insult", "reviewer"]
+        exclude = ["date_submitted", "date_reviewed", "status", "insult", "reviewer"]
 
     def validate(self, attrs: Dict[str, Any]) -> Dict[str, Any]:
         """

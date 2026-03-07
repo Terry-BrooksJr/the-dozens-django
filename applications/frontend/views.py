@@ -15,6 +15,7 @@ The GitHub integration is accessed via ``settings.BASE.get_github_api()``.
 
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.views.generic import TemplateView
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework.generics import CreateAPIView
 from rest_framework.request import Request
@@ -25,6 +26,10 @@ from django.conf import settings
 from typing import Dict, Any
 from applications.API.serializers import InsultReviewSerializer
 from applications.API.errors import StandardErrorResponses
+
+
+class LandingPageView(TemplateView):
+    template_name = "landing.html"
 
 
 def page_not_found_view(request, exception):
