@@ -107,9 +107,9 @@
             /* ---- Cards ---- */
             .card-grid {
                 display: grid;
-                grid-template-columns: repeat(3, 1fr);
+                grid-template-columns: repeat(4, 1fr);
                 gap: 1.75rem;
-                max-width: 960px;
+                max-width: 1240px;
                 width: 100%;
             }
 
@@ -146,9 +146,10 @@
                 flex-shrink: 0;
             }
 
-            .card-icon--swagger  { background: rgba(190, 218, 0, 0.25); }
+            .card-icon--swagger   { background: rgba(190, 218, 0, 0.25); }
             .card-icon--browsable { background: rgba(119, 0, 113, 0.12); }
-            .card-icon--redoc    { background: rgba(189, 0, 180, 0.12); }
+            .card-icon--redoc     { background: rgba(189, 0, 180, 0.12); }
+            .card-icon--graphql   { background: rgba(229, 53, 171, 0.12); }
 
             .card-title {
                 font-family: 'YoMamaHeader', Arial, sans-serif;
@@ -194,7 +195,10 @@
             }
 
             @media (min-width: 769px) and (max-width: 1024px) {
-                .card-grid { max-width: 720px; }
+                .card-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                    max-width: 720px;
+                }
             }
         </style>
     </head>
@@ -264,6 +268,23 @@
                         Ideal for reading the full schema in a structured, readable layout.
                     </p>
                     <span class="card-badge">Reference</span>
+                </a>
+
+                <!-- GraphQL Playground -->
+                <a class="doc-card" href="/graphql/">
+                    <div class="card-icon card-icon--graphql">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                             stroke="#770071" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 18 22 12 16 6"/>
+                            <polyline points="8 6 2 12 8 18"/>
+                        </svg>
+                    </div>
+                    <h2 class="card-title">GraphQL</h2>
+                    <p class="card-desc">
+                        Interactive GraphQL playground with schema explorer.
+                        Write and execute queries against the GraphQL API directly in the browser.
+                    </p>
+                    <span class="card-badge">Playground</span>
                 </a>
             </div>
         </main>
