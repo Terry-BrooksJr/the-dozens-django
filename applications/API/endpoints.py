@@ -801,48 +801,6 @@ class CreateInsultEndpoint(CreateAPIView):
         serializer.save(added_by=self.request.user)
 
 
-@extend_schema(
-    tags=["Health"],
-    auth=[],
-    operation_id="health_check",
-    summary="Service health heartbeat",
-    description=(
-        "Returns the aggregated health status of the service, including database "
-        "connectivity, GraphQL schema availability, and LaunchDarkly client state."
-    ),
-    responses={
-        200: OpenApiResponse(
-            description="All checks healthy",
-            examples=[
-                OpenApiExample(
-                    "Healthy",
-                    value={
-                        "status": "ok",
-                        "database": "ok",
-                        "graphql": "ok",
-                        "launchdarkly": "ok",
-                        "timestamp": "2026-03-04T12:00:00Z",
-                    },
-                )
-            ],
-        ),
-        503: OpenApiResponse(
-            description="One or more checks degraded",
-            examples=[
-                OpenApiExample(
-                    "Degraded",
-                    value={
-                        "status": "degraded",
-                        "database": "unavailable",
-                        "graphql": "ok",
-                        "launchdarkly": "not_initialized",
-                        "timestamp": "2026-03-04T12:00:00Z",
-                    },
-                )
-            ],
-        ),
-    },
-)
 class HealthEndpoint(GenericAPIView):
     permission_classes = [AllowAny]
     authentication_classes = []
@@ -875,6 +833,48 @@ class HealthEndpoint(GenericAPIView):
         except Exception:
             return "unavailable"
 
+    @extend_schema(
+        tags=["Health"],
+        auth=[],
+        operation_id="health_check",
+        summary="Service health heartbeat",
+        description=(
+            "Returns the aggregated health status of the service, including database "
+            "connectivity, GraphQL schema availability, and LaunchDarkly client state."
+        ),
+        responses={
+            200: OpenApiResponse(
+                description="All checks healthy",
+                examples=[
+                    OpenApiExample(
+                        "Healthy",
+                        value={
+                            "status": "ok",
+                            "database": "ok",
+                            "graphql": "ok",
+                            "launchdarkly": "ok",
+                            "timestamp": "2026-03-04T12:00:00Z",
+                        },
+                    )
+                ],
+            ),
+            503: OpenApiResponse(
+                description="One or more checks degraded",
+                examples=[
+                    OpenApiExample(
+                        "Degraded",
+                        value={
+                            "status": "degraded",
+                            "database": "unavailable",
+                            "graphql": "ok",
+                            "launchdarkly": "not_initialized",
+                            "timestamp": "2026-03-04T12:00:00Z",
+                        },
+                    )
+                ],
+            ),
+        },
+    )
     def get(self, request):
         checks = {
             "database": self._check_database(),

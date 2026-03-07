@@ -251,8 +251,22 @@
                   }
              }
 
-             .swagger-ui .loading {
+             #swagger-ui.loading {
                   animation: loading 1.5s ease-in-out infinite;
+                  min-height: 200px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  background: var(--color-white);
+                  border-radius: 8px;
+             }
+
+             .loading-message {
+                  text-align: center;
+                  padding: 2rem;
+                  font-family: 'YoMamaBody', Arial, sans-serif;
+                  color: var(--color-primary);
+                  font-size: 1.2rem;
              }
 
              /* Custom scrollbar */
@@ -288,7 +302,9 @@
             <a href="localhost:3000/" class="back-link">← Back to Main Site</a>
         </div>
         <!-- Swagger UI container -->
-        <div id="swagger-ui"></div>
+        <div id="swagger-ui" class="loading">
+            <div class="loading-message">Loading interactive API documentation...</div>
+        </div>
         <!-- Swagger UI JavaScript -->
         <script src="{{ swagger_ui_bundle }}"></script>
         <script src="{{ swagger_ui_standalone }}"></script>
@@ -301,18 +317,25 @@
         {% endif %}
         <!-- Custom initialization script -->
         <script>
-             document.addEventListener('DOMContentLoaded', function() {
-                  // Add loading class initially
-                  const swaggerContainer = document.getElementById('swagger-ui');
-                  if (swaggerContainer) {
-                       swaggerContainer.classList.add('loading');
+             (function() {
+                  const container = document.getElementById('swagger-ui');
+                  if (!container) return;
 
-                       // Remove loading class once Swagger UI is initialized
-                       setTimeout(() => {
-                            swaggerContainer.classList.remove('loading');
-                       }, 2000);
-                  }
-             });
+                  // Remove loading state as soon as SwaggerUI populates the container
+                  const observer = new MutationObserver(function() {
+                       if (container.querySelector('.swagger-ui')) {
+                            container.classList.remove('loading');
+                            observer.disconnect();
+                       }
+                  });
+                  observer.observe(container, { childList: true, subtree: true });
+
+                  // Hard fallback: clear loading after 8 s regardless
+                  setTimeout(function() {
+                       container.classList.remove('loading');
+                       observer.disconnect();
+                  }, 8000);
+             })();
         </script>
     </body>
 </html>

@@ -245,95 +245,39 @@
              document.addEventListener('DOMContentLoaded', function() {
                   const container = document.getElementById('redoc-container');
 
-                  {
-                       %
-                       if settings %
-                  }
-                  // Use custom settings if provided
-                  const redocSettings = {
-                       {
-                            settings | safe
+                  const customTheme = {
+                       colors: {
+                            primary: { main: '#770071' },
+                            success: { main: '#beda00' },
+                            text: { primary: '#333333' }
+                       },
+                       typography: {
+                            fontFamily: '"YoMamaBody", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
+                            headings: { fontFamily: '"YoMamaHeader", Arial, sans-serif' }
+                       },
+                       sidebar: {
+                            backgroundColor: '#f8f9fa',
+                            textColor: '#333333'
                        }
                   };
 
-                  // Enhance settings with custom theme
-                  const customSettings = {
-                       ...redocSettings,
-                       theme: {
-                            colors: {
-                                 primary: {
-                                      main: '#770071'
-                                 },
-                                 success: {
-                                      main: '#beda00'
-                                 },
-                                 text: {
-                                      primary: '#333333'
-                                 }
-                            },
-                            typography: {
-                                 fontFamily: '"YoMamaBody", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
-                                 headings: {
-                                      fontFamily: '"YoMamaHeader", Arial, sans-serif'
-                                 }
-                            },
-                            sidebar: {
-                                 backgroundColor: '#f8f9fa',
-                                 textColor: '#333333'
-                            }
-                       },
-                       ...redocSettings.theme
-                  };
+                  {% if settings %}
+                  const customSettings = Object.assign({}, {{ settings | safe }}, { theme: customTheme });
+                  {% else %}
+                  const customSettings = { theme: customTheme };
+                  {% endif %}
 
-                  Redoc.init("{{ schema_url }}", customSettings, container)
-                       .then(() => {
-                            container.classList.remove('loading');
-                            // Apply custom styling to ReDoc elements after initialization
-                            setTimeout(applyCustomStyling, 100);
-                       })
-                       .catch((error) => {
-                            console.error('Error initializing ReDoc:', error);
+                  Redoc.init("{{ schema_url }}", customSettings, container, function(err) {
+                       if (err) {
+                            console.error('Error initializing ReDoc:', err);
                             container.innerHTML = '<div class="loading-message" style="color: #d32f2f;">Failed to load API documentation. Please try again.</div>';
-                       });
-                  {
-                       %
-                       else %
-                  }
-                  // Fallback initialization
-                  Redoc.init("{{ schema_url }}", {
-                            theme: {
-                                 colors: {
-                                      primary: {
-                                           main: '#770071'
-                                      },
-                                      success: {
-                                           main: '#beda00'
-                                      }
-                                 },
-                                 typography: {
-                                      fontFamily: '"YoMamaBody", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
-                                      headings: {
-                                           fontFamily: '"YoMamaHeader", Arial, sans-serif'
-                                      }
-                                 }
-                            }
-                       }, container)
-                       .then(() => {
+                       } else {
                             container.classList.remove('loading');
                             setTimeout(applyCustomStyling, 100);
-                       })
-                       .catch((error) => {
-                            console.error('Error initializing ReDoc:', error);
-                            container.innerHTML = '<div class="loading-message" style="color: #d32f2f;">Failed to load API documentation. Please try again.</div>';
-                       });
-                  {
-                       %
-                       endif %
-                  }
+                       }
+                  });
 
-                  // Function to apply additional custom styling after ReDoc loads
                   function applyCustomStyling() {
-                       // Add custom classes or styles to ReDoc elements
                        const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
                        headings.forEach(heading => {
                             heading.style.fontFamily = '"YoMamaHeader", Arial, sans-serif';
