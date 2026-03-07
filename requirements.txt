@@ -25,7 +25,7 @@ colorama==0.4.6
 coverage==7.6.12
 crashtest==0.4.1
 crispy-bootstrap5==0.7
-cryptography==44.0.0
+cryptography==46.0.5
 cssbeautifier==1.15.4
 decorator==5.1.1
 defusedxml==0.7.1
