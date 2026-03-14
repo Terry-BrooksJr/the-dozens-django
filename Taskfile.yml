@@ -2,6 +2,10 @@ version: '3'
 env:
   DOPPLER_TOKEN: ${DOPPLER_TOKEN}
   PATH_TO_DB_ROOT_CERT: ${PATH_TO_DB_ROOT_CERT}
+  LETSENCRYPT_EMAIL: Terry.Arthur@BrooksJr.com
+  CODACY_PROJECT_TOKEN: b7a114c241444b6c863c884178fb6af6
+  CODACY_USERNAME: Terry-BrooksJr
+  CODACY_PROJECT_NAME: the-dozens-django
   PYTHON_PATH: "{{ .TASKFILE_DIR }}:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run"
   TEMP_STATIC_DIR: ${TEMP_STATIC_DIR}
 silent: true
@@ -79,11 +83,11 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Testing
     cmds:
-      - .venv/bin/python3 -m coverage erase
-      - .venv/bin/python3 -m coverage run --source=applications run/manage.py test applications.API applications.graphQL applications.frontend
-      - .venv/bin/python3 -m coverage combine || true
-      - .venv/bin/python3 -m coverage report -m
-      - .venv/bin/python3 -m coverage xml -o cobertura.xml
+      - python -m coverage erase
+      - python -m coverage run --source=applications run/manage.py test applications.API applications.graphQL applications.frontend
+      - python -m coverage combine || true
+      - python -m coverage report -m
+      - python -m coverage xml -o cobertura.xml
     generates:
       - ".coverage"
       - "cobertura.xml"
@@ -213,18 +217,19 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Testing
     cmds:
-      - .venv/bin/python3 -m coverage erase
-      - .venv/bin/python3 -m coverage run --source=applications run/manage.py test applications.API applications.graphQL applications.frontend
-      - .venv/bin/python3 -m coverage combine || true
-      - .venv/bin/python3 -m coverage report -m
-      - .venv/bin/python3 -m coverage xml -o cobertura.xml
+      - python -m coverage erase
+      - python -m coverage run --source=applications run/manage.py test applications.API applications.graphQL applications.frontend
+      - python -m coverage combine || true
+      - python -m coverage report -m
+      - python -m coverage xml -o cobertura.xml
+    silent: false
     sources:
       - "**/*.py"
     generates:
       - ".coverage"
       - "cobertura.xml"
 
-  test.coverage1:
+  test:coverage1:
     desc: Backward-compatible alias for coverage test command
     deps: [ test:coverage ]
 
@@ -232,6 +237,7 @@ tasks:
     desc: Upload coverage report to Codacy (requires CODACY_PROJECT_TOKEN env var)
     deps: [ test:coverage ]
     cmds:
+      - task: run:test
       - bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml
     requires:
       vars:
