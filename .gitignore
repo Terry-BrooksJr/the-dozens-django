@@ -166,3 +166,4 @@ users.acl
 .github/instructions/codacy.instructions.md
 .ruff_cache
 .task/checksum/freeze
+cobertura.xml

@@ -80,7 +80,7 @@ tasks:
       DJANGO_CONFIGURATION: Testing
     cmds:
       - .venv/bin/coverage erase
-      - .venv/bin/coverage run --source=applications run/manage.py test applications.API applications.graphQL
+      - .venv/bin/coverage run --source=applications run/manage.py test applications.API applications.graphQL applications.frontend
       - .venv/bin/coverage combine || true
       - .venv/bin/coverage report -m
       - .venv/bin/coverage xml -o cobertura.xml
@@ -214,7 +214,7 @@ tasks:
       DJANGO_CONFIGURATION: Testing
     cmds:
       - .venv/bin/coverage erase
-      - .venv/bin/coverage run --source=applications run/manage.py test applications.API
+      - .venv/bin/coverage run --source=applications run/manage.py test applications.API applications.graphQL applications.frontend
       - .venv/bin/coverage combine || true
       - .venv/bin/coverage report -m
       - .venv/bin/coverage xml -o cobertura.xml

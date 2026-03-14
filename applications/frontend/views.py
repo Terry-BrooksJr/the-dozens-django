@@ -160,28 +160,45 @@ class ReportJokeView(CreateAPIView):
         Returns:
             Response | None: A DRF Response object indicating the result of the operation.
         """
-        logger.debug("Received request to report joke.")
+        logger.bind(request=request).debug("Received request to report joke.")
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
+            vd = dict(serializer.validated_data)
+            ref_id = vd.get("insult_reference_id", "unknown")
+            review_type = vd.get("review_type", "unknown")
+            anonymous = vd.get("anonymous", True)
             try:
-                formatted_issue = self.format_issue(dict(serializer.validated_data))
+                formatted_issue = self.format_issue(vd)
                 settings.BASE.get_github_api().create_issue(
                     formatted_issue.get("issue_title"),
                     body=formatted_issue.get("issue_body"),
                 )
+                logger.bind(
+                    request=request,
+                    insult_reference_id=ref_id,
+                    review_type=review_type,
+                    anonymous=anonymous,
+                ).info("Joke report submitted and GitHub issue opened.")
                 return Response(
                     data={"status": "SUCCESS"},
                     status=status.HTTP_201_CREATED,
                 )
             except Exception as e:
-                logger.error(
-                    f"Unable to Submit {serializer.data.get('reference_id','Unknown Reference_ID')} For Review: {str(e)}"
-                )
+                logger.bind(
+                    request=request,
+                    insult_reference_id=ref_id,
+                    review_type=review_type,
+                    anonymous=anonymous,
+                    error=str(e),
+                ).error(f"Unable to submit {ref_id} for review: {e}")
                 return Response(
                     data={"status": f"FAILED - {str(e)}", "errors": serializer.errors},
                     status=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )
-        logger.warning("Invalid form submission for joke review.")
+        logger.bind(
+            request=request,
+            validation_errors=serializer.errors,
+        ).warning("Invalid form submission for joke review.")
         return Response(
             data={"status": "FAILED", "errors": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
