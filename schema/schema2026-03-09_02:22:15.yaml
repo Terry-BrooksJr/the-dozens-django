@@ -6,8 +6,21 @@ info:
     name: Terry A. Brooks, Jr.
     url: https://brooksjr.com
     email: terry@brooksjr.com
+tags:
+- name: Insults
+  description: Retrieve, create, update, and delete joke/insult content. Supports filtering by category and NSFW status.
+- name: Insult Categories
+  description: List and explore available insult categories and their associated themes.
+- name: Joke Reporting
+  description: Submit a report for a joke that may violate community guidelines. Reports are forwarded to the moderation team via GitHub issues.
+- name: Health
+  description: Service health and readiness checks, including database, GraphQL schema, and LaunchDarkly client status.
+- name: api
+  description: General API utility operations.
+- name: auth
+  description: User authentication, registration, password reset, and account management.
 paths:
-  /api/:
+  /api:
     post:
       operationId: report_joke
       description: Submit a report for a joke that may violate community guidelines.
@@ -28,7 +41,7 @@ paths:
                 value:
                   insult_reference_id: BURN_1234AB
                   anonymous: true
-                  review_type: FLAG_FOR_REVIEW
+                  review_type: RX
                   rationale_for_review: The insult targets a protected characteristic
                     and may violate community guidelines. Please review and consider
                     removing it from public listings based on the platform's content
@@ -42,7 +55,7 @@ paths:
                 value:
                   insult_reference_id: SNAP_9XZ21
                   anonymous: false
-                  review_type: Joke Reclassification
+                  review_type: RE
                   rationale_for_review: This insult includes personally identifying
                     information and could lead to targeted harassment. I am requesting
                     that it be removed or restricted, in line with your moderation
@@ -74,7 +87,7 @@ paths:
           description: Internal server error occurred
         '503':
           description: Service temporarily unavailable
-  /api/categories/:
+  /api/categories:
     get:
       operationId: list_categories
       description: |2-
@@ -106,7 +119,7 @@ paths:
           description: API rate limit exceeded
         '500':
           description: Internal server error occurred
-  /api/health/:
+  /api/health:
     get:
       operationId: health_check
       description: Returns the aggregated health status of the service, including
@@ -120,7 +133,7 @@ paths:
           description: All checks healthy
         '503':
           description: One or more checks degraded
-  /api/insults/{reference_id}/:
+  /api/insults/{reference_id}:
     get:
       operationId: retrieve_insult
       description: Retrieve a specific insult by reference_id.
@@ -146,25 +159,23 @@ paths:
                   - reference_id: GIGGLE_Nzk1
                     category: One-Off/Unique
                     content: Yo momma is so bald... you can see what''s on her mind.
-                    status: Active
-                    reports_count: 0
+                    status: A
                   - reference_id: CACKLE_Xy12
                     category: Stupid
                     content: Yo momma so stupid, she went to the dentist to get Bluetooth.
-                    status: Pending
-                    reports_count: 2
+                    status: P
                   summary: List of User's Insults
                   description: Shows a simplified list of insults created by the user
                 SuccessResponse:
                   value:
-                    reference_id: 1
+                    reference_id: "GIGGLE_NDQ5"
                     content: Yo momma is so fat... she rolled over 4 quarters and
                       made a dollar!'
                     category: Fat
-                    status: Active
+                    status: A
                     nsfw: false
-                    added_by: Mike R.
-                    added_on: 2 years ago
+                    by: Mike R.
+                    added: 2 years ago
                   summary: Success Response
           description: ''
         '404':
@@ -361,7 +372,7 @@ paths:
           description: API rate limit exceeded
         '500':
           description: Internal server error occurred
-  /api/insults/category/{category_name}/:
+  /api/insults/category/{category_name}:
     get:
       operationId: list_insults_by_category
       description: Retrieve paginated insults filtered by category. Authenticated
@@ -406,14 +417,12 @@ paths:
                         category: One-Off/Unique
                         content: Yo momma is so bald... you can see what''s on her
                           mind.
-                        status: Active
-                        reports_count: 0
+                        status: A
                       - reference_id: CACKLE_Xy12
                         category: Stupid
                         content: Yo momma so stupid, she went to the dentist to get
                           Bluetooth.
-                        status: Pending
-                        reports_count: 2
+                        status: P
                   summary: List of User's Insults
                   description: Shows a simplified list of insults created by the user
                 SuccessResponse-Unfiltered(NSFW)AndUncategorized(Category):
@@ -429,22 +438,22 @@ paths:
                           beautician it took 12 hours for a quote!
                         category: Ugly
                         nsfw: false
-                        added_by: John D.
-                        added_on: 2 days ago
+                        by: John D.
+                        added: 2 days ago
                       - reference_id: CACKLE_NDQ5
                         content: Yo momma is so fat... when she dives into the ocean,
                           there is a tsunami-warning!'
                         category: Fat
                         nsfw: false
-                        added_by: Linda p.
-                        added_on: 12 days ago
+                        by: Linda p.
+                        added: 12 days ago
                       - reference_id: CHUCKLE_NDUz
                         content: Yo momma is so old her driver's license is written
                           with Roman numerals.
                         category: Old
                         nsfw: false
-                        added_by: John D.
-                        added_on: 4 Weeks Ago
+                        by: John D.
+                        added: 4 Weeks Ago
                   summary: Success Response - Unfiltered (NSFW) and Uncategorized
                     (Category)
                   description: Example 200 response payload showing a list of insults
@@ -463,8 +472,8 @@ paths:
                           sex!
                         category: Poor
                         nsfw: true
-                        added_by: John D.
-                        added_on: 2 days ago
+                        by: John D.
+                        added: 2 days ago
                   summary: Success Response - categorized (Category) & filtered(NSFW)
                   description: Example 200 response payload filtered to show only
                     NSFW insults in the 'Poor' category. Demonstrates combined filtering
@@ -528,8 +537,8 @@ paths:
                       lifestyle.
                     nsfw: false
                     status: Pending
-                    added_by: DevJoker
-                    added_on: 2 minutes ago
+                    by: DevJoker
+                    added: 2 minutes ago
                   summary: New insult created successfully
                   description: Example response when a new insult is successfully
                     created
@@ -544,7 +553,7 @@ paths:
           description: Internal server error occurred
         '503':
           description: Service temporarily unavailable
-  /api/insults/random/:
+  /api/insults/random:
     get:
       operationId: get_random_insult
       description: Returns a single random insult from the active collection. Supports
@@ -573,16 +582,10 @@ paths:
               examples:
                 MyInsultsListExample:
                   value:
-                  - reference_id: GIGGLE_Nzk1
+                    reference_id: GIGGLE_Nzk1
                     category: One-Off/Unique
                     content: Yo momma is so bald... you can see what''s on her mind.
-                    status: Active
-                    reports_count: 0
-                  - reference_id: CACKLE_Xy12
-                    category: Stupid
-                    content: Yo momma so stupid, she went to the dentist to get Bluetooth.
-                    status: Pending
-                    reports_count: 2
+                    status: A
                   summary: List of User's Insults
                   description: Shows a simplified list of insults created by the user
           description: Random insult retrieved successfully
@@ -592,7 +595,7 @@ paths:
           description: Internal server error occurred
         '503':
           description: Service temporarily unavailable
-  /api/schema/:
+  /api/schema:
     get:
       operationId: api_schema_retrieve
       description: |-
@@ -737,7 +740,7 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
-  /auth/token/login/:
+  /auth/token/login:
     post:
       operationId: auth_token_login_create
       description: Use this endpoint to obtain user authentication token.
@@ -764,7 +767,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenCreate'
           description: ''
-  /auth/token/logout/:
+  /auth/token/logout:
     post:
       operationId: auth_token_destroy
       description: Destroys the authentication token, effectively logging out the
@@ -777,7 +780,7 @@ paths:
       responses:
         '204':
           description: Token successfully deleted and user logged out
-  /auth/users/:
+  /auth/users:
     get:
       operationId: auth_users_list
       parameters:
@@ -824,7 +827,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserCreate'
           description: ''
-  /auth/users/{id}/:
+  /auth/users/{id}:
     get:
       operationId: auth_users_retrieve
       parameters:
@@ -923,7 +926,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /auth/users/activation/:
+  /auth/users/activation:
     post:
       operationId: auth_users_activation_create
       tags:
@@ -950,7 +953,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Activation'
           description: ''
-  /auth/users/me/:
+  /auth/users/me:
     get:
       operationId: auth_users_me_retrieve
       tags:
@@ -1021,7 +1024,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /auth/users/resend_activation/:
+  /auth/users/resend_activation:
     post:
       operationId: auth_users_resend_activation_create
       tags:
@@ -1048,7 +1051,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SendEmailReset'
           description: ''
-  /auth/users/reset_password/:
+  /auth/users/reset_password:
     post:
       operationId: auth_users_reset_password_create
       tags:
@@ -1075,7 +1078,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SendEmailReset'
           description: ''
-  /auth/users/reset_password_confirm/:
+  /auth/users/reset_password_confirm:
     post:
       operationId: auth_users_reset_password_confirm_create
       tags:
@@ -1102,7 +1105,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PasswordResetConfirm'
           description: ''
-  /auth/users/reset_username/:
+  /auth/users/reset_username:
     post:
       operationId: auth_users_reset_username_create
       tags:
@@ -1129,7 +1132,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SendEmailReset'
           description: ''
-  /auth/users/reset_username_confirm/:
+  /auth/users/reset_username_confirm:
     post:
       operationId: auth_users_reset_username_confirm_create
       tags:
@@ -1156,7 +1159,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UsernameResetConfirm'
           description: ''
-  /auth/users/set_password/:
+  /auth/users/set_password:
     post:
       operationId: auth_users_set_password_create
       tags:
@@ -1182,7 +1185,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SetPassword'
           description: ''
-  /auth/users/set_username/:
+  /auth/users/set_username:
     post:
       operationId: auth_users_set_username_create
       tags:

@@ -1596,6 +1596,7 @@
                 "properties": {
                   "review_type": {
                     "type": "string",
+                    "enum": ["RE", "RC", "RX"],
                     "example": "RE"
                   },
                   "post_review_contact_desired": {

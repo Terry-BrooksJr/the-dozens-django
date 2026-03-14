@@ -79,11 +79,11 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Testing
     cmds:
-      - .venv/bin/coverage erase
-      - .venv/bin/coverage run --source=applications run/manage.py test applications.API applications.graphQL applications.frontend
-      - .venv/bin/coverage combine || true
-      - .venv/bin/coverage report -m
-      - .venv/bin/coverage xml -o cobertura.xml
+      - .venv/bin/python3 -m coverage erase
+      - .venv/bin/python3 -m coverage run --source=applications run/manage.py test applications.API applications.graphQL applications.frontend
+      - .venv/bin/python3 -m coverage combine || true
+      - .venv/bin/python3 -m coverage report -m
+      - .venv/bin/python3 -m coverage xml -o cobertura.xml
     generates:
       - ".coverage"
       - "cobertura.xml"
@@ -213,16 +213,20 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Testing
     cmds:
-      - .venv/bin/coverage erase
-      - .venv/bin/coverage run --source=applications run/manage.py test applications.API applications.graphQL applications.frontend
-      - .venv/bin/coverage combine || true
-      - .venv/bin/coverage report -m
-      - .venv/bin/coverage xml -o cobertura.xml
+      - .venv/bin/python3 -m coverage erase
+      - .venv/bin/python3 -m coverage run --source=applications run/manage.py test applications.API applications.graphQL applications.frontend
+      - .venv/bin/python3 -m coverage combine || true
+      - .venv/bin/python3 -m coverage report -m
+      - .venv/bin/python3 -m coverage xml -o cobertura.xml
     sources:
       - "**/*.py"
     generates:
       - ".coverage"
       - "cobertura.xml"
+
+  test.coverage1:
+    desc: Backward-compatible alias for coverage test command
+    deps: [ test:coverage ]
 
   coverage:upload:
     desc: Upload coverage report to Codacy (requires CODACY_PROJECT_TOKEN env var)
