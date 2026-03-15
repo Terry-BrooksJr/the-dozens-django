@@ -68,7 +68,9 @@ class OpenReportJokeView(ReportJokeView):
     """ReportJokeView with throttling disabled for test isolation."""
 
     throttle_classes = []
-
+    authentication_classes = []
+    permission_classes = []
+    queryset = InsultReview.objects.all()
 
 # ---------------------------------------------------------------------------
 # Helper
