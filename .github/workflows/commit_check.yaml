@@ -8,10 +8,8 @@ env:
   PYTHON_VERSION: '3.11'
 
 jobs:
-  setup:
+  lint:
     runs-on: ubuntu-latest
-    outputs:
-      python-version: ${{ env.PYTHON_VERSION }}
     steps:
       - uses: actions/checkout@v4
 
@@ -19,27 +17,14 @@ jobs:
         uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-  lint:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Python Environment
-        uses: ./.github/actions/setup-python-env
-        with:
-          python-version: '3.11'
           install-task: 'true'
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run linters
-        run: |
-          source .venv/bin/activate
-          task lint:fix
+        run: task lint:fix
+
   test:
-    needs: setup
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -61,13 +46,14 @@ jobs:
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
         with:
-          python-version: '3.11'
-          cache-suffix: '-test'
+          python-version: ${{ env.PYTHON_VERSION }}
           install-task: 'true'
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run tests with coverage
         run: task test:coverage
+
       - name: Upload coverage to Codacy
         uses: codacy/codacy-coverage-reporter-action@v1
         with:
@@ -81,7 +67,6 @@ jobs:
           file: ./cobertura.xml
 
   security-scan:
-    needs: setup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -89,8 +74,7 @@ jobs:
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
         with:
-          python-version: '3.11'
-          cache-suffix: '-security'
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Run Safety CLI to check for vulnerabilities
         continue-on-error: true
@@ -100,12 +84,9 @@ jobs:
 
       - name: Run Bandit Report
         run: |
-          source .venv/bin/activate
-          # Install security tools if not in requirements
-          pip install safety bandit
-
+          .venv/bin/pip install --quiet bandit
           echo "Running static security analysis..."
-          bandit -r . -f json -o bandit-report.json || true
+          .venv/bin/bandit -r . -f json -o bandit-report.json || true
 
       - name: Upload security scan results
         if: always()
@@ -121,15 +102,15 @@ jobs:
     steps:
       - name: Check build status
         run: |
-          if [[ "${{ needs.lint.result }}" == "success" && 
-                "${{ needs.test.result }}" == "success" && 
+          if [[ "${{ needs.lint.result }}" == "success" &&
+                "${{ needs.test.result }}" == "success" &&
                 "${{ needs.security-scan.result }}" == "success" ]]; then
             echo "✅ All checks passed!"
             exit 0
           else
             echo "❌ Some checks failed:"
             echo "Lint: ${{ needs.lint.result }}"
-            echo "Test: ${{ needs.test.result }}" 
+            echo "Test: ${{ needs.test.result }}"
             echo "Security: ${{ needs.security-scan.result }}"
             exit 1
           fi
