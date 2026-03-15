@@ -63,14 +63,17 @@ assert len(_RATIONALE) >= 70, "Test fixture rationale must be at least 70 charac
 # Throttle-free view subclass
 # ---------------------------------------------------------------------------
 
+
 class OpenReportJokeView(ReportJokeView):
     """ReportJokeView with throttling disabled for test isolation."""
+
     throttle_classes = []
 
 
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
+
 
 def _post(factory: APIRequestFactory, payload: dict):
     """Dispatch a POST through the throttle-free view."""
@@ -83,6 +86,7 @@ def _post(factory: APIRequestFactory, payload: dict):
 # Main test class
 # ---------------------------------------------------------------------------
 
+
 class ReportJokeViewTests(TestCase):
     """End-to-end tests for POST /api/ → ReportJokeView."""
 
@@ -93,9 +97,7 @@ class ReportJokeViewTests(TestCase):
             email="owner@example.com",
             password="pass1234",
         )
-        cls.theme = Theme.objects.create(
-            theme_key="TST", theme_name="Test Theme"
-        )
+        cls.theme = Theme.objects.create(theme_key="TST", theme_name="Test Theme")
         cls.category = InsultCategory.objects.create(
             category_key="P",
             name="Poor",
@@ -394,6 +396,7 @@ class ReportJokeViewTests(TestCase):
 # ---------------------------------------------------------------------------
 # Unit tests for the format_issue() helper
 # ---------------------------------------------------------------------------
+
 
 class FormatIssueTests(TestCase):
     """Unit tests for ReportJokeView.format_issue()."""

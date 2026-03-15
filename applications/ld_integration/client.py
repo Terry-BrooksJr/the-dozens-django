@@ -15,6 +15,7 @@ from dataclasses import dataclass
 try:
     import ldclient as ld_client
     from ldclient.config import Config
+
     LDCLIENT_AVAILABLE = True
 except ImportError:
     ld_client = None
@@ -22,10 +23,8 @@ except ImportError:
     LDCLIENT_AVAILABLE = False
 
 try:
-    from ldobserve import (
-        ObservabilityConfig as OBSERVABILITY_CONFIG,
-        ObservabilityPlugin as OBSERVABILITY_PLUGIN,
-    )
+    from ldobserve import ObservabilityConfig as OBSERVABILITY_CONFIG
+    from ldobserve import ObservabilityPlugin as OBSERVABILITY_PLUGIN
 except ImportError:
     OBSERVABILITY_CONFIG = None
     OBSERVABILITY_PLUGIN = None

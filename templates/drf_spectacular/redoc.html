@@ -247,13 +247,21 @@
 
                   const customTheme = {
                        colors: {
-                            primary: { main: '#770071' },
-                            success: { main: '#beda00' },
-                            text: { primary: '#333333' }
+                            primary: {
+                                 main: '#770071'
+                            },
+                            success: {
+                                 main: '#beda00'
+                            },
+                            text: {
+                                 primary: '#333333'
+                            }
                        },
                        typography: {
                             fontFamily: '"YoMamaBody", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
-                            headings: { fontFamily: '"YoMamaHeader", Arial, sans-serif' }
+                            headings: {
+                                 fontFamily: '"YoMamaHeader", Arial, sans-serif'
+                            }
                        },
                        sidebar: {
                             backgroundColor: '#f8f9fa',
@@ -261,11 +269,27 @@
                        }
                   };
 
-                  {% if settings %}
-                  const customSettings = Object.assign({}, {{ settings | safe }}, { theme: customTheme });
-                  {% else %}
-                  const customSettings = { theme: customTheme };
-                  {% endif %}
+                  {
+                       %
+                       if settings %
+                  }
+                  const customSettings = Object.assign({}, {
+                       {
+                            settings | safe
+                       }
+                  }, {
+                       theme: customTheme
+                  });
+                  {
+                       %
+                       else %
+                  }
+                  const customSettings = {
+                       theme: customTheme
+                  };
+                  {
+                       % endif %
+                  }
 
                   Redoc.init("{{ schema_url }}", customSettings, container, function(err) {
                        if (err) {

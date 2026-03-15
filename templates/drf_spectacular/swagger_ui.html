@@ -14,7 +14,8 @@
         <!-- Preconnect to external resources -->
         <link rel="preconnect" href="https://cdn.jsdelivr.net">
         <!-- SweetAlert2 -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+        <link rel="stylesheet"
+              href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
         <!-- Preload critical fonts -->
         <link rel="preload"
               href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2"
@@ -307,10 +308,24 @@
                     onclick="showWelcomeModal()"
                     title="Show quick-start guide"
                     aria-label="Show quick-start guide"
-                    style="position:absolute;top:1rem;right:1rem;width:2.2rem;height:2.2rem;border-radius:50%;border:2px solid var(--color-accent);background:var(--color-accent);color:var(--color-primary);font-family:'YoMamaHeader',Arial,sans-serif;font-size:1.1rem;font-weight:700;cursor:pointer;line-height:1;transition:all 0.2s ease;"
+                    style="position:absolute;
+                           top:1rem;
+                           right:1rem;
+                           width:2.2rem;
+                           height:2.2rem;
+                           border-radius:50%;
+                           border:2px solid var(--color-accent);
+                           background:var(--color-accent);
+                           color:var(--color-primary);
+                           font-family:'YoMamaHeader',Arial,sans-serif;
+                           font-size:1.1rem;
+                           font-weight:700;
+                           cursor:pointer;
+                           line-height:1;
+                           transition:all 0.2s ease"
                     onmouseover="this.style.background='#fff';this.style.borderColor='#fff';"
                     onmouseout="this.style.background='var(--color-accent)';this.style.borderColor='var(--color-accent)';">
-                 ?
+                ?
             </button>
         </div>
         <!-- Swagger UI container -->
@@ -324,7 +339,9 @@
             <script src="{{ script_url }}"></script>
         {% else %}
             <script>
-                {% include template_name_js %}
+                 {
+                      % include template_name_js %
+                 }
             </script>
         {% endif %}
         <!-- SweetAlert2 JS -->
@@ -342,7 +359,10 @@
                             observer.disconnect();
                        }
                   });
-                  observer.observe(container, { childList: true, subtree: true });
+                  observer.observe(container, {
+                       childList: true,
+                       subtree: true
+                  });
 
                   // Hard fallback: clear loading after 8 s regardless
                   setTimeout(function() {
@@ -409,7 +429,7 @@
                             confirmButton: 'dozens-swal-btn',
                             closeButton: 'dozens-swal-close'
                        },
-                       didOpen: function () {
+                       didOpen: function() {
                             const confirmBtn = document.querySelector('.dozens-swal-btn');
                             const closeBtn = document.querySelector('.dozens-swal-close');
                             const checkbox = document.getElementById('swal-dont-show');
@@ -434,7 +454,7 @@
 
                             // Toggle confirm button & hint based on checkbox state
                             if (checkbox) {
-                                 checkbox.addEventListener('change', function () {
+                                 checkbox.addEventListener('change', function() {
                                       if (confirmBtn) {
                                            confirmBtn.style.display = this.checked ? 'inline-block' : 'none';
                                       }
@@ -444,10 +464,10 @@
                                  });
                             }
                        },
-                       preConfirm: function () {
+                       preConfirm: function() {
                             return document.getElementById('swal-dont-show').checked;
                        }
-                  }).then(function (result) {
+                  }).then(function(result) {
                        if (result.isConfirmed && result.value === true) {
                             localStorage.setItem(DOZENS_WELCOME_KEY, 'true');
                        }

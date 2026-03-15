@@ -1,12 +1,11 @@
 from __future__ import annotations
 
+import os
+import time
 from contextlib import contextmanager
 from functools import lru_cache
 
 from prometheus_client import Counter, Histogram
-
-import os
-import time
 
 try:
     import ldobserve.observe as observe

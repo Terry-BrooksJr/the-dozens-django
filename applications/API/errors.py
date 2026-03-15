@@ -9,13 +9,12 @@ This module:
 
 from typing import Any, Dict
 
-from drf_spectacular.utils import OpenApiResponse, OpenApiExample
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse
 from loguru import logger
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
-
 
 # ---------------------------------------------------------------------------
 # Core templates: single source of truth for error payloads

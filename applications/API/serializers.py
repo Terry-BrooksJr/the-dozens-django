@@ -15,20 +15,21 @@ from datetime import datetime
 from functools import lru_cache
 from typing import Any, ClassVar, Dict, Optional
 
-from django.core.cache import cache
+import arrow
 from django.conf import settings
+from django.core.cache import cache
 from django.utils.text import capfirst
+from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import (
     OpenApiExample,
     extend_schema_field,
     extend_schema_serializer,
 )
 from humanize import naturaltime
-from django.utils.translation import gettext_lazy as _
 from loguru import logger
 from rest_framework import serializers, status
 from rest_framework.response import Response
-import arrow
+
 from applications.API.models import Insult, InsultCategory, InsultReview
 from common.cache_managers import CategoryCacheManager, create_category_manager
 

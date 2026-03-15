@@ -7,16 +7,16 @@ API endpoints for managing insults, categories, and themes.
 - Supports filtering, random retrieval, and category/theme discovery
 """
 
-from urllib.parse import urlencode
 from typing import Optional
+from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import EmptyResultSet
 from django.db import connection
+from django.db.models import QuerySet
 from django.shortcuts import redirect
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.db.models import QuerySet
 from django.views.decorators.cache import never_cache
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import (
@@ -28,7 +28,6 @@ from drf_spectacular.utils import (
     extend_schema_view,
 )
 from loguru import logger
-from applications.API.authentication import FlexibleTokenAuthentication
 from rest_framework.generics import (
     CreateAPIView,
     GenericAPIView,
@@ -40,6 +39,13 @@ from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import PaginateByMaxMixin
 
+from applications.API.authentication import FlexibleTokenAuthentication
+from applications.API.errors import (
+    StandardErrorResponses,
+    get_category_list_responses,
+    get_insult_crud_responses,
+    get_public_list_responses,
+)
 from applications.API.filters import InsultFilter
 from applications.API.models import Insult, InsultCategory, InsultReview, Theme
 from applications.API.permissions import IsOwnerOrReadOnly
@@ -48,12 +54,6 @@ from applications.API.serializers import (
     CategorySerializer,
     CreateInsultSerializer,
     OptimizedInsultSerializer,
-)
-from applications.API.errors import (
-    StandardErrorResponses,
-    get_insult_crud_responses,
-    get_category_list_responses,
-    get_public_list_responses,
 )
 from common.performance import CachedResponseMixin
 
@@ -817,6 +817,7 @@ class HealthEndpoint(GenericAPIView):
     def _check_graphql(self) -> str:
         try:
             from applications.graphQL.schema import schema
+
             result = schema.execute("{ __typename }")
             return "error" if result.errors else "ok"
         except Exception:
@@ -824,10 +825,12 @@ class HealthEndpoint(GenericAPIView):
 
     def _check_launchdarkly(self) -> str:
         from django.conf import settings
+
         if not getattr(settings, "LAUNCHDARKLY_ENABLED", False):
             return "disabled"
         try:
             from applications.ld_integration.client import get_client
+
             client = get_client()
             return "ok" if (client and client.is_initialized()) else "not_initialized"
         except Exception:

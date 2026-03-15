@@ -13,7 +13,11 @@ from django.views.decorators.csrf import csrf_exempt
 import applications.API.urls as API_URLS
 import applications.graphQL.urls as GRAPHQL_URL
 from applications.API.auth.auth_endpoints import TokenDestroyView
-from applications.frontend.views import LandingPageView, ReportJokeView, page_not_found_view
+from applications.frontend.views import (
+    LandingPageView,
+    ReportJokeView,
+    page_not_found_view,
+)
 
 urlpatterns = [
     path("", LandingPageView.as_view(), name="landing"),

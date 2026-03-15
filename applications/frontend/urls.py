@@ -1,8 +1,6 @@
 from django.urls import path
 
-from applications.frontend.views import (
-    ReportJokeView,
-)
+from applications.frontend.views import ReportJokeView
 
 urlpatterns = [
     # Insult Reporting Endpoint
