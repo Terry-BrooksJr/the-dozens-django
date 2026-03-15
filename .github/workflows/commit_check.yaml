@@ -29,7 +29,7 @@ jobs:
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
         with:
-          python-version: ${{ needs.setup.outputs.python-version }}
+          python-version: '3.11'
           install-task: 'true'
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -61,8 +61,7 @@ jobs:
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
         with:
-          python-version: ${{ needs.setup.outputs.python-version }}
-          python-version: ${{ needs.setup.outputs.python-version }}
+          python-version: '3.11'
           cache-suffix: '-test'
           install-task: 'true'
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
@@ -91,7 +90,7 @@ jobs:
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
         with:
-          python-version: ${{ needs.setup.outputs.python-version }}
+          python-version: '3.11'
           cache-suffix: '-security'
 
       - name: Run Safety CLI to check for vulnerabilities
