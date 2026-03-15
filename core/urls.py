@@ -17,6 +17,7 @@ from applications.frontend.views import (
     LandingPageView,
     ReportJokeView,
     page_not_found_view,
+    get_reference_ids
 )
 
 urlpatterns = [
@@ -29,7 +30,8 @@ urlpatterns = [
     path("auth/token/logout/", TokenDestroyView.as_view(), name="token_logout"),
     re_path(r"^auth/", include("djoser.urls")),
     re_path(r"^auth/", include("djoser.urls.authtoken")),
-    path("api/", csrf_exempt(ReportJokeView.as_view()), name="report-joke"),
+    path("report/", csrf_exempt(ReportJokeView.as_view()), name="report-joke"),
+    path("api/reference-ids/", csrf_exempt(get_reference_ids), name="get_reference_ids"),
 ]
 
 handler404 = page_not_found_view

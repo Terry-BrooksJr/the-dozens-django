@@ -28,7 +28,7 @@ from rest_framework.response import Response
 
 from applications.API.errors import StandardErrorResponses
 from applications.API.serializers import InsultReviewSerializer
-
+from applications.API.models import Insult
 
 class LandingPageView(TemplateView):
     template_name = "landing.html"
@@ -205,3 +205,10 @@ class ReportJokeView(CreateAPIView):
             data={"status": "FAILED", "errors": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+def get_reference_ids(request):
+    """API endpoint to retrieve a list of insult reference IDs for reporting purposes."""
+    if request.method == "GET":
+        reference_ids = Insult.objects.filter(status=Insult.Status.ACTIVE).values_list("reference_id", flat=True)
+        return JsonResponse({"reference_ids": list(reference_ids)}, status=200)
+    return JsonResponse({"detail": "Method not allowed."}, status=405)
