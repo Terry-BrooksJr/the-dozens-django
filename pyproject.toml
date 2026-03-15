@@ -95,3 +95,17 @@ plugins = ["mypy_django_plugin.main"]
 
 [tool.django-stubs]
 django_settings_module = "thedozens.settings"
+
+[tool.coverage.run]
+branch = true
+source = ["applications"]
+omit = [
+  "*/tests/*",
+  "*/migrations/*",
+]
+
+[tool.coverage.report]
+omit = [
+  "*/tests/*",
+  "*/migrations/*",
+]

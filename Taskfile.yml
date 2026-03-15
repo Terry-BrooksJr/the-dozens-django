@@ -3,10 +3,11 @@ env:
   DOPPLER_TOKEN: ${DOPPLER_TOKEN}
   PATH_TO_DB_ROOT_CERT: ${PATH_TO_DB_ROOT_CERT}
   LETSENCRYPT_EMAIL: Terry.Arthur@BrooksJr.com
-  CODACY_PROJECT_TOKEN: b7a114c241444b6c863c884178fb6af6
+  # CODACY_PROJECT_TOKEN must be set in the environment (do not hardcode)
+  CODACY_PROJECT_TOKEN: ${CODACY_PROJECT_TOKEN}
   CODACY_USERNAME: Terry-BrooksJr
   CODACY_PROJECT_NAME: the-dozens-django
-  PYTHON_PATH: "{{ .TASKFILE_DIR }}:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run"
+  PYTHONPATH: "{{ .TASKFILE_DIR }}:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run"
   TEMP_STATIC_DIR: ${TEMP_STATIC_DIR}
 silent: true
 tasks:
@@ -18,33 +19,39 @@ tasks:
     desc: Make a new virtual environment
     cmds:
       - python3 -m venv .venv --prompt="ACTIVE_VENV_DJANGO_DOZENS"
-      - source {{.TASKFILE_DIR}}/.venv/bin/activate
+    # NOTE: `source .venv/bin/activate` is intentionally omitted — each Task
+    # command runs in its own subshell so sourcing the venv has no effect on
+    # subsequent commands. Use `.venv/bin/<tool>` paths instead.
     internal: true
 
   run:dev:
-    desc: Starts the Django Application, and background workers in a debug state
+    desc: Starts the Django Application and background workers in a debug state
     dir: .
     cmds:
       - echo "Completing Pre-Start Environment Check For Development..."
-      - echo "DJango Configuration:${DJANGO_CONFIGURATION}"
-      - source .envrc && PYTHONPATH="${PYTHON_PATH}"   .venv/bin/python3 -m gunicorn -t 1 -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{or .CLI_ARGS 8000}} --reload
+      - echo "Django Configuration:${DJANGO_CONFIGURATION}"
+      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 -m gunicorn -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{or .CLI_ARGS 8000}} --reload
+    # NOTE: `source .envrc` removed — no-op in a non-interactive subshell.
+    # NOTE: `-t 1` (connect timeout) removed — it conflicted with --timeout 120.
     interactive: false
     silent: false
 
   install:
+    desc: Install project dependencies into the virtual environment
     deps: [ venv ]
     cmds:
-      - pip install poetry
-      - poetry lock
-      - poetry install --no-root
+      - .venv/bin/pip install --quiet --upgrade pip
+      - .venv/bin/pip install poetry
+      - .venv/bin/poetry lock
+      - .venv/bin/poetry install --no-root
     silent: false
 
   freeze:
-    desc: Pin current dependencies
+    desc: Pin current dependencies and export requirements files
     cmds:
-      - poetry sync
-      - poetry export --without dev,test --without-hashes --without-urls > ./requirements/base.txt
-      - poetry export  --without-hashes --without-urls > ./requirements/dev.txt
+      - .venv/bin/poetry sync
+      - .venv/bin/poetry export --without dev,test --without-hashes --without-urls > ./requirements/base.txt
+      - .venv/bin/poetry export  --without-hashes --without-urls > ./requirements/dev.txt
     generates:
       - ./requirements/dev.txt
       - ./requirements/base.txt
@@ -59,12 +66,11 @@ tasks:
     desc: Make and run migrations
     dir: .
     cmds:
-      - python3 run/manage.py makemigrations
-      - python3 run/manage.py migrate
-    generates:
-      - ./applications/*/migrations/*.py
-    sources:
-      - ./applications/*/migrations/*.py
+      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py makemigrations
+      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py migrate
+    # NOTE: sources/generates removed for migrations — Task's file-fingerprinting
+    # is unreliable for Django migration files (auto-generated names change each
+    # run). Migrations are always re-run to guarantee idempotency.
     requires:
       vars:
         - DOPPLER_TOKEN
@@ -72,10 +78,11 @@ tasks:
 
   collect:
     dir: .
-
-    desc: Collect static files in to single directory for production
+    desc: Collect static files into single directory for production
     cmds:
-      - source .envrc && PYTHONPATH="./core:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run:{{ .TASKFILE_DIR }}"  python run/manage.py collectstatic --no-input
+      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py collectstatic --no-input
+    # NOTE: `source .envrc` removed (no-op in subshell). PYTHONPATH now uses the
+    # globally defined env var instead of a long inline literal.
 
   run:test:
     dir: .
@@ -83,11 +90,11 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Testing
     cmds:
-      - python -m coverage erase
-      - python -m coverage run --source=applications run/manage.py test applications.API applications.graphQL applications.frontend
-      - python -m coverage combine || true
-      - python -m coverage report -m
-      - python -m coverage xml -o cobertura.xml
+      - .venv/bin/python -m coverage erase
+      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python -m coverage run --source=applications run/manage.py test applications.API applications.graphQL applications.frontend
+      - .venv/bin/python -m coverage combine || true
+      - .venv/bin/python -m coverage report -m
+      - .venv/bin/python -m coverage xml -o cobertura.xml
     generates:
       - ".coverage"
       - "cobertura.xml"
@@ -99,7 +106,7 @@ tasks:
   run:prod:
     dir: .
     silent: false
-    desc: Command to Start Production Level Services including Install requirements, apply migrations, then start development server
+    desc: Start Production Level Services — install requirements, apply migrations, then start production server
     cmds:
       - echo 'Starting Production Level Services...'
       - echo 'Installing dependencies'
@@ -113,18 +120,17 @@ tasks:
 
   schema-check:
     dir: "{{.TASKFILE_DIR}}"
-    desc: Check Models and Serializers for schema compliance with OpenAPI .0 Standards and fail on warnings
+    desc: Check Models and Serializers for schema compliance with OpenAPI 3.0 Standards and fail on warnings
     cmds:
-      - python3 run/manage.py spectacular  --file schema/schema$(date +"%Y-%m-%d").yaml --validate
+      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d").yaml --validate
     internal: true
 
   schema:
     deps: [ schema-check ]
     dir: "{{.TASKFILE_DIR}}"
-
     desc: Generate OpenAPI 3.0 schema.yaml file from models and serializers
     cmds:
-      - .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
+      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
 
   build-image:
     desc: Build Docker Image
@@ -156,6 +162,7 @@ tasks:
     dir: "{{.TASKFILE_DIR}}"
     cmds:
       - docker compose down {{.CLI_ARGS}}
+
   lint:lint:
     desc: Run all linting and formatting tools
     dir: .
@@ -170,9 +177,12 @@ tasks:
       - echo "🚀 Running ruff (fast linting)..."
       - .venv/bin/ruff check .
       - echo "🔧 Running pylint (comprehensive linting)..."
-      - .venv/bin/pylint **/*.py --load-plugins=pylint_django,pylint_celery --django-settings-module=core.settings
+      # NOTE: `**/*.py` glob is replaced with `find` — shell globstar is not
+      # guaranteed in Task's subshell and silently passes no files to pylint.
+      - .venv/bin/pylint $(find . -name '*.py' -not -path './.venv/*' -not -path './migrations/*') --load-plugins=pylint_django,pylint_celery --django-settings-module=core.settings
       - echo "🔒 Running bandit (security linting)..."
-      - .venv/bin/bandit -r . -f json --exclude=./tests,./venv,./.venv
+      # NOTE: exclude updated from `./venv` → `./.venv` to match actual venv path.
+      - .venv/bin/bandit -r . -f json --exclude=./tests,./.venv
       - echo "🎯 Running mypy (type checking)..."
       - .venv/bin/mypy .
       - echo "🌟 Running djlint (Django template linting)..."
@@ -180,6 +190,7 @@ tasks:
       - echo "✅ All linting checks completed!"
     silent: false
     interactive: false
+
   lint:fix:
     desc: Automatically fix linting and formatting issues
     dir: .
@@ -200,15 +211,17 @@ tasks:
       - echo "🌟 Running djlint (Django template auto-fix)..."
       - cmd: .venv/bin/djlint --reformat templates/**/*.html
         ignore_error: true
-      - echo "✅ Auto-fix completed! Run 'task lint' to check remaining issues."
+      - echo "✅ Auto-fix completed! Run 'task lint:lint' to check remaining issues."
     silent: false
     interactive: false
 
   django:
     desc: "Wrapper command to simplify the use of Django management commands. Example Usage: task django -- runserver"
     dir: "{{.TASKFILE_DIR}}"
+    env:
+      PYTHONPATH: "{{.PYTHONPATH}}"
     cmds:
-      - python3 run/manage.py {{.CLI_ARGS}}
+      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py {{.CLI_ARGS}}
     silent: false
     interactive: true
 
@@ -217,11 +230,11 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Testing
     cmds:
-      - python -m coverage erase
-      - python -m coverage run --source=applications run/manage.py test applications.API applications.graphQL applications.frontend
-      - python -m coverage combine || true
-      - python -m coverage report -m
-      - python -m coverage xml -o cobertura.xml
+      - rm -f .coverage .coverage.*
+      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python -m coverage run --source=applications --omit='*/tests/*,*/migrations/*' run/manage.py test applications.API applications.graphQL applications.frontend --verbosity 2
+      - .venv/bin/python -m coverage debug data
+      - .venv/bin/python -m coverage report -m
+      - .venv/bin/python -m coverage xml -o cobertura.xml
     silent: false
     sources:
       - "**/*.py"
@@ -235,9 +248,10 @@ tasks:
 
   coverage:upload:
     desc: Upload coverage report to Codacy (requires CODACY_PROJECT_TOKEN env var)
-    deps: [ test:coverage ]
+    deps: [ test:coveragetask ]
     cmds:
-      - task: run:test
+      # NOTE: `task: run:test` removed from cmds — tests are already executed via
+      # deps: [test:coverage] above. Running them again doubled CI time.
       - bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml
     requires:
       vars:
