@@ -12,8 +12,8 @@ Covers:
 import json
 
 from django.contrib.auth import get_user_model
-from django.test import SimpleTestCase, TestCase
-from graphene import List, ObjectType
+from django.test import SimpleTestCase
+from graphene import ObjectType
 from graphene_django.utils.testing import GraphQLTestCase
 
 from applications.API.models import Insult, InsultCategory, Theme
@@ -120,9 +120,7 @@ class TestInsultTypeIsActiveIntegration(GraphQLTestCase):
             email="typetestuser@example.com",
             password="pass1234",
         )
-        cls.theme = Theme.objects.create(
-            theme_key="TT", theme_name="Type Test Theme"
-        )
+        cls.theme = Theme.objects.create(theme_key="TT", theme_name="Type Test Theme")
         cls.cat = InsultCategory.objects.create(
             category_key="TTC", name="Type Test Cat", theme=cls.theme
         )
@@ -138,9 +136,7 @@ class TestInsultTypeIsActiveIntegration(GraphQLTestCase):
                 added_by=cls.user,
             )
 
-        cls.active = Insult.objects.get(
-            content="Type test insult [A]", theme=cls.theme
-        )
+        cls.active = Insult.objects.get(content="Type test insult [A]", theme=cls.theme)
 
     def _query_is_active(self, insult_id: int) -> bool | None:
         """Execute insultById and return the isActive value."""

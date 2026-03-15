@@ -72,6 +72,7 @@ class OpenReportJokeView(ReportJokeView):
     permission_classes = []
     queryset = InsultReview.objects.all()
 
+
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------

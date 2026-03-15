@@ -31,7 +31,6 @@ from django.test import RequestFactory, SimpleTestCase
 
 from applications.frontend.views import LandingPageView, page_not_found_view
 
-
 # ---------------------------------------------------------------------------
 # LandingPageView
 # ---------------------------------------------------------------------------

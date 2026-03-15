@@ -125,7 +125,9 @@ class TestDozenGraphQLViewResponseHeaders(TestCase):
     def test_api_endpoint_csrf_exempt(self):
         """POST to /graphql/ succeeds without a CSRF token."""
         csrf_client = Client(enforce_csrf_checks=True)
-        resp = csrf_client.post(GRAPHQL_API_URL, _INTROSPECTION_BODY, content_type=_JSON_CT)
+        resp = csrf_client.post(
+            GRAPHQL_API_URL, _INTROSPECTION_BODY, content_type=_JSON_CT
+        )
         # Must NOT return 403 Forbidden due to CSRF.
         self.assertNotEqual(resp.status_code, 403)
         self.assertEqual(resp.status_code, 200)

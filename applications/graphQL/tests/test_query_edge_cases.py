@@ -34,9 +34,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             email="edge@example.com",
             password="pass1234",
         )
-        cls.theme = Theme.objects.create(
-            theme_key="EC", theme_name="Edge Case Theme"
-        )
+        cls.theme = Theme.objects.create(theme_key="EC", theme_name="Edge Case Theme")
         cls.cat_a = InsultCategory.objects.create(
             category_key="ECA", name="Edge Cat A", theme=cls.theme
         )
@@ -344,7 +342,9 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             """
         )
         self.assertResponseNoErrors(resp_count)
-        total = json.loads(resp_count.content)["data"]["insultsByClassification"]["totalCount"]
+        total = json.loads(resp_count.content)["data"]["insultsByClassification"][
+            "totalCount"
+        ]
 
         response = self.query(
             f"""
@@ -374,6 +374,8 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             """
         )
         self.assertResponseNoErrors(resp_sfw)
-        total = json.loads(resp_sfw.content)["data"]["insultsByClassification"]["totalCount"]
+        total = json.loads(resp_sfw.content)["data"]["insultsByClassification"][
+            "totalCount"
+        ]
         # cat_a has 4 SFW insults in non-Active states; they must be counted.
         self.assertGreaterEqual(total, 4)

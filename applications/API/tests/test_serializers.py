@@ -265,7 +265,9 @@ class TestBaseInsultSerializerComputeMethods(SerializerTestCase):
         class FakeObj:
             added_by = None
 
-        self.assertEqual(self._serializer()._compute_added_by_display(FakeObj()), "Anon Jokester")
+        self.assertEqual(
+            self._serializer()._compute_added_by_display(FakeObj()), "Anon Jokester"
+        )
 
     def test_compute_added_by_display_no_first_name_returns_username(self):
         class FakeObj:
@@ -391,7 +393,15 @@ class TestOptimizedInsultSerializer(SerializerTestCase):
 
     def test_serializes_all_expected_fields(self):
         data = OptimizedInsultSerializer(self.insult).data
-        for field in ("content", "reference_id", "category", "nsfw", "status", "added", "by"):
+        for field in (
+            "content",
+            "reference_id",
+            "category",
+            "nsfw",
+            "status",
+            "added",
+            "by",
+        ):
             self.assertIn(field, data)
 
     def test_by_field_is_string(self):
@@ -611,16 +621,12 @@ class TestInsultReviewSerializer(SerializerTestCase):
     # ── non-anonymous name requirements ─────────────────────────────────────
 
     def test_non_anonymous_missing_first_name_raises(self):
-        s = InsultReviewSerializer(
-            data=self._non_anon_payload(reporter_first_name="")
-        )
+        s = InsultReviewSerializer(data=self._non_anon_payload(reporter_first_name=""))
         self.assertFalse(s.is_valid())
         self.assertIn("First name is required", str(s.errors))
 
     def test_non_anonymous_missing_last_name_raises(self):
-        s = InsultReviewSerializer(
-            data=self._non_anon_payload(reporter_last_name="")
-        )
+        s = InsultReviewSerializer(data=self._non_anon_payload(reporter_last_name=""))
         self.assertFalse(s.is_valid())
         self.assertIn("Last name is required", str(s.errors))
 

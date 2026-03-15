@@ -88,8 +88,7 @@ class TestSchemaIntrospection(SimpleTestCase):
         )
         self.assertIsNone(result.errors)
         field_names = {
-            f["name"]
-            for f in result.data["__schema"]["queryType"]["fields"]
+            f["name"] for f in result.data["__schema"]["queryType"]["fields"]
         }
         for expected in EXPECTED_QUERY_FIELDS:
             with self.subTest(field=expected):
