@@ -471,7 +471,15 @@ class BaseInsultSerializer(CachedBulkSerializer):
             raw_category = data["category_name"]
 
         if raw_category is not None and isinstance(raw_category, str):
-            resolved = type(self).resolve_category(raw_category)
+            try:
+                resolved = type(self).resolve_category(raw_category)
+            except serializers.ValidationError as exc:
+                # Re-raise under the "category" key so DRF stores it as a
+                # field-level error dict rather than a bare list.  A bare list
+                # in self._errors causes ReturnDict (which calls dict()) to
+                # crash with "dictionary update sequence element #0 has length
+                # N; 2 is required".
+                raise serializers.ValidationError({"category": exc.detail})
             # Store the resolved key string — not a model instance — so that
             # DRF field-level validation (CharField / SlugRelatedField) receives
             # a type it can process. The model lookup happens later in
@@ -524,12 +532,11 @@ class MyInsultSerializer(BaseInsultSerializer):
     """
 
     status = serializers.CharField(source="get_status_display", read_only=True)
-    added_by = serializers.SerializerMethodField()
 
     class Meta:
         model = Insult
         fields = ["reference_id", "category", "content", "status", "reports_count"]
-        read_only_fields = ["reference_id", "status", "added_by", "reports_count"]
+        read_only_fields = ["reference_id", "status", "reports_count"]
 
 
 @extend_schema_serializer(
