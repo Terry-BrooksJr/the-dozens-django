@@ -100,12 +100,29 @@ django_settings_module = "thedozens.settings"
 branch = true
 source = ["applications"]
 omit = [
-  "*/tests/*",
   "*/migrations/*",
+  "*/tests/*",
+  "manage.py",
+  "*/venv/*",
+  "*/.venv/*",
 ]
 
 [tool.coverage.report]
+skip_empty = true
+show_missing = true
 omit = [
-  "*/tests/*",
   "*/migrations/*",
+  "*/tests/*",
+  "manage.py",
+  "*/venv/*",
+  "*/.venv/*",
 ]
+exclude_lines = [
+  "pragma: no cover",
+  "def __str__",
+  "if settings.DEBUG",
+  "if __name__ == .__main__.:",
+]
+
+[tool.coverage.xml]
+output = "coverage.xml"
