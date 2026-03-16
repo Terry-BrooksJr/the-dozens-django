@@ -1,3 +1,4 @@
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/b7a114c241444b6c863c884178fb6af6)](https://app.codacy.com/gh/Terry-BrooksJr/the-dozens-django?utm_source=github.com&utm_medium=referral&utm_content=Terry-BrooksJr/the-dozens-django&utm_campaign=Badge_Grade)
 [![CI Pipeline](https://github.com/Terry-BrooksJr/the-dozens-django/actions/workflows/commit_check.yaml/badge.svg)](https://github.com/Terry-BrooksJr/the-dozens-django/actions/workflows/commit_check.yaml)
 # The Dozens — Django/DRF API
 
