@@ -7,7 +7,7 @@ env:
   CODACY_PROJECT_TOKEN: ${CODACY_PROJECT_TOKEN}
   CODACY_USERNAME: Terry-BrooksJr
   CODACY_PROJECT_NAME: the-dozens-django
-  PYTHONPATH: "{{ .TASKFILE_DIR }}:{{ .TASKFILE_DIR }}/applications/API:{{ .TASKFILE_DIR }}/applications/graphQL:{{ .TASKFILE_DIR }}/applications/frontend:{{ .TASKFILE_DIR }}/common:{{ .TASKFILE_DIR }}/run"
+  PYTHONPATH: "{{ .TASKFILE_DIR }}"
   TEMP_STATIC_DIR: ${TEMP_STATIC_DIR}
 silent: true
 tasks:
@@ -86,14 +86,15 @@ tasks:
 
   run:test:
     dir: .
-    desc: Run tests with coverage and generate cobertura.xml
+    desc: Run all tests with pytest-cov and generate cobertura.xml (primary CI task)
     env:
       DJANGO_CONFIGURATION: Testing
     cmds:
-      - rm -f .coverage .coverage.*
-      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python -m coverage run --source=applications --omit='*/tests/*,*/migrations/*' run/manage.py test applications.API applications.graphQL applications.frontend --verbosity 2
-      - .venv/bin/python -m coverage report -m
-      - .venv/bin/python -m coverage xml -o cobertura.xml
+      - PYTHONPATH="${PYTHONPATH}" .venv/bin/coverage erase
+      - >-
+        PYTHONPATH="${PYTHONPATH}" .venv/bin/coverage run --rcfile=pyproject.toml -m pytest -v
+      - PYTHONPATH="${PYTHONPATH}" .venv/bin/coverage report -m
+      - PYTHONPATH="${PYTHONPATH}" .venv/bin/coverage xml -o cobertura.xml
     generates:
       - ".coverage"
       - "cobertura.xml"
@@ -101,7 +102,6 @@ tasks:
       vars:
         - DOPPLER_TOKEN
         - PATH_TO_DB_ROOT_CERT
-
   run:prod:
     dir: .
     silent: false
@@ -225,28 +225,32 @@ tasks:
     interactive: true
 
   test:coverage:
-    desc: Run Django tests with coverage and generate reports
+    desc: Run all tests with pytest-cov; generates term, XML, and HTML reports
     env:
       DJANGO_CONFIGURATION: Testing
     cmds:
-      - rm -f .coverage .coverage.*
-      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python -m coverage run --source=applications --omit='*/tests/*,*/migrations/*' run/manage.py test applications.API applications.graphQL applications.frontend --verbosity 2
-      - .venv/bin/python -m coverage debug data
-      - .venv/bin/python -m coverage report -m
-      - .venv/bin/python -m coverage xml -o cobertura.xml
+      - >-
+        PYTHONPATH="${PYTHONPATH}" .venv/bin/pytest --cov --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml:cobertura.xml --cov-report=html:htmlcov --no-cov-on-fail -v
+    # source= and omit= are defined once in [tool.coverage.run] in pyproject.toml;
+    # --cov (without an argument) honours that config rather than duplicating it here.
     silent: false
     sources:
       - "**/*.py"
     generates:
       - ".coverage"
       - "cobertura.xml"
-  test:coverage1:
-    desc: Backward-compatible alias for coverage test command
-    deps: [ test:coverage ]
+      - "htmlcov/index.html"
+    requires:
+      vars:
+        - DOPPLER_TOKEN
+        - PATH_TO_DB_ROOT_CERT
 
   coverage:upload:
     desc: Upload coverage report to Codacy (requires CODACY_PROJECT_TOKEN env var)
-    deps: [ test:coverage ]
+    # run:test uses `coverage run --rcfile=pyproject.toml` + `coverage xml -o cobertura.xml`,
+    # so the cobertura.xml it produces is governed by the same [tool.coverage.*] config as
+    # test:coverage.  Depending on run:test (the leaner CI task) is intentional.
+    deps: [ run:test ]
     cmds:
       - bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml
     requires:

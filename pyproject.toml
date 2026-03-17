@@ -74,7 +74,18 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "thedozens.settings"
+DJANGO_SETTINGS_MODULE = "core.settings"
+# pytest_dozens_plugin installs the django-configurations importer via
+# pytest_load_initial_conftests(tryfirst=True), which must fire before
+# pytest-django's own implementation of that hook accesses Django settings.
+# Plugins loaded via addopts -p are registered before any conftest file is
+# discovered, making this the only reliable injection point.
+addopts = ["-p", "pytest_dozens_plugin"]
+testpaths = [
+  "applications/API/tests",
+  "applications/graphQL/tests",
+  "applications/frontend/tests",
+]
 
 [tool.djlint]
 format_css=true
@@ -125,4 +136,4 @@ exclude_lines = [
 ]
 
 [tool.coverage.xml]
-output = "coverage.xml"
+output = "cobertura.xml"

@@ -31,7 +31,7 @@ urlpatterns = [
     re_path(r"^auth/", include("djoser.urls")),
     re_path(r"^auth/", include("djoser.urls.authtoken")),
     path("report/", csrf_exempt(ReportJokeView.as_view()), name="report-joke"),
-    path("api/reference-ids/", csrf_exempt(get_reference_ids), name="get_reference_ids"),
+    path("api/insults/reference-ids/", csrf_exempt(get_reference_ids), name="insult-reference-ids"),
 ]
 
 handler404 = page_not_found_view
