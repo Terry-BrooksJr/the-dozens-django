@@ -889,6 +889,16 @@ class Production(Base):
     )
     #!SECTION End - DRF Settings
 
+    # SECTION Start - API Schema / Docs (Production overrides)
+    # Use CDN-hosted assets instead of drf-spectacular-sidecar so Swagger UI and
+    # ReDoc load without depending on a collectstatic run against DigitalOcean Spaces.
+    SPECTACULAR_SETTINGS = {
+        **Base.SPECTACULAR_SETTINGS,
+        "SWAGGER_UI_DIST": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5",
+        "REDOC_DIST": "https://cdn.jsdelivr.net/npm/redoc@latest/bundles",
+    }
+    #!SECTION End - API Schema / Docs (Production overrides)
+
     # SECTION Start - Logging
     LAUNCHDARKLY_SERVICE_VERSION = os.getenv("LAUNCHDARKLY_SERVICE_VERSION")
 
