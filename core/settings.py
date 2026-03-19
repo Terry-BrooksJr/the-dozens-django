@@ -780,6 +780,13 @@ class Production(Base):
     ALLOWED_HOSTS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_HOSTS"
     )
+    # IPs permitted to scrape /metrics. Defaults to the Prometheus scraper.
+    # Override via PROMETHEUS_ALLOWED_HOSTS in Doppler if the scraper IP changes.
+    # Requests from any other IP receive 403 Forbidden.
+    PROMETHEUS_ALLOWED_HOSTS = values.ListValue(
+        ["165.227.105.209"],
+        environ=True, environ_prefix=None, environ_name="PROMETHEUS_ALLOWED_HOSTS"
+    )
     INSTALLED_APPS = values.ListValue(
         [
             # 0) Instrumentation that wants to wrap others early
