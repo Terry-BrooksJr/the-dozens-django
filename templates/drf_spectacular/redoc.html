@@ -269,28 +269,15 @@
                        }
                   };
 
-                  {
-                       %
-                       if settings %
-                  }
-                  const customSettings = Object.assign({}, {
-                       {
-                            settings | safe
-                       }
-                  }, {
+                  {% if settings %}
+                  const customSettings = Object.assign({}, {{ settings|safe }}, {
                        theme: customTheme
                   });
-                  {
-                       %
-                       else %
-                  }
+                  {% else %}
                   const customSettings = {
                        theme: customTheme
                   };
-                  {
-                       %
-                       endif %
-                  }
+                  {% endif %}
 
                   Redoc.init("{{ schema_url }}", customSettings, container, function(err) {
                        if (err) {
