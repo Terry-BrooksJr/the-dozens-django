@@ -291,30 +291,12 @@ add "&raw" to the end of the URL within a browser.
         <!-- Graphene runtime settings (unchanged from upstream) -->
         <script type="application/javascript">
              window.GRAPHENE_SETTINGS = {
-                  {
-                       %
-                       if subscription_path %
-                  }
+                  {% if subscription_path %}
                   subscriptionPath: "{{ subscription_path }}",
-                  {
-                       %
-                       endif %
-                  }
-                  graphiqlHeaderEditorEnabled: {
-                       {
-                            graphiql_header_editor_enabled | yesno: "true,false"
-                       }
-                  },
-                  graphiqlShouldPersistHeaders: {
-                       {
-                            graphiql_should_persist_headers | yesno: "true,false"
-                       }
-                  },
-                  graphiqlInputValueDeprecation: {
-                       {
-                            graphiql_input_value_deprecation | yesno: "true,false"
-                       }
-                  },
+                  {% endif %}
+                  graphiqlHeaderEditorEnabled: {{ graphiql_header_editor_enabled|yesno:"true,false" }},
+                  graphiqlShouldPersistHeaders: {{ graphiql_should_persist_headers|yesno:"true,false" }},
+                  graphiqlInputValueDeprecation: {{ graphiql_input_value_deprecation|yesno:"true,false" }},
              };
         </script>
         <!--
