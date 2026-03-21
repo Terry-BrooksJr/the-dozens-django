@@ -1,0 +1,171 @@
+services:
+
+  # ── Traefik (reverse proxy + TLS) ─────────────────────────────────────────
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+
+      # Dedicated internal-only entrypoint for Prometheus scraping.
+      # Port 8082 is published to 127.0.0.1 only — not reachable from the internet.
+      - --entrypoints.metrics.address=:8082
+
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.le.acme.email=${LETSENCRYPT_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+
+      - --api=true
+      - --api.dashboard=true
+
+      - --log.level=INFO
+      - --accesslog=true
+
+      - --metrics.prometheus=true
+      - --metrics.prometheus.entryPoint=metrics
+      - --metrics.prometheus.addrouterslabels=true
+      - --metrics.prometheus.addserviceslabels=true
+      - --metrics.prometheus.addentrypointslabels=true
+
+      - --tracing=true
+      - --tracing.otlp=true
+      - --tracing.otlp.grpc=true
+      - --tracing.otlp.grpc.endpoint=otel-collector:4317
+      - --tracing.serviceName=traefik
+
+    ports:
+      - "80:80"
+      - "443:443"
+      # Metrics port — localhost only so native Prometheus can scrape it
+      - "127.0.0.1:8082:8082"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik-dashboard.rule=Host(`traefik.blackberry-py.dev`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
+      - traefik.http.routers.traefik-dashboard.entrypoints=websecure
+      - traefik.http.routers.traefik-dashboard.tls=true
+      - traefik.http.routers.traefik-dashboard.tls.certresolver=le
+      - traefik.http.routers.traefik-dashboard.service=api@internal
+      - traefik.http.middlewares.traefik-auth.basicauth.users=${DASHBOARD_HASH}
+      - traefik.http.routers.traefik-dashboard.middlewares=traefik-auth
+
+    networks:
+      - edge
+    restart: unless-stopped
+
+  # ── Django API ─────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./the-dozens-django
+      dockerfile: .deploy/Dockerfile
+    env_file:
+      - ./env/api.env
+    ports:
+      # Published to localhost only — used by native Prometheus to scrape /metrics
+      # directly, bypassing Traefik. REMOTE_ADDR inside the container will be
+      # 172.28.0.1 (edge network gateway), which is in PROMETHEUS_ALLOWED_HOSTS.
+      - "127.0.0.1:9090:9090"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.yomomma-api.rule=Host(`api.yo-momma.io`) || Host(`api.yo-momma.net`) || Host(`api.yo-momma.xyz`)
+      - traefik.http.routers.yomomma-api.entrypoints=websecure
+      - traefik.http.routers.yomomma-api.tls=true
+      - traefik.http.routers.yomomma-api.tls.certresolver=le
+      - traefik.http.services.yomomma-api.loadbalancer.server.port=9090
+    networks:
+      - edge
+    restart: unless-stopped
+
+  # ── Frontend ───────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./the-dozens-frontend
+      dockerfile: Dockerfile
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.yomomma-frontend.rule=Host(`yo-momma.io`) || Host(`www.yo-momma.io`) || Host(`yo-momma.net`) || Host(`www.yo-momma.net`) || Host(`yo-momma.xyz`) || Host(`www.yo-momma.xyz`)
+      - traefik.http.routers.yomomma-frontend.entrypoints=websecure
+      - traefik.http.routers.yomomma-frontend.tls=true
+      - traefik.http.routers.yomomma-frontend.tls.certresolver=le
+      - traefik.http.services.yomomma-frontend.loadbalancer.server.port=80
+    networks:
+      - edge
+    restart: unless-stopped
+
+  # ── Marble Hill ────────────────────────────────────────────────────────────
+  marble-hill:
+    build:
+      context: ./marble-hill
+      dockerfile: Dockerfile
+    env_file:
+      - ./env/marble-hill.env
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.marble-hill.rule=Host(`app.marble-hill.xyz`)
+      - traefik.http.routers.marble-hill.entrypoints=websecure
+      - traefik.http.routers.marble-hill.tls=true
+      - traefik.http.routers.marble-hill.tls.certresolver=le
+      - traefik.http.services.marble-hill.loadbalancer.server.port=8000
+    networks:
+      - edge
+    restart: unless-stopped
+
+  # ── PostgreSQL Exporter ────────────────────────────────────────────────────
+  # Polls the native PostgreSQL instance running on the host.
+  # `host.docker.internal` resolves to the host machine from inside the container.
+  # Metrics published to localhost:9187 for native Prometheus to scrape.
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres_exporter_dozens
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:9187:9187"
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${PG_DATABASE_USER}:${PG_DATABASE_PASSWORD}@host.docker.internal:5432/${POSTGRES_DB}?sslmode=disable
+    networks:
+      - edge
+    restart: unless-stopped
+
+  # ── Dragonfly Exporter ─────────────────────────────────────────────────────
+  # Polls the native Dragonfly instance running on the host.
+  # redis_exporter is fully compatible with Dragonfly's Redis-compatible API.
+  # Metrics published to localhost:9121 for native Prometheus to scrape.
+  dragonfly-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: dragonfly_exporter_dozens
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:9121:9121"
+    environment:
+      - REDIS_ADDR=redis://host.docker.internal:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    networks:
+      - edge
+    restart: unless-stopped
+
+networks:
+  edge:
+    external: false
+    name: yomomma_edgee
+    driver: bridge
+    ipam:
+      config:
+        # Fixed subnet so the gateway IP (172.28.0.1) is predictable.
+        # Django's PROMETHEUS_ALLOWED_HOSTS includes this IP because Docker NAT
+        # rewrites the source address to the gateway when Prometheus accesses
+        # the published 127.0.0.1:9090 port from the host.
+        - subnet: 172.28.0.0/24

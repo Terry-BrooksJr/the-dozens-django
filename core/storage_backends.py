@@ -10,6 +10,7 @@ class StaticStorage(S3Boto3Storage):
 
     location = "static"
     default_acl = "public-read"
+    querystring_auth = False
 
 
 class MediaStorage(S3Boto3Storage):
@@ -23,3 +24,4 @@ class MediaStorage(S3Boto3Storage):
     location = "media"
     file_overwrite = False
     default_acl = "public-read"
+    querystring_auth = False

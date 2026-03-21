@@ -373,6 +373,7 @@ class Base(Configuration):
     )
     AWS_S3_ENDPOINT_URL = "https://nyc3.digitaloceanspaces.com"
     AWS_REGION_NAME = "nyc3"
+    AWS_QUERYSTRING_AUTH = False
     AWS_S3_OBJECT_PARAMETERS = {
         "CacheControl": "max-age=86400",
     }
@@ -780,11 +781,13 @@ class Production(Base):
     ALLOWED_HOSTS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_HOSTS"
     )
-    # IPs permitted to scrape /metrics. Defaults to the Prometheus scraper.
-    # Override via PROMETHEUS_ALLOWED_HOSTS in Doppler if the scraper IP changes.
-    # Requests from any other IP receive 403 Forbidden.
+    # IPs permitted to scrape /metrics.
+    # Includes the native Prometheus host AND the Docker edge-network gateway
+    # (172.28.0.1) because when Prometheus accesses the published container port
+    # Docker NAT rewrites the source to the bridge gateway, not the real host IP.
+    # Override via PROMETHEUS_ALLOWED_HOSTS in Doppler if either address changes.
     PROMETHEUS_ALLOWED_HOSTS = values.ListValue(
-        ["165.227.105.209"],
+        ["165.227.105.209", "172.28.0.1"],
         environ=True, environ_prefix=None, environ_name="PROMETHEUS_ALLOWED_HOSTS"
     )
     INSTALLED_APPS = values.ListValue(
