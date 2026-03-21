@@ -10,7 +10,7 @@ from django.contrib import admin
 from django.http import HttpResponseForbidden
 from django.urls import include, path, re_path
 from django.views.decorators.csrf import csrf_exempt
-from django_prometheus.views import ExportToDjangoView
+from django_prometheus.exports import ExportToDjangoView
 
 import applications.API.urls as API_URLS
 import applications.graphQL.urls as GRAPHQL_URL
