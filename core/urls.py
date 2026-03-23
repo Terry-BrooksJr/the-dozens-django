@@ -18,6 +18,7 @@ from applications.API.auth.auth_endpoints import TokenDestroyView
 from applications.frontend.views import (
     LandingPageView,
     ReportJokeView,
+    StatusPageView,
     page_not_found_view,
     get_reference_ids
 )
@@ -33,6 +34,7 @@ def metrics_view(request):
 
 urlpatterns = [
     path("", LandingPageView.as_view(), name="landing"),
+    path("status/", StatusPageView.as_view(), name="status"),
     path("graphql/", include(GRAPHQL_URL), name="GraphQL"),
     path("admin/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),
@@ -42,7 +44,7 @@ urlpatterns = [
     re_path(r"^auth/", include("djoser.urls")),
     re_path(r"^auth/", include("djoser.urls.authtoken")),
     path("report/", csrf_exempt(ReportJokeView.as_view()), name="report-joke"),
-    path("api/insults/reference-ids/", csrf_exempt(get_reference_ids), name="insult-reference-ids"),
+    path("insults/reference-ids/", csrf_exempt(get_reference_ids), name="insult-reference-ids"),
 ]
 
 handler404 = page_not_found_view

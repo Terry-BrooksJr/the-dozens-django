@@ -19,9 +19,6 @@ tasks:
     desc: Make a new virtual environment
     cmds:
       - python3 -m venv .venv --prompt="ACTIVE_VENV_DJANGO_DOZENS"
-    # NOTE: `source .venv/bin/activate` is intentionally omitted — each Task
-    # command runs in its own subshell so sourcing the venv has no effect on
-    # subsequent commands. Use `.venv/bin/<tool>` paths instead.
     internal: true
 
   run:dev:

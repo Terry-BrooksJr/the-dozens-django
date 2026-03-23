@@ -704,6 +704,84 @@ class CreateInsultEndpoint(CreateAPIView):
         serializer.save(added_by=self.request.user)
 
 
+@extend_schema(
+    tags=["Insults"],
+    auth=[],
+    operation_id="list_reference_ids",
+    summary="List all active insult reference IDs",
+    description=(
+        "Returns a paginated list of reference IDs for every active insult in the "
+        "public collection. Useful for bulk look-ups, pre-fetching, or building a "
+        "client-side cache of available identifiers. Pass each ID to "
+        "`GET /api/insults/{reference_id}/` to retrieve the full insult."
+    ),
+    responses={
+        200: OpenApiResponse(
+            description="Paginated list of active insult reference IDs",
+            examples=[
+                OpenApiExample(
+                    "Success Response",
+                    value={
+                        "count": 500,
+                        "next": "/api/insults/reference-ids/?page=2",
+                        "previous": None,
+                        "results": [
+                            "CACKLE_NDQ5",
+                            "CHUCKLE_NDUz",
+                            "GIGGLE_ABC123",
+                        ],
+                    },
+                )
+            ],
+        ),
+        **get_public_list_responses(),
+    },
+)
+class ListReferenceIdsEndpoint(ListAPIView):
+    """
+    # List Active Insult Reference IDs
+
+    Returns a paginated list of reference IDs for all active (status=``A``) insults.
+
+    ## Endpoint
+
+    - ``GET /api/insults/reference-ids/``
+
+    ## Query Parameters
+
+    - ``page`` *(int, optional)*: Page number
+    - ``page_size`` *(int, optional)*: Results per page (``max`` for the maximum allowed)
+
+    ## Notes
+
+    - No authentication required
+    - Only active, public insults are included (same visibility as ``/api/insults/random/``)
+    - Results are ordered alphabetically by reference ID for stable pagination
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = []
+    # Required by ListAPIView / drf-spectacular; the actual list() override
+    # returns plain strings so the serializer is never instantiated at runtime.
+    serializer_class = OptimizedInsultSerializer
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Insult.objects.none()
+        return (
+            Insult.public.values_list("reference_id", flat=True)
+            .order_by("reference_id")
+        )
+
+    def list(self, request, *args, **kwargs):
+        qs = self.get_queryset()
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            return self.get_paginated_response(list(page))
+        return Response({"count": qs.count(), "results": list(qs)})
+
+
 class HealthEndpoint(GenericAPIView):
     permission_classes = [AllowAny]
     authentication_classes = []

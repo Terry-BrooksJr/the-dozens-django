@@ -7,6 +7,7 @@ Django settings for thedozens project.
 
 import contextlib
 import json
+import logging
 import os
 import sys
 import threading
@@ -327,6 +328,14 @@ class Base(Configuration):
             logger.remove()
             warnings.filterwarnings("default")
             warnings.showwarning = log_warning
+
+            # opentelemetry-instrumentation-logging forwards all Python log-record
+            # extras to OTel as span/log attributes. Django's own loggers routinely
+            # include `extra={"request": <WSGIRequest>}`, which OTel cannot
+            # serialise and emits a WARNING for. Raising this logger's threshold to
+            # ERROR silences that noise without hiding genuine OTel mis-use in our
+            # own code.
+            logging.getLogger("opentelemetry.attributes").setLevel(logging.ERROR)
 
             current_sinks = [
                 PRIMARY_LOG_FILE,
@@ -922,6 +931,9 @@ class Offline(Base):
     DEBUG = True
     CORS_ALLOW_ALL_ORIGINS = True
     STATIC_URL = "/static/"
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, "static"),
+    ]
     STORAGES = {
         "default": {
             "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -1038,6 +1050,9 @@ class Development(Base):
     CSRF_TRUSTED_ORIGINS = ["https://*", "http://*"]
     DEBUG = True
     STATIC_URL = "/static/"
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, "static"),
+    ]
     STORAGES = {
         "default": {
             "BACKEND": "django.core.files.storage.FileSystemStorage",

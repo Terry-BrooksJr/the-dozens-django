@@ -35,6 +35,10 @@ class LandingPageView(TemplateView):
     template_name = "landing.html"
 
 
+class StatusPageView(TemplateView):
+    template_name = "status.html"
+
+
 def page_not_found_view(request, exception):
     """Custom 404 handler: serves the image-based 404 page for browser requests,
     falls back to a JSON response for API clients."""

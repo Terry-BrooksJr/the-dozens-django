@@ -10,6 +10,7 @@ from applications.API.endpoints import (
     HealthEndpoint,
     InsultByCategoryEndpoint,
     InsultDetailsEndpoint,
+    ListReferenceIdsEndpoint,
     ListThemesAndCategoryEndpoint,
     RandomInsultEndpoint,
 )
@@ -33,7 +34,7 @@ urlpatterns = [
         InsultByCategoryEndpoint.as_view(),
         name="insults_by_category",
     ),
-    # Insults – member routes
+    # Insults – member routes (catch-all; keep last among insult routes)
     path(
         "insults/<str:reference_id>/",
         InsultDetailsEndpoint.as_view(),
