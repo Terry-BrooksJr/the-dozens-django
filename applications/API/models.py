@@ -584,7 +584,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         User, on_delete=models.DO_NOTHING, null=True, blank=True
     )
     review_type = models.CharField(
-        max_length=2, choices=REVIEW_TYPE.choices, null=False, blank=False
+        max_length=4, choices=REVIEW_TYPE.choices, null=False, blank=False
     )
     status = models.CharField(
         max_length=3,  # Add max_length based on your choices

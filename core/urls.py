@@ -20,7 +20,7 @@ from applications.frontend.views import (
     ReportJokeView,
     StatusPageView,
     page_not_found_view,
-    get_reference_ids
+    get_reference_ids,
 )
 
 
@@ -44,7 +44,11 @@ urlpatterns = [
     re_path(r"^auth/", include("djoser.urls")),
     re_path(r"^auth/", include("djoser.urls.authtoken")),
     path("report/", csrf_exempt(ReportJokeView.as_view()), name="report-joke"),
-    path("insults/reference-ids/", csrf_exempt(get_reference_ids), name="insult-reference-ids"),
+    path(
+        "insults/reference-ids/",
+        csrf_exempt(get_reference_ids),
+        name="insult-reference-ids",
+    ),
 ]
 
 handler404 = page_not_found_view

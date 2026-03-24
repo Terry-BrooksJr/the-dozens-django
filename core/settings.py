@@ -21,9 +21,8 @@ try:
 except ImportError:
     observe = None
 from configurations import Configuration, values
-from ghapi.all import GhApi
 from loguru import logger
-
+from github import Github
 
 # --- drf-spectacular postprocessing hook to inject TokenAuth without using APPEND_COMPONENTS ---
 def add_token_auth_scheme(result, generator, request, public):
@@ -248,12 +247,9 @@ class Base(Configuration):
             return True
 
     @classmethod
-    def get_github_api(cls) -> GhApi:
-        return GhApi(
-            owner=cls.GITHUB_API_OWNER,
-            repo=cls.GITHUB_API_REPO,
-            token=cls.GITHUB_API_TOKEN,
-        )
+    def get_github_api(cls):
+        g = Github(GITHUB_API_TOKEN)
+        return g.get_repo(f"{GITHUB_API_OWNER}/{GITHUB_API_REPO}")
 
     ROOT_URLCONF = values.Value("core.urls", environ=False)
     WSGI_APPLICATION = values.Value("core.wsgi.application", environ=False)

@@ -14,8 +14,8 @@ The GitHub integration is accessed via ``settings.BASE.get_github_api()``.
 
 
 from typing import Any, Dict
-
-from django.conf import settings
+from core.settings import Base
+from django.conf import settings  
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.generic import TemplateView
@@ -28,7 +28,6 @@ from rest_framework.response import Response
 
 from applications.API.errors import StandardErrorResponses
 from applications.API.serializers import InsultReviewSerializer
-from applications.API.models import Insult
 from applications.API.models import Insult
 
 class LandingPageView(TemplateView):
@@ -176,7 +175,7 @@ class ReportJokeView(CreateAPIView):
             anonymous = vd.get("anonymous", True)
             try:
                 formatted_issue = self.format_issue(vd)
-                settings.BASE.get_github_api().create_issue(
+                new_issue = Base.get_github_api().create_issue(
                     formatted_issue.get("issue_title"),
                     body=formatted_issue.get("issue_body"),
                 )
@@ -185,9 +184,9 @@ class ReportJokeView(CreateAPIView):
                     insult_reference_id=ref_id,
                     review_type=review_type,
                     anonymous=anonymous,
-                ).info("Joke report submitted and GitHub issue opened.")
+                ).info(f"Joke report submitted and GitHub issue opened. Github URL: {new_issue.html_url}")
                 return Response(
-                    data={"status": "SUCCESS"},
+                    data={"status": "SUCCESS", "github_url": new_issue.html_url},
                     status=status.HTTP_201_CREATED,
                 )
             except Exception as e:
