@@ -130,10 +130,10 @@ class ReportJokeViewTests(TestCase):
     # Happy-path: anonymous submission
     # ------------------------------------------------------------------
 
-    @patch("applications.frontend.views.settings")
-    def test_anonymous_report_returns_201(self, mock_settings):
+    @patch("applications.frontend.views.Base")
+    def test_anonymous_report_returns_201(self, mock_base):
         """A valid anonymous report returns HTTP 201 with status SUCCESS."""
-        mock_settings.BASE.get_github_api.return_value = MagicMock()
+        mock_base.get_github_api.return_value = MagicMock()
 
         payload = {
             "insult_reference_id": self.insult.reference_id,
@@ -146,11 +146,11 @@ class ReportJokeViewTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         self.assertEqual(resp.data["status"], "SUCCESS")
 
-    @patch("applications.frontend.views.settings")
-    def test_anonymous_report_calls_create_issue(self, mock_settings):
+    @patch("applications.frontend.views.Base")
+    def test_anonymous_report_calls_create_issue(self, mock_base):
         """A valid anonymous report calls GitHub create_issue() exactly once."""
         mock_gh = MagicMock()
-        mock_settings.BASE.get_github_api.return_value = mock_gh
+        mock_base.get_github_api.return_value = mock_gh
 
         payload = {
             "insult_reference_id": self.insult.reference_id,
@@ -166,10 +166,10 @@ class ReportJokeViewTests(TestCase):
     # Happy-path: named (non-anonymous) submission
     # ------------------------------------------------------------------
 
-    @patch("applications.frontend.views.settings")
-    def test_named_report_returns_201(self, mock_settings):
+    @patch("applications.frontend.views.Base")
+    def test_named_report_returns_201(self, mock_base):
         """A valid non-anonymous report returns HTTP 201 with status SUCCESS."""
-        mock_settings.BASE.get_github_api.return_value = MagicMock()
+        mock_base.get_github_api.return_value = MagicMock()
 
         payload = {
             "insult_reference_id": self.insult.reference_id,
@@ -184,11 +184,11 @@ class ReportJokeViewTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         self.assertEqual(resp.data["status"], "SUCCESS")
 
-    @patch("applications.frontend.views.settings")
-    def test_named_report_calls_create_issue(self, mock_settings):
+    @patch("applications.frontend.views.Base")
+    def test_named_report_calls_create_issue(self, mock_base):
         """A valid non-anonymous report calls GitHub create_issue() exactly once."""
         mock_gh = MagicMock()
-        mock_settings.BASE.get_github_api.return_value = mock_gh
+        mock_base.get_github_api.return_value = mock_gh
 
         payload = {
             "insult_reference_id": self.insult.reference_id,
@@ -206,13 +206,13 @@ class ReportJokeViewTests(TestCase):
     # GitHub issue content
     # ------------------------------------------------------------------
 
-    @patch("applications.frontend.views.settings")
+    @patch("applications.frontend.views.Base")
     def test_github_issue_title_contains_reference_id_and_review_type(
-        self, mock_settings
+        self, mock_base
     ):
         """The GitHub issue title embeds the insult reference_id and review_type."""
         mock_gh = MagicMock()
-        mock_settings.BASE.get_github_api.return_value = mock_gh
+        mock_base.get_github_api.return_value = mock_gh
 
         review_type = InsultReview.REVIEW_TYPE.RECATEGORIZE
         payload = {
@@ -236,11 +236,11 @@ class ReportJokeViewTests(TestCase):
         self.assertIn(self.insult.reference_id, issue_title)
         self.assertIn(review_type, issue_title)
 
-    @patch("applications.frontend.views.settings")
-    def test_github_issue_body_equals_rationale(self, mock_settings):
+    @patch("applications.frontend.views.Base")
+    def test_github_issue_body_equals_rationale(self, mock_base):
         """The GitHub issue body is the verbatim rationale_for_review text."""
         mock_gh = MagicMock()
-        mock_settings.BASE.get_github_api.return_value = mock_gh
+        mock_base.get_github_api.return_value = mock_gh
 
         payload = {
             "insult_reference_id": self.insult.reference_id,
@@ -264,11 +264,11 @@ class ReportJokeViewTests(TestCase):
     # Validation failures → HTTP 400, GitHub NOT called
     # ------------------------------------------------------------------
 
-    @patch("applications.frontend.views.settings")
-    def test_short_rationale_returns_400(self, mock_settings):
+    @patch("applications.frontend.views.Base")
+    def test_short_rationale_returns_400(self, mock_base):
         """A rationale shorter than 70 characters returns HTTP 400."""
         mock_gh = MagicMock()
-        mock_settings.BASE.get_github_api.return_value = mock_gh
+        mock_base.get_github_api.return_value = mock_gh
 
         payload = {
             "insult_reference_id": self.insult.reference_id,
@@ -282,11 +282,11 @@ class ReportJokeViewTests(TestCase):
         self.assertEqual(resp.data["status"], "FAILED")
         mock_gh.create_issue.assert_not_called()
 
-    @patch("applications.frontend.views.settings")
-    def test_non_anonymous_missing_first_name_returns_400(self, mock_settings):
+    @patch("applications.frontend.views.Base")
+    def test_non_anonymous_missing_first_name_returns_400(self, mock_base):
         """Non-anonymous submission without first_name returns HTTP 400."""
         mock_gh = MagicMock()
-        mock_settings.BASE.get_github_api.return_value = mock_gh
+        mock_base.get_github_api.return_value = mock_gh
 
         payload = {
             "insult_reference_id": self.insult.reference_id,
@@ -301,11 +301,11 @@ class ReportJokeViewTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_gh.create_issue.assert_not_called()
 
-    @patch("applications.frontend.views.settings")
-    def test_non_anonymous_missing_last_name_returns_400(self, mock_settings):
+    @patch("applications.frontend.views.Base")
+    def test_non_anonymous_missing_last_name_returns_400(self, mock_base):
         """Non-anonymous submission without last_name returns HTTP 400."""
         mock_gh = MagicMock()
-        mock_settings.BASE.get_github_api.return_value = mock_gh
+        mock_base.get_github_api.return_value = mock_gh
 
         payload = {
             "insult_reference_id": self.insult.reference_id,
@@ -320,11 +320,11 @@ class ReportJokeViewTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_gh.create_issue.assert_not_called()
 
-    @patch("applications.frontend.views.settings")
-    def test_contact_requested_without_email_returns_400(self, mock_settings):
+    @patch("applications.frontend.views.Base")
+    def test_contact_requested_without_email_returns_400(self, mock_base):
         """post_review_contact_desired=True without reporter_email returns HTTP 400."""
         mock_gh = MagicMock()
-        mock_settings.BASE.get_github_api.return_value = mock_gh
+        mock_base.get_github_api.return_value = mock_gh
 
         payload = {
             "insult_reference_id": self.insult.reference_id,
@@ -339,11 +339,11 @@ class ReportJokeViewTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_gh.create_issue.assert_not_called()
 
-    @patch("applications.frontend.views.settings")
-    def test_invalid_reference_id_returns_400(self, mock_settings):
+    @patch("applications.frontend.views.Base")
+    def test_invalid_reference_id_returns_400(self, mock_base):
         """An unknown insult reference_id returns HTTP 400."""
         mock_gh = MagicMock()
-        mock_settings.BASE.get_github_api.return_value = mock_gh
+        mock_base.get_github_api.return_value = mock_gh
 
         payload = {
             "insult_reference_id": "INVALID_REF_DOES_NOT_EXIST",
@@ -360,12 +360,12 @@ class ReportJokeViewTests(TestCase):
     # GitHub API failure → HTTP 422
     # ------------------------------------------------------------------
 
-    @patch("applications.frontend.views.settings")
-    def test_github_api_failure_returns_422(self, mock_settings):
+    @patch("applications.frontend.views.Base")
+    def test_github_api_failure_returns_422(self, mock_base):
         """When GitHub's API raises an exception the view returns HTTP 422."""
         mock_gh = MagicMock()
         mock_gh.create_issue.side_effect = Exception("GitHub API unavailable")
-        mock_settings.BASE.get_github_api.return_value = mock_gh
+        mock_base.get_github_api.return_value = mock_gh
 
         payload = {
             "insult_reference_id": self.insult.reference_id,
@@ -378,12 +378,12 @@ class ReportJokeViewTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
         self.assertIn("FAILED", resp.data["status"])
 
-    @patch("applications.frontend.views.settings")
-    def test_github_api_failure_still_calls_create_issue(self, mock_settings):
+    @patch("applications.frontend.views.Base")
+    def test_github_api_failure_still_calls_create_issue(self, mock_base):
         """Even on GitHub failure, create_issue() was attempted exactly once."""
         mock_gh = MagicMock()
         mock_gh.create_issue.side_effect = Exception("timeout")
-        mock_settings.BASE.get_github_api.return_value = mock_gh
+        mock_base.get_github_api.return_value = mock_gh
 
         payload = {
             "insult_reference_id": self.insult.reference_id,

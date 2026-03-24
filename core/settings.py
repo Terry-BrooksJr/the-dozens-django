@@ -248,8 +248,8 @@ class Base(Configuration):
 
     @classmethod
     def get_github_api(cls):
-        g = Github(GITHUB_API_TOKEN)
-        return g.get_repo(f"{GITHUB_API_OWNER}/{GITHUB_API_REPO}")
+        g = Github(cls.GITHUB_API_TOKEN)
+        return g.get_repo(f"{cls.GITHUB_API_OWNER}/{cls.GITHUB_API_REPO}")
 
     ROOT_URLCONF = values.Value("core.urls", environ=False)
     WSGI_APPLICATION = values.Value("core.wsgi.application", environ=False)

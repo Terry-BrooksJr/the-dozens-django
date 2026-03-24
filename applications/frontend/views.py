@@ -15,7 +15,7 @@ The GitHub integration is accessed via ``settings.BASE.get_github_api()``.
 
 from typing import Any, Dict
 from core.settings import Base
-from django.conf import settings  
+from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.generic import TemplateView
