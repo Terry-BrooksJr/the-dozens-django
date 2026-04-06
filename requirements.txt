@@ -36,7 +36,7 @@ defusedxml==0.7.1
 dill==0.4.1
 distlib==0.4.0
 distro==1.9.0
-Django==5.2.11
+Django==5.2.12
 django-cacheops==7.2
 django-configurations==2.5.1
 django-cors-headers==4.9.0
