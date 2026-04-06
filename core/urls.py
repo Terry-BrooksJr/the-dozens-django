@@ -19,8 +19,8 @@ from applications.frontend.views import (
     LandingPageView,
     ReportJokeView,
     StatusPageView,
-    page_not_found_view,
     get_reference_ids,
+    page_not_found_view,
 )
 
 

@@ -10,7 +10,6 @@ from applications.API.endpoints import (
     HealthEndpoint,
     InsultByCategoryEndpoint,
     InsultDetailsEndpoint,
-    ListReferenceIdsEndpoint,
     ListThemesAndCategoryEndpoint,
     RandomInsultEndpoint,
 )

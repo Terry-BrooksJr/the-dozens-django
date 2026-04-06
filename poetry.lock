@@ -1483,21 +1483,6 @@ files = [
 tests = ["coverage", "coveralls", "dill", "mock", "nose"]
 
 [[package]]
-name = "fastcore"
-version = "1.12.12"
-description = "Python supercharged for fastai development"
-optional = false
-python-versions = ">=3.10"
-groups = ["main"]
-files = [
-    {file = "fastcore-1.12.12-py3-none-any.whl", hash = "sha256:bb1a3a3accd62a72bad56af974e0617af078316be5bb5dcc8763b8244c197fa8"},
-    {file = "fastcore-1.12.12.tar.gz", hash = "sha256:a113d70630e7aa4e28ceebc4311f1c7c2dc0b748cc138ab7f5c53e475ff438bc"},
-]
-
-[package.extras]
-dev = ["llms-txt", "matplotlib", "nbclassic", "nbdev (>=0.2.39)", "numpy", "pandas", "pillow", "plum-dispatch", "pysymbol_llm", "toolslm", "torch"]
-
-[[package]]
 name = "fastjsonschema"
 version = "2.21.2"
 description = "Fastest Python implementation of JSON schema"
@@ -1591,25 +1576,6 @@ files = [
     {file = "funcy-2.0-py2.py3-none-any.whl", hash = "sha256:53df23c8bb1651b12f095df764bfb057935d49537a56de211b098f4c79614bb0"},
     {file = "funcy-2.0.tar.gz", hash = "sha256:3963315d59d41c6f30c04bc910e10ab50a3ac4a225868bfa96feed133df075cb"},
 ]
-
-[[package]]
-name = "ghapi"
-version = "1.0.10"
-description = "A python client for the GitHub API"
-optional = false
-python-versions = ">=3.7"
-groups = ["main"]
-files = [
-    {file = "ghapi-1.0.10-py3-none-any.whl", hash = "sha256:3feeda6b174dbe9320912956b0e0e2b306d85245ca9dd961fe8d3ea9b157d01d"},
-    {file = "ghapi-1.0.10.tar.gz", hash = "sha256:3a4d35e2da90a861c9b257f2ae509a8c103fd46ca5b3ed6bab8e72c9a519386c"},
-]
-
-[package.dependencies]
-fastcore = ">=1.7.2"
-packaging = "*"
-
-[package.extras]
-dev = ["jsonref", "llms-txt", "matplotlib", "nbclassic", "nbdev", "pysymbol_llm"]
 
 [[package]]
 name = "googleapis-common-protos"
@@ -6530,4 +6496,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "606c547950c4d52d9f439e93b7084fdb9fa118554fc70bf09164682ebdae92cd"
+content-hash = "18c832a2b631449196cef2d9c55744ae7566242a3b9196c69e48b933415a938c"

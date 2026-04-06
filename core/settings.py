@@ -21,8 +21,9 @@ try:
 except ImportError:
     observe = None
 from configurations import Configuration, values
-from loguru import logger
 from github import Github
+from loguru import logger
+
 
 # --- drf-spectacular postprocessing hook to inject TokenAuth without using APPEND_COMPONENTS ---
 def add_token_auth_scheme(result, generator, request, public):
