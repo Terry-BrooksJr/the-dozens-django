@@ -59,6 +59,39 @@ DB_QUERY_SECONDS = Histogram(
     ["cache_prefix", "status"],  # status: success|error
 )
 
+# ---- RandomInsultEndpoint metrics ----
+RANDOM_INSULT_REQUESTS = Counter(
+    "random_insult_requests_total",
+    "Total requests to /api/insults/random/",
+    ["status", "category_filtered", "nsfw_filtered"],
+)
+RANDOM_INSULT_STAGE_SECONDS = Histogram(
+    "random_insult_stage_seconds",
+    "Duration of each processing stage inside RandomInsultEndpoint",
+    ["stage"],
+    buckets=[0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5],
+)
+RANDOM_INSULT_QUERYSET_EMPTY = Counter(
+    "random_insult_queryset_empty_total",
+    "Times the random insult queryset returned no rows after filtering",
+)
+RANDOM_INSULT_DB_QUERIES = Counter(
+    "random_insult_db_queries_total",
+    "Total SQL queries executed per random insult request (summed across requests)",
+)
+
+# ---- Per-endpoint cache counters ----
+ENDPOINT_CACHE_HITS = Counter(
+    "endpoint_cache_hits_total",
+    "Cache hits keyed by endpoint path",
+    ["endpoint"],
+)
+ENDPOINT_CACHE_MISSES = Counter(
+    "endpoint_cache_misses_total",
+    "Cache misses keyed by endpoint path",
+    ["endpoint"],
+)
+
 
 class _MetricsFacade:
     """Thin facade used throughout the app to record cache metrics.
@@ -207,6 +240,82 @@ class _MetricsFacade:
                 duration_f,
                 attributes={"cache_prefix": cache_prefix, "status": status_val},
             )
+
+    # ------------------------------------------------------------------ #
+    # RandomInsultEndpoint helpers                                         #
+    # ------------------------------------------------------------------ #
+
+    @contextmanager
+    def time_random_insult_stage(self, stage: str):
+        """Time one named phase inside RandomInsultEndpoint."""
+        with RANDOM_INSULT_STAGE_SECONDS.labels(stage).time():
+            yield
+
+    @contextmanager
+    def sql_instrumentation(self):
+        """
+        Request-scoped SQL counter/timer.
+
+        Wraps Django's execute_wrapper so every SQL statement issued inside
+        the block is counted and timed regardless of DEBUG setting.
+
+        Yields a mutable dict::
+
+            {
+                "query_count": int,
+                "total_ms":    float,
+                "slowest_ms":  float,
+            }
+        """
+        from django.db import connection  # local import avoids circular at module load
+
+        stats: dict = {"query_count": 0, "total_ms": 0.0, "slowest_ms": 0.0}
+
+        def _wrapper(execute, sql, params, many, context):
+            t0 = time.perf_counter()
+            try:
+                return execute(sql, params, many, context)
+            finally:
+                dur_ms = (time.perf_counter() - t0) * 1000.0
+                stats["query_count"] += 1
+                stats["total_ms"] += dur_ms
+                if dur_ms > stats["slowest_ms"]:
+                    stats["slowest_ms"] = dur_ms
+
+        with connection.execute_wrapper(_wrapper):
+            yield stats
+
+    def record_random_insult_request(
+        self,
+        *,
+        status: str,
+        category_filtered: bool,
+        nsfw_filtered: bool,
+        db_query_count: int,
+    ) -> None:
+        """Increment request counter and SQL query accumulator."""
+        RANDOM_INSULT_REQUESTS.labels(
+            status=status,
+            category_filtered=str(category_filtered).lower(),
+            nsfw_filtered=str(nsfw_filtered).lower(),
+        ).inc()
+        RANDOM_INSULT_DB_QUERIES.inc(db_query_count)
+
+    def record_random_insult_empty(self) -> None:
+        RANDOM_INSULT_QUERYSET_EMPTY.inc()
+
+    def increment_endpoint_cache(self, endpoint: str, event: str) -> None:
+        """
+        Record a cache hit or miss for a specific endpoint path.
+
+        ``event`` must be ``"hit"`` or ``"miss"``.
+        """
+        if event == "hit":
+            ENDPOINT_CACHE_HITS.labels(endpoint).inc()
+        elif event == "miss":
+            ENDPOINT_CACHE_MISSES.labels(endpoint).inc()
+        else:
+            raise ValueError(f"Unknown cache event '{event}'. Expected hit|miss.")
 
 
 metrics = _MetricsFacade()

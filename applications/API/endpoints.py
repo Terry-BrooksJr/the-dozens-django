@@ -7,6 +7,7 @@ API endpoints for managing insults, categories, and themes.
 - Supports filtering, random retrieval, and category/theme discovery
 """
 
+import time
 from typing import Optional
 from urllib.parse import urlencode
 
@@ -55,6 +56,7 @@ from applications.API.serializers import (
     CreateInsultSerializer,
     OptimizedInsultSerializer,
 )
+from common.metrics import metrics
 from common.performance import CachedResponseMixin
 
 User = get_user_model()
@@ -518,34 +520,100 @@ class RandomInsultEndpoint(GenericAPIView):
         - `nsfw` *(bool, optional)*: Filter explicit content (`true` / `false`)
         - `category` *(str, optional)*: Category key or name to filter by
         """
-        queryset = (
-            Insult.public.select_related("added_by", "category")
-            .prefetch_related("reports")
-            .order_by("?")
-            .all()
-        )
+        request_id = getattr(request, "request_id", "unknown")
+        t_start = time.perf_counter()
 
-        # Filter by explicitly level (NSFW) if provided
         nsfw_param = request.query_params.get("nsfw")
-        if nsfw_param is not None:
-            logger.debug(f"Filtering random insult by NSFW={nsfw_param}")
-            nsfw = nsfw_param.lower() in ["true", "1", "yes"]
-            queryset = queryset.filter(nsfw=nsfw)
-        # Filter by category if provided
+        category_param = request.query_params.get("category")
+        nsfw_filtered = nsfw_param is not None
+        category_filtered = category_param is not None
+        resolved_category_key: str | None = None
 
-        if category := request.query_params.get("category"):
-            logger.debug(f"Filtering random insult by category: {category}")
-            category = BaseInsultSerializer.resolve_category(category.upper())
-            queryset = queryset.filter(category__category_key=category["category_key"])
+        with metrics.sql_instrumentation() as sql_stats:
+            # Phase 1: base queryset build
+            with metrics.time_random_insult_stage("queryset_build"):
+                queryset = (
+                    Insult.public.select_related("added_by", "category")
+                    .prefetch_related("reports")
+                    .all()
+                )
 
-        if not queryset.exists():
-            return Response(
-                {"detail": "No insults found matching the criteria."}, status=404
-            )
+            # Phase 2: NSFW filter
+            with metrics.time_random_insult_stage("nsfw_filter"):
+                if nsfw_param is not None:
+                    nsfw = nsfw_param.lower() in ["true", "1", "yes"]
+                    queryset = queryset.filter(nsfw=nsfw)
 
-        random_insult = queryset.order_by("?").first()
-        serializer = OptimizedInsultSerializer(random_insult)
-        return Response(serializer.data)
+            # Phase 3: category resolution
+            with metrics.time_random_insult_stage("category_resolution"):
+                if category_param:
+                    resolved = BaseInsultSerializer.resolve_category(
+                        category_param.upper()
+                    )
+                    resolved_category_key = resolved.get("category_key")
+                    queryset = queryset.filter(
+                        category__category_key=resolved_category_key
+                    )
+
+            # Phase 4: emptiness check
+            with metrics.time_random_insult_stage("emptiness_check"):
+                is_empty = not queryset.exists()
+
+            if is_empty:
+                duration_ms = (time.perf_counter() - t_start) * 1000.0
+                metrics.record_random_insult_empty()
+                metrics.record_random_insult_request(
+                    status="404",
+                    category_filtered=category_filtered,
+                    nsfw_filtered=nsfw_filtered,
+                    db_query_count=sql_stats["query_count"],
+                )
+                logger.bind(
+                    request_id=request_id,
+                    path=request.path,
+                    nsfw_param=nsfw_param,
+                    category_param=category_param,
+                    resolved_category_key=resolved_category_key,
+                    duration_ms=round(duration_ms, 2),
+                    db_query_count=sql_stats["query_count"],
+                    db_total_ms=round(sql_stats["total_ms"], 2),
+                    db_slowest_ms=round(sql_stats["slowest_ms"], 2),
+                    empty_result=True,
+                ).info("random_insult | no results found after filtering")
+                return Response(
+                    {"detail": "No insults found matching the criteria."}, status=404
+                )
+
+            # Phase 5: random row selection
+            with metrics.time_random_insult_stage("random_selection"):
+                random_insult = queryset.order_by("?").first()
+
+            # Phase 6: serialization
+            with metrics.time_random_insult_stage("serialization"):
+                serializer = OptimizedInsultSerializer(random_insult)
+                data = serializer.data
+
+        duration_ms = (time.perf_counter() - t_start) * 1000.0
+        metrics.record_random_insult_request(
+            status="200",
+            category_filtered=category_filtered,
+            nsfw_filtered=nsfw_filtered,
+            db_query_count=sql_stats["query_count"],
+        )
+        logger.bind(
+            request_id=request_id,
+            path=request.path,
+            nsfw_param=nsfw_param,
+            category_param=category_param,
+            resolved_category_key=resolved_category_key,
+            selected_insult_id=random_insult.insult_id if random_insult else None,
+            duration_ms=round(duration_ms, 2),
+            db_query_count=sql_stats["query_count"],
+            db_total_ms=round(sql_stats["total_ms"], 2),
+            db_slowest_ms=round(sql_stats["slowest_ms"], 2),
+            empty_result=False,
+        ).info("random_insult | success")
+        return Response(data)
 
 
 @extend_schema_view(
@@ -769,9 +837,8 @@ class ListReferenceIdsEndpoint(ListAPIView):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return Insult.objects.none()
-        return (
-            Insult.public.values_list("reference_id", flat=True)
-            .order_by("reference_id")
+        return Insult.public.values_list("reference_id", flat=True).order_by(
+            "reference_id"
         )
 
     def list(self, request, *args, **kwargs):

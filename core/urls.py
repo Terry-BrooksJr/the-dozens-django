@@ -4,6 +4,7 @@ Root URL configuration for thedozens project.
 """
 
 import contextlib
+import ipaddress
 
 from django.conf import settings
 from django.contrib import admin
@@ -25,11 +26,25 @@ from applications.frontend.views import (
 
 
 def metrics_view(request):
-    """Serve Prometheus metrics only to requests from PROMETHEUS_ALLOWED_HOSTS."""
+    """Serve Prometheus metrics only to requests from PROMETHEUS_ALLOWED_HOSTS.
+
+    Each entry can be an exact IP address or a CIDR network (e.g. 172.19.0.0/24).
+    """
     allowed = getattr(settings, "PROMETHEUS_ALLOWED_HOSTS", [])
-    if request.META.get("REMOTE_ADDR") not in allowed:
+    remote = request.META.get("REMOTE_ADDR", "")
+    try:
+        remote_ip = ipaddress.ip_address(remote)
+    except ValueError:
         return HttpResponseForbidden()
-    return ExportToDjangoView(request)
+
+    for entry in allowed:
+        try:
+            if remote_ip in ipaddress.ip_network(entry, strict=False):
+                return ExportToDjangoView(request)
+        except ValueError:
+            continue
+
+    return HttpResponseForbidden()
 
 
 urlpatterns = [

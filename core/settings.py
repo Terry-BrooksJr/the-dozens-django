@@ -306,6 +306,16 @@ class Base(Configuration):
         "backtrace": False,
         "serialize": False,
     }
+    # File sinks get daily rotation and a 30-day rolling window.
+    # Rotated files are gzip-compressed to keep the logs/ dir manageable.
+    # stdout / remote sinks (LD) do not support these parameters and use
+    # DEFAULT_LOGGER_CONFIG as-is.
+    FILE_LOGGER_CONFIG = {
+        **DEFAULT_LOGGER_CONFIG,
+        "rotation": "00:00",  # rotate at midnight every day
+        "retention": "30 days",  # delete rotated files older than 30 days
+        "compression": "gz",  # compress rotated files
+    }
     PRIMARY_LOG_FILE = Path(
         os.path.join(BASE_DIR, "logs", "primary_ops.log")
     )  # pyrefly: ignore
@@ -334,15 +344,15 @@ class Base(Configuration):
             # own code.
             logging.getLogger("opentelemetry.attributes").setLevel(logging.ERROR)
 
-            current_sinks = [
-                PRIMARY_LOG_FILE,
-                CRITICAL_LOG_FILE,
-                DEBUG_LOG_FILE,
-                DEFAULT_HANDLER,
-            ]
+            # File sinks: rotate daily, retain 30 days, compress rotated files.
+            for file_sink in (PRIMARY_LOG_FILE, CRITICAL_LOG_FILE, DEBUG_LOG_FILE):
+                logger.add(file_sink, **FILE_LOGGER_CONFIG)
+
+            # Non-file sinks: no rotation/retention parameters.
+            stream_sinks = [DEFAULT_HANDLER]
             if LAUNCHDARKLY_OBSERVABILITY_ENABLED:
-                current_sinks.append(ld_loguru_sink)
-            for sink in current_sinks:
+                stream_sinks.append(ld_loguru_sink)
+            for sink in stream_sinks:
                 logger.add(sink, **DEFAULT_LOGGER_CONFIG)
 
             _logger_configured = True
@@ -794,7 +804,9 @@ class Production(Base):
     # Override via PROMETHEUS_ALLOWED_HOSTS in Doppler if either address changes.
     PROMETHEUS_ALLOWED_HOSTS = values.ListValue(
         ["165.227.105.209", "172.28.0.1"],
-        environ=True, environ_prefix=None, environ_name="PROMETHEUS_ALLOWED_HOSTS"
+        environ=True,
+        environ_prefix=None,
+        environ_name="PROMETHEUS_ALLOWED_HOSTS",
     )
     INSTALLED_APPS = values.ListValue(
         [
@@ -850,6 +862,7 @@ class Production(Base):
             "django.middleware.cache.FetchFromCacheMiddleware",
             "django_prometheus.middleware.PrometheusAfterMiddleware",
             "applications.ld_integration.middleware.LaunchDarklyContextMiddleware",
+            "common.middleware.RequestIDMiddleware",
         ],
         environ=False,
     )
@@ -995,6 +1008,7 @@ class Offline(Base):
             "django.middleware.clickjacking.XFrameOptionsMiddleware",
             "django.middleware.cache.FetchFromCacheMiddleware",
             "django_prometheus.middleware.PrometheusAfterMiddleware",
+            "common.middleware.RequestIDMiddleware",
         ],
         environ=False,
     )
@@ -1115,6 +1129,7 @@ class Development(Base):
             "django.middleware.cache.FetchFromCacheMiddleware",
             "django_prometheus.middleware.PrometheusAfterMiddleware",
             "applications.ld_integration.middleware.LaunchDarklyContextMiddleware",
+            "common.middleware.RequestIDMiddleware",
         ],
         environ=False,
     )
