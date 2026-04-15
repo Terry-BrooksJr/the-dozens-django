@@ -202,7 +202,7 @@ pylint==3.3.9
 PyNaCl==1.6.2
 pyproject_hooks==1.2.0
 pyRFC3339==2.1.0
-pytest==8.4.2
+pytest==9.0.3
 pytest-cov==5.0.0
 pytest-django==4.11.1
 python-dateutil==2.9.0.post0
