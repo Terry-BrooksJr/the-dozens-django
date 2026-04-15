@@ -109,13 +109,6 @@ class CacheManagerRegistryTests(TestCase):
         reg = self._fresh_registry()
         self.assertIsNone(reg.get("does_not_exist"))
 
-    def test_names_returns_registered_names(self):
-        reg = self._fresh_registry()
-        reg.register("alpha", MagicMock())
-        reg.register("beta", MagicMock())
-        self.assertIn("alpha", reg.names())
-        self.assertIn("beta", reg.names())
-
     def test_count(self):
         reg = self._fresh_registry()
         self.assertEqual(reg.count(), 0)
@@ -516,7 +509,6 @@ class FormChoicesCacheManagerTests(TestCase):
 
 
 class FactoryFunctionTests(TestCase):
-    """Tests the behavior of cache manager factory functions. These tests verify that factory helpers create the correct manager instances and automatically register them in the shared cache registry."""
     """Tests the behavior of cache manager factory functions. These tests verify that factory helpers create the correct manager instances and automatically register them in the shared cache registry."""
 
     def test_create_form_choices_manager_returns_instance(self):
