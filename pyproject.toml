@@ -85,6 +85,9 @@ testpaths = [
   "applications/API/tests",
   "applications/graphQL/tests",
   "applications/frontend/tests",
+  "core/tests",
+  "common/tests"
+
 ]
 
 [tool.djlint]
@@ -109,24 +112,28 @@ django_settings_module = "thedozens.settings"
 
 [tool.coverage.run]
 branch = true
-source = ["applications"]
+source = ["applications", "core", "common"]
 omit = [
-  "*/migrations/*",
-  "*/tests/*",
-  "manage.py",
-  "*/venv/*",
-  "*/.venv/*",
+    "*/wsgi.py",
+    "*/asgi.py",
+    "core/storage_backends.py",
+    "core/apps.py",
+    "applications/*/apps.py",
+    "applications/API/schema_extensions.py",
+    "applications/ld_integration/management/*",
 ]
 
 [tool.coverage.report]
 skip_empty = true
 show_missing = true
-omit = [
-  "*/migrations/*",
-  "*/tests/*",
-  "manage.py",
-  "*/venv/*",
-  "*/.venv/*",
+ omit = [
+    "*/wsgi.py",
+    "*/asgi.py",
+    "core/storage_backends.py",
+    "core/apps.py",
+    "applications/*/apps.py",
+    "applications/API/schema_extensions.py",
+    "applications/ld_integration/management/*",
 ]
 exclude_lines = [
   "pragma: no cover",
