@@ -114,6 +114,8 @@ django_settings_module = "thedozens.settings"
 branch = true
 source = ["applications", "core", "common"]
 omit = [
+    "*/tests/*",
+   "*/migrations/*",
     "*/wsgi.py",
     "*/asgi.py",
     "core/storage_backends.py",
@@ -126,7 +128,9 @@ omit = [
 [tool.coverage.report]
 skip_empty = true
 show_missing = true
- omit = [
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
     "*/wsgi.py",
     "*/asgi.py",
     "core/storage_backends.py",

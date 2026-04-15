@@ -42,16 +42,18 @@ class MetricsViewTokenAllowedTests(TestCase):
     def test_correct_bearer_token_returns_200(self):
         with patch(PROMETHEUS_200_PATCH) as mock_export:
             mock_export.return_value.status_code = 200
-            metrics_view(_request(f"Bearer {VALID_TOKEN}"))
+            response = metrics_view(_request(f"Bearer {VALID_TOKEN}"))
         mock_export.assert_called_once()
+        self.assertEqual(response.status_code, 200)
 
     @override_settings(METRICS_SCRAPE_TOKEN=VALID_TOKEN)
     def test_correct_token_with_surrounding_whitespace_is_accepted(self):
         """Prometheus may send a token with trailing newline from credentials_file."""
         with patch(PROMETHEUS_200_PATCH) as mock_export:
             mock_export.return_value.status_code = 200
-            metrics_view(_request(f"Bearer  {VALID_TOKEN}  "))
+            response = metrics_view(_request(f"Bearer  {VALID_TOKEN}  "))
         mock_export.assert_called_once()
+        self.assertEqual(response.status_code, 200)
 
 
 class MetricsViewTokenRejectedTests(TestCase):

@@ -86,11 +86,20 @@ def _make_generic_manager(model_class=None, prefix="test", builder=None, timeout
 
 
 class CacheManagerRegistryTests(TestCase):
+        """Tests the behavior of the CacheManagerRegistry utility class. These tests verify that cache managers can be registered, queried, invalidated, and inspected for statistics."""
+    def test_names_returns_registered_names(self):
+        """Registered cache manager names are exposed via names(). The method should return all manager identifiers that have been added to the registry."""
+        reg = self._fresh_registry()
+        reg.register("alpha", MagicMock())
+        reg.register("beta", MagicMock())
+        self.assertIn("alpha", reg.names())
+        self.assertIn("beta", reg.names())
 
     def _fresh_registry(self):
         return CacheManagerRegistry()
 
     def test_register_and_get(self):
+        """Registering a manager makes it retrievable by its name. The registry should return the same manager instance that was originally registered."""
         reg = self._fresh_registry()
         mgr = MagicMock(spec=BaseCacheManager)
         reg.register("my_manager", mgr)
@@ -134,6 +143,7 @@ class CacheManagerRegistryTests(TestCase):
         self.assertEqual(vals, [mgr])
 
     def test_invalidate_all_calls_each_manager(self):
+        """Invalidate all propagates the request to every registered manager. Each manager should receive a single invalidate_cache call with the given reason."""
         reg = self._fresh_registry()
         m1, m2 = MagicMock(), MagicMock()
         reg.register("m1", m1)
@@ -176,7 +186,7 @@ class CacheManagerRegistryTests(TestCase):
 
 
 class CategoryCacheManagerTests(TestCase):
-
+    """Tests the behavior of the CategoryCacheManager class. These tests verify that category data is cached, retrieved, invalidated, and mapped between keys and names correctly."""
     def _make_obj(self, key, name):
         obj = MagicMock()
         obj.key = key
@@ -315,7 +325,7 @@ class CategoryCacheManagerTests(TestCase):
 
 
 class GenericDataCacheManagerTests(TestCase):
-
+    """Tests the behavior of the GenericDataCacheManager class. These tests verify that generic data is cached, retrieved, invalidated, and reported on consistently across different backends."""
     def test_get_cache_keys_returns_data_key(self):
         mgr = _make_generic_manager(prefix="myprefix")
         keys = mgr.get_cache_keys()
@@ -422,6 +432,7 @@ class GenericDataCacheManagerTests(TestCase):
 
 
 class FormChoicesCacheManagerTests(TestCase):
+    """Tests the behavior of the FormChoicesCacheManager class. These tests verify that form choice data and related querysets are built, cached, retrieved, and invalidated correctly."""
 
     def _make_manager(self, choice_data=None, prefix="form_test"):
         """Return a FormChoicesCacheManager with mocked model."""
@@ -504,6 +515,7 @@ class FormChoicesCacheManagerTests(TestCase):
 
 
 class FactoryFunctionTests(TestCase):
+    """Tests the behavior of cache manager factory functions. These tests verify that factory helpers create the correct manager instances and automatically register them in the shared cache registry."""
 
     def test_create_form_choices_manager_returns_instance(self):
         from common.cache_managers import cache_registry
