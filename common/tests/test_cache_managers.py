@@ -43,24 +43,24 @@ Factory functions
 from __future__ import annotations
 
 import json
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
 
 from common.cache_managers import (
     BaseCacheManager,
-    CategoryCacheManager,
     CacheManagerRegistry,
+    CategoryCacheManager,
     FormChoicesCacheManager,
     GenericDataCacheManager,
     create_category_manager,
     create_form_choices_manager,
 )
 
-
 # ---------------------------------------------------------------------------
 # Shared helpers / fake model
 # ---------------------------------------------------------------------------
+
 
 def _make_model_class(name="FakeModel", objects=None):
     """Return a minimal model-class-like object."""
@@ -83,6 +83,7 @@ def _make_generic_manager(model_class=None, prefix="test", builder=None, timeout
 # ---------------------------------------------------------------------------
 # CacheManagerRegistry
 # ---------------------------------------------------------------------------
+
 
 class CacheManagerRegistryTests(TestCase):
 
@@ -172,6 +173,7 @@ class CacheManagerRegistryTests(TestCase):
 # ---------------------------------------------------------------------------
 # CategoryCacheManager
 # ---------------------------------------------------------------------------
+
 
 class CategoryCacheManagerTests(TestCase):
 
@@ -311,6 +313,7 @@ class CategoryCacheManagerTests(TestCase):
 # GenericDataCacheManager
 # ---------------------------------------------------------------------------
 
+
 class GenericDataCacheManagerTests(TestCase):
 
     def test_get_cache_keys_returns_data_key(self):
@@ -361,6 +364,7 @@ class GenericDataCacheManagerTests(TestCase):
 
     def test_get_cached_data_programming_error_returns_none(self):
         from django.db.utils import ProgrammingError
+
         builder = MagicMock(side_effect=ProgrammingError("table missing"))
         mgr = _make_generic_manager(prefix="dberr", builder=builder)
 
@@ -398,8 +402,14 @@ class GenericDataCacheManagerTests(TestCase):
             mock_cache.get_many.return_value = {}
             stats = mgr.get_cache_stats()
 
-        for key in ("cache_prefix", "redis_keys", "redis_keys_count",
-                    "module_cache_count", "cache_timeout", "timestamp"):
+        for key in (
+            "cache_prefix",
+            "redis_keys",
+            "redis_keys_count",
+            "module_cache_count",
+            "cache_timeout",
+            "timestamp",
+        ):
             self.assertIn(key, stats)
 
         self.assertEqual(stats["cache_prefix"], "stats_test")
@@ -409,6 +419,7 @@ class GenericDataCacheManagerTests(TestCase):
 # ---------------------------------------------------------------------------
 # FormChoicesCacheManager
 # ---------------------------------------------------------------------------
+
 
 class FormChoicesCacheManagerTests(TestCase):
 
@@ -491,10 +502,12 @@ class FormChoicesCacheManagerTests(TestCase):
 # Factory functions
 # ---------------------------------------------------------------------------
 
+
 class FactoryFunctionTests(TestCase):
 
     def test_create_form_choices_manager_returns_instance(self):
         from common.cache_managers import cache_registry
+
         model = _make_model_class("FactoryModel")
         model.objects.filter.return_value.values.return_value = []
 
@@ -509,6 +522,7 @@ class FactoryFunctionTests(TestCase):
 
     def test_create_category_manager_returns_instance(self):
         from common.cache_managers import cache_registry
+
         model = _make_model_class("FactoryCatModel")
         model.objects.all.return_value = []
 

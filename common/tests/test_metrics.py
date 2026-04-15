@@ -17,16 +17,14 @@ Covers:
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-
 from django.test import TestCase
 
 from common.metrics import metrics
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _counter_value(counter, *label_values):
     """Read the current value of a labelled prometheus Counter."""
@@ -42,22 +40,26 @@ def _histogram_count(histogram, *label_values):
 # increment_cache
 # ---------------------------------------------------------------------------
 
+
 class IncrementCacheTests(TestCase):
 
     def test_hit_increments_cache_hits_counter(self):
         from common.metrics import CACHE_HITS
+
         before = _counter_value(CACHE_HITS, "test_prefix_hit")
         metrics.increment_cache("test_prefix_hit", "hit")
         self.assertEqual(_counter_value(CACHE_HITS, "test_prefix_hit"), before + 1)
 
     def test_miss_increments_cache_misses_counter(self):
         from common.metrics import CACHE_MISSES
+
         before = _counter_value(CACHE_MISSES, "test_prefix_miss")
         metrics.increment_cache("test_prefix_miss", "miss")
         self.assertEqual(_counter_value(CACHE_MISSES, "test_prefix_miss"), before + 1)
 
     def test_invalidated_increments_invalidations_counter(self):
         from common.metrics import CACHE_INVALIDATIONS
+
         before = _counter_value(CACHE_INVALIDATIONS, "test_prefix_inv", "signal")
         metrics.increment_cache("test_prefix_inv", "invalidated", reason="signal")
         self.assertEqual(
@@ -67,7 +69,10 @@ class IncrementCacheTests(TestCase):
 
     def test_invalidated_without_reason_uses_unspecified(self):
         from common.metrics import CACHE_INVALIDATIONS
-        before = _counter_value(CACHE_INVALIDATIONS, "test_prefix_noreason", "unspecified")
+
+        before = _counter_value(
+            CACHE_INVALIDATIONS, "test_prefix_noreason", "unspecified"
+        )
         metrics.increment_cache("test_prefix_noreason", "invalidated")
         self.assertEqual(
             _counter_value(CACHE_INVALIDATIONS, "test_prefix_noreason", "unspecified"),
@@ -76,7 +81,10 @@ class IncrementCacheTests(TestCase):
 
     def test_invalidated_empty_reason_uses_unspecified(self):
         from common.metrics import CACHE_INVALIDATIONS
-        before = _counter_value(CACHE_INVALIDATIONS, "test_prefix_empty_r", "unspecified")
+
+        before = _counter_value(
+            CACHE_INVALIDATIONS, "test_prefix_empty_r", "unspecified"
+        )
         metrics.increment_cache("test_prefix_empty_r", "invalidated", reason="   ")
         self.assertEqual(
             _counter_value(CACHE_INVALIDATIONS, "test_prefix_empty_r", "unspecified"),
@@ -94,11 +102,13 @@ class IncrementCacheTests(TestCase):
 # time_cache_operation
 # ---------------------------------------------------------------------------
 
+
 class TimeCacheOperationTests(TestCase):
 
     def test_context_manager_exits_without_exception(self):
         """Should not raise and should record an observation."""
         from common.metrics import CACHE_OP_SECONDS
+
         before = CACHE_OP_SECONDS.labels("op_prefix", "read")._sum.get()
         with metrics.time_cache_operation("op_prefix", "read"):
             pass  # simulate fast operation
@@ -118,10 +128,12 @@ class TimeCacheOperationTests(TestCase):
 # time_database_query
 # ---------------------------------------------------------------------------
 
+
 class TimeDatabaseQueryTests(TestCase):
 
     def test_success_path_records_observation(self):
         from common.metrics import DB_QUERY_SECONDS
+
         before = DB_QUERY_SECONDS.labels("db_prefix", "success")._sum.get()
         with metrics.time_database_query("db_prefix"):
             pass
@@ -131,6 +143,7 @@ class TimeDatabaseQueryTests(TestCase):
 
     def test_exception_path_labels_error_and_reraises(self):
         from common.metrics import DB_QUERY_SECONDS
+
         before = DB_QUERY_SECONDS.labels("db_prefix_err", "error")._sum.get()
         with self.assertRaises(ValueError):
             with metrics.time_database_query("db_prefix_err"):
@@ -144,10 +157,12 @@ class TimeDatabaseQueryTests(TestCase):
 # record_database_query_time
 # ---------------------------------------------------------------------------
 
+
 class RecordDatabaseQueryTimeTests(TestCase):
 
     def test_success_status_records_observation(self):
         from common.metrics import DB_QUERY_SECONDS
+
         before = DB_QUERY_SECONDS.labels("manual_prefix", "success")._sum.get()
         metrics.record_database_query_time("manual_prefix", 0.042, "success")
         after = DB_QUERY_SECONDS.labels("manual_prefix", "success")._sum.get()
@@ -155,6 +170,7 @@ class RecordDatabaseQueryTimeTests(TestCase):
 
     def test_error_status_records_observation(self):
         from common.metrics import DB_QUERY_SECONDS
+
         before = DB_QUERY_SECONDS.labels("manual_prefix_e", "error")._sum.get()
         metrics.record_database_query_time("manual_prefix_e", 0.1, "error")
         after = DB_QUERY_SECONDS.labels("manual_prefix_e", "error")._sum.get()
@@ -162,6 +178,7 @@ class RecordDatabaseQueryTimeTests(TestCase):
 
     def test_invalid_status_normalised_to_success(self):
         from common.metrics import DB_QUERY_SECONDS
+
         before = DB_QUERY_SECONDS.labels("manual_prefix_bad", "success")._sum.get()
         metrics.record_database_query_time("manual_prefix_bad", 0.01, "unknown_status")
         after = DB_QUERY_SECONDS.labels("manual_prefix_bad", "success")._sum.get()
@@ -169,6 +186,7 @@ class RecordDatabaseQueryTimeTests(TestCase):
 
     def test_none_status_normalised_to_success(self):
         from common.metrics import DB_QUERY_SECONDS
+
         before = DB_QUERY_SECONDS.labels("manual_prefix_none", "success")._sum.get()
         metrics.record_database_query_time("manual_prefix_none", 0.005, None)
         after = DB_QUERY_SECONDS.labels("manual_prefix_none", "success")._sum.get()
@@ -179,10 +197,12 @@ class RecordDatabaseQueryTimeTests(TestCase):
 # time_random_insult_stage
 # ---------------------------------------------------------------------------
 
+
 class TimeRandomInsultStageTests(TestCase):
 
     def test_context_manager_exits_cleanly(self):
         from common.metrics import RANDOM_INSULT_STAGE_SECONDS
+
         before = RANDOM_INSULT_STAGE_SECONDS.labels("queryset_build")._sum.get()
         with metrics.time_random_insult_stage("queryset_build"):
             pass
@@ -200,12 +220,14 @@ class TimeRandomInsultStageTests(TestCase):
 # sql_instrumentation
 # ---------------------------------------------------------------------------
 
+
 class SqlInstrumentationTests(TestCase):
     databases = ["default"]
 
     def test_counts_queries_executed_inside_block(self):
         """Each SQL statement issued inside the block increments query_count."""
         from django.contrib.auth import get_user_model
+
         User = get_user_model()
 
         with metrics.sql_instrumentation() as stats:
@@ -215,6 +237,7 @@ class SqlInstrumentationTests(TestCase):
 
     def test_total_ms_is_positive_after_query(self):
         from django.contrib.auth import get_user_model
+
         User = get_user_model()
 
         with metrics.sql_instrumentation() as stats:
@@ -234,6 +257,7 @@ class SqlInstrumentationTests(TestCase):
     def test_slowest_ms_tracks_max(self):
         """slowest_ms should reflect the maximum single-query duration."""
         from django.contrib.auth import get_user_model
+
         User = get_user_model()
 
         with metrics.sql_instrumentation() as stats:
@@ -248,10 +272,12 @@ class SqlInstrumentationTests(TestCase):
 # record_random_insult_request / record_random_insult_empty
 # ---------------------------------------------------------------------------
 
+
 class RecordRandomInsultRequestTests(TestCase):
 
     def test_increments_request_counter(self):
         from common.metrics import RANDOM_INSULT_REQUESTS
+
         before = _counter_value(RANDOM_INSULT_REQUESTS, "200", "false", "false")
         metrics.record_random_insult_request(
             status="200",
@@ -266,6 +292,7 @@ class RecordRandomInsultRequestTests(TestCase):
 
     def test_increments_db_queries_counter_by_count(self):
         from common.metrics import RANDOM_INSULT_DB_QUERIES
+
         before = RANDOM_INSULT_DB_QUERIES._value.get()
         metrics.record_random_insult_request(
             status="200",
@@ -277,6 +304,7 @@ class RecordRandomInsultRequestTests(TestCase):
 
     def test_record_random_insult_empty_increments_counter(self):
         from common.metrics import RANDOM_INSULT_QUERYSET_EMPTY
+
         before = RANDOM_INSULT_QUERYSET_EMPTY._value.get()
         metrics.record_random_insult_empty()
         self.assertEqual(RANDOM_INSULT_QUERYSET_EMPTY._value.get(), before + 1)
@@ -286,16 +314,21 @@ class RecordRandomInsultRequestTests(TestCase):
 # increment_endpoint_cache
 # ---------------------------------------------------------------------------
 
+
 class IncrementEndpointCacheTests(TestCase):
 
     def test_hit_increments_endpoint_cache_hits(self):
         from common.metrics import ENDPOINT_CACHE_HITS
+
         before = _counter_value(ENDPOINT_CACHE_HITS, "/api/insults/")
         metrics.increment_endpoint_cache("/api/insults/", "hit")
-        self.assertEqual(_counter_value(ENDPOINT_CACHE_HITS, "/api/insults/"), before + 1)
+        self.assertEqual(
+            _counter_value(ENDPOINT_CACHE_HITS, "/api/insults/"), before + 1
+        )
 
     def test_miss_increments_endpoint_cache_misses(self):
         from common.metrics import ENDPOINT_CACHE_MISSES
+
         before = _counter_value(ENDPOINT_CACHE_MISSES, "/api/insults/random/")
         metrics.increment_endpoint_cache("/api/insults/random/", "miss")
         self.assertEqual(
