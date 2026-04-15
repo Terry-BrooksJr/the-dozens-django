@@ -4,7 +4,7 @@ Root URL configuration for thedozens project.
 """
 
 import contextlib
-import ipaddress
+import hmac
 
 from django.conf import settings
 from django.contrib import admin
@@ -26,25 +26,28 @@ from applications.frontend.views import (
 
 
 def metrics_view(request):
-    """Serve Prometheus metrics only to requests from PROMETHEUS_ALLOWED_HOSTS.
+    """Serve Prometheus metrics only to requests bearing the correct scrape token.
 
-    Each entry can be an exact IP address or a CIDR network (e.g. 172.19.0.0/24).
+    Prometheus must send:
+        Authorization: Bearer <METRICS_SCRAPE_TOKEN>
+
+    The token is compared with hmac.compare_digest to prevent timing attacks.
+    Set METRICS_SCRAPE_TOKEN in Doppler; if unset the endpoint is always denied.
     """
-    allowed = getattr(settings, "PROMETHEUS_ALLOWED_HOSTS", [])
-    remote = request.META.get("REMOTE_ADDR", "")
-    try:
-        remote_ip = ipaddress.ip_address(remote)
-    except ValueError:
+    expected = getattr(settings, "METRICS_SCRAPE_TOKEN", "")
+    if not expected:
         return HttpResponseForbidden()
 
-    for entry in allowed:
-        try:
-            if remote_ip in ipaddress.ip_network(entry, strict=False):
-                return ExportToDjangoView(request)
-        except ValueError:
-            continue
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    scheme, _, provided = auth_header.partition(" ")
 
-    return HttpResponseForbidden()
+    if scheme.lower() != "bearer" or not provided:
+        return HttpResponseForbidden()
+
+    if not hmac.compare_digest(provided.strip(), expected):
+        return HttpResponseForbidden()
+
+    return ExportToDjangoView(request)
 
 
 urlpatterns = [

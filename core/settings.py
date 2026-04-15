@@ -797,16 +797,14 @@ class Production(Base):
     ALLOWED_HOSTS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_HOSTS"
     )
-    # IPs permitted to scrape /metrics.
-    # Includes the native Prometheus host AND the Docker edge-network gateway
-    # (172.28.0.1) because when Prometheus accesses the published container port
-    # Docker NAT rewrites the source to the bridge gateway, not the real host IP.
-    # Override via PROMETHEUS_ALLOWED_HOSTS in Doppler if either address changes.
-    PROMETHEUS_ALLOWED_HOSTS = values.ListValue(
-        ["165.227.105.209", "172.28.0.1"],
+    # Secret token that Prometheus must send as "Authorization: Bearer <token>"
+    # when scraping /metrics.  Set METRICS_SCRAPE_TOKEN in Doppler.
+    # IP-based allowlists are no longer used — Docker NAT makes them unreliable.
+    METRICS_SCRAPE_TOKEN = values.Value(
+        "",
         environ=True,
         environ_prefix=None,
-        environ_name="PROMETHEUS_ALLOWED_HOSTS",
+        environ_name="METRICS_SCRAPE_TOKEN",
     )
     INSTALLED_APPS = values.ListValue(
         [

@@ -25,11 +25,14 @@ scrape_configs:
 
   # ── Django API ─────────────────────────────────────────────────────────────
   # Scraped directly from the published container port, bypassing Traefik.
-  # REMOTE_ADDR inside the container will be 172.28.0.1 (bridge gateway) —
-  # that IP is included in PROMETHEUS_ALLOWED_HOSTS alongside 165.227.105.209.
+  # Auth is a bearer token (METRICS_SCRAPE_TOKEN in Doppler) — IP allowlists
+  # were dropped because Docker NAT makes REMOTE_ADDR unreliable.
   - job_name: django
     scrape_interval: 15s
     metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/metrics_token
     static_configs:
       - targets:
           - localhost:9090
