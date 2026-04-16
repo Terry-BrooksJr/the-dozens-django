@@ -172,3 +172,5 @@ cobertura.xml
 .deploy/grafana/dashboards/dozens-overview.json
 .deploy/grafana/dashboards/test_cases.py
 .deploy/grafana/dashboards/__init__.py
+WARP.md
+.claude
