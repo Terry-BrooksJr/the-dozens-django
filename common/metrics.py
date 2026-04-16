@@ -92,6 +92,31 @@ ENDPOINT_CACHE_MISSES = Counter(
     ["endpoint"],
 )
 
+# ---------------------------------------------------------------------------
+# Pre-register known label combinations so they appear in /metrics as zero-
+# series from the first scrape, rather than only after the first occurrence.
+# Without this, labelled counters are invisible until incremented — which
+# makes dashboards and alerts that fire on "rate == 0" unreliable at startup.
+# ---------------------------------------------------------------------------
+_KNOWN_INVALIDATION_REASONS = (
+    "post_save_created",
+    "post_save_updated",
+    "post_delete",
+    "manual",
+    "mutation_triggered",
+    "pattern_delete",
+    "clear_all_utility",
+    "manual_clear_all",
+    "unknown_signal",
+)
+
+
+def _pre_register_invalidation_labels(prefixes: tuple[str, ...]) -> None:
+    """Touch each (prefix, reason) label combo so Prometheus knows they exist."""
+    for prefix in prefixes:
+        for reason in _KNOWN_INVALIDATION_REASONS:
+            CACHE_INVALIDATIONS.labels(prefix, reason)
+
 
 class _MetricsFacade:
     """Thin facade used throughout the app to record cache metrics.

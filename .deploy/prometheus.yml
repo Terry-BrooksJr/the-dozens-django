@@ -8,7 +8,7 @@
 #   9090  → api container          (Django /metrics, direct — bypasses Traefik)
 #   8082  → traefik container      (Traefik built-in Prometheus metrics entrypoint)
 #   9187  → postgres-exporter      (polls native PostgreSQL on host.docker.internal)
-#   9121  → dragonfly-exporter     (polls native Dragonfly on host.docker.internal)
+#   9999  → dragonfly native       (dragonfly --admin_port=9999, exposes dragonfly_* metrics)
 
 global:
   scrape_interval: 15s
@@ -63,12 +63,20 @@ scrape_configs:
           db: dozens
 
   # ── Dragonfly DB ───────────────────────────────────────────────────────────
-  # dragonfly-exporter (oliver006/redis_exporter) connects to native Dragonfly
-  # via host.docker.internal. Dragonfly is Redis-compatible — no changes needed.
+  # Dragonfly exposes a native Prometheus endpoint — no redis_exporter needed.
+  # Start Dragonfly with --admin_port=9999 to expose /metrics on a dedicated
+  # HTTP port (separate from the Redis protocol port).
+  #
+  # Example systemd / CLI flag:
+  #   dragonfly --admin_port=9999
+  #
+  # Metrics use the dragonfly_* prefix, NOT redis_* (see the official dashboard
+  # at github.com/dragonflydb/dragonfly/blob/main/tools/local/monitoring).
   - job_name: dragonfly
     scrape_interval: 15s
+    metrics_path: /metrics
     static_configs:
       - targets:
-          - localhost:9121
+          - localhost:9999
         labels:
           service: dragonfly-db

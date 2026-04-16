@@ -513,6 +513,11 @@ class Base(Configuration):
         "VERSION": "1.0.0",
         "SERVE_INCLUDE_SCHEMA": True,
         "OAS_VERSION": "3.0.3",
+        # Cache the generated schema for 15 minutes — generation is expensive
+        # (introspects every view/serializer on the fly) and the output is
+        # deterministic until a deploy.  Without this, every ReDoc/Swagger page
+        # load triggers a multi-second schema build before the UI can render.
+        "SCHEMA_CACHE_TIMEOUT": 60 * 15,
         "COMPONENT_SPLIT_REQUEST": True,
         "SECURITY": [{"TokenAuth": []}],
         "AUTHENTICATION_WHITELIST": [],
@@ -865,8 +870,34 @@ class Production(Base):
         environ=False,
     )
     DEBUG = values.BooleanValue(False, environ=False)
+
+    # ------------------------------------------------------------------ #
+    # Reverse-proxy trust (Traefik)                                        #
+    # ------------------------------------------------------------------ #
+    # Traefik terminates TLS and forwards requests as HTTP to gunicorn.
+    # Without these two settings Django reconstructs the wrong scheme:
+    #   browser sends   Origin: https://yo-momma.io
+    #   Django builds   http://yo-momma.io  (is_secure() == False)
+    #   CSRF check      https:// != http://  → 403 on every admin POST
+    #
+    # SECURE_PROXY_SSL_HEADER tells Django to trust the X-Forwarded-Proto
+    # header that Traefik adds, making request.is_secure() correct.
+    # USE_X_FORWARDED_HOST makes request.get_host() use X-Forwarded-Host
+    # so the origin comparison uses the public hostname, not the internal one.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    USE_X_FORWARDED_HOST = True
+
+    # CSRF_TRUSTED_ORIGINS is read from the ALLOWED_ORIGINS Doppler secret.
+    # Must include every public origin that can POST to Django, e.g.:
+    #   ALLOWED_ORIGINS=["https://yo-momma.io","https://www.yo-momma.io"]
+    # Provide a safe non-empty default so startup doesn't silently break when
+    # the env var is absent — admin will still 403 without it, but at least
+    # the error message is clear.
     CSRF_TRUSTED_ORIGINS = values.ListValue(
-        environ=True, environ_prefix=None, environ_name="ALLOWED_ORIGINS"
+        default=["https://yo-momma.io", "https://www.yo-momma.io"],
+        environ=True,
+        environ_prefix=None,
+        environ_name="ALLOWED_ORIGINS",
     )
 
     CORS_ALLOW_ALL_ORIGINS = True
@@ -919,10 +950,18 @@ class Production(Base):
     # SECTION Start - API Schema / Docs (Production overrides)
     # Use CDN-hosted assets instead of drf-spectacular-sidecar so Swagger UI and
     # ReDoc load without depending on a collectstatic run against DigitalOcean Spaces.
+    #
+    # IMPORTANT — pin to the EXACT version bundled by drf-spectacular-sidecar
+    # (currently 2.5.2).  Using @latest caused a silent hang: in 2026 @latest
+    # resolves to ReDoc 3.x, which dropped the Redoc.init() API that our
+    # custom template uses.  Pinning to 2.x ensures CDN == sidecar == template.
+    #
+    # When upgrading drf-spectacular-sidecar, also bump this pin:
+    #   grep -r "Version:" .venv/lib/*/site-packages/drf_spectacular_sidecar/static/**/redoc/**/*.LICENSE.txt
     SPECTACULAR_SETTINGS = {
         **Base.SPECTACULAR_SETTINGS,
         "SWAGGER_UI_DIST": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5",
-        "REDOC_DIST": "https://cdn.jsdelivr.net/npm/redoc@latest/bundles",
+        "REDOC_DIST": "https://cdn.jsdelivr.net/npm/redoc@2.5.2/bundles",
     }
     #!SECTION End - API Schema / Docs (Production overrides)
 
@@ -938,6 +977,9 @@ class Offline(Base):
     ALLOWED_HOSTS = ["*"]
     DEBUG = True
     CORS_ALLOW_ALL_ORIGINS = True
+    # Allow any origin in the local Docker environment so admin works regardless
+    # of which hostname/port is used to reach the container.
+    CSRF_TRUSTED_ORIGINS = ["http://localhost:*", "http://127.0.0.1:*", "http://*"]
     STATIC_URL = "/static/"
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, "static"),
