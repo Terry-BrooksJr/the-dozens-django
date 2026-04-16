@@ -168,3 +168,7 @@ users.acl
 .task/checksum/freeze
 cobertura.xml
 .task/checksum/freeze
+.deploy/grafana/dashboards/api_tester.py
+.deploy/grafana/dashboards/dozens-overview.json
+.deploy/grafana/dashboards/test_cases.py
+.deploy/grafana/dashboards/__init__.py
