@@ -25,6 +25,7 @@ from applications.frontend.views import (
 )
 from core.admin_view import grafana_dashboard_view
 
+
 def metrics_view(request):
     """Serve Prometheus metrics only to requests bearing the correct scrape token.
 
@@ -53,9 +54,13 @@ def metrics_view(request):
 urlpatterns = [
     path("", LandingPageView.as_view(), name="landing"),
     path("status/", StatusPageView.as_view(), name="status"),
-    path("graphql/", include(GRAPHQL_URL), name="GraphQL"),
+    re_path(r"^graphql/?", include(GRAPHQL_URL), name="GraphQL"),
+    path(
+        "admin/observability/",
+        admin.site.admin_view(grafana_dashboard_view),
+        name="admin-grafana-dashboard",
+    ),
     path("admin/", admin.site.urls),
-    path("admin/observability/", admin.site.admin_view(grafana_dashboard_view), name="admin-grafana-dashboard"),
     path("api-auth/", include("rest_framework.urls")),
     path("metrics", metrics_view, name="prometheus-django-metrics"),
     path("api/", include(API_URLS)),

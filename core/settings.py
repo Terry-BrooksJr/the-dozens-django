@@ -1279,6 +1279,7 @@ class Development(Base):
 
     MIDDLEWARE = values.ListValue(
         [
+            "kolo.middleware.KoloMiddleware",
             "django_prometheus.middleware.PrometheusBeforeMiddleware",
             "corsheaders.middleware.CorsMiddleware",
             "django.middleware.cache.UpdateCacheMiddleware",

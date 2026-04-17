@@ -289,37 +289,17 @@ add "&raw" to the end of the URL within a browser.
         </div>
         {% csrf_token %}
         <!-- Graphene runtime settings (unchanged from upstream) -->
+        {# djlint:off #}
         <script type="application/javascript">
-             window.GRAPHENE_SETTINGS = {
-                  {
-                       %
-                       if subscription_path %
-                  }
-                  subscriptionPath: "{{ subscription_path }}",
-                  {
-                       %
-                       endif %
-                  }
-                  graphiqlHeaderEditorEnabled: {
-                       {
-                            graphiql_header_editor_enabled | yesno: "true,false"
-                       }
-                  },
-                  graphiqlShouldPersistHeaders: {
-                       {
-                            graphiql_should_persist_headers | yesno: "true,false"
-                       }
-                  },
-                  graphiqlInputValueDeprecation: {
-                       {
-                            graphiql_input_value_deprecation | yesno: "true,false"
-                       }
-                  },
-                  // Direct GraphQL queries and introspection to the API endpoint,
-                  // not to the playground URL itself.
-                  graphqlEndpoint: "/graphql/",
-             };
-        </script>
+            window.GRAPHENE_SETTINGS = {
+            {% if subscription_path %}subscriptionPath: "{{ subscription_path }}",
+            {% endif %}graphiqlHeaderEditorEnabled: {{ graphiql_header_editor_enabled|yesno:"true,false" }},
+            graphiqlShouldPersistHeaders: {{ graphiql_should_persist_headers|yesno:"true,false" }},
+            graphiqlInputValueDeprecation: {{ graphiql_input_value_deprecation|yesno:"true,false" }},
+            graphqlEndpoint: "/graphql/",
+            };
+</script>
+        {# djlint:on #}
         <!--
     The Dozens — GraphQL Playground defaults
     =========================================
@@ -439,7 +419,152 @@ add "&raw" to the end of the URL within a browser.
         <script src="https://cdn.jsdelivr.net/npm/@graphiql/plugin-explorer@{{graphiql_plugin_explorer_version}}/dist/graphiql-plugin-explorer.umd.js"
                 integrity="{{graphiql_plugin_explorer_sri}}"
                 crossorigin="anonymous"></script>
-        <!-- Graphene's GraphiQL bootstrap (reads window.GRAPHENE_SETTINGS) -->
-        <script src="{% static 'graphene_django/graphiql.js' %}"></script>
+        <!-- GraphiQL bootstrap — fixed to use GRAPHENE_SETTINGS.graphqlEndpoint
+             instead of the upstream graphiql.js which derives the fetch URL from
+             the URL hash ("#"), causing requests to go to the playground URL
+             itself rather than the dedicated API endpoint at /graphql/. -->
+        <script type="application/javascript">
+             (function(
+                  document,
+                  GRAPHENE_SETTINGS,
+                  GraphiQL,
+                  React,
+                  ReactDOM,
+                  graphqlWs,
+                  GraphiQLPluginExplorer,
+                  fetch,
+                  history,
+                  location,
+             ) {
+                  var parameters = {};
+                  location.hash
+                       .substr(1)
+                       .split("&")
+                       .forEach(function(entry) {
+                            var eq = entry.indexOf("=");
+                            if (eq >= 0) {
+                                 parameters[decodeURIComponent(entry.slice(0, eq))] = decodeURIComponent(
+                                      entry.slice(eq + 1),
+                                 );
+                            }
+                       });
+
+                  function locationQuery(params) {
+                       return (
+                            "#" +
+                            Object.keys(params)
+                            .map(function(key) {
+                                 return encodeURIComponent(key) + "=" + encodeURIComponent(params[key]);
+                            })
+                            .join("&")
+                       );
+                  }
+
+                  // Send all GraphQL requests to the configured API endpoint, not the
+                  // playground URL itself (which is what the upstream graphiql.js does
+                  // by using "#" as the fetch URL).
+                  var fetchURL = GRAPHENE_SETTINGS.graphqlEndpoint;
+
+                  var subscribeURL =
+                       location.origin.replace(/^http/, "ws") +
+                       (GRAPHENE_SETTINGS.subscriptionPath || location.pathname);
+
+                  function trueLambda() {
+                       return true;
+                  }
+
+                  var headers = {};
+                  var cookies = ("; " + document.cookie).split("; csrftoken=");
+                  if (cookies.length == 2) {
+                       csrftoken = cookies.pop().split(";").shift();
+                  } else {
+                       var csrfInput = document.querySelector("[name=csrfmiddlewaretoken]");
+                       csrftoken = csrfInput ? csrfInput.value : null;
+                  }
+                  if (csrftoken) {
+                       headers['X-CSRFToken'] = csrftoken;
+                  }
+
+                  var graphQLFetcher = GraphiQL.createFetcher({
+                       url: fetchURL,
+                       wsClient: graphqlWs.createClient({
+                            url: subscribeURL,
+                            shouldRetry: trueLambda,
+                            lazy: true,
+                       }),
+                       headers: headers
+                  });
+
+                  function onEditQuery(newQuery) {
+                       parameters.query = newQuery;
+                       updateURL();
+                  }
+
+                  function onEditVariables(newVariables) {
+                       parameters.variables = newVariables;
+                       updateURL();
+                  }
+
+                  function onEditOperationName(newOperationName) {
+                       parameters.operationName = newOperationName;
+                       updateURL();
+                  }
+
+                  function updateURL() {
+                       history.replaceState(null, null, locationQuery(parameters));
+                  }
+
+                  function GraphiQLWithExplorer() {
+                       var [query, setQuery] = React.useState(parameters.query);
+
+                       function handleQuery(query) {
+                            setQuery(query);
+                            onEditQuery(query);
+                       }
+
+                       var explorerPlugin = GraphiQLPluginExplorer.useExplorerPlugin({
+                            query: query,
+                            onEdit: handleQuery,
+                       });
+
+                       var options = {
+                            fetcher: graphQLFetcher,
+                            plugins: [explorerPlugin],
+                            defaultEditorToolsVisibility: true,
+                            onEditQuery: handleQuery,
+                            onEditVariables: onEditVariables,
+                            onEditOperationName: onEditOperationName,
+                            isHeadersEditorEnabled: GRAPHENE_SETTINGS.graphiqlHeaderEditorEnabled,
+                            shouldPersistHeaders: GRAPHENE_SETTINGS.graphiqlShouldPersistHeaders,
+                            inputValueDeprecation: GRAPHENE_SETTINGS.graphiqlInputValueDeprecation,
+                            query: query,
+                       };
+                       if (parameters.variables) {
+                            options.variables = parameters.variables;
+                       }
+                       if (parameters.operation_name) {
+                            options.operationName = parameters.operation_name;
+                       }
+
+                       return React.createElement(GraphiQL, options);
+                  }
+
+                  ReactDOM.render(
+                       React.createElement(GraphiQLWithExplorer),
+                       document.getElementById("editor"),
+                  );
+             })(
+                  document,
+                  window.GRAPHENE_SETTINGS,
+                  window.GraphiQL,
+                  window.React,
+                  window.ReactDOM,
+                  window.graphqlWs,
+                  window.GraphiQLPluginExplorer,
+                  window.fetch,
+                  window.history,
+                  window.location,
+             );
+        </script>
     </body>
 </html>
