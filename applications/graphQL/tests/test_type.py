@@ -140,15 +140,13 @@ class TestInsultTypeIsActiveIntegration(GraphQLTestCase):
 
     def _query_is_active(self, reference_id: str) -> bool | None:
         """Execute insultById and return the isActive value."""
-        response = self.query(
-            f"""
+        response = self.query(f"""
             query {{
                 insultById(referenceId: "{reference_id}") {{
                     isActive
                 }}
             }}
-            """
-        )
+            """)
         self.assertResponseNoErrors(response)
         return json.loads(response.content)["data"]["insultById"]["isActive"]
 

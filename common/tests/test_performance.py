@@ -19,7 +19,6 @@ from rest_framework.response import Response
 from applications.API.models import Insult, InsultCategory, Theme
 from common import performance
 
-
 pytestmark = pytest.mark.django_db
 
 
@@ -139,7 +138,9 @@ class MutationView(performance.CacheInvalidationMixin, DummyMutationBase):
     cache_invalidation_patterns = ["Insult:*"]
 
 
-class CachedFieldSerializer(performance.CachedBulkSerializerMixin, serializers.Serializer):
+class CachedFieldSerializer(
+    performance.CachedBulkSerializerMixin, serializers.Serializer
+):
     insult_id = serializers.IntegerField()
     content = serializers.CharField()
     cached_fields = ["expensive_value"]
@@ -259,7 +260,9 @@ def test_get_cache_key_includes_expected_components(api_rf, insults, metrics_spy
     request = api_rf.get("/api/insults/?page=2&search=fire")
     request.user = insults[0].added_by
 
-    view = CachedInsultListView(queryset=Insult.objects.filter(pk__in=[i.pk for i in insults]))
+    view = CachedInsultListView(
+        queryset=Insult.objects.filter(pk__in=[i.pk for i in insults])
+    )
     view.request = Request(request)
 
     key = view.get_cache_key("list", page=2, page_size=20)
@@ -269,7 +272,9 @@ def test_get_cache_key_includes_expected_components(api_rf, insults, metrics_spy
         usedforsecurity=False,
     ).hexdigest()
 
-    assert key.startswith("Insult:CachedInsultListView:list:Insult_Theme_InsultCategory:")
+    assert key.startswith(
+        "Insult:CachedInsultListView:list:Insult_Theme_InsultCategory:"
+    )
     assert f":{request.user.pk}:" in key
     assert expected_hash in key
     assert key.endswith("page_2:page_size_20_cache_key")
@@ -352,13 +357,13 @@ def test_get_optimized_queryset_applies_select_related(api_rf, insults, metrics_
     assert "added_by" in optimized.query.select_related
 
 
-def test_get_cached_bulk_data_uses_manager_cache_hit(
-    api_rf, insults, metrics_spy
-):
+def test_get_cached_bulk_data_uses_manager_cache_hit(api_rf, insults, metrics_spy):
     request = api_rf.get("/api/insults/")
     request.user = insults[0].added_by
 
-    queryset = Insult.objects.filter(insult_id__in=[i.insult_id for i in insults]).order_by("insult_id")
+    queryset = Insult.objects.filter(
+        insult_id__in=[i.insult_id for i in insults]
+    ).order_by("insult_id")
     view = CachedInsultListView(queryset=queryset)
     view.request = Request(request)
 
@@ -382,13 +387,13 @@ def test_get_cached_bulk_data_uses_manager_cache_hit(
     metrics_spy.increment_cache.assert_called_once_with("Insult", "hit")
 
 
-def test_get_cached_bulk_data_uses_redis_fallback_hit(
-    api_rf, insults, metrics_spy
-):
+def test_get_cached_bulk_data_uses_redis_fallback_hit(api_rf, insults, metrics_spy):
     request = api_rf.get("/api/insults/")
     request.user = insults[0].added_by
 
-    queryset = Insult.objects.filter(insult_id__in=[i.insult_id for i in insults]).order_by("insult_id")
+    queryset = Insult.objects.filter(
+        insult_id__in=[i.insult_id for i in insults]
+    ).order_by("insult_id")
     view = CachedInsultListView(queryset=queryset)
     view.request = Request(request)
     view._cache_manager = None
@@ -419,7 +424,9 @@ def test_get_cached_bulk_data_builds_from_db_and_caches_result(
     request = api_rf.get("/api/insults/")
     request.user = insults[0].added_by
 
-    queryset = Insult.objects.filter(insult_id__in=[i.insult_id for i in insults]).order_by("insult_id")
+    queryset = Insult.objects.filter(
+        insult_id__in=[i.insult_id for i in insults]
+    ).order_by("insult_id")
     view = CachedInsultListView(queryset=queryset)
     view.request = Request(request)
     view._cache_manager = None
@@ -448,7 +455,9 @@ def test_list_returns_serialized_results_via_bulk_path(api_rf, insults, metrics_
     request = api_rf.get("/api/insults/?page=1&page_size=20")
     request.user = insults[0].added_by
 
-    queryset = Insult.objects.filter(insult_id__in=[i.insult_id for i in insults]).order_by("insult_id")
+    queryset = Insult.objects.filter(
+        insult_id__in=[i.insult_id for i in insults]
+    ).order_by("insult_id")
     view = CachedInsultListView(queryset=queryset)
     drf_request = Request(request)
     view.request = drf_request
@@ -474,7 +483,9 @@ def test_retrieve_caches_and_returns_single_object(api_rf, insults, metrics_spy)
     assert response.status_code == 200
     assert response.data["insult_id"] == insults[0].insult_id
 
-    cached_keys = [k for k in cache.iter_keys("*")] if hasattr(cache, "iter_keys") else []
+    cached_keys = (
+        [k for k in cache.iter_keys("*")] if hasattr(cache, "iter_keys") else []
+    )
     if cached_keys:
         assert any("retrieve" in str(key) for key in cached_keys)
 
@@ -484,10 +495,14 @@ def test_retrieve_caches_and_returns_single_object(api_rf, insults, metrics_spy)
 # ---------------------------------------------------------------------
 
 
-def test_init_cache_manager_registers_manager_when_missing(monkeypatch, api_rf, insults):
+def test_init_cache_manager_registers_manager_when_missing(
+    monkeypatch, api_rf, insults
+):
     fake_registry = FakeRegistry()
     monkeypatch.setattr(performance, "cache_registry", fake_registry)
-    monkeypatch.setattr(performance, "GenericDataCacheManager", FakeGenericDataCacheManager)
+    monkeypatch.setattr(
+        performance, "GenericDataCacheManager", FakeGenericDataCacheManager
+    )
 
     view = CachedInsultListView(queryset=Insult.objects.all())
 
@@ -600,7 +615,9 @@ def test_invalidate_cache_falls_back_to_pattern_delete(monkeypatch, metrics_spy)
 # ---------------------------------------------------------------------
 
 
-def test_create_category_cache_manager_builder_returns_expected_maps(category, second_category):
+def test_create_category_cache_manager_builder_returns_expected_maps(
+    category, second_category
+):
     manager = performance.create_category_cache_manager(
         InsultCategory,
         key_field="category_key",
@@ -633,7 +650,10 @@ def test_create_category_cache_manager_convenience_methods(category, second_cate
     )
 
     assert manager.get_category_name_by_key(category.category_key) == category.name
-    assert manager.get_category_key_by_name(second_category.name) == second_category.category_key
+    assert (
+        manager.get_category_key_by_name(second_category.name)
+        == second_category.category_key
+    )
     assert manager.get_all_categories()[category.category_key] == category.name
 
 
