@@ -278,7 +278,7 @@ add "&raw" to the end of the URL within a browser.
                 or pick one of the example queries pre-loaded in the editor.
             </p>
             <nav class="nav-links">
-                <a href="/api/docs/"     class="nav-link">REST Docs (Swagger)</a>
+                <a href="/api/swagger/"     class="nav-link">REST Docs (Swagger)</a>
                 <a href="/api/redoc/"    class="nav-link">ReDoc</a>
                 <a href="/graphql/playground/" class="nav-link active">GraphQL Playground</a>
             </nav>
@@ -323,10 +323,22 @@ add "&raw" to the end of the URL within a browser.
                   var VARIABLES_KEY = 'graphiql:variables';
 
                   // ── 1. Default headers ─────────────────────────────────────────────────
-                  if (!localStorage.getItem(HEADERS_KEY)) {
+                  // Strip Content-Type from any already-persisted headers — GraphiQL's
+                  // fetcher sets it automatically; having it in the editor panel causes
+                  // a duplicated "application/json, application/json" header that breaks
+                  // graphene-django's body parser.
+                  var existingHeaders = localStorage.getItem(HEADERS_KEY);
+                  if (existingHeaders) {
+                       try {
+                            var parsed = JSON.parse(existingHeaders);
+                            if (parsed['Content-Type']) {
+                                 delete parsed['Content-Type'];
+                                 localStorage.setItem(HEADERS_KEY, JSON.stringify(parsed, null, 2));
+                            }
+                       } catch (e) {}
+                  } else {
                        localStorage.setItem(HEADERS_KEY, JSON.stringify({
-                            "Authorization": "Token <paste-your-api-token-here>",
-                            "Content-Type": "application/json"
+                            "Authorization": "Token <paste-your-api-token-here>"
                        }, null, 2));
                   }
 
@@ -357,17 +369,17 @@ add "&raw" to the end of the URL within a browser.
                             '# ── Random insult (no variables required) ──────────────────────',
                             'query RandomInsult {',
                             '  randomInsult {',
-                            '    insultId',
+                            '    referenceId',
                             '    content',
                             '    nsfw',
                             '    isActive',
                             '  }',
                             '}',
                             '',
-                            '# ── Lookup by primary key ───────────────────────────────────────',
+                            '# ── Lookup by reference ID ──────────────────────────────────────',
                             '# query InsultById($referenceId: ID!) {',
                             '#   insultById(referenceId: $referenceId) {',
-                            '#     insultId content status isActive',
+                            '#     referenceId content status isActive',
                             '#   }',
                             '# }',
                             '',

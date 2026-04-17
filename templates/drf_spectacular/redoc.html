@@ -269,27 +269,17 @@
                        }
                   };
 
-                  {
-                       %
-                       if settings %
-                  }
-                  const customSettings = Object.assign({}, {
-                       {
-                            settings | safe
-                       }
-                  }, {
+                  {# djlint:off #}
+                  {% if settings %}
+                  const customSettings = Object.assign({}, {{ settings | safe }}, {
                        theme: customTheme
                   });
-                  {
-                       %
-                       else %
-                  }
+                  {% else %}
                   const customSettings = {
                        theme: customTheme
                   };
-                  {
-                       % endif %
-                  }
+                  {% endif %}
+                  {# djlint:on #}
 
                   Redoc.init("{{ schema_url }}", customSettings, container, function(err) {
                        if (err) {

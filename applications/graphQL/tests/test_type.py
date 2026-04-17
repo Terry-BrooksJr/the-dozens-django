@@ -138,12 +138,12 @@ class TestInsultTypeIsActiveIntegration(GraphQLTestCase):
 
         cls.active = Insult.objects.get(content="Type test insult [A]", theme=cls.theme)
 
-    def _query_is_active(self, insult_id: int) -> bool | None:
+    def _query_is_active(self, reference_id: str) -> bool | None:
         """Execute insultById and return the isActive value."""
         response = self.query(
             f"""
             query {{
-                insultById(referenceId: "{insult_id}") {{
+                insultById(referenceId: "{reference_id}") {{
                     isActive
                 }}
             }}
@@ -154,7 +154,7 @@ class TestInsultTypeIsActiveIntegration(GraphQLTestCase):
 
     def test_active_insult_is_active_true(self):
         """isActive is True for a status='A' insult."""
-        self.assertTrue(self._query_is_active(self.active.insult_id))
+        self.assertTrue(self._query_is_active(self.active.reference_id))
 
     def test_non_active_insults_are_not_active(self):
         """isActive is False for every non-Active status code."""
@@ -163,4 +163,4 @@ class TestInsultTypeIsActiveIntegration(GraphQLTestCase):
                 content=f"Type test insult [{status_code}]", theme=self.theme
             )
             with self.subTest(status=status_code):
-                self.assertFalse(self._query_is_active(insult.insult_id))
+                self.assertFalse(self._query_is_active(insult.reference_id))

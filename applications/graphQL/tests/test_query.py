@@ -67,7 +67,7 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
             """
             query {
                 randomInsult {
-                    insultId
+                    referenceId
                     content
                     isActive
                 }
@@ -85,7 +85,7 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
             """
             query {
                 randomInsult(category: "GP") {
-                    insultId
+                    referenceId
                     content
                 }
             }
@@ -94,7 +94,7 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
         self.assertResponseNoErrors(response)
         data = json.loads(response.content)["data"]["randomInsult"]
         self.assertIsNotNone(data)
-        self.assertEqual(data["insultId"], str(self.active_sfw.insult_id))
+        self.assertEqual(data["referenceId"], self.active_sfw.reference_id)
 
     def test_random_insult_with_empty_category_returns_null(self):
         """randomInsult(category:) returns null when no active insults exist for that category."""
@@ -102,7 +102,7 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
             """
             query {
                 randomInsult(category: "NOTEXIST") {
-                    insultId
+                    referenceId
                 }
             }
             """
@@ -120,8 +120,8 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
         response = self.query(
             f"""
             query {{
-                insultById(referenceId: "{self.active_sfw.insult_id}") {{
-                    insultId
+                insultById(referenceId: "{self.active_sfw.reference_id}") {{
+                    referenceId
                     content
                 }}
             }}
@@ -130,7 +130,7 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
         self.assertResponseNoErrors(response)
         data = json.loads(response.content)["data"]["insultById"]
         self.assertIsNotNone(data)
-        self.assertEqual(data["insultId"], str(self.active_sfw.insult_id))
+        self.assertEqual(data["referenceId"], self.active_sfw.reference_id)
 
     def test_insult_by_id_not_found_returns_error(self):
         """insultById raises a GraphQL error for a non-existent ID."""
@@ -138,7 +138,7 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
             """
             query {
                 insultById(referenceId: "99999999") {
-                    insultId
+                    referenceId
                 }
             }
             """
@@ -157,7 +157,7 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
                 insultsByCategory(category: "GP", offset: 0, limit: 10) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                         content
                     }
                 }
@@ -177,7 +177,7 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
                 insultsByCategory(category: "GP", offset: 0, limit: 0) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                     }
                 }
             }
@@ -196,7 +196,7 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
                 insultsByCategory(category: "NOTEXIST", offset: 0, limit: 10) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                     }
                 }
             }
@@ -219,7 +219,7 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
                 insultsByStatus(status: "A", offset: 0, limit: 10) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                         status
                     }
                 }
@@ -240,7 +240,7 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
                 insultsByStatus(status: "P", offset: 0, limit: 10) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                     }
                 }
             }
@@ -262,7 +262,7 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
                 insultsByClassification(nsfw: false, offset: 0, limit: 10) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                         nsfw
                     }
                 }
@@ -283,7 +283,7 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
                 insultsByClassification(nsfw: true, offset: 0, limit: 10) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                         nsfw
                     }
                 }

@@ -174,3 +174,4 @@ cobertura.xml
 .deploy/grafana/dashboards/__init__.py
 WARP.md
 .claude
+.kolo

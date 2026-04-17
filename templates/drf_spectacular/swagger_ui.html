@@ -368,11 +368,11 @@
         {% if script_url %}
             <script src="{{ script_url }}"></script>
         {% else %}
+            {# djlint:off #}
             <script>
-                 {
-                      % include template_name_js %
-                 }
+                 {% include template_name_js %}
             </script>
+            {# djlint:on #}
         {% endif %}
         <!-- SweetAlert2 JS -->
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>

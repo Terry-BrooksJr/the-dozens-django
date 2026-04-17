@@ -75,7 +75,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             """
             query {
                 randomInsult(category: "ECA") {
-                    insultId
+                    referenceId
                 }
             }
             """
@@ -90,7 +90,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             """
             query {
                 randomInsult(category: "XXXXXX") {
-                    insultId
+                    referenceId
                 }
             }
             """
@@ -108,7 +108,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             """
             query {
                 insultById(referenceId: "0") {
-                    insultId
+                    referenceId
                 }
             }
             """
@@ -121,7 +121,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             """
             query {
                 insultById(referenceId: "2147483647") {
-                    insultId
+                    referenceId
                 }
             }
             """
@@ -134,7 +134,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             """
             query {
                 insultById(referenceId: "99999999") {
-                    insultId
+                    referenceId
                 }
             }
             """
@@ -208,7 +208,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             query {
                 insultsByStatus(status: "Z") {
                     totalCount
-                    items { insultId }
+                    items { referenceId }
                 }
             }
             """
@@ -230,7 +230,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             query {
                 insultsByStatus(status: "A", offset: 0, limit: 100) {
                     totalCount
-                    items { insultId }
+                    items { referenceId }
                 }
             }
             """
@@ -243,7 +243,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             query {{
                 insultsByStatus(status: "A", offset: {total}, limit: 10) {{
                     totalCount
-                    items {{ insultId }}
+                    items {{ referenceId }}
                 }}
             }}
             """
@@ -260,7 +260,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             query {
                 insultsByStatus(status: "A", offset: 0, limit: 2) {
                     totalCount
-                    items { insultId }
+                    items { referenceId }
                 }
             }
             """
@@ -281,7 +281,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             query {
                 insultsByCategory(category: "ECA") {
                     totalCount
-                    items { insultId status }
+                    items { referenceId status }
                 }
             }
             """
@@ -320,7 +320,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             query {
                 insultsByClassification(nsfw: false, offset: 0, limit: 0) {
                     totalCount
-                    items { insultId }
+                    items { referenceId }
                 }
             }
             """
@@ -351,7 +351,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
             query {{
                 insultsByClassification(nsfw: true, offset: {total + 100}, limit: 10) {{
                     totalCount
-                    items {{ insultId }}
+                    items {{ referenceId }}
                 }}
             }}
             """
