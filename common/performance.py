@@ -531,8 +531,7 @@ class CachedBulkSerializerMixin:
 
     def to_representation(self, instance):
         """Override to handle bulk optimizations."""
-        if hasattr(instance, "pk"):
-            self._field_cache.clear()
+        self._field_cache.clear()
         return super().to_representation(instance)
 
 

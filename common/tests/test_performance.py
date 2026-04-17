@@ -13,7 +13,7 @@ from django.http import JsonResponse
 from django.test import override_settings
 from rest_framework import serializers
 from rest_framework.request import Request
-from rest_framework.test import APIRequestFactory
+from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework.response import Response
 
 from applications.API.models import Insult, InsultCategory, Theme
@@ -258,7 +258,7 @@ def clear_redis_cache():
 
 def test_get_cache_key_includes_expected_components(api_rf, insults, metrics_spy):
     request = api_rf.get("/api/insults/?page=2&search=fire")
-    request.user = insults[0].added_by
+    force_authenticate(request, user=insults[0].added_by)
 
     view = CachedInsultListView(
         queryset=Insult.objects.filter(pk__in=[i.pk for i in insults])
@@ -275,7 +275,7 @@ def test_get_cache_key_includes_expected_components(api_rf, insults, metrics_spy
     assert key.startswith(
         "Insult:CachedInsultListView:list:Insult_Theme_InsultCategory:"
     )
-    assert f":{request.user.pk}:" in key
+    assert f":{insults[0].added_by.pk}:" in key
     assert expected_hash in key
     assert key.endswith("page_2:page_size_20_cache_key")
 
