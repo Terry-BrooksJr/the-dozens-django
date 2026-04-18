@@ -941,3 +941,20 @@ class HealthEndpoint(GenericAPIView):
             },
             status=503 if degraded else 200,
         )
+
+
+class PingEndpoint(GenericAPIView):
+    """Lightweight liveness probe used by Traefik health checks.
+
+    Intentionally skips DB/GraphQL/LD checks — those run under /api/health/.
+    This just confirms Gunicorn is alive and able to accept requests.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = []
+    serializer_class = None
+
+    @extend_schema(exclude=True)
+    def get(self, request):
+        return Response({"status": "ok"})
