@@ -511,9 +511,7 @@ class Base(Configuration):
     # SECTION Start - REST API.SWAGGER DOCUMENTATION SETTINGS
     SPECTACULAR_SETTINGS = {
         "TITLE": "Yo' Momma - The Joke API",
-        "VERSION": values.Value(
-            environ=True, environ_prefix=None, environ_name="API_VERSION"
-        ),
+        "VERSION": os.getenv("API_VERSION", "1.0.0"),
         "SERVE_INCLUDE_SCHEMA": True,
         "OAS_VERSION": "3.0.3",
         # Cache the generated schema for 15 minutes — generation is expensive
@@ -1016,7 +1014,7 @@ class Production(Base):
         default=[
             "https://yo-momma.io",
             "https://www.yo-momma.io",
-            "https://dozens.nyc3.cdn.digitaloceanspaces.com/*",
+            "https://dozens.nyc3.cdn.digitaloceanspaces.com",
         ],
         environ=True,
         environ_prefix=None,
@@ -1108,7 +1106,7 @@ class Offline(Base):
     CORS_ALLOW_ALL_ORIGINS = True
     # Allow any origin in the local Docker environment so admin works regardless
     # of which hostname/port is used to reach the container.
-    CSRF_TRUSTED_ORIGINS = ["http://localhost:*", "http://127.0.0.1:*", "http://*"]
+    CSRF_TRUSTED_ORIGINS = ["http://localhost:8000", "http://127.0.0.1:8000"]
     STATIC_URL = "/static/"
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, "static"),

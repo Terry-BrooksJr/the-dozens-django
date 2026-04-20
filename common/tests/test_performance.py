@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.db.models.signals import post_delete, post_save
+from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.http import JsonResponse
 from django.test import override_settings
 from rest_framework import serializers
@@ -578,6 +578,11 @@ def test_invalidation_reason_post_save_updated():
 def test_invalidation_reason_post_delete():
     reason = performance._invalidation_reason(post_delete, {})
     assert reason == "post_delete"
+
+
+def test_invalidation_reason_unknown_signal():
+    reason = performance._invalidation_reason(m2m_changed, {})
+    assert reason == "unknown_signal"
 
 
 def test_invalidate_cache_uses_registered_manager(monkeypatch, metrics_spy):
