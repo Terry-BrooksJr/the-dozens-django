@@ -1093,6 +1093,12 @@ class Production(Base):
 
     if Base._logger_configured:
         logger.remove()
+        # Production: stdout only — no file sinks inside the container.
+        # serialize=True emits newline-delimited JSON so Docker/Fluent Bit/Loki
+        # can parse records without regex.
+        logger.add(sys.stdout, **{**Base.DEFAULT_LOGGER_CONFIG, "serialize": True})
+        if os.getenv("LAUNCHDARKLY_OBSERVABILITY_ENABLED", "false").lower() == "true":
+            logger.add(ld_loguru_sink, **Base.DEFAULT_LOGGER_CONFIG)
 
 
 class Offline(Base):

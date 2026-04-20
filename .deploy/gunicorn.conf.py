@@ -4,6 +4,7 @@
 # This matters for SDKs that run background threads (like LaunchDarkly),
 # because threads do not survive fork.
 
+import multiprocessing
 import os
 import shutil
 
@@ -20,12 +21,31 @@ os.environ.setdefault("prometheus_multiproc_dir", _PROM_DIR)
 # ---------------------------------------------------------------------------
 
 bind = "0.0.0.0:9090"
-workers = 2
+
+# (2 * CPU) + 1 is the standard formula for I/O-bound gthread workers.
+# No CPU limit is set on the container, so this scales to whatever the host
+# provides (2-core → 5 workers, 4-core → 9 workers, etc.).
+workers = multiprocessing.cpu_count() * 2 + 1
+
 worker_class = "gthread"
+
+# 4 threads per worker is right for this I/O-bound API (Postgres + Dragonfly).
+# Total concurrent DB connections = workers × threads; keep that well below
+# Postgres max_connections (typically 100) across all replicas.
 threads = 4
+
 worker_tmp_dir = "/dev/shm"
-timeout = 120
+
+# 30 s is the right ceiling for a public REST API. A request taking longer
+# than this indicates a bug, not a feature — fail fast rather than holding
+# a worker slot for 2 minutes.
+timeout = 30
 graceful_timeout = 30
+
+# Allow Traefik to reuse backend TCP connections instead of opening a new
+# handshake on every request. 5 s matches Traefik's default idle timeout.
+keepalive = 5
+
 max_requests = 1000
 max_requests_jitter = 100
 loglevel = "info"

@@ -62,7 +62,7 @@ services:
       - traefik.http.routers.yomomma-api.entrypoints=websecure
       - traefik.http.routers.yomomma-api.tls=true
       - traefik.http.routers.yomomma-api.tls.certresolver=le
-      - traefik.http.services.yomomma-api.loadbalancer.server.port=9555
+      - traefik.http.services.yomomma-api.loadbalancer.server.port=9090
     networks:
       - edge
     restart: unless-stopped
