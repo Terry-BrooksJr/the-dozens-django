@@ -740,7 +740,9 @@ def test_get_cache_stats_returns_framework_registry_and_legacy_stats(monkeypatch
     )
 
     fake_internal_cache = SimpleNamespace(get_stats=MagicMock(return_value={"hits": 5}))
-    monkeypatch.setattr(performance.cache, "_cache", fake_internal_cache, raising=False)
+    mock_cache = MagicMock()
+    mock_cache._cache = fake_internal_cache
+    monkeypatch.setattr(performance, "cache", mock_cache)
 
     stats = performance.get_cache_stats()
 
