@@ -63,17 +63,15 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
 
     def test_random_insult_returns_active(self):
         """randomInsult returns a non-null active insult."""
-        response = self.query(
-            """
+        response = self.query("""
             query {
                 randomInsult {
-                    insultId
+                    referenceId
                     content
                     isActive
                 }
             }
-            """
-        )
+            """)
         self.assertResponseNoErrors(response)
         data = json.loads(response.content)["data"]["randomInsult"]
         self.assertIsNotNone(data)
@@ -81,32 +79,28 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
 
     def test_random_insult_with_valid_category(self):
         """randomInsult(category:) returns an insult from the requested category."""
-        response = self.query(
-            """
+        response = self.query("""
             query {
                 randomInsult(category: "GP") {
-                    insultId
+                    referenceId
                     content
                 }
             }
-            """
-        )
+            """)
         self.assertResponseNoErrors(response)
         data = json.loads(response.content)["data"]["randomInsult"]
         self.assertIsNotNone(data)
-        self.assertEqual(data["insultId"], str(self.active_sfw.insult_id))
+        self.assertEqual(data["referenceId"], self.active_sfw.reference_id)
 
     def test_random_insult_with_empty_category_returns_null(self):
         """randomInsult(category:) returns null when no active insults exist for that category."""
-        response = self.query(
-            """
+        response = self.query("""
             query {
                 randomInsult(category: "NOTEXIST") {
-                    insultId
+                    referenceId
                 }
             }
-            """
-        )
+            """)
         self.assertResponseNoErrors(response)
         data = json.loads(response.content)["data"]["randomInsult"]
         self.assertIsNone(data)
@@ -117,32 +111,28 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
 
     def test_insult_by_id_returns_correct_insult(self):
         """insultById returns the correct insult for a known ID."""
-        response = self.query(
-            f"""
+        response = self.query(f"""
             query {{
-                insultById(referenceId: "{self.active_sfw.insult_id}") {{
-                    insultId
+                insultById(referenceId: "{self.active_sfw.reference_id}") {{
+                    referenceId
                     content
                 }}
             }}
-            """
-        )
+            """)
         self.assertResponseNoErrors(response)
         data = json.loads(response.content)["data"]["insultById"]
         self.assertIsNotNone(data)
-        self.assertEqual(data["insultId"], str(self.active_sfw.insult_id))
+        self.assertEqual(data["referenceId"], self.active_sfw.reference_id)
 
     def test_insult_by_id_not_found_returns_error(self):
         """insultById raises a GraphQL error for a non-existent ID."""
-        response = self.query(
-            """
+        response = self.query("""
             query {
                 insultById(referenceId: "99999999") {
-                    insultId
+                    referenceId
                 }
             }
-            """
-        )
+            """)
         self.assertResponseHasErrors(response)
 
     # -------------------------------------------------------------------------
@@ -151,19 +141,17 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
 
     def test_insults_by_category_returns_paginated_results(self):
         """insultsByCategory returns total count and items for a valid category."""
-        response = self.query(
-            """
+        response = self.query("""
             query {
                 insultsByCategory(category: "GP", offset: 0, limit: 10) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                         content
                     }
                 }
             }
-            """
-        )
+            """)
         self.assertResponseNoErrors(response)
         data = json.loads(response.content)["data"]["insultsByCategory"]
         self.assertEqual(data["totalCount"], 1)
@@ -171,18 +159,16 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
 
     def test_insults_by_category_pagination(self):
         """insultsByCategory respects limit and offset."""
-        response = self.query(
-            """
+        response = self.query("""
             query {
                 insultsByCategory(category: "GP", offset: 0, limit: 0) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                     }
                 }
             }
-            """
-        )
+            """)
         self.assertResponseNoErrors(response)
         data = json.loads(response.content)["data"]["insultsByCategory"]
         self.assertEqual(data["totalCount"], 1)
@@ -190,18 +176,16 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
 
     def test_insults_by_category_no_results(self):
         """insultsByCategory returns zero items for a category with no active insults."""
-        response = self.query(
-            """
+        response = self.query("""
             query {
                 insultsByCategory(category: "NOTEXIST", offset: 0, limit: 10) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                     }
                 }
             }
-            """
-        )
+            """)
         self.assertResponseNoErrors(response)
         data = json.loads(response.content)["data"]["insultsByCategory"]
         self.assertEqual(data["totalCount"], 0)
@@ -213,19 +197,17 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
 
     def test_insults_by_status_active(self):
         """insultsByStatus returns only active insults when status=A."""
-        response = self.query(
-            """
+        response = self.query("""
             query {
                 insultsByStatus(status: "A", offset: 0, limit: 10) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                         status
                     }
                 }
             }
-            """
-        )
+            """)
         self.assertResponseNoErrors(response)
         data = json.loads(response.content)["data"]["insultsByStatus"]
         self.assertEqual(data["totalCount"], 2)
@@ -234,18 +216,16 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
 
     def test_insults_by_status_pending(self):
         """insultsByStatus returns pending insults when status=P."""
-        response = self.query(
-            """
+        response = self.query("""
             query {
                 insultsByStatus(status: "P", offset: 0, limit: 10) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                     }
                 }
             }
-            """
-        )
+            """)
         self.assertResponseNoErrors(response)
         data = json.loads(response.content)["data"]["insultsByStatus"]
         self.assertGreaterEqual(data["totalCount"], 1)
@@ -256,19 +236,17 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
 
     def test_insults_by_classification_sfw(self):
         """insultsByClassification(nsfw: false) returns only SFW insults."""
-        response = self.query(
-            """
+        response = self.query("""
             query {
                 insultsByClassification(nsfw: false, offset: 0, limit: 10) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                         nsfw
                     }
                 }
             }
-            """
-        )
+            """)
         self.assertResponseNoErrors(response)
         data = json.loads(response.content)["data"]["insultsByClassification"]
         self.assertGreaterEqual(data["totalCount"], 1)
@@ -277,19 +255,17 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
 
     def test_insults_by_classification_nsfw(self):
         """insultsByClassification(nsfw: true) returns only NSFW insults."""
-        response = self.query(
-            """
+        response = self.query("""
             query {
                 insultsByClassification(nsfw: true, offset: 0, limit: 10) {
                     totalCount
                     items {
-                        insultId
+                        referenceId
                         nsfw
                     }
                 }
             }
-            """
-        )
+            """)
         self.assertResponseNoErrors(response)
         data = json.loads(response.content)["data"]["insultsByClassification"]
         self.assertEqual(data["totalCount"], 1)

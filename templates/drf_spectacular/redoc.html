@@ -269,28 +269,17 @@
                        }
                   };
 
-                  {
-                       %
-                       if settings %
-                  }
-                  const customSettings = Object.assign({}, {
-                       {
-                            settings | safe
-                       }
-                  }, {
+                  {# djlint:off #}
+                  {% if settings %}
+                  const customSettings = Object.assign({}, {{ settings | safe }}, {
                        theme: customTheme
                   });
-                  {
-                       %
-                       else %
-                  }
+                  {% else %}
                   const customSettings = {
                        theme: customTheme
                   };
-                  {
-                       %
-                       endif %
-                  }
+                  {% endif %}
+                  {# djlint:on #}
 
                   Redoc.init("{{ schema_url }}", customSettings, container, function(err) {
                        if (err) {
@@ -319,7 +308,7 @@
         <!-- Footer -->
         <div class="dozens-footer">
             <p>
-                &copy; 2024 The Dozens API. Built with ❤️ by <a href="https://www.brooksjr.com" target="_blank">Terry Brooks Jr</a>
+                &copy; {% now "Y" %} The Dozens API. Built with 😈 by <a href="https://www.brooksjr.com" target="_blank">Terry Brooks Jr</a>
             </p>
         </div>
     </body>
