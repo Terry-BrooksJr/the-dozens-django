@@ -51,8 +51,14 @@ jobs:
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run tests with coverage
-        run: task test:coverage
+      - name: Run tests with coverage (Doppler)
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+          DOPPLER_PROJECT: ${{ vars.DOPPLER_PROJECT }}   # or hardcode slug
+          DOPPLER_CONFIG: ${{ vars.DOPPLER_CONFIG }}     # e.g. "test"
+        run: |
+          doppler run --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" -- \
+            task test:coverage
 
       - name: Upload coverage to Codacy
         uses: codacy/codacy-coverage-reporter-action@v1
