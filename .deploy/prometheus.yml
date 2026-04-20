@@ -61,22 +61,3 @@ scrape_configs:
         labels:
           service: postgresql
           db: dozens
-
-  # ── Dragonfly DB ───────────────────────────────────────────────────────────
-  # Dragonfly exposes a native Prometheus endpoint — no redis_exporter needed.
-  # Start Dragonfly with --admin_port=9999 to expose /metrics on a dedicated
-  # HTTP port (separate from the Redis protocol port).
-  #
-  # Example systemd / CLI flag:
-  #   dragonfly --admin_port=9999
-  #
-  # Metrics use the dragonfly_* prefix, NOT redis_* (see the official dashboard
-  # at github.com/dragonflydb/dragonfly/blob/main/tools/local/monitoring).
-  - job_name: dragonfly
-    scrape_interval: 15s
-    metrics_path: /metrics
-    static_configs:
-      - targets:
-          - localhost:9999
-        labels:
-          service: dragonfly-db
