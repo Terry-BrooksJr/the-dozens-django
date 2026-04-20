@@ -536,8 +536,10 @@ def test_invalidate_bulk_caches_invalidates_managers_and_patterns(monkeypatch):
     fake_registry.register("insult_view_cache", fake_manager)
 
     delete_pattern_spy = MagicMock()
+    mock_cache = MagicMock()
+    mock_cache.delete_pattern = delete_pattern_spy
     monkeypatch.setattr(performance, "cache_registry", fake_registry)
-    monkeypatch.setattr(performance.cache, "delete_pattern", delete_pattern_spy)
+    monkeypatch.setattr(performance, "cache", mock_cache)
 
     view = MutationView()
     view.invalidate_bulk_caches()
@@ -597,9 +599,11 @@ def test_invalidate_cache_falls_back_to_pattern_delete(monkeypatch, metrics_spy)
 
     keys_spy = MagicMock(return_value=["Insult:a", "Insult:b"])
     delete_many_spy = MagicMock()
+    mock_cache = MagicMock()
+    mock_cache.keys = keys_spy
+    mock_cache.delete_many = delete_many_spy
 
-    monkeypatch.setattr(performance.cache, "keys", keys_spy)
-    monkeypatch.setattr(performance.cache, "delete_many", delete_many_spy)
+    monkeypatch.setattr(performance, "cache", mock_cache)
 
     performance.invalidate_cache(sender=Insult, signal=post_delete)
 
