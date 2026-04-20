@@ -770,15 +770,16 @@ class Base(Configuration):
                 "LOCATION": os.environ["REDIS_CACHE_TOKEN"],
                 "OPTIONS": {
                     "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                    "SOCKET_CONNECT_TIMEOUT": 0.5,
-                    "SOCKET_TIMEOUT": 0.5,
-                    "RETRY_ON_TIMEOUT": False,
-                    "PARSER_CLASS": "redis.connection._HiredisParser",
-                    "CONNECTION_POOL_KWARGS": {"max_connections": 10},
-                },
-                "TIMEOUT": 300,
-            },
-        }
+                    "CONNECTION_POOL_KWARGS": {
+                        "max_connections": 100,
+                        "retry_on_timeout": True,
+                        },
+                        "SOCKET_CONNECT_TIMEOUT": 2,
+                        "SOCKET_TIMEOUT": 2,
+                         },
+                    "TIMEOUT": 300,
+                 }
+                }
     )
 
     EMAIL_HOST = values.Value(
