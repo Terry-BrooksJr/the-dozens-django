@@ -1,0 +1,45 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+         .grafana-wrap {
+              padding: 0.5rem 0;
+         }
+
+         .grafana-card {
+              background: var(--body-bg, #fff);
+              border-radius: 0.75rem;
+              box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+              overflow: hidden;
+              border: 1px solid rgba(0, 0, 0, .08);
+         }
+
+         .grafana-frame {
+              width: 100%;
+              min-height: 80vh;
+              border: 0;
+              display: block;
+              background: #111827;
+         }
+    </style>
+{% endblock %}
+{% block content %}
+    <div style="margin-bottom: 1rem;">
+        <a href="{{ grafana_url }}"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="btn btn-primary">Open in Grafana</a>
+    </div>
+    <div class="grafana-wrap">
+        <div class="grafana-card">
+            <iframe class="grafana-frame"
+                    src="{{ grafana_url }}"
+                    title="Grafana Dashboard"
+                    loading="lazy"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+{% endblock %}

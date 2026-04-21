@@ -1,0 +1,1655 @@
+{
+  "description": "End-to-end service health for The Dozens stack \u2014 Traefik, Django API, Dragonfly, PostgreSQL.",
+  "layout": [
+    {
+      "h": 5,
+      "i": "panel-1",
+      "moved": false,
+      "static": false,
+      "w": 4,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "h": 5,
+      "i": "panel-2",
+      "moved": false,
+      "static": false,
+      "w": 5,
+      "x": 4,
+      "y": 0
+    },
+    {
+      "h": 5,
+      "i": "panel-3",
+      "moved": false,
+      "static": false,
+      "w": 5,
+      "x": 9,
+      "y": 0
+    },
+    {
+      "h": 5,
+      "i": "panel-4",
+      "moved": false,
+      "static": false,
+      "w": 5,
+      "x": 14,
+      "y": 0
+    },
+    {
+      "h": 5,
+      "i": "panel-5",
+      "moved": false,
+      "static": false,
+      "w": 5,
+      "x": 19,
+      "y": 0
+    },
+    {
+      "h": 8,
+      "i": "panel-10",
+      "moved": false,
+      "static": false,
+      "w": 12,
+      "x": 0,
+      "y": 5
+    },
+    {
+      "h": 8,
+      "i": "panel-11",
+      "moved": false,
+      "static": false,
+      "w": 12,
+      "x": 12,
+      "y": 5
+    },
+    {
+      "h": 8,
+      "i": "panel-12",
+      "moved": false,
+      "static": false,
+      "w": 24,
+      "x": 0,
+      "y": 13
+    },
+    {
+      "h": 8,
+      "i": "panel-20",
+      "moved": false,
+      "static": false,
+      "w": 12,
+      "x": 0,
+      "y": 21
+    },
+    {
+      "h": 8,
+      "i": "panel-21",
+      "moved": false,
+      "static": false,
+      "w": 12,
+      "x": 12,
+      "y": 21
+    },
+    {
+      "h": 8,
+      "i": "panel-22",
+      "moved": false,
+      "static": false,
+      "w": 24,
+      "x": 0,
+      "y": 29
+    },
+    {
+      "h": 8,
+      "i": "panel-30",
+      "moved": false,
+      "static": false,
+      "w": 12,
+      "x": 0,
+      "y": 37
+    },
+    {
+      "h": 8,
+      "i": "panel-31",
+      "moved": false,
+      "static": false,
+      "w": 12,
+      "x": 12,
+      "y": 37
+    },
+    {
+      "h": 4,
+      "i": "panel-32",
+      "moved": false,
+      "static": false,
+      "w": 6,
+      "x": 0,
+      "y": 45
+    },
+    {
+      "h": 4,
+      "i": "panel-33",
+      "moved": false,
+      "static": false,
+      "w": 6,
+      "x": 6,
+      "y": 45
+    },
+    {
+      "h": 8,
+      "i": "panel-40",
+      "moved": false,
+      "static": false,
+      "w": 12,
+      "x": 0,
+      "y": 49
+    },
+    {
+      "h": 8,
+      "i": "panel-41",
+      "moved": false,
+      "static": false,
+      "w": 12,
+      "x": 12,
+      "y": 49
+    },
+    {
+      "h": 6,
+      "i": "panel-42",
+      "moved": false,
+      "static": false,
+      "w": 12,
+      "x": 0,
+      "y": 57
+    },
+    {
+      "h": 6,
+      "i": "panel-43",
+      "moved": false,
+      "static": false,
+      "w": 4,
+      "x": 12,
+      "y": 57
+    },
+    {
+      "h": 6,
+      "i": "panel-44",
+      "moved": false,
+      "static": false,
+      "w": 4,
+      "x": 16,
+      "y": 57
+    },
+    {
+      "h": 6,
+      "i": "panel-55",
+      "moved": false,
+      "static": false,
+      "w": 4,
+      "x": 20,
+      "y": 57
+    },
+    {
+      "h": 8,
+      "i": "panel-45",
+      "moved": false,
+      "static": false,
+      "w": 12,
+      "x": 0,
+      "y": 63
+    },
+    {
+      "h": 8,
+      "i": "panel-46",
+      "moved": false,
+      "static": false,
+      "w": 12,
+      "x": 12,
+      "y": 63
+    },
+    {
+      "h": 7,
+      "i": "panel-47",
+      "moved": false,
+      "static": false,
+      "w": 8,
+      "x": 0,
+      "y": 71
+    },
+    {
+      "h": 7,
+      "i": "panel-48",
+      "moved": false,
+      "static": false,
+      "w": 8,
+      "x": 8,
+      "y": 71
+    },
+    {
+      "h": 7,
+      "i": "panel-49",
+      "moved": false,
+      "static": false,
+      "w": 8,
+      "x": 16,
+      "y": 71
+    },
+    {
+      "h": 8,
+      "i": "panel-50",
+      "moved": false,
+      "static": false,
+      "w": 8,
+      "x": 0,
+      "y": 78
+    },
+    {
+      "h": 8,
+      "i": "panel-51",
+      "moved": false,
+      "static": false,
+      "w": 8,
+      "x": 8,
+      "y": 78
+    },
+    {
+      "h": 8,
+      "i": "panel-52",
+      "moved": false,
+      "static": false,
+      "w": 8,
+      "x": 16,
+      "y": 78
+    },
+    {
+      "h": 6,
+      "i": "panel-53",
+      "moved": false,
+      "static": false,
+      "w": 12,
+      "x": 0,
+      "y": 86
+    },
+    {
+      "h": 6,
+      "i": "panel-54",
+      "moved": false,
+      "static": false,
+      "w": 12,
+      "x": 12,
+      "y": 86
+    }
+  ],
+  "tags": [
+    "the-dozens",
+    "production",
+    "overview"
+  ],
+  "title": "The Dozens \u2014 Production Overview",
+  "variables": {},
+  "widgets": [
+    {
+      "description": "Targets currently scraping successfully (up == 1).",
+      "id": "panel-1",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-1",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{job}}",
+            "name": "A",
+            "query": "up"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Scrape Targets Up",
+      "yAxisUnit": "none",
+      "fillSpans": false
+    },
+    {
+      "description": "Total API request rate across all Django endpoints.",
+      "id": "panel-2",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-2",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "req/s",
+            "name": "A",
+            "query": "sum(rate(dozens_api_django_http_requests_total_by_method_total{job=\"api\"}[5m]))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "API Request Rate",
+      "yAxisUnit": "reqps",
+      "fillSpans": false
+    },
+    {
+      "description": "Percentage of API responses returning 5xx status codes.",
+      "id": "panel-3",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-3",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "5xx %",
+            "name": "A",
+            "query": "100 * sum(rate(dozens_api_django_http_responses_total_by_status_total{job=\"api\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(dozens_api_django_http_responses_total_by_status_total{job=\"api\"}[5m])), 1)"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "API Error Rate (5xx)",
+      "yAxisUnit": "percent",
+      "fillSpans": false
+    },
+    {
+      "description": "95th percentile request latency across all Django endpoints.",
+      "id": "panel-4",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-4",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "p95",
+            "name": "A",
+            "query": "histogram_quantile(0.95, sum(rate(dozens_api_django_http_requests_latency_seconds_by_view_method_bucket{job=\"api\"}[5m])) by (le))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "API p95 Latency",
+      "yAxisUnit": "s",
+      "fillSpans": false
+    },
+    {
+      "description": "Overall cache hit ratio (hits / (hits + misses)).",
+      "id": "panel-5",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-5",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "hit ratio",
+            "name": "A",
+            "query": "sum(rate(dozens_api_django_cache_hits_total[5m])) / clamp_min(sum(rate(dozens_api_django_cache_hits_total[5m])) + sum(rate(dozens_api_django_cache_misses_total[5m])), 1)"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": 1,
+      "softMin": 0,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Cache Hit Ratio",
+      "yAxisUnit": "percentunit",
+      "fillSpans": false
+    },
+    {
+      "description": "Request rate per Traefik entrypoint.",
+      "id": "panel-10",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-10",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{entrypoint}}",
+            "name": "A",
+            "query": "sum by (entrypoint) (rate(traefik_entrypoint_requests_total{job=\"traefik\"}[5m]))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Traefik \u2014 Requests/sec by Entrypoint",
+      "yAxisUnit": "reqps",
+      "fillSpans": false
+    },
+    {
+      "description": "Traefik response codes grouped by class.",
+      "id": "panel-11",
+      "isStacked": true,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-11",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{code}}",
+            "name": "A",
+            "query": "sum by (code) (rate(traefik_service_requests_total{job=\"traefik\"}[5m]))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Traefik \u2014 Response Codes",
+      "yAxisUnit": "reqps",
+      "fillSpans": false
+    },
+    {
+      "description": "p50 / p95 / p99 service duration.",
+      "id": "panel-12",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-12",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "p50 \u2014 {{service}}",
+            "name": "A",
+            "query": "histogram_quantile(0.50, sum(rate(traefik_service_request_duration_seconds_bucket{job=\"traefik\"}[5m])) by (service, le))"
+          },
+          {
+            "disabled": false,
+            "legend": "p95 \u2014 {{service}}",
+            "name": "B",
+            "query": "histogram_quantile(0.95, sum(rate(traefik_service_request_duration_seconds_bucket{job=\"traefik\"}[5m])) by (service, le))"
+          },
+          {
+            "disabled": false,
+            "legend": "p99 \u2014 {{service}}",
+            "name": "C",
+            "query": "histogram_quantile(0.99, sum(rate(traefik_service_request_duration_seconds_bucket{job=\"traefik\"}[5m])) by (service, le))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Traefik \u2014 Service Latency (p50 / p95 / p99)",
+      "yAxisUnit": "s",
+      "fillSpans": false
+    },
+    {
+      "description": "Django requests per HTTP method.",
+      "id": "panel-20",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-20",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{method}}",
+            "name": "A",
+            "query": "sum by (method) (rate(dozens_api_django_http_requests_total_by_method_total{job=\"api\"}[5m]))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Django \u2014 Requests/sec by Method",
+      "yAxisUnit": "reqps",
+      "fillSpans": false
+    },
+    {
+      "description": "Response code distribution.",
+      "id": "panel-21",
+      "isStacked": true,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-21",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{status}}",
+            "name": "A",
+            "query": "sum by (status) (rate(dozens_api_django_http_responses_total_by_status_total{job=\"api\"}[5m]))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Django \u2014 Response Codes",
+      "yAxisUnit": "reqps",
+      "fillSpans": false
+    },
+    {
+      "description": "p50 / p95 / p99 request latency by view.",
+      "id": "panel-22",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-22",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "p50 \u2014 {{view}}",
+            "name": "A",
+            "query": "histogram_quantile(0.50, sum(rate(dozens_api_django_http_requests_latency_seconds_by_view_method_bucket{job=\"api\"}[5m])) by (view, le))"
+          },
+          {
+            "disabled": false,
+            "legend": "p95 \u2014 {{view}}",
+            "name": "B",
+            "query": "histogram_quantile(0.95, sum(rate(dozens_api_django_http_requests_latency_seconds_by_view_method_bucket{job=\"api\"}[5m])) by (view, le))"
+          },
+          {
+            "disabled": false,
+            "legend": "p99 \u2014 {{view}}",
+            "name": "C",
+            "query": "histogram_quantile(0.99, sum(rate(dozens_api_django_http_requests_latency_seconds_by_view_method_bucket{job=\"api\"}[5m])) by (view, le))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Django \u2014 Per-View Latency (p50 / p95 / p99)",
+      "yAxisUnit": "s",
+      "fillSpans": false
+    },
+    {
+      "description": "Request rate segmented by status and filters.",
+      "id": "panel-30",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-30",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{status}} cat={{category_filtered}} nsfw={{nsfw_filtered}}",
+            "name": "A",
+            "query": "sum by (status, category_filtered, nsfw_filtered) (rate(random_insult_requests_total[5m]))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Random Insult \u2014 Request Rate",
+      "yAxisUnit": "reqps",
+      "fillSpans": false
+    },
+    {
+      "description": "p95 duration per processing stage inside the endpoint.",
+      "id": "panel-31",
+      "isStacked": true,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-31",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{stage}}",
+            "name": "A",
+            "query": "histogram_quantile(0.95, sum by (stage, le) (rate(random_insult_stage_seconds_bucket[5m])))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Random Insult \u2014 p95 Stage Duration",
+      "yAxisUnit": "s",
+      "fillSpans": false
+    },
+    {
+      "description": "SQL queries executed per random insult request (rolling average).",
+      "id": "panel-32",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-32",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "queries/req",
+            "name": "A",
+            "query": "rate(random_insult_db_queries_total[5m]) / clamp_min(rate(random_insult_requests_total[5m]), 0.001)"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "SQL Queries per Request",
+      "yAxisUnit": "none",
+      "fillSpans": false
+    },
+    {
+      "description": "Requests that returned no matching insult.",
+      "id": "panel-33",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-33",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "empty/s",
+            "name": "A",
+            "query": "rate(random_insult_queryset_empty_total[5m])"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Empty Queryset Rate",
+      "yAxisUnit": "reqps",
+      "fillSpans": false
+    },
+    {
+      "description": "Cache hit vs miss rate broken down by cache prefix.",
+      "id": "panel-40",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-40",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "hit \u2014 {{dozens_api_django_cache_prefix}}",
+            "name": "A",
+            "query": "sum by (dozens_api_django_cache_prefix) (rate(dozens_api_django_cache_hits_total[5m]))"
+          },
+          {
+            "disabled": false,
+            "legend": "miss \u2014 {{dozens_api_django_cache_prefix}}",
+            "name": "B",
+            "query": "sum by (dozens_api_django_cache_prefix) (rate(dozens_api_django_cache_misses_total[5m]))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Cache \u2014 Hit / Miss Rate by Prefix",
+      "yAxisUnit": "cps",
+      "fillSpans": false
+    },
+    {
+      "description": "p95 duration of cache operations, broken down by prefix and operation.",
+      "id": "panel-41",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-41",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{dozens_api_django_cache_prefix}} / {{operation}}",
+            "name": "A",
+            "query": "histogram_quantile(0.95, sum by (dozens_api_django_cache_prefix, operation, le) (rate(dozens_api_django_cache_operation_seconds_bucket[5m])))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Cache \u2014 p95 Operation Duration",
+      "yAxisUnit": "s",
+      "fillSpans": false
+    },
+    {
+      "description": "Cache invalidations per second, broken down by reason.",
+      "id": "panel-42",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-42",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{dozens_api_django_cache_prefix}} / {{reason}}",
+            "name": "A",
+            "query": "sum by (dozens_api_django_cache_prefix, reason) (rate(dozens_api_django_cache_invalidations_total[5m]))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Cache \u2014 Invalidations by Reason",
+      "yAxisUnit": "cps",
+      "fillSpans": false
+    },
+    {
+      "description": "Dragonfly memory used vs max.",
+      "id": "panel-43",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-43",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "used",
+            "name": "A",
+            "query": "dragonfly_memory_used_bytes{job=\"dragonfly\"}"
+          },
+          {
+            "disabled": false,
+            "legend": "max",
+            "name": "B",
+            "query": "dragonfly_memory_max_bytes{job=\"dragonfly\"}"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Dragonfly \u2014 Memory Used",
+      "yAxisUnit": "bytes",
+      "fillSpans": false
+    },
+    {
+      "description": "Active client connections to Dragonfly.",
+      "id": "panel-44",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-44",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "clients",
+            "name": "A",
+            "query": "dragonfly_connected_clients{job=\"dragonfly\"}"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Dragonfly \u2014 Connected Clients",
+      "yAxisUnit": "none",
+      "fillSpans": false
+    },
+    {
+      "description": "Commands executed per second, broken down by command type.",
+      "id": "panel-55",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-55",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{cmd}}",
+            "name": "A",
+            "query": "sum by (cmd) (irate(dragonfly_commands_total{job=\"dragonfly\"}[5m]))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Dragonfly \u2014 Commands/sec by Type",
+      "yAxisUnit": "cps",
+      "fillSpans": false
+    },
+    {
+      "description": "Cache hit ratio per prefix \u2014 identifies which cache domains are underperforming.",
+      "id": "panel-45",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-45",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{dozens_api_django_cache_prefix}}",
+            "name": "A",
+            "query": "sum by (dozens_api_django_cache_prefix) (rate(dozens_api_django_cache_hits_total[5m])) / clamp_min(sum by (dozens_api_django_cache_prefix) (rate(dozens_api_django_cache_hits_total[5m])) + sum by (dozens_api_django_cache_prefix) (rate(dozens_api_django_cache_misses_total[5m])), 0.0001)"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": 1,
+      "softMin": 0,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Cache \u2014 Hit Ratio by Prefix",
+      "yAxisUnit": "percentunit",
+      "fillSpans": false
+    },
+    {
+      "description": "p95 DB time while rebuilding caches after a miss.",
+      "id": "panel-46",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-46",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "p95 \u2014 {{dozens_api_django_cache_prefix}}",
+            "name": "A",
+            "query": "histogram_quantile(0.95, sum by (dozens_api_django_cache_prefix, le) (rate(dozens_api_django_cache_db_query_seconds_bucket{status=\"success\"}[5m])))"
+          },
+          {
+            "disabled": false,
+            "legend": "p99 \u2014 {{dozens_api_django_cache_prefix}}",
+            "name": "B",
+            "query": "histogram_quantile(0.99, sum by (dozens_api_django_cache_prefix, le) (rate(dozens_api_django_cache_db_query_seconds_bucket{status=\"success\"}[5m])))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Cache \u2014 DB Rebuild Latency (p95 / p99)",
+      "yAxisUnit": "s",
+      "fillSpans": false
+    },
+    {
+      "description": "Rate of cache DB-rebuild errors.",
+      "id": "panel-47",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-47",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{dozens_api_django_cache_prefix}}",
+            "name": "A",
+            "query": "sum by (dozens_api_django_cache_prefix) (rate(dozens_api_django_cache_db_query_seconds_count{status=\"error\"}[5m]))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Cache \u2014 DB Rebuild Error Rate",
+      "yAxisUnit": "cps",
+      "fillSpans": false
+    },
+    {
+      "description": "Per-endpoint cache hit / miss rate.",
+      "id": "panel-48",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-48",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "hit \u2014 {{endpoint}}",
+            "name": "A",
+            "query": "sum by (endpoint) (rate(endpoint_dozens_api_django_cache_hits_total[5m]))"
+          },
+          {
+            "disabled": false,
+            "legend": "miss \u2014 {{endpoint}}",
+            "name": "B",
+            "query": "sum by (endpoint) (rate(endpoint_dozens_api_django_cache_misses_total[5m]))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Endpoint Cache \u2014 Hit / Miss by Path",
+      "yAxisUnit": "cps",
+      "fillSpans": false
+    },
+    {
+      "description": "Hit ratio per endpoint path \u2014 surface endpoints where caching is failing.",
+      "id": "panel-49",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-49",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{endpoint}}",
+            "name": "A",
+            "query": "sum by (endpoint) (rate(endpoint_dozens_api_django_cache_hits_total[5m])) / clamp_min(sum by (endpoint) (rate(endpoint_dozens_api_django_cache_hits_total[5m])) + sum by (endpoint) (rate(endpoint_dozens_api_django_cache_misses_total[5m])), 0.0001)"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": 1,
+      "softMin": 0,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Endpoint Cache \u2014 Hit Ratio by Path",
+      "yAxisUnit": "percentunit",
+      "fillSpans": false
+    },
+    {
+      "description": "Active connections versus max_connections.",
+      "id": "panel-50",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-50",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{datname}}",
+            "name": "A",
+            "query": "sum by (datname) (pg_stat_activity_count{job=\"postgres\"})"
+          },
+          {
+            "disabled": false,
+            "legend": "max",
+            "name": "B",
+            "query": "pg_settings_max_connections{job=\"postgres\"}"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Postgres \u2014 Connections",
+      "yAxisUnit": "none",
+      "fillSpans": false
+    },
+    {
+      "description": "Commit vs rollback rate per database.",
+      "id": "panel-51",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-51",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "commit \u2014 {{datname}}",
+            "name": "A",
+            "query": "sum by (datname) (rate(pg_stat_database_xact_commit{job=\"postgres\"}[5m]))"
+          },
+          {
+            "disabled": false,
+            "legend": "rollback \u2014 {{datname}}",
+            "name": "B",
+            "query": "sum by (datname) (rate(pg_stat_database_xact_rollback{job=\"postgres\"}[5m]))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Postgres \u2014 Transactions/sec",
+      "yAxisUnit": "ops",
+      "fillSpans": false
+    },
+    {
+      "description": "On-disk size per database.",
+      "id": "panel-52",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-52",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{datname}}",
+            "name": "A",
+            "query": "pg_database_size_bytes{job=\"postgres\"}"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Postgres \u2014 Database Size",
+      "yAxisUnit": "bytes",
+      "fillSpans": false
+    },
+    {
+      "description": "Cache hit ratio inside Postgres shared buffers (higher is better).",
+      "id": "panel-53",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-53",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "buffer hit %",
+            "name": "A",
+            "query": "sum(rate(pg_stat_database_blks_hit{job=\"postgres\"}[5m])) / clamp_min(sum(rate(pg_stat_database_blks_hit{job=\"postgres\"}[5m])) + sum(rate(pg_stat_database_blks_read{job=\"postgres\"}[5m])), 1)"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": 1,
+      "softMin": 0,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Postgres \u2014 Buffer Cache Hit Ratio",
+      "yAxisUnit": "percentunit",
+      "fillSpans": false
+    },
+    {
+      "description": "Deadlocks detected per database.",
+      "id": "panel-54",
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "panelTypes": "TIME_SERIES",
+      "query": {
+        "builder": {
+          "queryData": [],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [],
+        "id": "q-54",
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "{{datname}}",
+            "name": "A",
+            "query": "sum by (datname) (rate(pg_stat_database_deadlocks{job=\"postgres\"}[5m]))"
+          }
+        ],
+        "queryType": "promql"
+      },
+      "queryData": {
+        "data": {
+          "data": {
+            "legends": [],
+            "queryData": []
+          }
+        },
+        "error": null,
+        "errorMessage": "",
+        "loading": false
+      },
+      "softMax": null,
+      "softMin": null,
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Postgres \u2014 Deadlocks/sec",
+      "yAxisUnit": "ops",
+      "fillSpans": false
+    }
+  ]
+}

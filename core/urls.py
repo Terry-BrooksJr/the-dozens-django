@@ -4,6 +4,7 @@ Root URL configuration for thedozens project.
 """
 
 import contextlib
+import hmac
 
 from django.conf import settings
 from django.contrib import admin
@@ -22,20 +23,43 @@ from applications.frontend.views import (
     get_reference_ids,
     page_not_found_view,
 )
+from core.admin_view import grafana_dashboard_view
 
 
 def metrics_view(request):
-    """Serve Prometheus metrics only to requests from PROMETHEUS_ALLOWED_HOSTS."""
-    allowed = getattr(settings, "PROMETHEUS_ALLOWED_HOSTS", [])
-    if request.META.get("REMOTE_ADDR") not in allowed:
+    """Serve Prometheus metrics only to requests bearing the correct scrape token.
+
+    Prometheus must send:
+        Authorization: Bearer <METRICS_SCRAPE_TOKEN>
+
+    The token is compared with hmac.compare_digest to prevent timing attacks.
+    Set METRICS_SCRAPE_TOKEN in Doppler; if unset the endpoint is always denied.
+    """
+    expected = getattr(settings, "METRICS_SCRAPE_TOKEN", "")
+    if not expected:
         return HttpResponseForbidden()
+
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    scheme, _, provided = auth_header.partition(" ")
+
+    if scheme.lower() != "bearer" or not provided:
+        return HttpResponseForbidden()
+
+    if not hmac.compare_digest(provided.strip(), expected):
+        return HttpResponseForbidden()
+
     return ExportToDjangoView(request)
 
 
 urlpatterns = [
     path("", LandingPageView.as_view(), name="landing"),
     path("status/", StatusPageView.as_view(), name="status"),
-    path("graphql/", include(GRAPHQL_URL), name="GraphQL"),
+    re_path(r"^graphql/?", include(GRAPHQL_URL), name="GraphQL"),
+    path(
+        "admin/observability/",
+        admin.site.admin_view(grafana_dashboard_view),
+        name="admin-grafana-dashboard",
+    ),
     path("admin/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),
     path("metrics", metrics_view, name="prometheus-django-metrics"),

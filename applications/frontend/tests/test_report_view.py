@@ -207,9 +207,7 @@ class ReportJokeViewTests(TestCase):
     # ------------------------------------------------------------------
 
     @patch("applications.frontend.views.Base")
-    def test_github_issue_title_contains_reference_id_and_review_type(
-        self, mock_base
-    ):
+    def test_github_issue_title_contains_reference_id_and_review_type(self, mock_base):
         """The GitHub issue title embeds the insult reference_id and review_type."""
         mock_gh = MagicMock()
         mock_base.get_github_api.return_value = mock_gh
