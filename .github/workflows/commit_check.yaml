@@ -34,7 +34,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_db
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U root -d test_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -51,20 +51,19 @@ jobs:
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install Doppler CLI
+        run: |
+          curl -Ls https://cli.doppler.com/install.sh | sudo sh
+          doppler --version
+
       - name: Run tests with coverage (Doppler)
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-          DOPPLER_PROJECT: ${{ vars.DOPPLER_PROJECT }}   # or hardcode slug
-          DOPPLER_CONFIG: ${{ vars.DOPPLER_CONFIG }}     # e.g. "test"
+          DOPPLER_PROJECT: ${{ vars.DOPPLER_PROJECT }}
+          DOPPLER_CONFIG: ${{ vars.DOPPLER_CONFIG }}
         run: |
           doppler run --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" -- \
             task test:coverage
-
-      - name: Upload coverage to Codacy
-        uses: codacy/codacy-coverage-reporter-action@v1
-        with:
-          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          coverage-reports: cobertura.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
