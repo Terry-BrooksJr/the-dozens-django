@@ -531,8 +531,7 @@ class CachedBulkSerializerMixin:
 
     def to_representation(self, instance):
         """Override to handle bulk optimizations."""
-        if hasattr(instance, "pk"):
-            self._field_cache.clear()
+        self._field_cache.clear()
         return super().to_representation(instance)
 
 
@@ -565,26 +564,37 @@ class OptimizedListSerializer(serializers.ListSerializer):
 # ===================================================================
 
 
+def _invalidation_reason(signal, kwargs: dict) -> str:
+    """
+    Derive a stable, human-readable invalidation reason from a Django signal.
+
+    Uses identity comparison (``is``) against the known signal singletons so
+    the result is correct regardless of how kwargs are serialised.  The old
+    ``"post_save" in str(kwargs)`` check was always False because the signal
+    object's repr never contains the string "post_save".
+    """
+    if signal is post_save:
+        return "post_save_created" if kwargs.get("created") else "post_save_updated"
+    if signal is post_delete:
+        return "post_delete"
+    return "unknown_signal"
+
+
 @receiver([post_save, post_delete])
 def invalidate_cache(sender: Model, **kwargs: Any) -> None:
     """
     Enhanced cache invalidation that works with the generalized cache framework.
     """
     model_name: str = sender.__name__
-    logger.debug(f"Signal Received For {model_name}")
+    signal = kwargs.get("signal")
+    reason = _invalidation_reason(signal, kwargs)
+    logger.debug(f"Signal Received For {model_name} (reason={reason})")
 
     # First, try to invalidate any registered cache managers for this model
     managers_invalidated = False
     for manager_name, manager in cache_registry.items():
         if hasattr(manager, "model_class") and manager.model_class == sender:
             try:
-                if kwargs.get("created"):
-                    reason = "post_save_created"
-                elif "post_save" in str(kwargs):
-                    reason = "post_save_updated"
-                else:
-                    reason = "post_delete"
-
                 manager.invalidate_cache(reason)
                 managers_invalidated = True
                 logger.debug(f"Invalidated manager {manager_name} for {model_name}")

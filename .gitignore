@@ -167,3 +167,7 @@ users.acl
 .ruff_cache
 .task/checksum/freeze
 cobertura.xml
+.task/checksum/freeze
+WARP.md
+.claude
+.kolo
