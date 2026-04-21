@@ -8,7 +8,7 @@
 #   9090  → api container          (Django /metrics, direct — bypasses Traefik)
 #   8082  → traefik container      (Traefik built-in Prometheus metrics entrypoint)
 #   9187  → postgres-exporter      (polls native PostgreSQL on host.docker.internal)
-#   9121  → dragonfly-exporter     (polls native Dragonfly on host.docker.internal)
+#   9999  → dragonfly native       (dragonfly --admin_port=9999, exposes dragonfly_* metrics)
 
 global:
   scrape_interval: 15s
@@ -25,11 +25,14 @@ scrape_configs:
 
   # ── Django API ─────────────────────────────────────────────────────────────
   # Scraped directly from the published container port, bypassing Traefik.
-  # REMOTE_ADDR inside the container will be 172.28.0.1 (bridge gateway) —
-  # that IP is included in PROMETHEUS_ALLOWED_HOSTS alongside 165.227.105.209.
+  # Auth is a bearer token (METRICS_SCRAPE_TOKEN in Doppler) — IP allowlists
+  # were dropped because Docker NAT makes REMOTE_ADDR unreliable.
   - job_name: django
     scrape_interval: 15s
     metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/metrics_token
     static_configs:
       - targets:
           - localhost:9090
@@ -58,14 +61,3 @@ scrape_configs:
         labels:
           service: postgresql
           db: dozens
-
-  # ── Dragonfly DB ───────────────────────────────────────────────────────────
-  # dragonfly-exporter (oliver006/redis_exporter) connects to native Dragonfly
-  # via host.docker.internal. Dragonfly is Redis-compatible — no changes needed.
-  - job_name: dragonfly
-    scrape_interval: 15s
-    static_configs:
-      - targets:
-          - localhost:9121
-        labels:
-          service: dragonfly-db

@@ -14,7 +14,7 @@ The GitHub integration is accessed via ``settings.BASE.get_github_api()``.
 
 
 from typing import Any, Dict
-from core.settings import Base
+
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.generic import TemplateView
@@ -26,8 +26,10 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from applications.API.errors import StandardErrorResponses
-from applications.API.serializers import InsultReviewSerializer
 from applications.API.models import Insult
+from applications.API.serializers import InsultReviewSerializer
+from core.settings import Base
+
 
 class LandingPageView(TemplateView):
     template_name = "landing.html"
@@ -183,7 +185,9 @@ class ReportJokeView(CreateAPIView):
                     insult_reference_id=ref_id,
                     review_type=review_type,
                     anonymous=anonymous,
-                ).info(f"Joke report submitted and GitHub issue opened. Github URL: {new_issue.html_url}")
+                ).info(
+                    f"Joke report submitted and GitHub issue opened. Github URL: {new_issue.html_url}"
+                )
                 return Response(
                     data={"status": "SUCCESS", "github_url": new_issue.html_url},
                     status=status.HTTP_201_CREATED,
@@ -209,9 +213,12 @@ class ReportJokeView(CreateAPIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+
 def get_reference_ids(request):
     """API endpoint to retrieve a list of insult reference IDs for reporting purposes."""
     if request.method == "GET":
-        reference_ids = Insult.objects.filter(status=Insult.STATUS.ACTIVE).values_list("reference_id", flat=True)
+        reference_ids = Insult.objects.filter(status=Insult.STATUS.ACTIVE).values_list(
+            "reference_id", flat=True
+        )
         return JsonResponse({"reference_ids": list(reference_ids)}, status=200)
     return JsonResponse({"detail": "Method not allowed."}, status=405)

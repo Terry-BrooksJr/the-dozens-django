@@ -7,4 +7,14 @@ class ApiConfig(AppConfig):
     name = "applications.API"
 
     def ready(self):
-        pass  # pylint: disable=all
+        # pylint: disable=all
+        self._init_metrics()
+
+    @staticmethod
+    def _init_metrics() -> None:
+        try:
+            from common.metrics import init_cache_invalidation_metrics
+
+            init_cache_invalidation_metrics()
+        except ImportError:
+            pass
