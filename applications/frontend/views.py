@@ -1,24 +1,50 @@
 # -*- coding: utf-8 -*-
+"""
+Frontend views for the Dozens application.
 
-import os
+This module provides:
 
-from django.http import HttpRequest, JsonResponse
+- A custom 404 handler that serves an HTML page for browser requests
+  and a JSON payload for API-style requests.
+- An API endpoint for reporting jokes for review, which validates
+  incoming data and creates a corresponding GitHub issue.
+
+The GitHub integration is accessed via ``settings.BASE.get_github_api()``.
+"""
+
+
+from typing import Any, Dict
+
+from django.http import JsonResponse
 from django.shortcuts import render
-from rest_framework.generics import CreateAPIView
-from rest_framework.request import Request
+from django.views.generic import TemplateView
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from loguru import logger
 from rest_framework import status
+from rest_framework.generics import CreateAPIView
+from rest_framework.request import Request
 from rest_framework.response import Response
-from django.conf import settings
-from applications.API.forms import InsultReviewForm
-from typing import Dict, Any
+
+from applications.API.errors import StandardErrorResponses
+from applications.API.models import Insult
 from applications.API.serializers import InsultReviewSerializer
+from core.settings import Base
+
+
+class LandingPageView(TemplateView):
+    template_name = "landing.html"
+
+
+class StatusPageView(TemplateView):
+    template_name = "status.html"
 
 
 def page_not_found_view(request, exception):
     """Custom 404 handler: serves the image-based 404 page for browser requests,
     falls back to a JSON response for API clients."""
-    if request.content_type == "application/json" or request.path.startswith(("/api/", "/auth/", "/graphql")):
+    if request.content_type == "application/json" or request.path.startswith(
+        ("/api/", "/auth/", "/graphql")
+    ):
         return JsonResponse(
             {
                 "detail": "Yo momma so lost, she tried to route to this page with Apple Maps.",
@@ -30,22 +56,31 @@ def page_not_found_view(request, exception):
     return render(request, "404.html", status=404)
 
 
-
 class ReportJokeView(CreateAPIView):
     """API view to handle joke reporting."""
 
     serializer_class = InsultReviewSerializer
 
-    def format_issue(self, issue_data:Dict[str, Any]) -> Dict[str,str]:
-        """Creates a dictionary containing the title and body for a joke review issue.
-        
-        This function extracts relevant information from a validated form to format an issue for review.
+    def format_issue(self, issue_data: Dict[str, Any]) -> Dict[str, str]:
+        """Build the GitHub issue payload for a joke review.
+
+        Takes validated serializer data for an insult review and converts it
+        into the title/body pair expected by the GitHub issues API.
 
         Args:
-            form: A validated Django form containing joke review data.
+            issue_data: A dictionary of validated insult review fields,
+                typically from ``serializer.validated_data``. Must include:
+                - "rationale_for_review"
+                - "insult_reference_id"
+                - "review_type"
 
         Returns:
-            Dict[str, str]: A dictionary with 'issue_title' and 'issue_body' keys.
+            A dictionary with:
+            - "issue_title": A short, human-readable summary of the review.
+            - "issue_body": The full rationale text for the review.
+
+        Raises:
+            ValueError: If ``issue_data`` is not a dictionary.
         """
         if not isinstance(issue_data, dict):
             raise ValueError("issue_data must be an instance of InsultReviewForm.")
@@ -54,6 +89,71 @@ class ReportJokeView(CreateAPIView):
 
         return {"issue_title": issue_title, "issue_body": issue_body}
 
+    @extend_schema(
+        tags=["Joke Reporting"],
+        operation_id="report_joke",
+        auth=[],
+        summary="Report a joke for review",
+        description=(
+            "Submit a report for a joke that may violate community guidelines. "
+            "The report is validated and forwarded to the moderation team via a GitHub issue. "
+            "Anonymous submissions are supported; non-anonymous submissions require a first and last name. "
+            "If post-review contact is desired, a valid email address must be provided."
+        ),
+        request=InsultReviewSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Report submitted successfully",
+                examples=[
+                    OpenApiExample(
+                        name="Report Submitted",
+                        summary="Joke report created and forwarded for review",
+                        description="Returned when the joke report is valid and has been successfully submitted.",
+                        value={"status": "SUCCESS"},
+                        response_only=True,
+                    )
+                ],
+            ),
+            400: OpenApiResponse(
+                description="Invalid report payload",
+                examples=[
+                    OpenApiExample(
+                        name="Validation Error",
+                        summary="One or more required fields are missing or invalid",
+                        description="Returned when the submitted data fails serializer validation.",
+                        value={
+                            "status": "FAILED",
+                            "errors": {
+                                "rationale_for_review": [
+                                    "Ensure this field has at least 70 characters."
+                                ]
+                            },
+                        },
+                        response_only=True,
+                    )
+                ],
+            ),
+            422: OpenApiResponse(
+                description="Report could not be processed",
+                examples=[
+                    OpenApiExample(
+                        name="Processing Error",
+                        summary="Report was valid but could not be forwarded",
+                        description=(
+                            "Returned when the report payload is valid but an upstream error "
+                            "(e.g. GitHub API failure) prevented the issue from being created."
+                        ),
+                        value={
+                            "status": "FAILED - GitHub API connection error",
+                            "errors": {},
+                        },
+                        response_only=True,
+                    )
+                ],
+            ),
+            **StandardErrorResponses.get_common_error_responses(),
+        },
+    )
     def post(self, request: Request, *_args, **_kwargs) -> Response:
         """Handle POST requests to report a joke for review.
 
@@ -67,26 +167,58 @@ class ReportJokeView(CreateAPIView):
         Returns:
             Response | None: A DRF Response object indicating the result of the operation.
         """
-        logger.debug("Received request to report joke.")
+        logger.bind(request=request).debug("Received request to report joke.")
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
+            vd = dict(serializer.validated_data)
+            ref_id = vd.get("insult_reference_id", "unknown")
+            review_type = vd.get("review_type", "unknown")
+            anonymous = vd.get("anonymous", True)
             try:
-                formatted_issue = self.format_issue(dict(serializer.validated_data))
-                settings.BASE.get_github_api().create_issue(formatted_issue.get("issue_title"), body=formatted_issue.get("issue_body"))
+                formatted_issue = self.format_issue(vd)
+                new_issue = Base.get_github_api().create_issue(
+                    formatted_issue.get("issue_title"),
+                    body=formatted_issue.get("issue_body"),
+                )
+                logger.bind(
+                    request=request,
+                    insult_reference_id=ref_id,
+                    review_type=review_type,
+                    anonymous=anonymous,
+                ).info(
+                    f"Joke report submitted and GitHub issue opened. Github URL: {new_issue.html_url}"
+                )
                 return Response(
-                    data={"status": "SUCCESS"},
+                    data={"status": "SUCCESS", "github_url": new_issue.html_url},
                     status=status.HTTP_201_CREATED,
                 )
             except Exception as e:
-                logger.error(
-                    f"Unable to Submit {serializer.data.get('reference_id','Unknown Reference_ID')} For Review: {str(e)}"
-                )
+                logger.bind(
+                    request=request,
+                    insult_reference_id=ref_id,
+                    review_type=review_type,
+                    anonymous=anonymous,
+                    error=str(e),
+                ).error(f"Unable to submit {ref_id} for review: {e}")
                 return Response(
-                    data={"status": f"FAILED - {str(e)}",  "errors": serializer.errors},
+                    data={"status": f"FAILED - {str(e)}", "errors": serializer.errors},
                     status=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )
-        logger.warning("Invalid form submission for joke review.")
+        logger.bind(
+            request=request,
+            validation_errors=serializer.errors,
+        ).warning("Invalid form submission for joke review.")
         return Response(
             data={"status": "FAILED", "errors": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+def get_reference_ids(request):
+    """API endpoint to retrieve a list of insult reference IDs for reporting purposes."""
+    if request.method == "GET":
+        reference_ids = Insult.objects.filter(status=Insult.STATUS.ACTIVE).values_list(
+            "reference_id", flat=True
+        )
+        return JsonResponse({"reference_ids": list(reference_ids)}, status=200)
+    return JsonResponse({"detail": "Method not allowed."}, status=405)

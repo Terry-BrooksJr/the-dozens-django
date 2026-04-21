@@ -1,0 +1,1856 @@
+openapi: 3.0.3
+info:
+  title: Yo' Momma - The Joke API
+  version: 1.0.0
+  contact:
+    name: Terry A. Brooks, Jr.
+    url: https://brooksjr.com
+    email: terry@brooksjr.com
+tags:
+- name: Insults
+  description: Retrieve, create, update, and delete joke/insult content. Supports filtering by category and NSFW status.
+- name: Insult Categories
+  description: List and explore available insult categories and their associated themes.
+- name: Joke Reporting
+  description: Submit a report for a joke that may violate community guidelines. Reports are forwarded to the moderation team via GitHub issues.
+- name: Health
+  description: Service health and readiness checks, including database, GraphQL schema, and LaunchDarkly client status.
+- name: api
+  description: General API utility operations.
+- name: auth
+  description: User authentication, registration, password reset, and account management.
+paths:
+  /api:
+    post:
+      operationId: report_joke
+      description: Submit a report for a joke that may violate community guidelines.
+        The report is validated and forwarded to the moderation team via a GitHub
+        issue. Anonymous submissions are supported; non-anonymous submissions require
+        a first and last name. If post-review contact is desired, a valid email address
+        must be provided.
+      summary: Report a joke for review
+      tags:
+      - Joke Reporting
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InsultReviewRequest'
+            examples:
+              SubmitAnonymousInsultReview:
+                value:
+                  insult_reference_id: BURN_1234AB
+                  anonymous: true
+                  review_type: RX
+                  rationale_for_review: The insult targets a protected characteristic
+                    and may violate community guidelines. Please review and consider
+                    removing it from public listings based on the platform's content
+                    standards.
+                  post_review_contact_desired: false
+                summary: Submit an anonymous review for an insult
+                description: Example request payload for submitting an anonymous review
+                  using a known insult reference ID. Since this review is anonymous,
+                  no reporter name or email details are required.
+              SubmitContactableInsultReview:
+                value:
+                  insult_reference_id: SNAP_9XZ21
+                  anonymous: false
+                  review_type: RE
+                  rationale_for_review: This insult includes personally identifying
+                    information and could lead to targeted harassment. I am requesting
+                    that it be removed or restricted, in line with your moderation
+                    and safety policies.
+                  reporter_first_name: Jordan
+                  reporter_last_name: Brooks
+                  reporter_email: jordan.brooks@example.com
+                  post_review_contact_desired: true
+                summary: Submit a non-anonymous review with contact details
+                description: Example request payload for a reviewer who is willing
+                  to be contacted about their report. When 'anonymous' is false, first
+                  and last name are required. If 'post_review_contact_desired' is
+                  true, an email address must also be supplied.
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InsultReviewRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InsultReviewRequest'
+        required: true
+      responses:
+        '201':
+          description: Report submitted successfully
+        '400':
+          description: Invalid report payload
+        '422':
+          description: Report could not be processed
+        '500':
+          description: Internal server error occurred
+        '503':
+          description: Service temporarily unavailable
+  /api/categories:
+    get:
+      operationId: list_categories
+      description: |2-
+          # Categories & Themes
+
+        API endpoint for listing insult categories organized by theme.
+
+        - Returns all public insult categories, grouped under their themes
+        - Includes metadata such as insult counts and descriptions
+
+        ## Endpoint
+
+        - `GET /api/categories`
+
+        ## Features
+
+        - No authentication required
+        - Cached responses for performance
+        - Case‑insensitive category matching support
+      summary: List all available insult categories
+      tags:
+      - Insult Categories
+      responses:
+        '200':
+          description: List of available categories
+        '404':
+          description: The requested category could not be found
+        '429':
+          description: API rate limit exceeded
+        '500':
+          description: Internal server error occurred
+  /api/health:
+    get:
+      operationId: health_check
+      description: Returns the aggregated health status of the service, including
+        database connectivity, GraphQL schema availability, and LaunchDarkly client
+        state.
+      summary: Service health heartbeat
+      tags:
+      - Health
+      responses:
+        '200':
+          description: All checks healthy
+        '503':
+          description: One or more checks degraded
+  /api/insults/{reference_id}:
+    get:
+      operationId: retrieve_insult
+      description: Retrieve a specific insult by reference_id.
+      summary: Retrieve a specific insult by ID.
+      parameters:
+      - in: path
+        name: reference_id
+        schema:
+          type: string
+        description: A unique integer value identifying this insult
+        required: true
+      tags:
+      - Insults
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimizedInsult'
+              examples:
+                MyInsultsListExample:
+                  value:
+                  - reference_id: GIGGLE_Nzk1
+                    category: One-Off/Unique
+                    content: Yo momma is so bald... you can see what''s on her mind.
+                    status: A
+                  - reference_id: CACKLE_Xy12
+                    category: Stupid
+                    content: Yo momma so stupid, she went to the dentist to get Bluetooth.
+                    status: P
+                  summary: List of User's Insults
+                  description: Shows a simplified list of insults created by the user
+                SuccessResponse:
+                  value:
+                    reference_id: "GIGGLE_NDQ5"
+                    content: Yo momma is so fat... she rolled over 4 quarters and
+                      made a dollar!'
+                    category: Fat
+                    status: A
+                    nsfw: false
+                    by: Mike R.
+                    added: 2 years ago
+                  summary: Success Response
+          description: ''
+        '404':
+          description: The requested insult could not be found
+        '500':
+          description: Internal server error occurred
+        '503':
+          description: Service temporarily unavailable
+    put:
+      operationId: update_insult
+      description: |-
+        # Insult Details
+
+        API endpoint for CRUD operations on a single insult.
+
+        - All users can read insults
+        - Only the owner can update or delete their insult
+
+        ## Endpoints
+
+        - `GET /api/insult/<reference_id>`: Retrieve insult
+        - `PUT /api/insult/<reference_id>`: Update insult *(owner only)*
+        - `PATCH /api/insult/<reference_id>`: Partially update insult *(owner only)*
+        - `DELETE /api/insult/<reference_id>`: Delete insult *(owner only)*
+
+        ## Authentication
+
+        - Token authentication required for **PUT**, **PATCH**, and **DELETE**
+        - Optional for **GET**
+      summary: Update an existing insult. Only the owner can perform this action.
+      parameters:
+      - in: path
+        name: reference_id
+        schema:
+          type: string
+        description: A unique integer value identifying this insult
+        required: true
+      tags:
+      - Insults
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OptimizedInsultRequest'
+            examples:
+              CreateOrModifyAnInsultExample:
+                value:
+                  category: Poor
+                  content: Your code is like a maze - confusing and full of dead ends
+                  nsfw: false
+                summary: Create New Insult
+                description: Example request for creating a new insult
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OptimizedInsultRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OptimizedInsultRequest'
+        required: true
+      security:
+      - TokenAuth: []
+      responses:
+        '204':
+          description: Insult updated successfully
+        '400':
+          description: Invalid input data provided
+        '401':
+          description: Authentication credentials required
+        '403':
+          description: Resource access restricted to owner only
+        '404':
+          description: The requested insult could not be found
+        '405':
+          description: HTTP method not allowed for this endpoint
+        '429':
+          description: API rate limit exceeded
+        '500':
+          description: Internal server error occurred
+    patch:
+      operationId: partial_update_insult
+      description: |-
+        # Insult Details
+
+        API endpoint for CRUD operations on a single insult.
+
+        - All users can read insults
+        - Only the owner can update or delete their insult
+
+        ## Endpoints
+
+        - `GET /api/insult/<reference_id>`: Retrieve insult
+        - `PUT /api/insult/<reference_id>`: Update insult *(owner only)*
+        - `PATCH /api/insult/<reference_id>`: Partially update insult *(owner only)*
+        - `DELETE /api/insult/<reference_id>`: Delete insult *(owner only)*
+
+        ## Authentication
+
+        - Token authentication required for **PUT**, **PATCH**, and **DELETE**
+        - Optional for **GET**
+      summary: Partial Update to existing insult. Only the owner can perform this
+        action.
+      parameters:
+      - in: path
+        name: reference_id
+        schema:
+          type: string
+        description: A unique integer value identifying this insult
+        required: true
+      tags:
+      - Insults
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOptimizedInsultRequest'
+            examples:
+              CreateOrModifyAnInsultExample:
+                value:
+                  category: Poor
+                  content: Your code is like a maze - confusing and full of dead ends
+                  nsfw: false
+                summary: Create New Insult
+                description: Example request for creating a new insult
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOptimizedInsultRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOptimizedInsultRequest'
+      security:
+      - TokenAuth: []
+      responses:
+        '204':
+          description: Insult partially updated successfully
+        '400':
+          description: Invalid input data provided
+        '401':
+          description: Authentication credentials required
+        '403':
+          description: Resource access restricted to owner only
+        '404':
+          description: The requested insult could not be found
+        '405':
+          description: HTTP method not allowed for this endpoint
+        '429':
+          description: API rate limit exceeded
+        '500':
+          description: Internal server error occurred
+    delete:
+      operationId: delete_insult
+      description: |-
+        # Insult Details
+
+        API endpoint for CRUD operations on a single insult.
+
+        - All users can read insults
+        - Only the owner can update or delete their insult
+
+        ## Endpoints
+
+        - `GET /api/insult/<reference_id>`: Retrieve insult
+        - `PUT /api/insult/<reference_id>`: Update insult *(owner only)*
+        - `PATCH /api/insult/<reference_id>`: Partially update insult *(owner only)*
+        - `DELETE /api/insult/<reference_id>`: Delete insult *(owner only)*
+
+        ## Authentication
+
+        - Token authentication required for **PUT**, **PATCH**, and **DELETE**
+        - Optional for **GET**
+      summary: Delete an existing insult. Only the owner can perform this action.
+      parameters:
+      - in: path
+        name: reference_id
+        schema:
+          type: string
+        description: A unique integer value identifying this insult
+        required: true
+      tags:
+      - Insults
+      security:
+      - TokenAuth: []
+      responses:
+        '204':
+          description: Insult deleted successfully
+        '401':
+          description: Authentication credentials required
+        '403':
+          description: Resource access restricted to owner only
+        '404':
+          description: The requested insult could not be found
+        '405':
+          description: HTTP method not allowed for this endpoint
+        '429':
+          description: API rate limit exceeded
+        '500':
+          description: Internal server error occurred
+  /api/insults/category/{category_name}:
+    get:
+      operationId: list_insults_by_category
+      description: Retrieve paginated insults filtered by category. Authenticated
+        users see their own insults plus all active insults; unauthenticated users
+        see only active insults. Supports both category keys (e.g., 'P') and names
+        (e.g., 'Poor').
+      summary: List insults by category
+      parameters:
+      - in: path
+        name: category_name
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: nsfw
+        schema:
+          type: boolean
+        description: Filter explicit content. `true` returns only NSFW insults; `false`
+          returns only SFW. If omitted, both are returned.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Insults
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOptimizedInsultList'
+              examples:
+                MyInsultsListExample:
+                  value:
+                    count: 123
+                    next: http://api.example.org/accounts/?page=4
+                    previous: http://api.example.org/accounts/?page=2
+                    results:
+                    - - reference_id: GIGGLE_Nzk1
+                        category: One-Off/Unique
+                        content: Yo momma is so bald... you can see what''s on her
+                          mind.
+                        status: A
+                      - reference_id: CACKLE_Xy12
+                        category: Stupid
+                        content: Yo momma so stupid, she went to the dentist to get
+                          Bluetooth.
+                        status: P
+                  summary: List of User's Insults
+                  description: Shows a simplified list of insults created by the user
+                SuccessResponse-Unfiltered(NSFW)AndUncategorized(Category):
+                  value:
+                    count: 123
+                    next: http://api.example.org/accounts/?page=4
+                    previous: http://api.example.org/accounts/?page=2
+                    results:
+                    - count: 133
+                      results:
+                      - reference_id: SNICKER_NDc4
+                        content: Yo momma is so ugly... when they took her to the
+                          beautician it took 12 hours for a quote!
+                        category: Ugly
+                        nsfw: false
+                        by: John D.
+                        added: 2 days ago
+                      - reference_id: CACKLE_NDQ5
+                        content: Yo momma is so fat... when she dives into the ocean,
+                          there is a tsunami-warning!'
+                        category: Fat
+                        nsfw: false
+                        by: Linda p.
+                        added: 12 days ago
+                      - reference_id: CHUCKLE_NDUz
+                        content: Yo momma is so old her driver's license is written
+                          with Roman numerals.
+                        category: Old
+                        nsfw: false
+                        by: John D.
+                        added: 4 Weeks Ago
+                  summary: Success Response - Unfiltered (NSFW) and Uncategorized
+                    (Category)
+                  description: Example 200 response payload showing a list of insults
+                    without NSFW filtering applied and without any category restrictions.
+                    This represents the default unfiltered response.
+                SuccessResponse-Categorized(Category)&Filtered(NSFW):
+                  value:
+                    count: 123
+                    next: http://api.example.org/accounts/?page=4
+                    previous: http://api.example.org/accounts/?page=2
+                    results:
+                    - count: 1
+                      results:
+                      - reference_id: CACKLE_NDY2
+                        content: Yo momma is so poor... she accepts food stamps for
+                          sex!
+                        category: Poor
+                        nsfw: true
+                        by: John D.
+                        added: 2 days ago
+                  summary: Success Response - categorized (Category) & filtered(NSFW)
+                  description: Example 200 response payload filtered to show only
+                    NSFW insults in the 'Poor' category. Demonstrates combined filtering
+                    via `category=P` and `nsfw=true`.
+          description: Successfully retrieved paginated list of category-filtered
+            insults
+        '404':
+          description: No resources found matching the provided criteria
+        '429':
+          description: API rate limit exceeded
+        '500':
+          description: Internal server error occurred
+  /api/insults/new:
+    post:
+      operationId: create-insult
+      description: |2-
+          # Create New Insult (Must Be Registered User)
+
+          Creates new insults owned by authenticated users. New insults
+          default to 'Pending' status pending approval.
+
+         ## Endpoints:
+              POST /api/insults/new
+
+         ## Authentication:
+              Token authentication required
+
+        ##  Request Body:
+              content (str): Insult content (minimum 60 characters, UTF-8)
+              nsfw (bool): Explicit content flag
+              category (str): Category key or name
+      summary: Create New Insult
+      tags:
+      - Insults
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInsultRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateInsultRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateInsultRequest'
+        required: true
+      security:
+      - TokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateInsult'
+              examples:
+                SuccessfulCreation:
+                  value:
+                    reference_id: GIGGLE_ABC123
+                    category: Poor
+                    content: Your code is so poor, it makes welfare look like a luxury
+                      lifestyle.
+                    nsfw: false
+                    status: Pending
+                    by: DevJoker
+                    added: 2 minutes ago
+                  summary: New insult created successfully
+                  description: Example response when a new insult is successfully
+                    created
+          description: Insult created successfully
+        '400':
+          description: Invalid input data provided
+        '401':
+          description: Authentication credentials required
+        '403':
+          description: Insufficient permissions to access this resource
+        '500':
+          description: Internal server error occurred
+        '503':
+          description: Service temporarily unavailable
+  /api/insults/random:
+    get:
+      operationId: get_random_insult
+      description: Returns a single random insult from the active collection. Supports
+        optional filtering by NSFW status and category for more targeted results.
+      summary: Get a random insult
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+        description: 'Filter insult to a category such as fat, poor, etc. '
+      - in: query
+        name: nsfw
+        schema:
+          type: boolean
+        description: Filter explicit content. `true` returns only NSFW insults; `false`
+          returns only SFW. If omitted, both are returned.
+      tags:
+      - Insults
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimizedInsult'
+              examples:
+                MyInsultsListExample:
+                  value:
+                    reference_id: GIGGLE_Nzk1
+                    category: One-Off/Unique
+                    content: Yo momma is so bald... you can see what''s on her mind.
+                    status: A
+                  summary: List of User's Insults
+                  description: Shows a simplified list of insults created by the user
+          description: Random insult retrieved successfully
+        '404':
+          description: No resources found matching the provided criteria
+        '500':
+          description: Internal server error occurred
+        '503':
+          description: Service temporarily unavailable
+  /api/schema:
+    get:
+      operationId: api_schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - api
+      security:
+      - TokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /auth/token/login:
+    post:
+      operationId: auth_token_login_create
+      description: Use this endpoint to obtain user authentication token.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenCreateRequest'
+      security:
+      - TokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenCreate'
+          description: ''
+  /auth/token/logout:
+    post:
+      operationId: auth_token_destroy
+      description: Destroys the authentication token, effectively logging out the
+        user.
+      summary: Logout user and destroy token
+      tags:
+      - auth
+      security:
+      - TokenAuth: []
+      responses:
+        '204':
+          description: Token successfully deleted and user logged out
+  /auth/users:
+    get:
+      operationId: auth_users_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - auth
+      security:
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+    post:
+      operationId: auth_users_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+        required: true
+      security:
+      - TokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreate'
+          description: ''
+  /auth/users/{id}:
+    get:
+      operationId: auth_users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      security:
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: auth_users_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      security:
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_users_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: auth_users_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      security:
+      - TokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /auth/users/activation:
+    post:
+      operationId: auth_users_activation_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ActivationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ActivationRequest'
+        required: true
+      security:
+      - TokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activation'
+          description: ''
+  /auth/users/me:
+    get:
+      operationId: auth_users_me_retrieve
+      tags:
+      - auth
+      security:
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: auth_users_me_update
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      security:
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_users_me_partial_update
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: auth_users_me_destroy
+      tags:
+      - auth
+      security:
+      - TokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /auth/users/resend_activation:
+    post:
+      operationId: auth_users_resend_activation_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+        required: true
+      security:
+      - TokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /auth/users/reset_password:
+    post:
+      operationId: auth_users_reset_password_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+        required: true
+      security:
+      - TokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /auth/users/reset_password_confirm:
+    post:
+      operationId: auth_users_reset_password_confirm_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+        required: true
+      security:
+      - TokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetConfirm'
+          description: ''
+  /auth/users/reset_username:
+    post:
+      operationId: auth_users_reset_username_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+        required: true
+      security:
+      - TokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /auth/users/reset_username_confirm:
+    post:
+      operationId: auth_users_reset_username_confirm_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirmRequest'
+        required: true
+      security:
+      - TokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsernameResetConfirm'
+          description: ''
+  /auth/users/set_password:
+    post:
+      operationId: auth_users_set_password_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRequest'
+        required: true
+      security:
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetPassword'
+          description: ''
+  /auth/users/set_username:
+    post:
+      operationId: auth_users_set_username_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetUsernameRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetUsernameRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetUsernameRequest'
+        required: true
+      security:
+      - TokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetUsername'
+          description: ''
+components:
+  responses:
+    '401':
+      description: Authentication credentials required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            authentication_required:
+              summary: Missing or invalid authentication credentials
+              description: This endpoint requires valid authentication. Provide a
+                valid token in the Authorization header.
+              value:
+                detail: Yo momma so unknown, the server said 'New phone, who this?'
+                code: authentication_failed
+                status_code: 401
+    '403':
+      description: Insufficient permissions to access this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            permission_denied:
+              summary: User lacks required permissions
+              description: The authenticated user does not have permission to perform
+                this action on the requested resource.
+              value:
+                detail: Yo momma so restricted, even admin don't have clearance.
+                code: permission_denied
+                status_code: 403
+            owner_only_access:
+              summary: Only resource owner can modify
+              description: This resource can only be modified by its owner. You can
+                only modify insults that you created.
+              value:
+                detail: You can only modify resources that you own.
+                code: permission_denied
+                status_code: 403
+    '404':
+      description: The requested resource could not be found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            resource_not_found:
+              summary: Requested resource does not exist
+              description: The resource with the specified identifier was not found
+                or may have been removed.
+              value:
+                detail: Yo momma so lost, she tried to route to this page with Apple
+                  Maps.
+                code: not_found
+                status_code: 404
+            insult_not_found:
+              summary: Insult with specified ID does not exist
+              description: The insult with the provided reference_id was not found
+                in our database.
+              value:
+                detail: Insult not found.
+                code: not_found
+                status_code: 404
+            category_not_found:
+              summary: Category with specified key/name does not exist
+              description: The category with the provided key or name was not found.
+                Check available categories using the /api/categories endpoint.
+              value:
+                detail: Category not found.
+                code: not_found
+                status_code: 404
+            no_results_found:
+              summary: No resources match the specified filters
+              description: No resources were found that match your search criteria.
+                Try adjusting your filters or search parameters.
+              value:
+                detail: No results found matching the provided criteria.
+                code: not_found
+                status_code: 404
+    '429':
+      description: API rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            rate_limit_exceeded:
+              summary: Too many requests in given time period
+              description: You have exceeded the API rate limit. Please wait before
+                making additional requests.
+              value:
+                detail: Request was throttled. Expected available in 60 seconds.
+                code: throttled
+                status_code: 429
+    '500':
+      description: Internal server error occurred
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            internal_server_error:
+              summary: Unexpected server error
+              description: An unexpected error occurred on the server. Please try
+                again later or contact support if the problem persists.
+              value:
+                detail: Yo momma broke the server just by showing up.
+                code: server_error
+                status_code: 500
+  schemas:
+    Activation:
+      type: object
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+      required:
+      - token
+      - uid
+    ActivationRequest:
+      type: object
+      properties:
+        uid:
+          type: string
+          minLength: 1
+        token:
+          type: string
+          minLength: 1
+      required:
+      - token
+      - uid
+    CreateInsult:
+      type: object
+      description: |-
+        Serializer for creating new insults.
+
+        Handles insult creation with category validation,
+        content requirements, and NSFW classification.
+      properties:
+        reference_id:
+          type: string
+          readOnly: true
+        category:
+          type: string
+          description: Category key or name for the insult.
+        content:
+          type: string
+          minLength: 60
+        nsfw:
+          type: boolean
+          default: false
+          description: Indicates if the insult is NSFW (Not Safe For Work).
+        status:
+          type: string
+          readOnly: true
+        added_by:
+          type: string
+          readOnly: true
+        added_on:
+          type: string
+          readOnly: true
+      required:
+      - added_by
+      - added_on
+      - category
+      - content
+      - reference_id
+      - status
+    CreateInsultRequest:
+      type: object
+      description: |-
+        Serializer for creating new insults.
+
+        Handles insult creation with category validation,
+        content requirements, and NSFW classification.
+      properties:
+        category:
+          type: string
+          minLength: 1
+          description: Category key or name for the insult.
+        content:
+          type: string
+          minLength: 60
+        nsfw:
+          type: boolean
+          default: false
+          description: Indicates if the insult is NSFW (Not Safe For Work).
+      required:
+      - category
+      - content
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Machine-readable error code
+        status_code:
+          type: integer
+          description: HTTP status code
+      required:
+      - detail
+      - code
+      - status_code
+    InsultReviewRequest:
+      type: object
+      description: |-
+        Serializer for submitting insult reviews.
+
+        Validates review submissions including insult reference,
+        review type, and rationale.
+      properties:
+        insult_reference_id:
+          type: string
+          minLength: 1
+          description: Reference ID of the insult being reviewed.
+        anonymous:
+          type: boolean
+          description: Check if you want to remain anonymous
+        review_type:
+          enum:
+          - RE
+          - RC
+          - RX
+          type: string
+          description: |-
+            Type of review being submitted.
+
+            * `RE` - Joke Reclassification
+            * `RC` - Joke Recategorization
+            * `RX` - Joke Removal
+        rationale_for_review:
+          type: string
+          minLength: 70
+          description: Detailed rationale for the review. (Minimum 70 characters.)
+        reporter_first_name:
+          type: string
+          nullable: true
+          maxLength: 80
+        reporter_last_name:
+          type: string
+          nullable: true
+          maxLength: 80
+        post_review_contact_desired:
+          type: boolean
+        reporter_email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 254
+      required:
+      - insult_reference_id
+      - rationale_for_review
+      - review_type
+    OptimizedInsult:
+      type: object
+      description: |-
+        Performance-optimized insult serializer.
+
+        Enhanced serializer for bulk operations with caching,
+        prefetching, and optimized field selection.
+      properties:
+        content:
+          type: string
+        reference_id:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Unique identifier for the insult, generated from the primary
+            key.
+        category:
+          type: string
+        nsfw:
+          type: boolean
+        status:
+          enum:
+          - A
+          - X
+          - P
+          - R
+          - F
+          type: string
+          description: |-
+            * `A` - Active
+            * `X` - Inactive/Removed
+            * `P` - Pending - New
+            * `R` - Rejected
+            * `F` - Flagged for Review
+          readOnly: true
+        added:
+          type: string
+          readOnly: true
+        by:
+          type: string
+          readOnly: true
+      required:
+      - added
+      - by
+      - category
+      - content
+      - nsfw
+      - reference_id
+      - status
+    OptimizedInsultRequest:
+      type: object
+      description: |-
+        Performance-optimized insult serializer.
+
+        Enhanced serializer for bulk operations with caching,
+        prefetching, and optimized field selection.
+      properties:
+        content:
+          type: string
+          minLength: 1
+        category:
+          type: string
+          minLength: 1
+        nsfw:
+          type: boolean
+      required:
+      - category
+      - content
+      - nsfw
+    PaginatedOptimizedInsultList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OptimizedInsult'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PasswordResetConfirm:
+      type: object
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+        new_password:
+          type: string
+      required:
+      - new_password
+      - token
+      - uid
+    PasswordResetConfirmRequest:
+      type: object
+      properties:
+        uid:
+          type: string
+          minLength: 1
+        token:
+          type: string
+          minLength: 1
+        new_password:
+          type: string
+          minLength: 1
+      required:
+      - new_password
+      - token
+      - uid
+    PatchedOptimizedInsultRequest:
+      type: object
+      description: |-
+        Performance-optimized insult serializer.
+
+        Enhanced serializer for bulk operations with caching,
+        prefetching, and optimized field selection.
+      properties:
+        content:
+          type: string
+          minLength: 1
+        category:
+          type: string
+          minLength: 1
+        nsfw:
+          type: boolean
+    PatchedUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+    SendEmailReset:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    SendEmailResetRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
+    SetPassword:
+      type: object
+      properties:
+        new_password:
+          type: string
+        current_password:
+          type: string
+      required:
+      - current_password
+      - new_password
+    SetPasswordRequest:
+      type: object
+      properties:
+        new_password:
+          type: string
+          minLength: 1
+        current_password:
+          type: string
+          minLength: 1
+      required:
+      - current_password
+      - new_password
+    SetUsername:
+      type: object
+      properties:
+        current_password:
+          type: string
+        new_username:
+          type: string
+          title: Username
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+      required:
+      - current_password
+      - new_username
+    SetUsernameRequest:
+      type: object
+      properties:
+        current_password:
+          type: string
+          minLength: 1
+        new_username:
+          type: string
+          minLength: 1
+          title: Username
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+      required:
+      - current_password
+      - new_username
+    TokenCreate:
+      type: object
+      properties:
+        password:
+          type: string
+        username:
+          type: string
+    TokenCreateRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 1
+        username:
+          type: string
+          minLength: 1
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+      required:
+      - id
+      - username
+    UserCreate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        id:
+          type: integer
+          readOnly: true
+      required:
+      - id
+      - username
+    UserCreateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    UserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+    UsernameResetConfirm:
+      type: object
+      properties:
+        new_username:
+          type: string
+          title: Username
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+      required:
+      - new_username
+    UsernameResetConfirmRequest:
+      type: object
+      properties:
+        new_username:
+          type: string
+          minLength: 1
+          title: Username
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+      required:
+      - new_username
+    ValidationErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Machine-readable error code
+        status_code:
+          type: integer
+          description: HTTP status code
+        errors:
+          type: object
+          description: Field-specific validation errors
+          additionalProperties:
+            type: array
+            items:
+              type: string
+      required:
+      - detail
+      - code
+      - status_code
+      - errors
+  securitySchemes:
+    TokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |-
+        Token-based authentication. Supply your token like so:
+
+        `Authorization: Token <your_token>`
+externalDocs:
+  url: https://github.com/Terry-BrooksJr/the-dozens-django
+  description: GitHub Repository and full API documentation Hub

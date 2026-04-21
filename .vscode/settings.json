@@ -15,6 +15,7 @@
         "Dundes",
         "Dweck",
         "Folklife",
+        "ghapi",
         "graphene",
         "Graphene",
         "GRAPHENE",
@@ -40,6 +41,7 @@
         "sqlglot",
         "thedozens",
         "unanimate",
+        "userlinks",
         "validatio"
     ],
     "eslint.enable": false,
@@ -57,7 +59,8 @@
         "applications"
     ],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "python-envs.defaultEnvManager": "ms-python.python:system"
    
         
     

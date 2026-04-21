@@ -7,16 +7,19 @@ API endpoints for managing insults, categories, and themes.
 - Supports filtering, random retrieval, and category/theme discovery
 """
 
-from urllib.parse import urlencode
+import random
+import time
 from typing import Optional
+from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import EmptyResultSet
+from django.db import connection
+from django.db.models import QuerySet
 from django.shortcuts import redirect
+from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.db.models import QuerySet  
 from django.views.decorators.cache import never_cache
-from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -27,7 +30,6 @@ from drf_spectacular.utils import (
     extend_schema_view,
 )
 from loguru import logger
-from applications.API.authentication import FlexibleTokenAuthentication
 from rest_framework.generics import (
     CreateAPIView,
     GenericAPIView,
@@ -39,6 +41,13 @@ from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import PaginateByMaxMixin
 
+from applications.API.authentication import FlexibleTokenAuthentication
+from applications.API.errors import (
+    StandardErrorResponses,
+    get_category_list_responses,
+    get_insult_crud_responses,
+    get_public_list_responses,
+)
 from applications.API.filters import InsultFilter
 from applications.API.models import Insult, InsultCategory, InsultReview, Theme
 from applications.API.permissions import IsOwnerOrReadOnly
@@ -48,12 +57,7 @@ from applications.API.serializers import (
     CreateInsultSerializer,
     OptimizedInsultSerializer,
 )
-from applications.API.errors import (
-    StandardErrorResponses,
-    get_insult_crud_responses,
-    get_category_list_responses,
-    get_public_list_responses,
-)
+from common.metrics import metrics
 from common.performance import CachedResponseMixin
 
 User = get_user_model()
@@ -142,8 +146,8 @@ class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIV
 
     API endpoint for retrieving insults filtered by category.
 
-    - Supports category keys (e.g., `P`) and names (e.g., `Poor`) in a case‑insensitive manner  
-    - Authenticated users see **their own insults** plus all active insults  
+    - Supports category keys (e.g., `P`) and names (e.g., `Poor`) in a case‑insensitive manner
+    - Authenticated users see **their own insults** plus all active insults
     - Unauthenticated users see **only active insults**
 
     ## Endpoint
@@ -152,18 +156,18 @@ class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIV
 
     ## Query Parameters
 
-    - `nsfw` *(bool, optional)*: Filter explicit content.  
-      - `true` → only NSFW insults  
-      - `false` → only SFW insults  
-      - omitted → both are returned  
-    - `page` *(int, optional)*: Page number for pagination  
+    - `nsfw` *(bool, optional)*: Filter explicit content.
+      - `true` → only NSFW insults
+      - `false` → only SFW insults
+      - omitted → both are returned
+    - `page` *(int, optional)*: Page number for pagination
     - `page_size` *(int, optional)*: Number of items per page
     """
 
     lookup_field = "category"
     serializer_class = OptimizedInsultSerializer
     primary_model = Insult
-    filter_backends = [DjangoFilterBackend] #pyrefly: ignore
+    filter_backends = [DjangoFilterBackend]  # pyrefly: ignore
     cache_models = [InsultCategory]
     bulk_select_related = ["added_by", "category"]
     bulk_prefetch_related = ["reports"]
@@ -175,12 +179,12 @@ class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIV
         "users:*:insults*",
     ]
 
-    def get_queryset(self) ->   Optional[QuerySet]: #pyrefly: ignore
+    def get_queryset(self) -> Optional[QuerySet]:  # pyrefly: ignore
         """
         Build the base queryset for this view.
 
-        - If `category_name` is provided in the URL, returns the category‑filtered queryset  
-        - If the user is authenticated, includes their insults plus all active insults  
+        - If `category_name` is provided in the URL, returns the category‑filtered queryset
+        - If the user is authenticated, includes their insults plus all active insults
         - If unauthenticated, returns only active insults
 
         **Returns**
@@ -204,7 +208,7 @@ class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIV
         """
         Helper to build the category‑filtered queryset.
 
-        - Includes the requesting user's insults for the category (if authenticated)  
+        - Includes the requesting user's insults for the category (if authenticated)
         - Always merges in active public insults for the same category
 
         **Args**
@@ -298,7 +302,7 @@ class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIV
 
 @extend_schema_view(
     get=extend_schema(
-        tags=["Insults "],
+        tags=["Insults"],
         auth=[],
         operation_id="retrieve_insult",
         summary="Retrieve a specific insult by ID.",
@@ -399,19 +403,19 @@ class InsultDetailsEndpoint(
 
     API endpoint for CRUD operations on a single insult.
 
-    - All users can read insults  
+    - All users can read insults
     - Only the owner can update or delete their insult
 
     ## Endpoints
 
-    - `GET /api/insult/<reference_id>`: Retrieve insult  
-    - `PUT /api/insult/<reference_id>`: Update insult *(owner only)*  
-    - `PATCH /api/insult/<reference_id>`: Partially update insult *(owner only)*  
-    - `DELETE /api/insult/<reference_id>`: Delete insult *(owner only)*  
+    - `GET /api/insult/<reference_id>`: Retrieve insult
+    - `PUT /api/insult/<reference_id>`: Update insult *(owner only)*
+    - `PATCH /api/insult/<reference_id>`: Partially update insult *(owner only)*
+    - `DELETE /api/insult/<reference_id>`: Delete insult *(owner only)*
 
     ## Authentication
 
-    - Token authentication required for **PUT**, **PATCH**, and **DELETE**  
+    - Token authentication required for **PUT**, **PATCH**, and **DELETE**
     - Optional for **GET**
     """
 
@@ -459,211 +463,11 @@ class InsultDetailsEndpoint(
         serializer = self.get_serializer(insult)
         return Response(serializer.data)
 
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Insults"],
-        operation_id="list_insults",
-        auth=[],
-        summary="List all insults. Returns active insults for all users, authenticated users can see their own insults in any status.",
-        parameters=[
-            OpenApiParameter(
-                name="nsfw",
-                type=OpenApiTypes.BOOL,
-                location=OpenApiParameter.QUERY,
-                description="Filter explicit content. `true` returns only NSFW insults; `false` returns only SFW. If omitted, both are returned.",
-                required=False,
-            ),
-        ],
-        responses={
-            200: OpenApiResponse(
-                description="Successful 200 response returning a paginated list of insults. The payload includes a top‑level `count` and a `results` array of insult objects. Supports optional filtering via `category` and `nsfw` query parameters.",
-                response=OptimizedInsultSerializer,
-                examples=[
-                    OpenApiExample(
-                        name="Success Response - Unfiltered (NSFW) and Uncategorized (Category)",
-                        description="Example 200 response payload showing a list of insults without NSFW filtering applied and without any category restrictions. This represents the default unfiltered response.",
-                        value={
-                            "count": 133,
-                            "results": [
-                                {
-                                    "reference_id": "SNICKER_NDc4",
-                                    "content": "Yo momma is so ugly... when they took her to the beautician it took 12 hours for a quote!",
-                                    "category": "Ugly",
-                                    "nsfw": False,
-                                    "added_by": "John D.",
-                                    "added_on": "2 days ago",
-                                },
-                                {
-                                    "reference_id": "CACKLE_NDQ5",
-                                    "content": "Yo momma is so fat... when she dives into the ocean, there is a tsunami-warning!'",
-                                    "category": "Fat",
-                                    "nsfw": False,
-                                    "added_by": "Linda p.",
-                                    "added_on": "12 days ago",
-                                },
-                                {
-                                    "reference_id": "CHUCKLE_NDUz",
-                                    "content": "Yo momma is so old her driver's license is written with Roman numerals.",
-                                    "category": "Old",
-                                    "nsfw": False,
-                                    "added_by": "John D.",
-                                    "added_on": "4 Weeks Ago",
-                                },
-                            ],
-                        },
-                    ),
-                    OpenApiExample(
-                        name="Success Response - categorized (Category) & filtered(NSFW)",
-                        description="Example 200 response payload filtered to show only NSFW insults in the 'Poor' category. Demonstrates combined filtering via `category=P` and `nsfw=true`.",
-                        value={
-                            "count": 1,
-                            "results": [
-                                {
-                                    "reference_id": "CACKLE_NDY2",
-                                    "content": "Yo momma is so poor... she accepts food stamps for sex!",
-                                    "category": "Poor",
-                                    "nsfw": True,
-                                    "added_by": "John D.",
-                                    "added_on": "2 days ago",
-                                }
-                            ],
-                        },
-                    ),
-                ],
-            ),
-            404: OpenApiResponse(
-                description="No insults found matching the provided filters or resource not available.",
-                examples=[
-                    OpenApiExample(
-                        name="No Insults Found",
-                        description="Example 404 response when no insults match the provided filters (e.g., `category=XYZ` with `nsfw=true`).",
-                        value={
-                            "detail": "No insults found matching the provided filters or resource not available."
-                        },
-                    )
-                ],
-            ),
-        },
-    )
-)
-# class InsultListEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIView):
-#     """
-#     List All Insults
-
-#     URL
-#         GET /api/insults
-
-#     Description
-#         Returns a paginated list of ACTIVE insults across all categories. If the caller is
-#         authenticated, their own insults are included regardless of status. Categories with
-#         keys `TEST` and `X` are excluded from public listing.
-
-#     Authentication
-#         Optional. Authentication broadens visibility to include the caller's own items.
-
-#     Query Parameters
-#         nsfw (bool, optional): Filter by explicit content. `true` returns only NSFW; `false`
-#             returns only SFW. Omit to return both.
-#         page (int, optional): Page number (default 1).
-#         page_size (int, optional): Items per page (default 20 unless configured otherwise).
-
-
-#     """
-
-#     serializer_class = OptimizedInsultSerializer
-#     primary_model = Insult
-#     cache_models = [InsultCategory, InsultReview]
-#     permission_classes = [AllowAny]
-
-#     def get_queryset(self):
-#         return (
-#             Insult.objects.select_related("added_by", "category")
-#             .prefetch_related("reports")
-#             .order_by("-added_on")
-#             .exclude(category__category_key__in=["TEST", "X"])
-#         )
-#         # Build cache key with all relevant filters
-
-#     def list(self, request, *args, **kwargs):
-#         # Check for category query parameter early and reject with 400
-#         if request.GET.get("category_name") or request.GET.get("category"):
-#             return Response(
-#                 {"Error": "Please Use the `api/insults/<category>` endpoint"},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-
-#         user = request.user if request.user.is_authenticated else None
-#         filters = {
-#             "category": request.GET.get("category"),
-#             "status": request.GET.get("status"),
-#             "nsfw": request.GET.get("nsfw"),
-#             "page": request.GET.get("page", "1"),
-#             "page_size": request.GET.get("page_size", "20"),
-#             "user_id": getattr(user, "id", None),
-#         }
-
-#         cache_key = self.get_cache_key("bulk_list", **filters)
-
-#         def get_filtered_queryset():
-#             """Build the filtered queryset."""
-#             queryset = self.get_queryset()
-
-#             # Apply filters
-#             if filters["category"]:
-#                 queryset = queryset.filter(category__category_key=filters["category"])
-#             if filters["status"]:
-#                 queryset = queryset.filter(status=filters["status"])
-#             if filters["nsfw"] is not None:
-#                 nsfw_bool = filters["nsfw"].lower() in ("true", "1", "yes")
-#                 queryset = queryset.filter(nsfw=nsfw_bool)
-#             if filters["user_id"]:
-#                 user_qs = queryset.filter(
-#                     added_by_id=filters["user_id"]
-#                 )  # include user's own regardless of status
-#                 active_qs = queryset.filter(status=Insult.STATUS.ACTIVE)
-#                 return user_qs.union(active_qs).order_by("-added_on")
-#             return queryset.filter(status=Insult.STATUS.ACTIVE).order_by("-added_on")
-#             # Get cached or fresh data with optimizations
-
-#         queryset, extra_data = self.get_cached_bulk_data(
-#             cache_key, get_filtered_queryset, timeout=self.bulk_cache_timeout
-#         )
-#         # Apply pagination
-#         page = self.paginate_queryset(queryset)
-#         if page is not None:
-#             serializer = self.get_serializer(page, many=True)
-#             response_data = self.get_paginated_response(serializer.data)
-#             response_data.data.update(extra_data)  # Add metadata
-#             return response_data
-
-#         # Non-paginated response
-#         serializer = self.get_serializer(queryset, many=True)
-#         return Response(
-#             {"count": len(serializer.data), "results": serializer.data, **extra_data}
-#         )
-
 
 class RandomInsultEndpoint(GenericAPIView):
-    """
-    # Random Insult
-
-    API endpoint for retrieving a single random insult.
-
-    - By default returns from the active public insults  
-    - Can be filtered by NSFW status and category
-
-    ## Endpoint
-
-    - `GET /api/insults/random`
-
-    ## Query Parameters
-
-    - `nsfw` *(bool, optional)*: Filter explicit content (`true` / `false`)  
-    - `category` *(str, optional)*: Category key or name to filter by
-    """
-
     serializer_class = OptimizedInsultSerializer
     permission_classes = [AllowAny]
+    throttle_classes = []
 
     @method_decorator(never_cache)
     @extend_schema(
@@ -690,7 +494,7 @@ class RandomInsultEndpoint(GenericAPIView):
                 required=False,
             ),
             OpenApiParameter(
-                name="category_name",
+                name="category",
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
                 description="Filter insult to a category such as fat, poor, etc. ",
@@ -700,44 +504,119 @@ class RandomInsultEndpoint(GenericAPIView):
     )
     def get(self, request):
         """
-        Retrieve a random insult with optional filters.
 
-        **Args**
+        # Random Insult
 
-        - `request`: HTTP request with optional query parameters
+        API endpoint for retrieving a single random insult.
 
-        **Returns**
+        - By default returns from the active public insults
+        - Can be filtered by NSFW status and category
 
-        - `Response`: Random insult data or `404` if no matches are found
+        ## Endpoint
+
+        - `GET /api/insults/random`
+
+        ## Query Parameters
+
+        - `nsfw` *(bool, optional)*: Filter explicit content (`true` / `false`)
+        - `category` *(str, optional)*: Category key or name to filter by
         """
-        queryset = (
-            Insult.public.select_related("added_by", "category")
-            .prefetch_related("reports")
-            .order_by("?")
-            .all()
-        )
+        request_id = getattr(request, "request_id", "unknown")
+        t_start = time.perf_counter()
 
-        # Filter by explicitly level (NSFW) if provided
         nsfw_param = request.query_params.get("nsfw")
-        if nsfw_param is not None:
-            logger.debug(f"Filtering random insult by NSFW={nsfw_param}")
-            nsfw = nsfw_param.lower() in ["true", "1", "yes"]
-            queryset = queryset.filter(nsfw=nsfw)
-        # Filter by category if provided
+        category_param = request.query_params.get("category")
+        nsfw_filtered = nsfw_param is not None
+        category_filtered = category_param is not None
+        resolved_category_key: str | None = None
 
-        if category := request.query_params.get("category_name"):
-            logger.debug(f"Filtering random insult by category: {category}")
-            category = BaseInsultSerializer.resolve_category(category.upper())
-            queryset = queryset.filter(category=category["category_key"])
+        with metrics.sql_instrumentation() as sql_stats:
+            # Phase 1: base queryset build
+            with metrics.time_random_insult_stage("queryset_build"):
+                queryset = (
+                    Insult.public.select_related("added_by", "category")
+                    .prefetch_related("reports")
+                    .all()
+                )
 
-        if not queryset.exists():
-            return Response(
-                {"detail": "No insults found matching the criteria."}, status=404
-            )
+            # Phase 2: NSFW filter
+            with metrics.time_random_insult_stage("nsfw_filter"):
+                if nsfw_param is not None:
+                    nsfw = nsfw_param.lower() in ["true", "1", "yes"]
+                    queryset = queryset.filter(nsfw=nsfw)
 
-        random_insult = queryset.order_by("?").first()
-        serializer = OptimizedInsultSerializer(random_insult)
-        return Response(serializer.data)
+            # Phase 3: category resolution
+            with metrics.time_random_insult_stage("category_resolution"):
+                if category_param:
+                    resolved = BaseInsultSerializer.resolve_category(
+                        category_param.upper()
+                    )
+                    resolved_category_key = resolved.get("category_key")
+                    queryset = queryset.filter(
+                        category__category_key=resolved_category_key
+                    )
+
+            # Phase 4: count serves double duty — emptiness check + random offset bound
+            with metrics.time_random_insult_stage("emptiness_check"):
+                count = queryset.count()
+
+            if count == 0:
+                duration_ms = (time.perf_counter() - t_start) * 1000.0
+                metrics.record_random_insult_empty()
+                metrics.record_random_insult_request(
+                    status="404",
+                    category_filtered=category_filtered,
+                    nsfw_filtered=nsfw_filtered,
+                    db_query_count=sql_stats["query_count"],
+                )
+                logger.bind(
+                    request_id=request_id,
+                    path=request.path,
+                    nsfw_param=nsfw_param,
+                    category_param=category_param,
+                    resolved_category_key=resolved_category_key,
+                    duration_ms=round(duration_ms, 2),
+                    db_query_count=sql_stats["query_count"],
+                    db_total_ms=round(sql_stats["total_ms"], 2),
+                    db_slowest_ms=round(sql_stats["slowest_ms"], 2),
+                    empty_result=True,
+                ).info("random_insult | no results found after filtering")
+                return Response(
+                    {"detail": "No insults found matching the criteria."}, status=404
+                )
+
+            # Phase 5: offset-based random selection.
+            # ORDER BY insult_id uses the PK index (O(log n) + offset).
+            # Replaces ORDER BY RANDOM() which was a full-table sort (O(n log n)).
+            with metrics.time_random_insult_stage("random_selection"):
+                random_insult = queryset.order_by("insult_id")[random.randint(0, count - 1)]
+
+            # Phase 6: serialization
+            with metrics.time_random_insult_stage("serialization"):
+                serializer = OptimizedInsultSerializer(random_insult)
+                data = serializer.data
+
+        duration_ms = (time.perf_counter() - t_start) * 1000.0
+        metrics.record_random_insult_request(
+            status="200",
+            category_filtered=category_filtered,
+            nsfw_filtered=nsfw_filtered,
+            db_query_count=sql_stats["query_count"],
+        )
+        logger.bind(
+            request_id=request_id,
+            path=request.path,
+            nsfw_param=nsfw_param,
+            category_param=category_param,
+            resolved_category_key=resolved_category_key,
+            selected_insult_id=random_insult.insult_id if random_insult else None,
+            duration_ms=round(duration_ms, 2),
+            db_query_count=sql_stats["query_count"],
+            db_total_ms=round(sql_stats["total_ms"], 2),
+            db_slowest_ms=round(sql_stats["slowest_ms"], 2),
+            empty_result=False,
+        ).info("random_insult | success")
+        return Response(data)
 
 
 @extend_schema_view(
@@ -768,25 +647,6 @@ class RandomInsultEndpoint(GenericAPIView):
     )
 )
 class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
-    """
-    # Categories &amp; Themes
-
-    API endpoint for listing insult categories organized by theme.
-
-    - Returns all public insult categories, grouped under their themes  
-    - Includes metadata such as insult counts and descriptions  
-
-    ## Endpoint
-
-    - `GET /api/categories`
-
-    ## Features
-
-    - No authentication required  
-    - Cached responses for performance  
-    - Case‑insensitive category matching support
-    """
-
     serializer_class = CategorySerializer
     permission_classes = [AllowAny]
 
@@ -802,15 +662,24 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 
     def get(self, request):
         """
-        Return a list of insult categories grouped by theme.
 
-        **Args**
+          # Categories & Themes
 
-        - `request`: HTTP request object
+        API endpoint for listing insult categories organized by theme.
 
-        **Returns**
+        - Returns all public insult categories, grouped under their themes
+        - Includes metadata such as insult counts and descriptions
 
-        - `Response`: JSON payload containing a `help_text` and a `results` mapping
+        ## Endpoint
+
+        - `GET /api/categories`
+
+        ## Features
+
+        - No authentication required
+        - Cached responses for performance
+        - Case‑insensitive category matching support
+
         """
         qs = self.get_queryset()
         theme_qs = Theme.objects.all().exclude(theme_key="INTL")
@@ -868,7 +737,7 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
                             "nsfw": False,
                             "status": "Pending",
                             "added_by": "DevJoker",
-                            "added_on": "2 minutes ago"
+                            "added_on": "2 minutes ago",
                         },
                     )
                 ],
@@ -880,21 +749,21 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 )
 class CreateInsultEndpoint(CreateAPIView):
     """
-    # Create New Insult (Must Be Registered User)
-    
-    Creates new insults owned by authenticated users. New insults
-    default to 'Pending' status pending approval.
+      # Create New Insult (Must Be Registered User)
 
-   ## Endpoints:
-        POST /api/insults/new
+      Creates new insults owned by authenticated users. New insults
+      default to 'Pending' status pending approval.
 
-   ## Authentication:
-        Token authentication required
+     ## Endpoints:
+          POST /api/insults/new
 
-  ##  Request Body:
-        content (str): Insult content (minimum 60 characters, UTF-8)
-        nsfw (bool): Explicit content flag
-        category (str): Category key or name
+     ## Authentication:
+          Token authentication required
+
+    ##  Request Body:
+          content (str): Insult content (minimum 60 characters, UTF-8)
+          nsfw (bool): Explicit content flag
+          category (str): Category key or name
     """
 
     serializer_class = CreateInsultSerializer
@@ -904,3 +773,191 @@ class CreateInsultEndpoint(CreateAPIView):
     def perform_create(self, serializer):
         """Set the authenticated user as the insult owner."""
         serializer.save(added_by=self.request.user)
+
+
+@extend_schema(
+    tags=["Insults"],
+    auth=[],
+    operation_id="list_reference_ids",
+    summary="List all active insult reference IDs",
+    description=(
+        "Returns a paginated list of reference IDs for every active insult in the "
+        "public collection. Useful for bulk look-ups, pre-fetching, or building a "
+        "client-side cache of available identifiers. Pass each ID to "
+        "`GET /api/insults/{reference_id}/` to retrieve the full insult."
+    ),
+    responses={
+        200: OpenApiResponse(
+            description="Paginated list of active insult reference IDs",
+            examples=[
+                OpenApiExample(
+                    "Success Response",
+                    value={
+                        "count": 500,
+                        "next": "/api/insults/reference-ids/?page=2",
+                        "previous": None,
+                        "results": [
+                            "CACKLE_NDQ5",
+                            "CHUCKLE_NDUz",
+                            "GIGGLE_ABC123",
+                        ],
+                    },
+                )
+            ],
+        ),
+        **get_public_list_responses(),
+    },
+)
+class ListReferenceIdsEndpoint(ListAPIView):
+    """
+    # List Active Insult Reference IDs
+
+    Returns a paginated list of reference IDs for all active (status=``A``) insults.
+
+    ## Endpoint
+
+    - ``GET /api/insults/reference-ids/``
+
+    ## Query Parameters
+
+    - ``page`` *(int, optional)*: Page number
+    - ``page_size`` *(int, optional)*: Results per page (``max`` for the maximum allowed)
+
+    ## Notes
+
+    - No authentication required
+    - Only active, public insults are included (same visibility as ``/api/insults/random/``)
+    - Results are ordered alphabetically by reference ID for stable pagination
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = []
+    # Required by ListAPIView / drf-spectacular; the actual list() override
+    # returns plain strings so the serializer is never instantiated at runtime.
+    serializer_class = OptimizedInsultSerializer
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Insult.objects.none()
+        return Insult.public.values_list("reference_id", flat=True).order_by(
+            "reference_id"
+        )
+
+    def list(self, request, *args, **kwargs):
+        qs = self.get_queryset()
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            return self.get_paginated_response(list(page))
+        return Response({"count": qs.count(), "results": list(qs)})
+
+
+class HealthEndpoint(GenericAPIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = []
+    serializer_class = None
+
+    def _check_database(self) -> str:
+        try:
+            connection.ensure_connection()
+            return "ok"
+        except Exception:
+            return "unavailable"
+
+    def _check_graphql(self) -> str:
+        try:
+            from applications.graphQL.schema import schema
+
+            result = schema.execute("{ __typename }")
+            return "error" if result.errors else "ok"
+        except Exception:
+            return "error"
+
+    def _check_launchdarkly(self) -> str:
+        from django.conf import settings
+
+        if not getattr(settings, "LAUNCHDARKLY_ENABLED", False):
+            return "disabled"
+        try:
+            from applications.ld_integration.client import get_client
+
+            client = get_client()
+            return "ok" if (client and client.is_initialized()) else "not_initialized"
+        except Exception:
+            return "unavailable"
+
+    @extend_schema(
+        tags=["Health"],
+        auth=[],
+        operation_id="health_check",
+        summary="Service health heartbeat",
+        description=(
+            "Returns the aggregated health status of the service, including database "
+            "connectivity, GraphQL schema availability, and LaunchDarkly client state."
+        ),
+        responses={
+            200: OpenApiResponse(
+                description="All checks healthy",
+                examples=[
+                    OpenApiExample(
+                        "Healthy",
+                        value={
+                            "status": "ok",
+                            "database": "ok",
+                            "graphql": "ok",
+                            "launchdarkly": "ok",
+                            "timestamp": "2026-03-04T12:00:00Z",
+                        },
+                    )
+                ],
+            ),
+            503: OpenApiResponse(
+                description="One or more checks degraded",
+                examples=[
+                    OpenApiExample(
+                        "Degraded",
+                        value={
+                            "status": "degraded",
+                            "database": "unavailable",
+                            "graphql": "ok",
+                            "launchdarkly": "not_initialized",
+                            "timestamp": "2026-03-04T12:00:00Z",
+                        },
+                    )
+                ],
+            ),
+        },
+    )
+    def get(self, request):
+        checks = {
+            "database": self._check_database(),
+            "graphql": self._check_graphql(),
+            "launchdarkly": self._check_launchdarkly(),
+        }
+        degraded = any(v not in ("ok", "disabled") for v in checks.values())
+        return Response(
+            {
+                "status": "degraded" if degraded else "ok",
+                **checks,
+                "timestamp": timezone.now().isoformat(),
+            },
+            status=503 if degraded else 200,
+        )
+
+
+class PingEndpoint(GenericAPIView):
+    """Lightweight liveness probe used by Traefik health checks.
+
+    Intentionally skips DB/GraphQL/LD checks — those run under /api/health/.
+    This just confirms Gunicorn is alive and able to accept requests.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = []
+    serializer_class = None
+
+    @extend_schema(exclude=True)
+    def get(self, request):
+        return Response({"status": "ok"})

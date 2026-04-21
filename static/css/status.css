@@ -1,0 +1,386 @@
+/* ============================================================
+   Yo' Momma API — Status Page Stylesheet
+   Design system: primary #770071 · secondary #bd00b4 · accent #beda00
+   ============================================================ */
+
+/* ---- Fonts ---- */
+@font-face {
+    font-family: YoMamaHeader;
+    src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2') format('woff2');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: YoMamaBody;
+    src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2') format('woff2');
+    font-display: swap;
+}
+
+/* ---- Custom Properties ---- */
+:root {
+    --color-primary:    #770071;
+    --color-secondary:  #bd00b4;
+    --color-accent:     #beda00;
+    --color-white:      #ffffff;
+    --color-background: #D7DF0D;
+
+    /* Status semantic colours */
+    --status-ok:          #2d9e5f;
+    --status-ok-bg:       rgba(45, 158, 95, 0.12);
+    --status-degraded:    #c0392b;
+    --status-degraded-bg: rgba(192, 57, 43, 0.12);
+    --status-disabled:    #7f8c8d;
+    --status-disabled-bg: rgba(127, 140, 141, 0.12);
+    --status-unknown:     #e67e22;
+    --status-unknown-bg:  rgba(230, 126, 34, 0.12);
+
+    --radius-card: 14px;
+    --shadow-card: 0 4px 24px rgba(119, 0, 113, 0.18);
+    --shadow-card-hover: 0 8px 36px rgba(119, 0, 113, 0.32);
+    --transition-base: 0.25s ease;
+}
+
+/* ---- Reset ---- */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* ---- Base ---- */
+html {
+    overflow-y: scroll;
+    background: linear-gradient(169deg,
+        rgba(215, 223, 13, 1) 0%,
+        rgba(190, 218, 0, 1) 50%,
+        rgba(119, 0, 113, 1) 100%);
+    min-height: 100vh;
+}
+
+body {
+    background: transparent;
+    margin: 0;
+    font-family: "YoMamaBody", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ---- Header ---- */
+.status-header {
+    background: var(--color-primary);
+    color: var(--color-white);
+    padding: 1.5rem 1rem;
+    text-align: center;
+    border-bottom: 3px solid var(--color-accent);
+}
+
+.status-header h1 {
+    font-family: 'YoMamaHeader', Arial, sans-serif;
+    font-size: 2.5rem;
+    margin: 0.25rem 0;
+    text-shadow:
+        -1px -1px 0 var(--color-secondary),
+         1px -1px 0 var(--color-secondary),
+        -1px  1px 0 var(--color-secondary),
+         1px  1px 0 var(--color-secondary);
+}
+
+.status-header p {
+    font-family: 'YoMamaBody', Arial, sans-serif;
+    margin: 0.5rem auto 0;
+    opacity: 0.9;
+    max-width: 680px;
+    font-size: 0.95rem;
+}
+
+/* ---- Page Layout ---- */
+.status-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1rem 4rem;
+    gap: 2rem;
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* ---- Overall Status Banner ---- */
+.overall-banner {
+    width: 100%;
+    border-radius: var(--radius-card);
+    padding: 2rem 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    box-shadow: var(--shadow-card);
+    transition: background var(--transition-base), border-color var(--transition-base);
+    border: 2px solid transparent;
+}
+
+.overall-banner.status--ok {
+    background: var(--color-white);
+    border-color: var(--status-ok);
+}
+
+.overall-banner.status--degraded {
+    background: var(--color-white);
+    border-color: var(--status-degraded);
+}
+
+.overall-banner.status--loading {
+    background: var(--color-white);
+    border-color: #ccc;
+}
+
+.overall-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    flex-shrink: 0;
+}
+
+.status--ok    .overall-icon { background: var(--status-ok-bg); }
+.status--degraded .overall-icon { background: var(--status-degraded-bg); }
+.status--loading  .overall-icon { background: #f0f0f0; }
+
+.overall-text {
+    flex: 1;
+}
+
+.overall-text .label {
+    font-family: 'YoMamaHeader', Arial, sans-serif;
+    font-size: 1.5rem;
+    margin: 0 0 0.15rem;
+    color: var(--color-primary);
+}
+
+.status--ok    .overall-text .label { color: var(--status-ok); }
+.status--degraded .overall-text .label { color: var(--status-degraded); }
+
+.overall-text .sub {
+    font-family: 'YoMamaBody', Arial, sans-serif;
+    font-size: 0.875rem;
+    color: #555;
+    margin: 0;
+}
+
+/* ---- Timestamp & Refresh Controls ---- */
+.meta-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.timestamp {
+    font-family: 'YoMamaBody', Arial, sans-serif;
+    font-size: 0.8rem;
+    color: var(--color-primary);
+    background: var(--color-white);
+    padding: 0.3rem 0.9rem;
+    border-radius: 2rem;
+    box-shadow: 0 2px 8px rgba(119, 0, 113, 0.15);
+    opacity: 0.9;
+}
+
+.refresh-btn {
+    font-family: 'YoMamaHeader', Arial, sans-serif;
+    font-size: 0.85rem;
+    background: var(--color-primary);
+    color: var(--color-white);
+    border: none;
+    padding: 0.4rem 1.1rem;
+    border-radius: 2rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(119, 0, 113, 0.25);
+    transition: background var(--transition-base), transform var(--transition-base);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.refresh-btn:hover {
+    background: var(--color-secondary);
+    transform: scale(1.04);
+}
+
+.refresh-btn.spinning .refresh-icon {
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---- Component Cards Section ---- */
+.components-section {
+    width: 100%;
+}
+
+.components-heading {
+    font-family: 'YoMamaHeader', Arial, sans-serif;
+    font-size: 1.1rem;
+    color: var(--color-primary);
+    background: var(--color-white);
+    padding: 0.35rem 1.1rem;
+    border-radius: 2rem;
+    display: inline-block;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 2px 8px rgba(119, 0, 113, 0.15);
+}
+
+.components-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+/* ---- Individual Component Card ---- */
+.component-card {
+    background: var(--color-white);
+    border-radius: var(--radius-card);
+    padding: 1.25rem 1.75rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    box-shadow: var(--shadow-card);
+    border: 2px solid transparent;
+    transition: transform var(--transition-base),
+                border-color var(--transition-base),
+                box-shadow var(--transition-base);
+}
+
+.component-card:hover {
+    transform: translateX(4px);
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-card-hover);
+}
+
+/* Status-tinted left border accent */
+.component-card.status--ok       { border-left-color: var(--status-ok); }
+.component-card.status--degraded { border-left-color: var(--status-degraded); }
+.component-card.status--disabled { border-left-color: var(--status-disabled); }
+.component-card.status--unknown  { border-left-color: var(--status-unknown); }
+
+.component-icon {
+    font-size: 1.5rem;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.component-card.status--ok       .component-icon { background: var(--status-ok-bg); }
+.component-card.status--degraded .component-icon { background: var(--status-degraded-bg); }
+.component-card.status--disabled .component-icon { background: var(--status-disabled-bg); }
+.component-card.status--unknown  .component-icon { background: var(--status-unknown-bg); }
+
+.component-info {
+    flex: 1;
+}
+
+.component-name {
+    font-family: 'YoMamaHeader', Arial, sans-serif;
+    font-size: 1.05rem;
+    color: var(--color-primary);
+    margin: 0 0 0.1rem;
+}
+
+.component-desc {
+    font-family: 'YoMamaBody', Arial, sans-serif;
+    font-size: 0.8rem;
+    color: #666;
+    margin: 0;
+}
+
+/* ---- Status Pill ---- */
+.status-pill {
+    font-family: 'YoMamaHeader', Arial, sans-serif;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 0.3rem 0.9rem;
+    border-radius: 2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+
+.status-pill--ok       { background: var(--status-ok-bg);       color: var(--status-ok); }
+.status-pill--degraded { background: var(--status-degraded-bg); color: var(--status-degraded); }
+.status-pill--disabled { background: var(--status-disabled-bg); color: var(--status-disabled); }
+.status-pill--unknown  { background: var(--status-unknown-bg);  color: var(--status-unknown); }
+
+/* ---- Skeleton / Loading state ---- */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.skeleton-text {
+    height: 0.9em;
+    width: 120px;
+}
+
+/* ---- Footer ---- */
+.status-footer {
+    text-align: center;
+    padding: 1.25rem 1rem;
+    font-family: 'YoMamaBody', Arial, sans-serif;
+    font-size: 0.75rem;
+    color: var(--color-white);
+    opacity: 0.7;
+}
+
+.status-footer a {
+    color: var(--color-accent);
+    text-decoration: none;
+}
+
+.status-footer a:hover {
+    text-decoration: underline;
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-secondary); }
+
+/* ---- Responsive ---- */
+@media (max-width: 600px) {
+    .status-header h1 { font-size: 1.75rem; }
+
+    .overall-banner {
+        padding: 1.25rem 1.25rem;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .component-card {
+        padding: 1rem 1.1rem;
+    }
+
+    .meta-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

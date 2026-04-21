@@ -6,7 +6,7 @@ inputs:
     description: 'Python version to use'
     required: true
   cache-suffix:
-    description: 'Additional cache key suffix'
+    description: 'Additional cache key suffix (unused, kept for back-compat)'
     required: false
     default: ''
   install-task:
@@ -35,24 +35,17 @@ runs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
+        # 'poetry' cache caches the Poetry download cache (~/.cache/pypoetry),
+        # not .venv — safe to restore across runners.
         cache: 'poetry'
 
-    - name: Cache virtual environment
-      uses: actions/cache@v4
-      id: venv-cache
-      with:
-        path: venv
-        key: venv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('poetry.lock') }}${{ inputs.cache-suffix }}
-
-    - name: Create virtual environment
-      if: steps.venv-cache.outputs.cache-hit != 'true'
+    - name: Create virtual environment and install dependencies
       shell: bash
       run: |
-        python -m venv venv
-        source venv/bin/activate
-        python -m pip install --upgrade pip
-        pip install poetry
-        poetry install
+        python -m venv .venv
+        .venv/bin/pip install --quiet --upgrade pip
+        .venv/bin/pip install --quiet poetry
+        .venv/bin/poetry install --with test,dev
 
     - name: Install Doppler CLI
       if: inputs.doppler-token != ''

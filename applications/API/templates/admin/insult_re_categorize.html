@@ -1,0 +1,41 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<p>
+  {% blocktrans count counter=insults.count %}
+    Select a new category for the {{ counter }} selected insult.
+  {% plural %}
+    Select a new category for the {{ counter }} selected insults.
+  {% endblocktrans %}
+</p>
+
+<form method="post">
+  {% csrf_token %}
+  {% for id in selected_ids %}
+    <input type="hidden" name="_selected_ids" value="{{ id }}">
+  {% endfor %}
+  <input type="hidden" name="action" value="re_categorize">
+
+  <fieldset class="module aligned">
+    <div class="form-row">
+      {{ form.as_p }}
+    </div>
+  </fieldset>
+
+  <div class="submit-row">
+    <input type="submit" name="apply" value="{% trans 'Re-categorize' %}">
+    &nbsp;
+    <a href="{% url 'admin:API_insult_changelist' %}">{% trans 'Cancel' %}</a>
+  </div>
+</form>
+
+{% if insults %}
+<h2>{% trans "Selected insults:" %}</h2>
+<ul>
+  {% for insult in insults %}
+    <li>{{ insult }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

@@ -3,17 +3,13 @@
 import os
 import sys
 
+print("EXECUTABLE:", sys.executable)
+print("DOPPLER_ENV:", os.getenv("DOPPLER_ENV"))
+print("DOPPLER_PROJECT:", os.getenv("DOPPLER_PROJECT"))
+print("SECRET_KEY exists:", bool(os.getenv("SECRET_KEY")))
 # Add the parent directory to the Python path so we can import core
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-is_testing = "test" in sys.argv
-if is_testing:
-    import coverage
-
-    cov = coverage.coverage(source=["app"], omit=["*/tests/*"])
-    cov.set_option("report:show_missing", True)
-    cov.erase()
-    cov.start()
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
@@ -22,8 +18,3 @@ if __name__ == "__main__":
     from configurations.management import execute_from_command_line
 
     execute_from_command_line(sys.argv)
-
-    if is_testing:
-        cov.stop()
-        cov.save()
-        cov.report()

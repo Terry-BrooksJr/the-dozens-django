@@ -8,9 +8,14 @@
         <meta name="description"
               content="Interactive API documentation for The Dozens - Yo Mama Jokes API">
         <!-- Favicon -->
-        <link rel="icon" type="image/x-icon" href="{% static 'assets/favicon.ico' %}">
+        <link rel="icon"
+              type="image/x-icon"
+              href="{% static 'assets/favicon.ico' %}">
         <!-- Preconnect to external resources -->
         <link rel="preconnect" href="https://cdn.jsdelivr.net">
+        <!-- SweetAlert2 -->
+        <link rel="stylesheet"
+              href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
         <!-- Preload critical fonts -->
         <link rel="preload"
               href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2"
@@ -95,6 +100,7 @@
                   padding: 1rem;
                   text-align: center;
                   border-bottom: 3px solid var(--color-accent);
+                  position: relative;
              }
 
              .dozens-header h1 {
@@ -249,8 +255,42 @@
                   }
              }
 
-             .swagger-ui .loading {
+             #swagger-ui.loading {
                   animation: loading 1.5s ease-in-out infinite;
+                  min-height: 200px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  background: var(--color-white);
+                  border-radius: 8px;
+             }
+
+             .loading-message {
+                  text-align: center;
+                  padding: 2rem;
+                  font-family: 'YoMamaBody', Arial, sans-serif;
+                  color: var(--color-primary);
+                  font-size: 1.2rem;
+             }
+
+             /* Footer */
+             .dozens-footer {
+                  background: var(--color-primary);
+                  color: #ffffff;
+                  text-align: center;
+                  padding: 1rem;
+                  margin-top: 2rem;
+                  font-family: 'YoMamaBody', Arial, sans-serif;
+                  font-size: 0.9rem;
+             }
+
+             .dozens-footer a {
+                  color: var(--color-accent);
+                  text-decoration: none;
+             }
+
+             .dozens-footer a:hover {
+                  color: #ffffff;
              }
 
              /* Custom scrollbar */
@@ -270,42 +310,210 @@
              ::-webkit-scrollbar-thumb:hover {
                   background: var(--color-secondary);
              }
+
+             /* Ensure SweetAlert welcome modal sits above Swagger UI chrome
+                (topbar, .scheme-container authorize bar, sticky opblock headers). */
+             .swal2-container {
+                  z-index: 10000 !important;
+             }
+
+             .swal2-backdrop-show {
+                  z-index: 9999 !important;
+             }
         </style>
     </head>
     <body>
         <!-- Custom header -->
         <div class="dozens-header">
-          <h1>Welcome to the Yo' Momma Joke API!</h1>
+            <h1>Welcome to the Yo' Momma Joke API!</h1>
             <h3>Interactive Documentation</h3>
-            <p> This is a RESTful service that provides humorous insults categorized by  types like 'Poor,' 'Stupid,' or ;'Fat,;' with programmatic access to both retrieve and contribute content.</p>    <p>API Consumers can fetch random insults, filter by category or NSFW status, and authenticated users can create, update, and manage their own contributions through comprehensive endpoints. The API includes a complete user management system with authentication, account activation, and password reset functionality. All responses are properly paginated with comprehensive documentation available through Swagger UI, and the service maintains moderation through status flags (active, pending, rejected) to ensure quality control.</p>    
-            <a href="localhost:3000/" class="back-link">← Back to Main Site</a>
+            <p>
+                This is a RESTful service that provides humorous insults categorized by  types like 'Poor,' 'Stupid,' or ;'Fat,;' with programmatic access to both retrieve and contribute content.
+            </p>
+            <p>
+                API Consumers can fetch random insults, filter by category or NSFW status, and authenticated users can create, update, and manage their own contributions through comprehensive endpoints. The API includes a complete user management system with authentication, account activation, and password reset functionality. All responses are properly paginated with comprehensive documentation available through Swagger UI, and the service maintains moderation through status flags (active, pending, rejected) to ensure quality control.
+            </p>
+            <a href="https://yo-momma.io/" class="back-link">← Back to Main Site</a>
+            <button id="help-btn"
+                    onclick="showWelcomeModal()"
+                    title="Show quick-start guide"
+                    aria-label="Show quick-start guide"
+                    style="position:absolute;
+                           top:1rem;
+                           right:1rem;
+                           width:2.2rem;
+                           height:2.2rem;
+                           border-radius:50%;
+                           border:2px solid var(--color-accent);
+                           background:var(--color-accent);
+                           color:var(--color-primary);
+                           font-family:'YoMamaHeader',Arial,sans-serif;
+                           font-size:1.1rem;
+                           font-weight:700;
+                           cursor:pointer;
+                           line-height:1;
+                           transition:all 0.2s ease"
+                    onmouseover="this.style.background='#fff';this.style.borderColor='#fff';"
+                    onmouseout="this.style.background='var(--color-accent)';this.style.borderColor='var(--color-accent)';">
+                ?
+            </button>
         </div>
         <!-- Swagger UI container -->
-        <div id="swagger-ui"></div>
+        <div id="swagger-ui" class="loading">
+            <div class="loading-message">Loading interactive API documentation...</div>
+        </div>
         <!-- Swagger UI JavaScript -->
         <script src="{{ swagger_ui_bundle }}"></script>
         <script src="{{ swagger_ui_standalone }}"></script>
         {% if script_url %}
             <script src="{{ script_url }}"></script>
         {% else %}
+            {# djlint:off #}
             <script>
                  {% include template_name_js %}
             </script>
+            {# djlint:on #}
         {% endif %}
+        <!-- SweetAlert2 JS -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
         <!-- Custom initialization script -->
         <script>
-             document.addEventListener('DOMContentLoaded', function() {
-                  // Add loading class initially
-                  const swaggerContainer = document.getElementById('swagger-ui');
-                  if (swaggerContainer) {
-                       swaggerContainer.classList.add('loading');
+             (function() {
+                  const container = document.getElementById('swagger-ui');
+                  if (!container) return;
 
-                       // Remove loading class once Swagger UI is initialized
-                       setTimeout(() => {
-                            swaggerContainer.classList.remove('loading');
-                       }, 2000);
-                  }
-             });
+                  // Remove loading state as soon as SwaggerUI populates the container
+                  const observer = new MutationObserver(function() {
+                       if (container.querySelector('.swagger-ui')) {
+                            container.classList.remove('loading');
+                            observer.disconnect();
+                       }
+                  });
+                  observer.observe(container, {
+                       childList: true,
+                       subtree: true
+                  });
+
+                  // Hard fallback: clear loading after 8 s regardless
+                  setTimeout(function() {
+                       container.classList.remove('loading');
+                       observer.disconnect();
+                  }, 8000);
+             })();
         </script>
+        <!-- Welcome modal -->
+        <script>
+             const DOZENS_WELCOME_KEY = 'dozens_swagger_welcome_seen';
+
+             function showWelcomeModal() {
+                  Swal.fire({
+                       title: '<span style="font-family:\'YoMamaHeader\',Arial,sans-serif;color:#770071;font-size:1.6rem;">👋 Quick Welcome!</span>',
+                       html: `
+                            <div style="font-family:'YoMamaBody',Arial,sans-serif;text-align:left;font-size:0.95rem;line-height:1.7;color:#333;">
+                                 <p style="margin:0 0 0.75rem;">You're looking at <strong>Swagger UI</strong> — a live, interactive tester for the <em>Yo' Momma Joke API</em>. No coding needed!</p>
+                                 <ol style="padding-left:1.25rem;margin:0 0 1rem;">
+                                      <li style="margin-bottom:0.6rem;">
+                                           <strong>Find what you want to do</strong><br>
+                                           Each coloured block (GET, POST, etc.) represents one action — like "get a random joke" or "add a new one."
+                                      </li>
+                                      <li style="margin-bottom:0.6rem;">
+                                           <strong>Click a block to open it</strong><br>
+                                           Tap any block to reveal the details and a description of what it does.
+                                      </li>
+                                      <li style="margin-bottom:0.6rem;">
+                                           <strong>Press "Try it out"</strong><br>
+                                           Hit the <em>Try it out</em> button — it unlocks the input fields so you can fill in any required info.
+                                      </li>
+                                      <li style="margin-bottom:0.6rem;">
+                                           <strong>Need to log in? Use "Authorize"</strong><br>
+                                           Click the 🔒 <em>Authorize</em> button at the top of the page and paste in your API token. Only needed for actions that require an account.
+                                      </li>
+                                      <li style="margin-bottom:0.6rem;">
+                                           <strong>Hit "Execute" to run it</strong><br>
+                                           Press <em>Execute</em> and the results appear directly below the button — you'll see the <strong>Response body</strong> (the actual data returned), the <strong>Response code</strong> (200 = success, 4xx = something was wrong), and the <strong>Response headers</strong>.
+                                      </li>
+                                      <li style="margin-bottom:0;">
+                                           <strong>Want to start over? Hit "Clear"</strong><br>
+                                           After executing, a <em>Clear</em> button appears next to <em>Execute</em>. Click it to wipe all the values you entered and the response shown — handy for trying different options from scratch without refreshing the page.
+                                      </li>
+                                 </ol>
+                                 <p style="margin:0;font-size:0.85rem;color:#555;">Need to come back to this? Click the <strong>?</strong> button in the header anytime.</p>
+                            </div>
+                            <label style="display:flex;align-items:center;gap:0.5rem;margin-top:1.25rem;font-family:'YoMamaBody',Arial,sans-serif;font-size:0.9rem;cursor:pointer;justify-content:center;">
+                                 <input type="checkbox" id="swal-dont-show" style="width:1rem;height:1rem;accent-color:#770071;cursor:pointer;">
+                                 Don't show this again
+                            </label>
+                            <p id="swal-dismiss-hint" style="margin:0.5rem 0 0;font-family:'YoMamaBody',Arial,sans-serif;font-size:0.75rem;color:#888;text-align:center;">
+                                 <sub>Close tutorial by hitting <strong>Esc</strong> key or clicking outside the box</sub>
+                            </p>`,
+                       confirmButtonText: "Let's Go! 🚀",
+                       confirmButtonColor: '#770071',
+                       background: '#fff',
+                       width: '600px',
+                       padding: '2rem',
+                       allowOutsideClick: true,
+                       allowEscapeKey: true,
+                       showCloseButton: true,
+                       customClass: {
+                            popup: 'dozens-swal-popup',
+                            confirmButton: 'dozens-swal-btn',
+                            closeButton: 'dozens-swal-close'
+                       },
+                       didOpen: function() {
+                            const confirmBtn = document.querySelector('.dozens-swal-btn');
+                            const closeBtn = document.querySelector('.dozens-swal-close');
+                            const checkbox = document.getElementById('swal-dont-show');
+                            const hint = document.getElementById('swal-dismiss-hint');
+
+                            // Style close button
+                            if (closeBtn) {
+                                 closeBtn.style.color = '#770071';
+                                 closeBtn.style.fontSize = '1.4rem';
+                            }
+
+                            // Style confirm button
+                            if (confirmBtn) {
+                                 confirmBtn.style.fontFamily = "'YoMamaBody', Arial, sans-serif";
+                                 confirmBtn.style.fontWeight = '700';
+                                 confirmBtn.style.fontSize = '1rem';
+                                 confirmBtn.style.padding = '0.65rem 2rem';
+                                 confirmBtn.style.borderRadius = '0.5rem';
+                                 // Hidden by default — only shown when checkbox is checked
+                                 confirmBtn.style.display = 'none';
+                            }
+
+                            // Toggle confirm button & hint based on checkbox state
+                            if (checkbox) {
+                                 checkbox.addEventListener('change', function() {
+                                      if (confirmBtn) {
+                                           confirmBtn.style.display = this.checked ? 'inline-block' : 'none';
+                                      }
+                                      if (hint) {
+                                           hint.style.display = this.checked ? 'none' : 'block';
+                                      }
+                                 });
+                            }
+                       },
+                       preConfirm: function() {
+                            return document.getElementById('swal-dont-show').checked;
+                       }
+                  }).then(function(result) {
+                       if (result.isConfirmed && result.value === true) {
+                            localStorage.setItem(DOZENS_WELCOME_KEY, 'true');
+                       }
+                  });
+             }
+
+             // Auto-show on page load unless user opted out
+             if (localStorage.getItem(DOZENS_WELCOME_KEY) !== 'true') {
+                  setTimeout(showWelcomeModal, 800);
+             }
+        </script>
+        <!-- Footer -->
+        <div class="dozens-footer">
+            <p>
+                &copy; {% now "Y" %} The Dozens API. Built with 😈 by <a href="https://www.brooksjr.com" target="_blank">Terry Brooks Jr</a>
+            </p>
+        </div>
     </body>
 </html>

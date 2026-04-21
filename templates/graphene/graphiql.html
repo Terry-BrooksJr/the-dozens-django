@@ -1,0 +1,582 @@
+<!--
+The request to this GraphQL server provided the header "Accept: text/html"
+and as a result has been presented GraphiQL — an in-browser IDE for
+exploring GraphQL.
+
+If you wish to receive JSON, provide the header "Accept: application/json" or
+add "&raw" to the end of the URL within a browser.
+-->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>The Dozens — GraphQL Playground</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description"
+              content="Interactive GraphQL explorer for The Dozens — Yo Mama Jokes API">
+        <!-- Favicon -->
+        <link rel="icon"
+              type="image/x-icon"
+              href="{% static 'assets/favicon.ico' %}">
+        <!-- Preconnect to external resources -->
+        <link rel="preconnect" href="https://cdn.jsdelivr.net">
+        <!-- Preload brand fonts -->
+        <link rel="preload"
+              href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2"
+              as="font"
+              type="font/woff2"
+              crossorigin>
+        <link rel="preload"
+              href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2"
+              as="font"
+              type="font/woff2"
+              crossorigin>
+        <!-- GraphiQL CSS (upstream) -->
+        <link href="https://cdn.jsdelivr.net/npm/graphiql@{{ graphiql_version }}/graphiql.min.css"
+              integrity="{{ graphiql_css_sri }}"
+              rel="stylesheet"
+              crossorigin="anonymous" />
+        <link href="https://cdn.jsdelivr.net/npm/@graphiql/plugin-explorer@{{ graphiql_plugin_explorer_version }}/dist/style.css"
+              integrity="{{ graphiql_plugin_explorer_css_sri }}"
+              rel="stylesheet"
+              crossorigin="anonymous" />
+        <style>
+             /* ── Brand fonts ──────────────────────────────────────────────────────── */
+             @font-face {
+                  font-family: YoMamaHeader;
+                  src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2') format('woff2');
+                  font-display: swap;
+             }
+
+             @font-face {
+                  font-family: YoMamaBody;
+                  src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2') format('woff2');
+                  font-display: swap;
+             }
+
+             /* ── Design tokens ────────────────────────────────────────────────────── */
+             :root {
+                  --color-primary: #770071;
+                  --color-secondary: #bd00b4;
+                  --color-accent: #beda00;
+                  --color-white: #ffffff;
+                  --color-background: #D7DF0D;
+             }
+
+             /* ── GraphiQL color-system overrides (GraphiQL 2.x uses RGB triplets) ── */
+             /* These map the Dozens palette onto GraphiQL's CSS custom properties so  */
+             /* every interactive element — buttons, highlights, cursors, links —      */
+             /* automatically uses brand colours.                                       */
+             .graphiql-container {
+                  --color-primary: 119, 0, 113;
+                  /* #770071 deep purple  */
+                  --color-secondary: 189, 0, 180;
+                  /* #bd00b4 magenta       */
+                  --color-tertiary: 190, 218, 0;
+                  /* #beda00 neon lime     */
+                  --color-info: 119, 0, 113;
+                  --color-success: 190, 218, 0;
+                  --color-warning: 215, 223, 13;
+                  --color-error: 255, 84, 78;
+                  --color-neutral: 143, 137, 148;
+                  --color-base: 252, 252, 255;
+                  /* very slightly purple-tinted white  */
+                  --color-editor-background: 255, 255, 255;
+             }
+
+             /* ── Page shell ───────────────────────────────────────────────────────── */
+             /* Use height: 100% (not min-height: 100vh) so the flex chain is exact   */
+             /* and GraphiQL fills precisely the remaining space below the header.     */
+             html {
+                  height: 100%;
+                  box-sizing: border-box;
+                  background: linear-gradient(169deg,
+                            rgba(215, 223, 13, 1) 0%,
+                            rgba(190, 218, 0, 1) 50%,
+                            rgba(119, 0, 113, 1) 100%);
+             }
+
+             *,
+             *::before,
+             *::after {
+                  box-sizing: inherit;
+             }
+
+             body {
+                  height: 100%;
+                  background: transparent;
+                  margin: 0;
+                  font-family: "YoMamaBody", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+                  line-height: 1.6;
+                  display: flex;
+                  flex-direction: column;
+             }
+
+             /* ── Branded page header (mirrors Swagger template) ───────────────────── */
+             .dozens-header {
+                  background: var(--color-primary);
+                  color: var(--color-white);
+                  padding: 1rem;
+                  text-align: center;
+                  border-bottom: 3px solid var(--color-accent);
+                  flex-shrink: 0;
+             }
+
+             .dozens-header h1 {
+                  font-family: 'YoMamaHeader', Arial, sans-serif;
+                  font-size: 2rem;
+                  margin: 0.5rem 0;
+                  text-shadow:
+                       -1px -1px 0 var(--color-secondary),
+                       1px -1px 0 var(--color-secondary),
+                       -1px 1px 0 var(--color-secondary),
+                       1px 1px 0 var(--color-secondary);
+             }
+
+             .dozens-header h3 {
+                  font-family: 'YoMamaHeader', Arial, sans-serif;
+                  margin: 0.25rem 0;
+                  font-size: 1.1rem;
+                  opacity: 0.9;
+             }
+
+             .dozens-header p {
+                  font-family: 'YoMamaBody', Arial, sans-serif;
+                  margin: 0.5rem auto;
+                  max-width: 800px;
+                  opacity: 0.9;
+                  font-size: 0.95rem;
+             }
+
+             .dozens-header .nav-links {
+                  display: flex;
+                  justify-content: center;
+                  gap: 0.75rem;
+                  flex-wrap: wrap;
+                  margin-top: 0.75rem;
+             }
+
+             .dozens-header .nav-link {
+                  display: inline-block;
+                  background: var(--color-accent);
+                  color: var(--color-primary);
+                  padding: 0.4rem 0.9rem;
+                  border-radius: 0.5rem;
+                  text-decoration: none;
+                  font-family: 'YoMamaHeader', Arial, sans-serif;
+                  font-weight: bold;
+                  font-size: 0.9rem;
+                  transition: all 0.3s ease;
+             }
+
+             .dozens-header .nav-link:hover {
+                  background: var(--color-white);
+                  transform: translateY(-2px);
+             }
+
+             .dozens-header .nav-link.active {
+                  background: var(--color-secondary);
+                  color: var(--color-white);
+                  cursor: default;
+                  transform: none;
+             }
+
+             /* ── GraphiQL card container ──────────────────────────────────────────── */
+             /* flex: 1 makes this div consume exactly the space left after the header */
+             /* overflow: hidden is required — GraphiQL manages its own internal scroll */
+             #editor-wrapper {
+                  flex: 1;
+                  display: flex;
+                  flex-direction: column;
+                  margin: 1rem 1.5rem 1.5rem;
+                  background: var(--color-white);
+                  border-radius: 8px;
+                  box-shadow: 0 4px 20px rgba(119, 0, 113, 0.3);
+                  overflow: hidden;
+                  /* No min-height — let the flex chain determine height precisely */
+             }
+
+             #editor {
+                  flex: 1;
+                  /* height: 100% alone is not enough; the parent must have a definite   */
+                  /* height (provided by flex: 1 above) for GraphiQL to size correctly.  */
+                  min-height: 0;
+             }
+
+             /* ── GraphiQL toolbar overrides ───────────────────────────────────────── */
+             /* Top toolbar — execute button and operation name area */
+             .graphiql-container .graphiql-toolbar {
+                  background: var(--color-primary) !important;
+             }
+
+             .graphiql-container button.graphiql-execute-button {
+                  background: var(--color-secondary) !important;
+                  border-color: var(--color-secondary) !important;
+                  font-family: 'YoMamaHeader', Arial, sans-serif;
+             }
+
+             .graphiql-container button.graphiql-execute-button:hover {
+                  background: var(--color-primary) !important;
+             }
+
+             /* Sidebar (docs / history / explorer) tab icons */
+             .graphiql-container .graphiql-sidebar button[aria-selected="true"] {
+                  color: rgb(var(--color-tertiary)) !important;
+                  border-bottom-color: rgb(var(--color-tertiary)) !important;
+             }
+
+             /* ── Tab bar inside editor panels ────────────────────────────────────── */
+             .graphiql-container .graphiql-editor-tools button[aria-selected="true"] {
+                  color: rgb(var(--color-primary)) !important;
+                  border-bottom: 2px solid rgb(var(--color-primary)) !important;
+             }
+
+             /* ── Scrollbars (matches Swagger template) ───────────────────────────── */
+             ::-webkit-scrollbar {
+                  width: 8px;
+             }
+
+             ::-webkit-scrollbar-track {
+                  background: #f1f1f1;
+             }
+
+             ::-webkit-scrollbar-thumb {
+                  background: var(--color-primary);
+                  border-radius: 4px;
+             }
+
+             ::-webkit-scrollbar-thumb:hover {
+                  background: var(--color-secondary);
+             }
+
+             /* ── Mobile ───────────────────────────────────────────────────────────── */
+             @media (max-width: 768px) {
+                  #editor-wrapper {
+                       margin: 0.75rem;
+                  }
+
+                  .dozens-header h1 {
+                       font-size: 1.5rem;
+                  }
+
+                  .dozens-header .nav-link {
+                       padding: 0.35rem 0.7rem;
+                       font-size: 0.85rem;
+                  }
+             }
+        </style>
+    </head>
+    <body>
+        <!-- ── Branded header ───────────────────────────────────────────────────── -->
+        <div class="dozens-header">
+            <h1>Yo' Momma Joke API</h1>
+            <h3>GraphQL Playground</h3>
+            <p>
+                Explore and execute GraphQL queries against The Dozens API.
+                Use the Explorer panel on the left to browse every available field,
+                or pick one of the example queries pre-loaded in the editor.
+            </p>
+            <nav class="nav-links">
+                <a href="/api/swagger/"     class="nav-link">REST Docs (Swagger)</a>
+                <a href="/api/redoc/"    class="nav-link">ReDoc</a>
+                <a href="/graphql/playground/" class="nav-link active">GraphQL Playground</a>
+            </nav>
+        </div>
+        <!-- ── GraphiQL IDE ──────────────────────────────────────────────────────── -->
+        <div id="editor-wrapper">
+            <div id="editor"></div>
+        </div>
+        {% csrf_token %}
+        <!-- Graphene runtime settings (unchanged from upstream) -->
+        {# djlint:off #}
+        <script type="application/javascript">
+            window.GRAPHENE_SETTINGS = {
+            {% if subscription_path %}subscriptionPath: "{{ subscription_path }}",
+            {% endif %}graphiqlHeaderEditorEnabled: {{ graphiql_header_editor_enabled|yesno:"true,false" }},
+            graphiqlShouldPersistHeaders: {{ graphiql_should_persist_headers|yesno:"true,false" }},
+            graphiqlInputValueDeprecation: {{ graphiql_input_value_deprecation|yesno:"true,false" }},
+            graphqlEndpoint: "/graphql/",
+            };
+</script>
+        {# djlint:on #}
+        <!--
+    The Dozens — GraphQL Playground defaults
+    =========================================
+    On first visit (nothing persisted yet) this script:
+
+      1. Pre-populates the Headers panel with an Authorization placeholder
+         and Content-Type so developers know exactly what to send.
+
+      2. Pre-populates the Variables panel with a complete example set
+         covering every query argument (category, offset, limit, nsfw, status).
+
+      3. Loads a welcome query that demonstrates the five available operations
+         so the playground is immediately useful on first open.
+
+    Subsequent visits respect whatever the user has already typed — nothing
+    is overwritten once the values have been persisted to localStorage.
+  -->
+        <script type="application/javascript">
+             (function() {
+                  var HEADERS_KEY = 'graphiql:headers';
+                  var VARIABLES_KEY = 'graphiql:variables';
+
+                  // ── 1. Default headers ─────────────────────────────────────────────────
+                  // Strip Content-Type from any already-persisted headers — GraphiQL's
+                  // fetcher sets it automatically; having it in the editor panel causes
+                  // a duplicated "application/json, application/json" header that breaks
+                  // graphene-django's body parser.
+                  var existingHeaders = localStorage.getItem(HEADERS_KEY);
+                  if (existingHeaders) {
+                       try {
+                            var parsed = JSON.parse(existingHeaders);
+                            if (parsed['Content-Type']) {
+                                 delete parsed['Content-Type'];
+                                 localStorage.setItem(HEADERS_KEY, JSON.stringify(parsed, null, 2));
+                            }
+                       } catch (e) {}
+                  } else {
+                       localStorage.setItem(HEADERS_KEY, JSON.stringify({
+                            "Authorization": "Token <paste-your-api-token-here>"
+                       }, null, 2));
+                  }
+
+                  // ── 2. Default variables ───────────────────────────────────────────────
+                  if (!localStorage.getItem(VARIABLES_KEY)) {
+                       localStorage.setItem(VARIABLES_KEY, JSON.stringify({
+                            "category": "P", // InsultCategory.category_key (e.g. "P" = Poor)
+                            "referenceId": "1", // insultById — integer primary key
+                            "status": "A", // insultsByStatus — A | X | P | R | F
+                            "nsfw": false, // insultsByClassification — true | false
+                            "offset": 0, // all paginated queries — records to skip
+                            "limit": 10 // all paginated queries — max records to return
+                       }, null, 2));
+                  }
+
+                  // ── 3. Default welcome query ───────────────────────────────────────────
+                  var hasHashQuery = location.hash && location.hash.indexOf('query=') !== -1;
+                  if (!hasHashQuery) {
+                       var welcomeQuery = [
+                            '# Welcome to The Dozens GraphQL Playground',
+                            '# ─────────────────────────────────────────',
+                            '# Use the Explorer panel on the left to browse every available',
+                            '# field. The Variables panel below is pre-loaded with example',
+                            '# values — pick the subset that matches your query.',
+                            '#',
+                            '# Replace the Authorization header value with your real API token.',
+                            '',
+                            '# ── Random insult (no variables required) ──────────────────────',
+                            'query RandomInsult {',
+                            '  randomInsult {',
+                            '    referenceId',
+                            '    content',
+                            '    nsfw',
+                            '    isActive',
+                            '  }',
+                            '}',
+                            '',
+                            '# ── Lookup by reference ID ──────────────────────────────────────',
+                            '# query InsultById($referenceId: ID!) {',
+                            '#   insultById(referenceId: $referenceId) {',
+                            '#     referenceId content status isActive',
+                            '#   }',
+                            '# }',
+                            '',
+                            '# ── Paginated list by category ──────────────────────────────────',
+                            '# query ByCategory($category: String!, $offset: Int, $limit: Int) {',
+                            '#   insultsByCategory(category: $category, offset: $offset, limit: $limit) {',
+                            '#     totalCount',
+                            '#     items { insultId content nsfw }',
+                            '#   }',
+                            '# }',
+                            '',
+                            '# ── Paginated list by status ─────────────────────────────────────',
+                            '# query ByStatus($status: String!, $offset: Int, $limit: Int) {',
+                            '#   insultsByStatus(status: $status, offset: $offset, limit: $limit) {',
+                            '#     totalCount',
+                            '#     items { insultId content status }',
+                            '#   }',
+                            '# }',
+                            '',
+                            '# ── Paginated list by NSFW classification ────────────────────────',
+                            '# query ByClassification($nsfw: Boolean!, $offset: Int, $limit: Int) {',
+                            '#   insultsByClassification(nsfw: $nsfw, offset: $offset, limit: $limit) {',
+                            '#     totalCount',
+                            '#     items { insultId content nsfw }',
+                            '#   }',
+                            '# }',
+                       ].join('\n');
+
+                       location.hash = '#query=' + encodeURIComponent(welcomeQuery);
+                  }
+             })();
+        </script>
+        <!-- Upstream CDN dependencies (unchanged) -->
+        <script src="https://cdn.jsdelivr.net/npm/whatwg-fetch@{{whatwg_fetch_version}}/dist/fetch.umd.js"
+                integrity="{{whatwg_fetch_sri}}"
+                crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/react@{{react_version}}/umd/react.production.min.js"
+                integrity="{{react_sri}}"
+                crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/react-dom@{{react_version}}/umd/react-dom.production.min.js"
+                integrity="{{react_dom_sri}}"
+                crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/graphiql@{{graphiql_version}}/graphiql.min.js"
+                integrity="{{graphiql_sri}}"
+                crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/graphql-ws@{{subscriptions_transport_ws_version}}/umd/graphql-ws.min.js"
+                integrity="{{subscriptions_transport_ws_sri}}"
+                crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@graphiql/plugin-explorer@{{graphiql_plugin_explorer_version}}/dist/graphiql-plugin-explorer.umd.js"
+                integrity="{{graphiql_plugin_explorer_sri}}"
+                crossorigin="anonymous"></script>
+        <!-- GraphiQL bootstrap — fixed to use GRAPHENE_SETTINGS.graphqlEndpoint
+             instead of the upstream graphiql.js which derives the fetch URL from
+             the URL hash ("#"), causing requests to go to the playground URL
+             itself rather than the dedicated API endpoint at /graphql/. -->
+        <script type="application/javascript">
+             (function(
+                  document,
+                  GRAPHENE_SETTINGS,
+                  GraphiQL,
+                  React,
+                  ReactDOM,
+                  graphqlWs,
+                  GraphiQLPluginExplorer,
+                  fetch,
+                  history,
+                  location,
+             ) {
+                  var parameters = {};
+                  location.hash
+                       .substr(1)
+                       .split("&")
+                       .forEach(function(entry) {
+                            var eq = entry.indexOf("=");
+                            if (eq >= 0) {
+                                 parameters[decodeURIComponent(entry.slice(0, eq))] = decodeURIComponent(
+                                      entry.slice(eq + 1),
+                                 );
+                            }
+                       });
+
+                  function locationQuery(params) {
+                       return (
+                            "#" +
+                            Object.keys(params)
+                            .map(function(key) {
+                                 return encodeURIComponent(key) + "=" + encodeURIComponent(params[key]);
+                            })
+                            .join("&")
+                       );
+                  }
+
+                  // Send all GraphQL requests to the configured API endpoint, not the
+                  // playground URL itself (which is what the upstream graphiql.js does
+                  // by using "#" as the fetch URL).
+                  var fetchURL = GRAPHENE_SETTINGS.graphqlEndpoint;
+
+                  var subscribeURL =
+                       location.origin.replace(/^http/, "ws") +
+                       (GRAPHENE_SETTINGS.subscriptionPath || location.pathname);
+
+                  function trueLambda() {
+                       return true;
+                  }
+
+                  var headers = {};
+                  var cookies = ("; " + document.cookie).split("; csrftoken=");
+                  if (cookies.length == 2) {
+                       csrftoken = cookies.pop().split(";").shift();
+                  } else {
+                       var csrfInput = document.querySelector("[name=csrfmiddlewaretoken]");
+                       csrftoken = csrfInput ? csrfInput.value : null;
+                  }
+                  if (csrftoken) {
+                       headers['X-CSRFToken'] = csrftoken;
+                  }
+
+                  var graphQLFetcher = GraphiQL.createFetcher({
+                       url: fetchURL,
+                       wsClient: graphqlWs.createClient({
+                            url: subscribeURL,
+                            shouldRetry: trueLambda,
+                            lazy: true,
+                       }),
+                       headers: headers
+                  });
+
+                  function onEditQuery(newQuery) {
+                       parameters.query = newQuery;
+                       updateURL();
+                  }
+
+                  function onEditVariables(newVariables) {
+                       parameters.variables = newVariables;
+                       updateURL();
+                  }
+
+                  function onEditOperationName(newOperationName) {
+                       parameters.operationName = newOperationName;
+                       updateURL();
+                  }
+
+                  function updateURL() {
+                       history.replaceState(null, null, locationQuery(parameters));
+                  }
+
+                  function GraphiQLWithExplorer() {
+                       var [query, setQuery] = React.useState(parameters.query);
+
+                       function handleQuery(query) {
+                            setQuery(query);
+                            onEditQuery(query);
+                       }
+
+                       var explorerPlugin = GraphiQLPluginExplorer.useExplorerPlugin({
+                            query: query,
+                            onEdit: handleQuery,
+                       });
+
+                       var options = {
+                            fetcher: graphQLFetcher,
+                            plugins: [explorerPlugin],
+                            defaultEditorToolsVisibility: true,
+                            onEditQuery: handleQuery,
+                            onEditVariables: onEditVariables,
+                            onEditOperationName: onEditOperationName,
+                            isHeadersEditorEnabled: GRAPHENE_SETTINGS.graphiqlHeaderEditorEnabled,
+                            shouldPersistHeaders: GRAPHENE_SETTINGS.graphiqlShouldPersistHeaders,
+                            inputValueDeprecation: GRAPHENE_SETTINGS.graphiqlInputValueDeprecation,
+                            query: query,
+                       };
+                       if (parameters.variables) {
+                            options.variables = parameters.variables;
+                       }
+                       if (parameters.operationName) {
+                            options.operationName = parameters.operationName;
+                       }
+
+                       return React.createElement(GraphiQL, options);
+                  }
+
+                  ReactDOM.render(
+                       React.createElement(GraphiQLWithExplorer),
+                       document.getElementById("editor"),
+                  );
+             })(
+                  document,
+                  window.GRAPHENE_SETTINGS,
+                  window.GraphiQL,
+                  window.React,
+                  window.ReactDOM,
+                  window.graphqlWs,
+                  window.GraphiQLPluginExplorer,
+                  window.fetch,
+                  window.history,
+                  window.location,
+             );
+        </script>
+    </body>
+</html>

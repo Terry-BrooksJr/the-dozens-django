@@ -7,6 +7,7 @@ and bulk operations with built-in caching capabilities for improved performance.
 Includes base classes with common functionality and specialized serializers
 for different use cases.
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -14,22 +15,24 @@ from datetime import datetime
 from functools import lru_cache
 from typing import Any, ClassVar, Dict, Optional
 
-from django.core.cache import cache
+import arrow
 from django.conf import settings
+from django.core.cache import cache
 from django.utils.text import capfirst
+from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import (
     OpenApiExample,
     extend_schema_field,
     extend_schema_serializer,
 )
 from humanize import naturaltime
-from django.utils.translation import gettext_lazy as _
 from loguru import logger
 from rest_framework import serializers, status
 from rest_framework.response import Response
-import arrow
-from applications.API.models import Insult, InsultCategory,InsultReview
+
+from applications.API.models import Insult, InsultCategory, InsultReview
 from common.cache_managers import CategoryCacheManager, create_category_manager
+
 
 class BulkSerializationMixin:
     """Mixin for handling bulk serialization operations.
@@ -295,7 +298,9 @@ class BaseInsultSerializer(CachedBulkSerializer):
             # If a model instance or other type is passed in by mistake, fail fast here
             raise serializers.ValidationError("Category name must be a string.")
 
-        if category_key := type(self).cacher.get_category_key_by_name(normalized_name.title()):
+        if category_key := type(self).cacher.get_category_key_by_name(
+            normalized_name.title()
+        ):
             return {"category_key": category_key, "category_name": normalized_name}
 
         # Fallback to database
@@ -372,7 +377,9 @@ class BaseInsultSerializer(CachedBulkSerializer):
                 "category_key": category.category_key,
                 "category_name": category.name,
             }
-            logger.debug(f"Serializer Resolved {value} to {validated} (case-insensitive key)")
+            logger.debug(
+                f"Serializer Resolved {value} to {validated} (case-insensitive key)"
+            )
             return validated
         # Try case-insensitive name lookup via database
         with contextlib.suppress(InsultCategory.DoesNotExist):
@@ -381,7 +388,9 @@ class BaseInsultSerializer(CachedBulkSerializer):
                 "category_key": category.category_key,
                 "category_name": category.name,
             }
-            logger.debug(f"Serializer Resolved {value} to {validated} (case-insensitive name)")
+            logger.debug(
+                f"Serializer Resolved {value} to {validated} (case-insensitive name)"
+            )
             return validated
         # If all lookups fail, raise validation error
         raise serializers.ValidationError(
@@ -400,12 +409,12 @@ class BaseInsultSerializer(CachedBulkSerializer):
         Returns:
             str: The formatted category name.
         """
-        if category_name := type(self).cacher.get_category_name_by_key(
-            category_key
-        ):
+        if category_name := type(self).cacher.get_category_name_by_key(category_key):
             return BaseInsultSerializer.format_category(category_name)
         else:
-            raise serializers.ValidationError(f"Category key '{category_key}' not found.")
+            raise serializers.ValidationError(
+                f"Category key '{category_key}' not found."
+            )
 
     @staticmethod
     @lru_cache(maxsize=128)
@@ -429,7 +438,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         """Return a formatted display string for the 'added_on' datetime of an object.
 
         This method retrieves a cached, human-readable representation of the object's 'added_on' field.
-        
+
         Args:
             obj: The object containing the 'added_on' attribute.
 
@@ -462,7 +471,15 @@ class BaseInsultSerializer(CachedBulkSerializer):
             raw_category = data["category_name"]
 
         if raw_category is not None and isinstance(raw_category, str):
-            resolved = type(self).resolve_category(raw_category)
+            try:
+                resolved = type(self).resolve_category(raw_category)
+            except serializers.ValidationError as exc:
+                # Re-raise under the "category" key so DRF stores it as a
+                # field-level error dict rather than a bare list.  A bare list
+                # in self._errors causes ReturnDict (which calls dict()) to
+                # crash with "dictionary update sequence element #0 has length
+                # N; 2 is required".
+                raise serializers.ValidationError({"category": exc.detail})
             # Store the resolved key string — not a model instance — so that
             # DRF field-level validation (CharField / SlugRelatedField) receives
             # a type it can process. The model lookup happens later in
@@ -515,12 +532,11 @@ class MyInsultSerializer(BaseInsultSerializer):
     """
 
     status = serializers.CharField(source="get_status_display", read_only=True)
-    added_by = serializers.SerializerMethodField()
 
     class Meta:
         model = Insult
         fields = ["reference_id", "category", "content", "status", "reports_count"]
-        read_only_fields = ["reference_id", "status", "added_by", "reports_count"]
+        read_only_fields = ["reference_id", "status", "reports_count"]
 
 
 @extend_schema_serializer(
@@ -613,7 +629,7 @@ class BulkInsultSerializer(serializers.ListSerializer):
                 "nsfw": False,
             },
             request_only=True,
-        )
+        ),
     ]
 )
 class OptimizedInsultSerializer(BaseInsultSerializer):
@@ -694,15 +710,14 @@ class CreateInsultSerializer(BaseInsultSerializer):
         try:
             return InsultCategory.objects.get(category_key=resolved["category_key"])
         except InsultCategory.DoesNotExist:
-            raise serializers.ValidationError(
-                f"Category '{value}' not found."
-            )
+            raise serializers.ValidationError(f"Category '{value}' not found.")
 
     def create(self, validated_data):
         """Create an Insult, deriving the theme from the resolved category."""
         category = validated_data["category"]
         validated_data["theme"] = category.theme
         return super().create(validated_data)
+
 
 @extend_schema_serializer(
     examples=[
@@ -788,13 +803,11 @@ class InsultReviewSerializer(serializers.ModelSerializer):
     insult_reference_id = serializers.CharField(
         help_text="Reference ID of the insult being reviewed.",
         required=True,
-
     )
 
     anonymous = serializers.BooleanField(
         required=False,
         help_text="Check if you want to remain anonymous",
-
     )
 
     review_type = serializers.ChoiceField(
@@ -807,10 +820,11 @@ class InsultReviewSerializer(serializers.ModelSerializer):
         required=True,
         min_length=70,
     )
-    
+
     class Meta:
         model = InsultReview
-        exclude =["date_submitted", "status", "insult","reviewer" ]
+        exclude = ["date_submitted", "date_reviewed", "status", "insult", "reviewer"]
+
     def validate(self, attrs: Dict[str, Any]) -> Dict[str, Any]:
         """
         Custom validation with improved error handling.

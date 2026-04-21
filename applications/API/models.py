@@ -16,6 +16,7 @@ from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.mail import mail_admins
 from django.db import IntegrityError, models
 from django.db.models import F
 from django.db.models.signals import post_delete, post_save
@@ -229,6 +230,9 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         This method creates a unique reference ID using a random prefix and a base64-encoded insult_id pk.
         Since the insult_id is unique, the reference ID will be unique by design.
 
+        After stamping the ID, notifies admins by email when the insult is in
+        PENDING status so they can review it promptly.
+
         Returns:
             str: The generated reference ID
         """
@@ -239,7 +243,53 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             self.reference_id = f"{prefix}_{encode_base64(int(self.insult_id))}"
             # Only update the reference_id field
             self.save(update_fields=["reference_id"])
+            if self.status == Insult.STATUS.PENDING:
+                self._notify_admins_pending()
             return self.reference_id
+
+    def _notify_admins_pending(self):
+        """
+        Emails settings.ADMINS that this new insult requires approval.
+
+        Called exclusively from set_reference_id() so self.reference_id is
+        always populated before the email is composed.
+
+        Logs:
+            Info:  Confirmation that the notification was dispatched.
+            Error: Any exception raised during send, without re-raising so that
+                   a mail failure never breaks the insult-creation flow.
+        """
+        try:
+            submitter = self.added_by
+            submitter_name = submitter.get_full_name() or submitter.username
+
+            subject = f"New Insult Pending Approval [{self.reference_id}]"
+            message = (
+                f"A new insult has been submitted and is awaiting your approval.\n\n"
+                f"Details\n"
+                f"-------\n"
+                f"Reference ID : {self.reference_id}\n"
+                f"Submitted By : {submitter_name} (@{submitter.username})\n"
+                f"Category     : {self.category}\n"
+                f"NSFW         : {'Yes' if self.nsfw else 'No'}\n"
+                f"Submitted On : {self.added_on}\n\n"
+                f"Content\n"
+                f"-------\n"
+                f"{self.content}\n\n"
+                f"Admin Review\n"
+                f"------------\n"
+                f"/admin/API/insult/{self.insult_id}/change/\n"
+            )
+
+            mail_admins(subject, message, fail_silently=False)
+            logger.info(
+                f"Admin notification sent for pending insult {self.reference_id}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to send admin notification for pending insult "
+                f"{self.reference_id!r}: {e}"
+            )
 
     def __str__(self) -> str:
         return f"{self.reference_id} - ({self.category}) - NSFW: {self.nsfw}"
@@ -477,11 +527,40 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
     """
 
     class REVIEW_TYPE(models.TextChoices):
+        """
+        Enumeration of possible review types for an InsultReview.
+
+        This class defines the high-level intent behind a submitted review, such as reclassification, recategorization, or different removal reasons.
+
+        Types:
+            RECLASSIFY: Request to change the NSFW/classification of the joke.
+            RECATEGORIZE: Request to move the joke to a different category.
+            REMOVAL: Request to remove the joke due to quality concerns.
+            DUPLICATE: Request to remove the joke because it duplicates an existing one.
+            MALICIOUS: Request to remove the joke because it is harmful or malicious.
+        """
+
         RECLASSIFY = "RE", _("Joke Reclassification")
         RECATEGORIZE = "RC", _("Joke Recategorization")
-        REMOVAL = "RX", _("Joke Removal")
+        REMOVAL = "RX-Q", _("Joke Removal - Quality Issue")
+        DUPLICATE = "RX-D", _("Joke Removal - Duplicate")
+        MALICIOUS = "RX-M", _("Joke Removal - Malicious")
 
     class STATUS(models.TextChoices):
+        """
+        Enumeration of possible processing outcomes for an InsultReview.
+
+        This class captures the review lifecycle, indicating whether a joke remains unchanged, is reclassified, recategorized, or removed after review.
+
+        Statuses:
+            PENDING: The review has been submitted but not yet processed.
+            NEW_CLASSIFICATION: The review resulted in a new explicit NSFW classification setting.
+            SAME_CLASSIFICATION: The review resulted in no change to the existing NSFW classification.
+            NEW_CATEGORY: The review resulted in assignment to a new joke category.
+            SAME_CATEGORY: The review resulted in no change to the existing joke category.
+            REMOVED: The review resulted in the joke being removed from circulation.
+        """
+
         PENDING = "P", _("Pending")
         NEW_CLASSIFICATION = "NCE", _("Completed - New Explicitly Setting")
         SAME_CLASSIFICATION = "SCE", _("Completed - No New Explicitly Setting")
@@ -505,7 +584,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         User, on_delete=models.DO_NOTHING, null=True, blank=True
     )
     review_type = models.CharField(
-        max_length=2, choices=REVIEW_TYPE.choices, null=False, blank=False
+        max_length=4, choices=REVIEW_TYPE.choices, null=False, blank=False
     )
     status = models.CharField(
         max_length=3,  # Add max_length based on your choices

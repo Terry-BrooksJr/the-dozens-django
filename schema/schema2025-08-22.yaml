@@ -7,6 +7,11 @@ info:
     name: Terry A. Brooks, Jr.
     url: https://brooksjr.com
     email: terry@brooksjr.com
+tags:
+- name: Insults
+  description: Retrieve, create, update, and delete joke/insult content. Supports filtering by category and NSFW status.
+- name: auth
+  description: User authentication, registration, password reset, and account management.
 paths:
   /api/insult:
     get:
@@ -392,7 +397,7 @@ paths:
           description: Successful response returning insults for the requested category.
         '404':
           description: No insults found for the given category.
-  /auth/token/login/:
+  /auth/token/login:
     post:
       operationId: auth_token_login_create
       description: Use this endpoint to obtain user authentication token.
@@ -413,7 +418,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenCreate'
           description: ''
-  /auth/token/logout/:
+  /auth/token/logout:
     post:
       operationId: auth_token_destroy
       description: Use this endpoint to logout user (remove user authentication token).
@@ -424,7 +429,7 @@ paths:
       responses:
         '200':
           description: Token deleted
-  /auth/users/:
+  /auth/users:
     get:
       operationId: auth_users_list
       parameters:
@@ -465,7 +470,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserCreate'
           description: ''
-  /auth/users/{id}/:
+  /auth/users/{id}:
     get:
       operationId: auth_users_retrieve
       parameters:
@@ -552,7 +557,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /auth/users/activation/:
+  /auth/users/activation:
     post:
       operationId: auth_users_activation_create
       tags:
@@ -573,7 +578,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Activation'
           description: ''
-  /auth/users/me/:
+  /auth/users/me:
     get:
       operationId: auth_users_me_retrieve
       tags:
@@ -632,7 +637,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /auth/users/resend_activation/:
+  /auth/users/resend_activation:
     post:
       operationId: auth_users_resend_activation_create
       tags:
@@ -653,7 +658,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SendEmailReset'
           description: ''
-  /auth/users/reset_password/:
+  /auth/users/reset_password:
     post:
       operationId: auth_users_reset_password_create
       tags:
@@ -674,7 +679,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SendEmailReset'
           description: ''
-  /auth/users/reset_password_confirm/:
+  /auth/users/reset_password_confirm:
     post:
       operationId: auth_users_reset_password_confirm_create
       tags:
@@ -695,7 +700,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PasswordResetConfirm'
           description: ''
-  /auth/users/reset_username/:
+  /auth/users/reset_username:
     post:
       operationId: auth_users_reset_username_create
       tags:
@@ -716,7 +721,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SendEmailReset'
           description: ''
-  /auth/users/reset_username_confirm/:
+  /auth/users/reset_username_confirm:
     post:
       operationId: auth_users_reset_username_confirm_create
       tags:
@@ -737,7 +742,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UsernameResetConfirm'
           description: ''
-  /auth/users/set_password/:
+  /auth/users/set_password:
     post:
       operationId: auth_users_set_password_create
       tags:
@@ -757,7 +762,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SetPassword'
           description: ''
-  /auth/users/set_username/:
+  /auth/users/set_username:
     post:
       operationId: auth_users_set_username_create
       tags:

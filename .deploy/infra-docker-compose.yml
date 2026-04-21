@@ -1,0 +1,173 @@
+---
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.metrics.address=:5552
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.le.acme.email=${LETSENCRYPT_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --api=true
+      - --api.dashboard=true
+      - --log.level=INFO
+      - --accesslog=true
+      - --metrics.prometheus=true
+      - --metrics.prometheus.entrypoint=metrics
+      - --metrics.prometheus.addrouterslabels=true
+      - --metrics.prometheus.addserviceslabels=true
+      - --metrics.prometheus.addentrypointslabels=true
+      - --tracing=true
+      - --tracing.otlp=true
+      - --tracing.otlp.grpc=true
+      - --tracing.otlp.grpc.endpoint=otel-collector:4317
+      - --tracing.serviceName=traefik
+    ports:
+      - 80:80
+      - 443:443
+      - 5552:5552
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik-dashboard.rule=Host(`traefik.blackberry-py.dev`)
+        && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
+      - traefik.http.routers.traefik-dashboard.entrypoints=websecure
+      - traefik.http.routers.traefik-dashboard.tls=true
+      - traefik.http.routers.traefik-dashboard.tls.certresolver=le
+      - traefik.http.routers.traefik-dashboard.service=api@internal
+      - traefik.http.middlewares.traefik-auth.basicauth.users=${DASHBOARD_HASH}
+      - traefik.http.routers.traefik-dashboard.middlewares=traefik-auth
+    networks:
+      - edge
+    restart: unless-stopped
+  api:
+    build:
+      context: ./the-dozens-django
+      dockerfile: .deploy/Dockerfile
+    env_file:
+      - ./env/api.env
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.yomomma-api.rule=Host(`api.yo-momma.io`) ||
+        Host(`api.yo-momma.net`) || Host(`api.yo-momma.xyz`)
+      - traefik.http.routers.yomomma-api.entrypoints=websecure
+      - traefik.http.routers.yomomma-api.tls=true
+      - traefik.http.routers.yomomma-api.tls.certresolver=le
+      - traefik.http.services.yomomma-api.loadbalancer.server.port=9090
+    networks:
+      - edge
+    restart: unless-stopped
+  frontend:
+    build:
+      context: ./the-dozens-frontend
+      dockerfile: Dockerfile
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.yomomma-frontend.rule=Host(`yo-momma.io`) ||
+        Host(`www.yo-momma.io`) || Host(`yo-momma.net`) ||
+        Host(`www.yo-momma.net`) || Host(`yo-momma.xyz`) ||
+        Host(`www.yo-momma.xyz`)
+      - traefik.http.routers.yomomma-frontend.entrypoints=websecure
+      - traefik.http.routers.yomomma-frontend.tls=true
+      - traefik.http.routers.yomomma-frontend.tls.certresolver=le
+      - traefik.http.services.yomomma-frontend.loadbalancer.server.port=80
+    networks:
+      - edge
+    restart: unless-stopped
+  marble-hill:
+    build:
+      context: ./marble-hill
+      dockerfile: Dockerfile
+    env_file:
+      - ./env/marble-hill.env
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.marble-hill.rule=Host(`app.marble-hill.xyz`)
+      - traefik.http.routers.marble-hill.entrypoints=websecure
+      - traefik.http.routers.marble-hill.tls=true
+      - traefik.http.routers.marble-hill.tls.certresolver=le
+      - traefik.http.services.marble-hill.loadbalancer.server.port=8000
+    networks:
+      - edge
+    restart: unless-stopped
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma-dozens
+    restart: unless-stopped
+    volumes:
+      - ./uptime-kuma:/app/data
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - edge
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.kuma.rule=Host(`kuma.yo-momma.io`)
+      - traefik.http.routers.kuma.entrypoints=websecure
+      - traefik.http.routers.kuma.tls=true
+      - traefik.http.routers.kuma.tls.certresolver=le
+      - traefik.http.services.kuma.loadbalancer.server.port=3001
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.listen-address=0.0.0.0:9090
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.prometheus.rule=Host(`monitoring.yo-momma.io`)
+      - traefik.http.routers.prometheus.entrypoints=websecure
+      - traefik.http.routers.prometheus.tls=true
+      - traefik.http.routers.prometheus.tls.certresolver=le
+      - traefik.http.services.prometheus.loadbalancer.server.port=9090
+    volumes:
+      - ~/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ~/monitoring/prometheus/data:/prometheus
+    networks:
+      edge:
+        ipv4_address: 172.19.0.10   # fixed — never drifts
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --spider
+        - -q
+        - http://localhost:9090/-/healthy
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
+    env_file:
+      - ./env/api.env
+    command:
+      - --web.listen-address=:9187
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks:
+      - edge
+    restart: unless-stopped
+networks:
+  edge:
+    external: false
+    name: yomomma_edgee
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.19.0.0/24
+          gateway: 172.19.0.1

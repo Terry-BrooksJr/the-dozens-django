@@ -1,0 +1,221 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Yo' Momma API — System Status</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Real-time service health status for the Yo Mama Jokes API">
+        <link rel="icon" type="image/x-icon" href="{% static 'assets/favicon.ico' %}">
+        <link rel="preconnect" href="https://cdn.jsdelivr.net">
+        <link rel="preload"
+              href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2"
+              as="font" type="font/woff2" crossorigin>
+        <link rel="preload"
+              href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2"
+              as="font" type="font/woff2" crossorigin>
+        <link rel="stylesheet" href="{% static 'css/status.css' %}">
+    </head>
+    <body>
+
+        <header class="status-header">
+            <h1>Yo' Momma — System Status</h1>
+            <p>Live health of all API components. Auto-refreshes every 60 seconds.</p>
+        </header>
+
+        <main class="status-container">
+
+            <!-- Overall banner -->
+            <div id="overall-banner" class="overall-banner status--loading" aria-live="polite">
+                <div class="overall-icon" id="overall-icon">⏳</div>
+                <div class="overall-text">
+                    <p class="label" id="overall-label">Checking…</p>
+                    <p class="sub"  id="overall-sub">Fetching component health, hang tight.</p>
+                </div>
+            </div>
+
+            <!-- Timestamp + refresh button -->
+            <div class="meta-row">
+                <span class="timestamp" id="timestamp">Last checked: —</span>
+                <button class="refresh-btn" id="refresh-btn" aria-label="Refresh status">
+                    <svg class="refresh-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"/>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+
+            <!-- Component rows -->
+            <section class="components-section" aria-label="Component status">
+                <span class="components-heading">Components</span>
+                <div class="components-list" id="components-list">
+
+                    <!-- Skeleton placeholders while loading -->
+                    <div class="component-card status--loading">
+                        <div class="component-icon">🗄️</div>
+                        <div class="component-info">
+                            <p class="component-name">Database</p>
+                            <p class="component-desc">PostgreSQL — primary data store</p>
+                        </div>
+                        <span class="status-pill skeleton skeleton-text"></span>
+                    </div>
+
+                    <div class="component-card status--loading">
+                        <div class="component-icon">⚡</div>
+                        <div class="component-info">
+                            <p class="component-name">GraphQL</p>
+                            <p class="component-desc">graphene-django schema layer</p>
+                        </div>
+                        <span class="status-pill skeleton skeleton-text"></span>
+                    </div>
+
+                    <div class="component-card status--loading">
+                        <div class="component-icon">🚩</div>
+                        <div class="component-info">
+                            <p class="component-name">LaunchDarkly</p>
+                            <p class="component-desc">Feature-flag streaming client</p>
+                        </div>
+                        <span class="status-pill skeleton skeleton-text"></span>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="status-footer">
+            <a href="/">← Back to Docs</a> &nbsp;·&nbsp; Yo' Momma API
+        </footer>
+
+        <script>
+            /* ------------------------------------------------------------------ *
+             *  Status Page — client-side health poller
+             *  Polls /api/health/ and renders component cards.
+             * ------------------------------------------------------------------ */
+
+            const HEALTH_URL = '/api/health/';
+            const REFRESH_INTERVAL_MS = 60_000;
+
+            const COMPONENT_META = {
+                database:     { icon: '🗄️', name: 'Database',     desc: 'PostgreSQL — primary data store' },
+                graphql:      { icon: '⚡', name: 'GraphQL',      desc: 'graphene-django schema layer' },
+                launchdarkly: { icon: '🚩', name: 'LaunchDarkly', desc: 'Feature-flag streaming client' },
+            };
+
+            // Maps raw API values → display helpers
+            const STATUS_MAP = {
+                ok:              { cssClass: 'ok',       pillClass: 'ok',       label: 'Operational' },
+                unavailable:     { cssClass: 'degraded', pillClass: 'degraded', label: 'Unavailable' },
+                error:           { cssClass: 'degraded', pillClass: 'degraded', label: 'Error' },
+                not_initialized: { cssClass: 'unknown',  pillClass: 'unknown',  label: 'Not Initialized' },
+                disabled:        { cssClass: 'disabled', pillClass: 'disabled', label: 'Disabled' },
+            };
+
+            function mapStatus(raw) {
+                return STATUS_MAP[raw] ?? { cssClass: 'unknown', pillClass: 'unknown', label: raw ?? 'Unknown' };
+            }
+
+            function formatTimestamp(isoString) {
+                try {
+                    return new Intl.DateTimeFormat(undefined, {
+                        dateStyle: 'medium', timeStyle: 'short'
+                    }).format(new Date(isoString));
+                } catch {
+                    return isoString;
+                }
+            }
+
+            function renderBanner(overallStatus) {
+                const banner = document.getElementById('overall-banner');
+                const icon   = document.getElementById('overall-icon');
+                const label  = document.getElementById('overall-label');
+                const sub    = document.getElementById('overall-sub');
+
+                banner.className = 'overall-banner';
+
+                if (overallStatus === 'ok') {
+                    banner.classList.add('status--ok');
+                    icon.textContent  = '✅';
+                    label.textContent = 'All Systems Operational';
+                    sub.textContent   = 'Every component is healthy and responding normally.';
+                } else {
+                    banner.classList.add('status--degraded');
+                    icon.textContent  = '⚠️';
+                    label.textContent = 'Partial Outage Detected';
+                    sub.textContent   = 'One or more components are reporting issues. See details below.';
+                }
+            }
+
+            function renderComponents(data) {
+                const list = document.getElementById('components-list');
+                const keys = Object.keys(COMPONENT_META);
+
+                list.innerHTML = keys.map(key => {
+                    const meta   = COMPONENT_META[key];
+                    const raw    = data[key] ?? 'unknown';
+                    const status = mapStatus(raw);
+
+                    return `
+                        <div class="component-card status--${status.cssClass}">
+                            <div class="component-icon">${meta.icon}</div>
+                            <div class="component-info">
+                                <p class="component-name">${meta.name}</p>
+                                <p class="component-desc">${meta.desc}</p>
+                            </div>
+                            <span class="status-pill status-pill--${status.pillClass}">
+                                ${status.label}
+                            </span>
+                        </div>`;
+                }).join('');
+            }
+
+            function renderError() {
+                const banner = document.getElementById('overall-banner');
+                const icon   = document.getElementById('overall-icon');
+                const label  = document.getElementById('overall-label');
+                const sub    = document.getElementById('overall-sub');
+
+                banner.className = 'overall-banner status--degraded';
+                icon.textContent  = '🔌';
+                label.textContent = 'Status Unavailable';
+                sub.textContent   = 'Could not reach the health endpoint. The API may be down.';
+
+                document.getElementById('components-list').innerHTML = '';
+            }
+
+            async function fetchHealth() {
+                const btn = document.getElementById('refresh-btn');
+                btn.classList.add('spinning');
+                btn.disabled = true;
+
+                try {
+                    const res  = await fetch(HEALTH_URL, { cache: 'no-store' });
+                    const data = await res.json();
+
+                    renderBanner(data.status);
+                    renderComponents(data);
+
+                    const tsEl = document.getElementById('timestamp');
+                    tsEl.textContent = `Last checked: ${formatTimestamp(data.timestamp)}`;
+                } catch {
+                    renderError();
+                    document.getElementById('timestamp').textContent = 'Last checked: failed';
+                } finally {
+                    btn.classList.remove('spinning');
+                    btn.disabled = false;
+                }
+            }
+
+            // Wire up manual refresh button
+            document.getElementById('refresh-btn').addEventListener('click', fetchHealth);
+
+            // Initial fetch + auto-poll
+            fetchHealth();
+            setInterval(fetchHealth, REFRESH_INTERVAL_MS);
+        </script>
+
+    </body>
+</html>
