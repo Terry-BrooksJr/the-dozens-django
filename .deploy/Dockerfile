@@ -50,9 +50,9 @@ RUN mkdir -p /src/logs && chown api:api /src/logs
 
 USER api
 
-EXPOSE 9090
+EXPOSE 9555
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD curl -f http://localhost:9090/api/health/ || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:9555/api/health/ || exit 1
 
 CMD ["gunicorn", "-c", ".deploy/gunicorn.conf.py", "core.wsgi:application"]
