@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 module: core.settings
 
@@ -510,9 +511,14 @@ class Base(Configuration):
     # SECTION Start - REST API.SWAGGER DOCUMENTATION SETTINGS
     SPECTACULAR_SETTINGS = {
         "TITLE": "Yo' Momma - The Joke API",
-        "VERSION": "1.0.0",
+        "VERSION": os.getenv("API_VERSION", "1.0.0"),
         "SERVE_INCLUDE_SCHEMA": True,
         "OAS_VERSION": "3.0.3",
+        # Cache the generated schema for 15 minutes — generation is expensive
+        # (introspects every view/serializer on the fly) and the output is
+        # deterministic until a deploy.  Without this, every ReDoc/Swagger page
+        # load triggers a multi-second schema build before the UI can render.
+        "SCHEMA_CACHE_TIMEOUT": 60 * 15,
         "COMPONENT_SPLIT_REQUEST": True,
         "SECURITY": [{"TokenAuth": []}],
         "AUTHENTICATION_WHITELIST": [],
@@ -708,6 +714,7 @@ class Base(Configuration):
             "syntaxHighlight.theme": "arta",
         },
         "SWAGGER_UI_DIST": "SIDECAR",
+        "REDOC_DIST": "SIDECAR",
         "CONTACT": {
             "name": "Terry A. Brooks, Jr.",
             "url": "https://brooksjr.com",
@@ -763,15 +770,16 @@ class Base(Configuration):
                 "LOCATION": os.environ["REDIS_CACHE_TOKEN"],
                 "OPTIONS": {
                     "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                    "SOCKET_CONNECT_TIMEOUT": 0.5,
-                    "SOCKET_TIMEOUT": 0.5,
-                    "RETRY_ON_TIMEOUT": False,
-                    "PARSER_CLASS": "redis.connection._HiredisParser",
-                    "CONNECTION_POOL_KWARGS": {"max_connections": 10},
-                },
-                "TIMEOUT": 300,
-            },
-        }
+                    "CONNECTION_POOL_KWARGS": {
+                        "max_connections": 100,
+                        "retry_on_timeout": True,
+                        },
+                        "SOCKET_CONNECT_TIMEOUT": 2,
+                        "SOCKET_TIMEOUT": 2,
+                         },
+                    "TIMEOUT": 300,
+                 }
+                }
     )
 
     EMAIL_HOST = values.Value(
@@ -791,26 +799,139 @@ class Base(Configuration):
     MAILER_EMPTY_QUEUE_SLEEP = values.IntegerValue(
         environ=True, environ_prefix=None, environ_name="MAILER_EMPTY_QUEUE_SLEEP"
     )
+    JAZZMIN_SETTINGS = {
+        # title of the window (Will default to current_admin_site.site_title if absent or None)
+        "site_title": "Yo Momma Jokes API",
+        # Title on the login screen (19 chars max) (defaults to current_admin_site.site_header if absent or None)
+        "site_header": "Yo Momma Jokes API",
+        # Title on the brand (19 chars max) (defaults to current_admin_site.site_header if absent or None)
+        "site_brand": "Yo Momma Jokes API",
+        # Logo to use for your site, must be present in static files, used for brand on top left
+        "site_logo": "https://dozens.nyc3.cdn.digitaloceanspaces.com/static/assets/yo_momma_brand.png",
+        # Logo to use for your site, must be present in static files, used for login form logo (defaults to site_logo)
+        "login_logo": "https://dozens.nyc3.cdn.digitaloceanspaces.com/static/assets/yo_momma_brand.png",
+        # Logo to use for login form in dark themes (defaults to login_logo)
+        "login_logo_dark": "https://dozens.nyc3.cdn.digitaloceanspaces.com/static/assets/yo_momma_brand.png",
+        # CSS classes that are applied to the logo above
+        "site_logo_classes": "img-circle",
+        # Relative path to a favicon for your site, will default to site_logo if absent (ideally 32x32 px)
+        "site_icon": None,
+        # Welcome text on the login screen
+        "welcome_sign": "Welcome to the Yo Momma Jokes Backend",
+        # Copyright on the footer
+        "copyright": "Blackberry-Py Dev",
+        # List of model admins to search from the search bar, search bar omitted if excluded
+        # If you want to use a single search field you dont need to use a list, you can use a simple string
+        "search_model": ["auth.User", "auth.Group"],
+        # Field name on user model that contains avatar ImageField/URLField/Charfield or a callable that receives the user
+        "user_avatar": None,
+        ############
+        # Top Menu #
+        ############
+        # Links to put along the top menu
+        "topmenu_links": [
+            # Url that gets reversed (Permissions can be added)
+            {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+            # external url that opens in a new window (Permissions can be added)
+            {
+                "name": "Support",
+                "url": "https://github.com/terry-brooksjr/the-dozens-django/issues",
+                "new_window": True,
+            },
+            # model admin to link to (Permissions checked against model)
+            {"model": "auth.User"},
+            # App with dropdown menu to all its models pages (Permissions checked against models)
+            {"name": "Observability", "url": "/admin/observability/"},
+        ],
+        #############
+        # User Menu #
+        #############
+        # Additional links to include in the user menu on the top right ("app" url type is not allowed)
+        "usermenu_links": [
+            {
+                "name": "Support",
+                "url": "https://github.com/terry-brooksjr/the-dozens-django/issues",
+                "new_window": True,
+            },
+            {"model": "auth.user"},
+        ],
+        #############
+        # Side Menu #
+        #############
+        # Whether to display the side menu
+        "show_sidebar": True,
+        # Whether to aut expand the menu
+        "navigation_expanded": True,
+        # Hide these apps when generating side menu e.g (auth)
+        "hide_apps": [],
+        # Hide these models when generating side menu (e.g auth.user)
+        "hide_models": [],
+        # List of apps (and/or models) to base side menu ordering off of (does not need to contain all apps/models)
+        "order_with_respect_to": ["auth", "books", "books.author", "books.book"],
+        # Custom icons for side menu apps/models See https://fontawesome.com/icons?d=gallery&m=free&v=5.0.0,5.0.1,5.0.10,5.0.11,5.0.12,5.0.13,5.0.2,5.0.3,5.0.4,5.0.5,5.0.6,5.0.7,5.0.8,5.0.9,5.1.0,5.1.1,5.2.0,5.3.0,5.3.1,5.4.0,5.4.1,5.4.2,5.13.0,5.12.0,5.11.2,5.11.1,5.10.0,5.9.0,5.8.2,5.8.1,5.7.2,5.7.1,5.7.0,5.6.3,5.5.0,5.4.2
+        # for the full list of 5.13.0 free icon classes
+        "icons": {
+            "auth": "fas fa-users-cog",
+            "auth.user": "fas fa-user",
+            "auth.Group": "fas fa-users",
+            "applications.API.Insult": "fa-regular fa-face-grin-tongue-wink",
+            "applications.API.JokeReview": "fa-regular fa-file-circle-check",
+        },
+        # Icons that are used when one is not manually specified
+        "default_icon_parents": "fas fa-chevron-circle-right",
+        "default_icon_children": "fas fa-circle",
+        #################
+        # Related Modal #
+        #################
+        # Use modals instead of popups
+        "related_modal_active": False,
+        #############
+        # UI Tweaks #
+        #############
+        # Relative paths to custom CSS/JS scripts (must be present in static files)
+        "custom_css": None,
+        "custom_js": None,
+        # Whether to link font from fonts.googleapis.com (use custom_css to supply font otherwise)
+        "use_google_fonts_cdn": True,
+        # Whether to show the UI customizer on the sidebar
+        "show_ui_builder": False,
+        ###############
+        # Change view #
+        ###############
+        # Render out the change view as a single form, or in tabs, current options are
+        # - single
+        # - horizontal_tabs (default)
+        # - vertical_tabs
+        # - collapsible
+        # - carousel
+        "changeform_format": "horizontal_tabs",
+        # override change forms on a per modeladmin basis
+        "changeform_format_overrides": {
+            "auth.user": "collapsible",
+            "auth.group": "vertical_tabs",
+        },
+        # Add a language dropdown into the admin
+        "language_chooser": False,
+    }
 
 
 class Production(Base):
     ALLOWED_HOSTS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_HOSTS"
     )
-    # IPs permitted to scrape /metrics.
-    # Includes the native Prometheus host AND the Docker edge-network gateway
-    # (172.28.0.1) because when Prometheus accesses the published container port
-    # Docker NAT rewrites the source to the bridge gateway, not the real host IP.
-    # Override via PROMETHEUS_ALLOWED_HOSTS in Doppler if either address changes.
-    PROMETHEUS_ALLOWED_HOSTS = values.ListValue(
-        ["165.227.105.209", "172.28.0.1"],
+    # Secret token that Prometheus must send as "Authorization: Bearer <token>"
+    # when scraping /metrics.  Set METRICS_SCRAPE_TOKEN in Doppler.
+    # IP-based allowlists are no longer used — Docker NAT makes them unreliable.
+    METRICS_SCRAPE_TOKEN = values.Value(
+        "",
         environ=True,
         environ_prefix=None,
-        environ_name="PROMETHEUS_ALLOWED_HOSTS",
+        environ_name="METRICS_SCRAPE_TOKEN",
     )
     INSTALLED_APPS = values.ListValue(
         [
             # 0) Instrumentation that wants to wrap others early
+            "jazzmin",
             "django_prometheus",
             # 1) Django built-ins
             "django.contrib.admin",
@@ -867,8 +988,38 @@ class Production(Base):
         environ=False,
     )
     DEBUG = values.BooleanValue(False, environ=False)
+
+    # ------------------------------------------------------------------ #
+    # Reverse-proxy trust (Traefik)                                        #
+    # ------------------------------------------------------------------ #
+    # Traefik terminates TLS and forwards requests as HTTP to gunicorn.
+    # Without these two settings Django reconstructs the wrong scheme:
+    #   browser sends   Origin: https://yo-momma.io
+    #   Django builds   http://yo-momma.io  (is_secure() == False)
+    #   CSRF check      https:// != http://  → 403 on every admin POST
+    #
+    # SECURE_PROXY_SSL_HEADER tells Django to trust the X-Forwarded-Proto
+    # header that Traefik adds, making request.is_secure() correct.
+    # USE_X_FORWARDED_HOST makes request.get_host() use X-Forwarded-Host
+    # so the origin comparison uses the public hostname, not the internal one.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    USE_X_FORWARDED_HOST = True
+
+    # CSRF_TRUSTED_ORIGINS is read from the ALLOWED_ORIGINS Doppler secret.
+    # Must include every public origin that can POST to Django, e.g.:
+    #   ALLOWED_ORIGINS=["https://yo-momma.io","https://www.yo-momma.io"]
+    # Provide a safe non-empty default so startup doesn't silently break when
+    # the env var is absent — admin will still 403 without it, but at least
+    # the error message is clear.
     CSRF_TRUSTED_ORIGINS = values.ListValue(
-        environ=True, environ_prefix=None, environ_name="ALLOWED_ORIGINS"
+        default=[
+            "https://yo-momma.io",
+            "https://www.yo-momma.io",
+            "https://dozens.nyc3.cdn.digitaloceanspaces.com",
+        ],
+        environ=True,
+        environ_prefix=None,
+        environ_name="ALLOWED_ORIGINS",
     )
 
     CORS_ALLOW_ALL_ORIGINS = True
@@ -921,10 +1072,18 @@ class Production(Base):
     # SECTION Start - API Schema / Docs (Production overrides)
     # Use CDN-hosted assets instead of drf-spectacular-sidecar so Swagger UI and
     # ReDoc load without depending on a collectstatic run against DigitalOcean Spaces.
+    #
+    # IMPORTANT — pin to the EXACT version bundled by drf-spectacular-sidecar
+    # (currently 2.5.2).  Using @latest caused a silent hang: in 2026 @latest
+    # resolves to ReDoc 3.x, which dropped the Redoc.init() API that our
+    # custom template uses.  Pinning to 2.x ensures CDN == sidecar == template.
+    #
+    # When upgrading drf-spectacular-sidecar, also bump this pin:
+    #   grep -r "Version:" .venv/lib/*/site-packages/drf_spectacular_sidecar/static/**/redoc/**/*.LICENSE.txt
     SPECTACULAR_SETTINGS = {
         **Base.SPECTACULAR_SETTINGS,
         "SWAGGER_UI_DIST": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5",
-        "REDOC_DIST": "https://cdn.jsdelivr.net/npm/redoc@latest/bundles",
+        "REDOC_DIST": "https://cdn.jsdelivr.net/npm/redoc@2.5.2",
     }
     #!SECTION End - API Schema / Docs (Production overrides)
 
@@ -933,6 +1092,12 @@ class Production(Base):
 
     if Base._logger_configured:
         logger.remove()
+        # Production: stdout only — no file sinks inside the container.
+        # serialize=True emits newline-delimited JSON so Docker/Fluent Bit/Loki
+        # can parse records without regex.
+        logger.add(sys.stdout, **{**Base.DEFAULT_LOGGER_CONFIG, "serialize": True})
+        if os.getenv("LAUNCHDARKLY_OBSERVABILITY_ENABLED", "false").lower() == "true":
+            logger.add(ld_loguru_sink, **Base.DEFAULT_LOGGER_CONFIG)
 
 
 class Offline(Base):
@@ -940,6 +1105,9 @@ class Offline(Base):
     ALLOWED_HOSTS = ["*"]
     DEBUG = True
     CORS_ALLOW_ALL_ORIGINS = True
+    # Allow any origin in the local Docker environment so admin works regardless
+    # of which hostname/port is used to reach the container.
+    CSRF_TRUSTED_ORIGINS = ["http://localhost:8000", "http://127.0.0.1:8000"]
     STATIC_URL = "/static/"
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, "static"),
@@ -955,6 +1123,7 @@ class Offline(Base):
     INSTALLED_APPS = values.ListValue(
         [
             # 0) Instrumentation that wants to wrap others early
+            "jazzmin",
             "django_prometheus",
             # 1) Django built-ins
             "django.contrib.admin",
@@ -1075,6 +1244,7 @@ class Development(Base):
     INSTALLED_APPS = values.ListValue(
         [
             # 0) Instrumentation that wants to wrap others early
+            "jazzmin",
             "django_prometheus",
             # 1) Django built-ins
             "django.contrib.admin",
@@ -1114,6 +1284,7 @@ class Development(Base):
 
     MIDDLEWARE = values.ListValue(
         [
+            "kolo.middleware.KoloMiddleware",
             "django_prometheus.middleware.PrometheusBeforeMiddleware",
             "corsheaders.middleware.CorsMiddleware",
             "django.middleware.cache.UpdateCacheMiddleware",

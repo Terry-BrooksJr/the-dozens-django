@@ -7,6 +7,7 @@ API endpoints for managing insults, categories, and themes.
 - Supports filtering, random retrieval, and category/theme discovery
 """
 
+import random
 import time
 from typing import Optional
 from urllib.parse import urlencode
@@ -555,11 +556,11 @@ class RandomInsultEndpoint(GenericAPIView):
                         category__category_key=resolved_category_key
                     )
 
-            # Phase 4: emptiness check
+            # Phase 4: count serves double duty — emptiness check + random offset bound
             with metrics.time_random_insult_stage("emptiness_check"):
-                is_empty = not queryset.exists()
+                count = queryset.count()
 
-            if is_empty:
+            if count == 0:
                 duration_ms = (time.perf_counter() - t_start) * 1000.0
                 metrics.record_random_insult_empty()
                 metrics.record_random_insult_request(
@@ -584,9 +585,11 @@ class RandomInsultEndpoint(GenericAPIView):
                     {"detail": "No insults found matching the criteria."}, status=404
                 )
 
-            # Phase 5: random row selection
+            # Phase 5: offset-based random selection.
+            # ORDER BY insult_id uses the PK index (O(log n) + offset).
+            # Replaces ORDER BY RANDOM() which was a full-table sort (O(n log n)).
             with metrics.time_random_insult_stage("random_selection"):
-                random_insult = queryset.order_by("?").first()
+                random_insult = queryset.order_by("insult_id")[random.randint(0, count - 1)]
 
             # Phase 6: serialization
             with metrics.time_random_insult_stage("serialization"):
@@ -941,3 +944,20 @@ class HealthEndpoint(GenericAPIView):
             },
             status=503 if degraded else 200,
         )
+
+
+class PingEndpoint(GenericAPIView):
+    """Lightweight liveness probe used by Traefik health checks.
+
+    Intentionally skips DB/GraphQL/LD checks — those run under /api/health/.
+    This just confirms Gunicorn is alive and able to accept requests.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = []
+    serializer_class = None
+
+    @extend_schema(exclude=True)
+    def get(self, request):
+        return Response({"status": "ok"})

@@ -273,6 +273,26 @@
                   font-size: 1.2rem;
              }
 
+             /* Footer */
+             .dozens-footer {
+                  background: var(--color-primary);
+                  color: #ffffff;
+                  text-align: center;
+                  padding: 1rem;
+                  margin-top: 2rem;
+                  font-family: 'YoMamaBody', Arial, sans-serif;
+                  font-size: 0.9rem;
+             }
+
+             .dozens-footer a {
+                  color: var(--color-accent);
+                  text-decoration: none;
+             }
+
+             .dozens-footer a:hover {
+                  color: #ffffff;
+             }
+
              /* Custom scrollbar */
              ::-webkit-scrollbar {
                   width: 8px;
@@ -289,6 +309,16 @@
 
              ::-webkit-scrollbar-thumb:hover {
                   background: var(--color-secondary);
+             }
+
+             /* Ensure SweetAlert welcome modal sits above Swagger UI chrome
+                (topbar, .scheme-container authorize bar, sticky opblock headers). */
+             .swal2-container {
+                  z-index: 10000 !important;
+             }
+
+             .swal2-backdrop-show {
+                  z-index: 9999 !important;
              }
         </style>
     </head>
@@ -338,11 +368,11 @@
         {% if script_url %}
             <script src="{{ script_url }}"></script>
         {% else %}
+            {# djlint:off #}
             <script>
-                 {
-                      % include template_name_js %
-                 }
+                 {% include template_name_js %}
             </script>
+            {# djlint:on #}
         {% endif %}
         <!-- SweetAlert2 JS -->
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
@@ -479,5 +509,11 @@
                   setTimeout(showWelcomeModal, 800);
              }
         </script>
+        <!-- Footer -->
+        <div class="dozens-footer">
+            <p>
+                &copy; {% now "Y" %} The Dozens API. Built with 😈 by <a href="https://www.brooksjr.com" target="_blank">Terry Brooks Jr</a>
+            </p>
+        </div>
     </body>
 </html>

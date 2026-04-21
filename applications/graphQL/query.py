@@ -12,7 +12,6 @@ the schema and surfaced in the GraphiQL explorer at /graphql/playground/.
 
 from typing import Optional
 
-from django.core.exceptions import ObjectDoesNotExist
 from graphene import ID, Boolean, Field, Int, NonNull, ObjectType, String
 from graphql import GraphQLError
 
@@ -88,8 +87,8 @@ class Query(ObjectType):
         reference_id=NonNull(
             ID,
             description=(
-                "The integer primary key of the insult to retrieve. "
-                "This corresponds to the `insultId` field on the Insult type."
+                "The opaque reference ID of the insult to retrieve (e.g. 'GIGGLE_abc123'). "
+                "This corresponds to the `referenceId` field on the Insult type."
             ),
         ),
     )
@@ -224,10 +223,10 @@ class Query(ObjectType):
         Raises:
             GraphQLError: If no insult with the given ``reference_id`` exists.
         """
-        try:
-            return Insult.objects.get(pk=reference_id)
-        except ObjectDoesNotExist:
+        insult = Insult.get_by_reference_id(reference_id)
+        if insult is None:
             raise GraphQLError(f"Insult with ID {reference_id} not found")
+        return insult
 
     def resolve_insults_by_category(
         root, info, category: str, offset: int = 0, limit: int = 10

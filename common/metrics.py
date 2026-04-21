@@ -92,6 +92,59 @@ ENDPOINT_CACHE_MISSES = Counter(
     ["endpoint"],
 )
 
+# ---------------------------------------------------------------------------
+# Pre-register known label combinations so they appear in /metrics as zero-
+# series from the first scrape, rather than only after the first occurrence.
+# Without this, labelled counters are invisible until incremented — which
+# makes dashboards and alerts that fire on "rate == 0" unreliable at startup.
+# ---------------------------------------------------------------------------
+_KNOWN_INVALIDATION_REASONS = (
+    "post_save_created",
+    "post_save_updated",
+    "post_delete",
+    "manual",
+    "mutation_triggered",
+    "pattern_delete",
+    "clear_all_utility",
+    "manual_clear_all",
+    "unknown_signal",
+)
+
+
+def _pre_register_invalidation_labels(prefixes: tuple[str, ...]) -> None:
+    """Touch each (prefix, reason) label combo so Prometheus knows they exist."""
+    for prefix in prefixes:
+        for reason in _KNOWN_INVALIDATION_REASONS:
+            CACHE_INVALIDATIONS.labels(prefix, reason)
+
+
+_CACHE_INVALIDATION_STATIC_PREFIXES: tuple[str, ...] = (
+    "Insult",
+    "InsultCategory",
+    "Insult_view",
+    "Insult_categories",
+)
+
+
+def init_cache_invalidation_metrics() -> None:
+    """Pre-register cache_invalidations_total label combos at startup.
+
+    Safe to call from AppConfig.ready — failures are suppressed so they
+    never block Django startup.
+    """
+    try:
+        from common.cache_managers import cache_registry
+
+        registry_prefixes = {
+            manager.cache_prefix
+            for manager in cache_registry.values()
+            if hasattr(manager, "cache_prefix")
+        }
+        registry_prefixes.update(_CACHE_INVALIDATION_STATIC_PREFIXES)
+        _pre_register_invalidation_labels(tuple(registry_prefixes))
+    except Exception:
+        pass
+
 
 class _MetricsFacade:
     """Thin facade used throughout the app to record cache metrics.
