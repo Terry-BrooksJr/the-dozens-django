@@ -170,7 +170,7 @@ pycparser==3.0 ; python_version >= "3.11" and python_version < "4.0" and (platfo
 pydantic-core==2.41.5 ; python_version >= "3.11" and python_version < "4.0"
 pydantic==2.12.5 ; python_version >= "3.11" and python_version < "4.0"
 pyflakes==3.4.0 ; python_version >= "3.11" and python_version < "4.0"
-pygments==2.19.2 ; python_version >= "3.11" and python_version < "4.0"
+pygments==2.20.0 ; python_version >= "3.11" and python_version < "4.0"
 pyjwt==2.11.0 ; python_version >= "3.11" and python_version < "4.0"
 pyproject-hooks==1.2.0 ; python_version >= "3.11" and python_version < "4.0"
 pyrfc3339==2.1.0 ; python_version >= "3.11" and python_version < "4.0"
