@@ -62,7 +62,7 @@ jobs:
           DOPPLER_PROJECT: ${{ vars.DOPPLER_PROJECT }}
           DOPPLER_CONFIG: ${{ vars.DOPPLER_CONFIG }}
         run: |
-          doppler run --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" -- \
+          doppler run --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" --token "$DOPPLER_TOKEN" -- \
             task test:coverage
 
       - name: Upload coverage to Codecov
