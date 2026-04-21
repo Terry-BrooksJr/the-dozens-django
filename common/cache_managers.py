@@ -41,7 +41,9 @@ class BaseCacheManager(ABC):
         self.model_class = model_class
         self.cache_prefix = cache_prefix or model_class.__name__
         self.cache_timeout = getattr(self, "CACHE_TIMEOUT", 86400)  # 24 hours default
-        self._cache_lock = threading.Lock()
+        self._cache_lock = (
+            threading.RLock()
+        )  # RLock allows re-entry from the same thread
 
     @abstractmethod
     def get_cache_keys(self) -> Dict[str, str]:

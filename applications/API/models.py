@@ -526,7 +526,6 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         - mark_review_reclassified(): Marks the review as reclassified.
     """
 
-
     class REVIEW_TYPE(models.TextChoices):
         """
         Enumeration of possible review types for an InsultReview.
@@ -540,12 +539,12 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             DUPLICATE: Request to remove the joke because it duplicates an existing one.
             MALICIOUS: Request to remove the joke because it is harmful or malicious.
         """
+
         RECLASSIFY = "RE", _("Joke Reclassification")
         RECATEGORIZE = "RC", _("Joke Recategorization")
         REMOVAL = "RX-Q", _("Joke Removal - Quality Issue")
         DUPLICATE = "RX-D", _("Joke Removal - Duplicate")
         MALICIOUS = "RX-M", _("Joke Removal - Malicious")
-        
 
     class STATUS(models.TextChoices):
         """
@@ -561,6 +560,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             SAME_CATEGORY: The review resulted in no change to the existing joke category.
             REMOVED: The review resulted in the joke being removed from circulation.
         """
+
         PENDING = "P", _("Pending")
         NEW_CLASSIFICATION = "NCE", _("Completed - New Explicitly Setting")
         SAME_CLASSIFICATION = "SCE", _("Completed - No New Explicitly Setting")
