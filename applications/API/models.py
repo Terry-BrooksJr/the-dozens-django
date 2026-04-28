@@ -3,7 +3,7 @@ module: applications.API.models
 
 
 This module defines the Insult and InsultReview models, which are used to manage insults and their reviews in the system, as well as the InsultCategory model for insult resource categorization. Each model contains methods for manipulating the associated resource.
-    
+
 For instance, the Insult model's methods allow for removing, approving, and re-categorizing task. The models and their methods are designed to work with Django's ORM and include various fields and methods for managing the data effectively.
 """
 

@@ -1,5 +1,4 @@
 import requests
-from httpx import head
 from test_cases import TEST_CASES
 
 

@@ -14,13 +14,16 @@ Strategy
   contamination via stale Python objects from setUpTestData.
 """
 
+from unittest.mock import patch
+
+from django.contrib import messages as django_messages
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth import get_user_model
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.template.response import TemplateResponse
 from django.test import RequestFactory, TestCase, override_settings
 
-from applications.API.admin import InsultAdmin, RecategorizeForm
+from applications.API.admin import InsultAdmin, RecategorizeForm, UserAdmin
 from applications.API.models import Insult, InsultCategory, Theme
 
 User = get_user_model()
@@ -394,6 +397,65 @@ class ReCategorizeActionTests(_InsultAdminBase):
 
 
 # ===========================================================================
+# search_fields — reference_id and added_by
+# ===========================================================================
+
+
+class InsultAdminSearchTests(_InsultAdminBase):
+    """Verify that search_fields enables lookups by reference_id and submitter."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.other_user = User.objects.create_user(
+            username="searchable_user",
+            email="searchable@example.com",
+            password="pass1234",
+        )
+
+    def test_search_fields_includes_reference_id(self):
+        self.assertIn("reference_id", self.ma.search_fields)
+
+    def test_search_fields_includes_username(self):
+        self.assertIn("added_by__username", self.ma.search_fields)
+
+    def test_search_fields_includes_email(self):
+        self.assertIn("added_by__email", self.ma.search_fields)
+
+    def test_search_by_reference_id_finds_match(self):
+        target = self._make_insult(reference_id="REF_UNIQUE_001")
+        other = self._make_insult(reference_id="REF_OTHER_999")
+        qs, _ = self.ma.get_search_results(
+            self._request(), Insult.objects.all(), "REF_UNIQUE_001"
+        )
+        self.assertIn(target, qs)
+        self.assertNotIn(other, qs)
+
+    def test_search_by_username_finds_match(self):
+        target = self._make_insult(added_by=self.other_user, reference_id="REF_U_001")
+        self._make_insult(added_by=self.admin_user, reference_id="REF_U_002")
+        qs, _ = self.ma.get_search_results(
+            self._request(), Insult.objects.all(), "searchable_user"
+        )
+        self.assertIn(target, qs)
+
+    def test_search_by_email_finds_match(self):
+        target = self._make_insult(added_by=self.other_user, reference_id="REF_E_001")
+        self._make_insult(added_by=self.admin_user, reference_id="REF_E_002")
+        qs, _ = self.ma.get_search_results(
+            self._request(), Insult.objects.all(), "searchable@example.com"
+        )
+        self.assertIn(target, qs)
+
+    def test_search_returns_empty_for_no_match(self):
+        self._make_insult(reference_id="REF_NOMATCH_001")
+        qs, _ = self.ma.get_search_results(
+            self._request(), Insult.objects.all(), "ZZZNOMATCH"
+        )
+        self.assertEqual(qs.count(), 0)
+
+
+# ===========================================================================
 # view_reports_link  (requires admin URLs to be resolvable)
 # ===========================================================================
 
@@ -425,3 +487,101 @@ class ViewReportsLinkTests(_InsultAdminBase):
         target = self._make_insult()
         result = str(self.ma.view_reports_link(target))
         self.assertIn("/admin/API/insultreview/", result)
+
+
+# ===========================================================================
+# UserAdmin.resend_welcome_email
+# ===========================================================================
+
+_PATCH_SEND = "applications.API.admin.WelcomeEmail.send"
+
+
+class ResendWelcomeEmailActionTests(TestCase):
+    """Tests for UserAdmin.resend_welcome_email action."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.admin_user = User.objects.create_superuser(
+            username="superadmin",
+            email="super@example.com",
+            password="adminpass",
+        )
+        cls.user_a = User.objects.create_user(
+            username="alpha", email="alpha@example.com", password="pass1234"
+        )
+        cls.user_b = User.objects.create_user(
+            username="beta", email="beta@example.com", password="pass1234"
+        )
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.site = AdminSite()
+        self.ma = UserAdmin(User, self.site)
+
+    def _request(self):
+        request = self.factory.get("/admin/auth/user/")
+        request.user = self.admin_user
+        request.session = {}
+        request._messages = FallbackStorage(request)
+        return request
+
+    def _get_messages(self, request):
+        return list(request._messages)
+
+    # ------------------------------------------------------------------
+    # Happy path
+    # ------------------------------------------------------------------
+
+    @patch(_PATCH_SEND)
+    def test_sends_email_to_each_selected_user(self, mock_send):
+        qs = User.objects.filter(pk__in=[self.user_a.pk, self.user_b.pk])
+        self.ma.resend_welcome_email(self._request(), qs)
+        self.assertEqual(mock_send.call_count, 2)
+
+    @patch(_PATCH_SEND)
+    def test_recipient_address_matches_user_email(self, mock_send):
+        qs = User.objects.filter(pk=self.user_a.pk)
+        self.ma.resend_welcome_email(self._request(), qs)
+        mock_send.assert_called_once_with(to=[self.user_a.email])
+
+    @patch(_PATCH_SEND)
+    def test_success_message_posted_with_correct_count(self, _mock_send):
+        qs = User.objects.filter(pk__in=[self.user_a.pk, self.user_b.pk])
+        request = self._request()
+        self.ma.resend_welcome_email(request, qs)
+        msgs = self._get_messages(request)
+        success_msgs = [m for m in msgs if m.level == django_messages.SUCCESS]
+        self.assertEqual(len(success_msgs), 1)
+        self.assertIn("2", success_msgs[0].message)
+
+    # ------------------------------------------------------------------
+    # Failure handling
+    # ------------------------------------------------------------------
+
+    @patch(_PATCH_SEND, side_effect=RuntimeError("SMTP error"))
+    def test_failure_posts_error_message(self, _mock_send):
+        qs = User.objects.filter(pk=self.user_a.pk)
+        request = self._request()
+        self.ma.resend_welcome_email(request, qs)
+        msgs = self._get_messages(request)
+        error_msgs = [m for m in msgs if m.level == django_messages.ERROR]
+        self.assertEqual(len(error_msgs), 1)
+
+    @patch(_PATCH_SEND, side_effect=RuntimeError("SMTP error"))
+    def test_failure_does_not_post_success_message(self, _mock_send):
+        qs = User.objects.filter(pk=self.user_a.pk)
+        request = self._request()
+        self.ma.resend_welcome_email(request, qs)
+        msgs = self._get_messages(request)
+        self.assertFalse(any(m.level == django_messages.SUCCESS for m in msgs))
+
+    @patch(_PATCH_SEND)
+    def test_partial_failure_reports_both_counts(self, mock_send):
+        mock_send.side_effect = [None, RuntimeError("SMTP error")]
+        qs = User.objects.filter(pk__in=[self.user_a.pk, self.user_b.pk])
+        request = self._request()
+        self.ma.resend_welcome_email(request, qs)
+        msgs = self._get_messages(request)
+        levels = {m.level for m in msgs}
+        self.assertIn(django_messages.SUCCESS, levels)
+        self.assertIn(django_messages.ERROR, levels)

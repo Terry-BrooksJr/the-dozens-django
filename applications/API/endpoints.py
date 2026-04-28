@@ -3,7 +3,7 @@
 
 API endpoints for managing insults, categories, and themes.
 
-- Provides CRUD operations for insults and categories  
+- Provides CRUD operations for insults and categories
 - Supports filtering, random retrieval, and category/theme discovery
 """
 
@@ -589,7 +589,9 @@ class RandomInsultEndpoint(GenericAPIView):
             # ORDER BY insult_id uses the PK index (O(log n) + offset).
             # Replaces ORDER BY RANDOM() which was a full-table sort (O(n log n)).
             with metrics.time_random_insult_stage("random_selection"):
-                random_insult = queryset.order_by("insult_id")[random.randint(0, count - 1)]
+                random_insult = queryset.order_by("insult_id")[
+                    random.randint(0, count - 1)
+                ]
 
             # Phase 6: serialization
             with metrics.time_random_insult_stage("serialization"):

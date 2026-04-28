@@ -73,9 +73,19 @@ tasks:
         - DOPPLER_TOKEN
         - PATH_TO_DB_ROOT_CERT
 
+  send:mail:
+    dir: .
+    desc: Drain the django-mailer queue and deliver queued emails via SMTP (production)
+    env:
+      DJANGO_CONFIGURATION: Production
+    cmds:
+      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py send_mail
+
   collect:
     dir: .
     desc: Collect static files into single directory for production
+    env:
+      DJANGO_CONFIGURATION: Production
     cmds:
       - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py collectstatic --no-input
     # NOTE: `source .envrc` removed (no-op in subshell). PYTHONPATH now uses the

@@ -1,6 +1,6 @@
 """
 module: applications.API.tests.test_forms
-TODO: Complete Summary 
+TODO: Complete Summary
 """
 
 from django.contrib.auth import get_user_model

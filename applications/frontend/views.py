@@ -12,7 +12,6 @@ This module provides:
 The GitHub integration is accessed via ``settings.BASE.get_github_api()``.
 """
 
-
 from typing import Any, Dict
 
 from django.http import JsonResponse

@@ -5,11 +5,11 @@
 # because threads do not survive fork.
 
 bind = "0.0.0.0:9555"
-workers = 4          # 2 × nCPUs; 4 workers × 4 threads = 16 concurrent per replica
+workers = 4  # 2 × nCPUs; 4 workers × 4 threads = 16 concurrent per replica
 worker_class = "gthread"
 threads = 4
 worker_tmp_dir = "/dev/shm"
-timeout = 60         # was 120; fail fast under burst so workers recycle sooner
+timeout = 60  # was 120; fail fast under burst so workers recycle sooner
 graceful_timeout = 30
 max_requests = 1000
 max_requests_jitter = 100
