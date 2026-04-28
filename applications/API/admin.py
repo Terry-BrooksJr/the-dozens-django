@@ -10,15 +10,21 @@ It also provides a link to view all reports associated with an insult directly f
 """
 
 from django import forms as django_forms
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.admin import helpers
+from django.contrib.auth import get_user_model
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.db.models import Count, Q
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.html import format_html
+from loguru import logger
 
+from .emails import WelcomeEmail
 from .forms import invalidate_insult_cache
 from .models import Insult, InsultCategory, InsultReview
+
+User = get_user_model()
 
 # applications/API/admin.py
 
@@ -91,6 +97,7 @@ class InsultAdmin(admin.ModelAdmin):
         "status",
         "view_reports_link",
     )
+    search_fields = ("reference_id", "added_by__username", "added_by__email")
     actions = [
         "approve_insult",
         "remove_insult",
@@ -235,3 +242,41 @@ class InsultReviewAdmin(admin.ModelAdmin):
 
 admin.site.register(InsultReview, InsultReviewAdmin)
 admin.site.register(Insult, InsultAdmin)
+
+
+class UserAdmin(BaseUserAdmin):
+    actions = [*BaseUserAdmin.actions, "resend_welcome_email"]
+
+    @admin.action(description="Resend welcome email to selected users")
+    def resend_welcome_email(self, request, queryset):
+        sent, failed = 0, 0
+        for user in queryset:
+            try:
+                WelcomeEmail(request=request, context={"user": user}).send(
+                    to=[user.email]
+                )
+                sent += 1
+            except Exception as exc:
+                logger.error(
+                    "Admin resend_welcome_email failed | user={} error={!r}",
+                    user.username,
+                    exc,
+                )
+                failed += 1
+
+        if sent:
+            self.message_user(
+                request,
+                f"Welcome email resent to {sent} user(s).",
+                messages.SUCCESS,
+            )
+        if failed:
+            self.message_user(
+                request,
+                f"Failed to send to {failed} user(s). Check the server logs.",
+                messages.ERROR,
+            )
+
+
+admin.site.unregister(User)
+admin.site.register(User, UserAdmin)

@@ -13,8 +13,8 @@ from django.http import JsonResponse
 from django.test import override_settings
 from rest_framework import serializers
 from rest_framework.request import Request
-from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework.response import Response
+from rest_framework.test import APIRequestFactory, force_authenticate
 
 from applications.API.models import Insult, InsultCategory, Theme
 from common import performance

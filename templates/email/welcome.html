@@ -1,0 +1,329 @@
+{% load static %}
+{% block subject %}Welcome to the Yo' Momma API, {{ user.username }}!{% endblock %}
+{% block html_body %}
+    <!DOCTYPE html>
+    <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="x-apple-disable-message-reformatting">
+            <title>Welcome to the Yo' Momma API</title>
+            <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+            <style>
+                 /* Reset */
+                 * {
+                      box-sizing: border-box;
+                 }
+
+                 body,
+                 table,
+                 td,
+                 a {
+                      -webkit-text-size-adjust: 100%;
+                      -ms-text-size-adjust: 100%;
+                 }
+
+                 table,
+                 td {
+                      mso-table-lspace: 0pt;
+                      mso-table-rspace: 0pt;
+                 }
+
+                 img {
+                      -ms-interpolation-mode: bicubic;
+                      border: 0;
+                      outline: none;
+                      text-decoration: none;
+                 }
+
+                 /* Brand fonts — load where supported (most modern email clients) */
+                 @import url('https://fonts.googleapis.com/css2?family=Julius+Sans+One&display=swap');
+
+                 @font-face {
+                      font-family: YoMamaHeader;
+                      src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2') format('woff2');
+                      font-display: swap;
+                 }
+
+                 @font-face {
+                      font-family: YoMamaBody;
+                      src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2') format('woff2');
+                      font-display: swap;
+                 }
+
+                 body {
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      background-color: #D7DF0D;
+                      font-family: 'YoMamaBody', 'Julius Sans One', Arial, sans-serif;
+                 }
+
+                 /* Responsive */
+                 @media only screen and (max-width: 600px) {
+                      .email-wrapper {
+                           width: 100% !important;
+                      }
+
+                      .email-card {
+                           padding: 28px 20px !important;
+                      }
+
+                      .header-title {
+                           font-size: 28px !important;
+                      }
+
+                      .cta-btn {
+                           display: block !important;
+                           width: 100% !important;
+                           text-align: center !important;
+                           margin: 8px 0 !important;
+                      }
+
+                      .quick-links td {
+                           display: block !important;
+                           width: 100% !important;
+                           padding: 6px 0 !important;
+                      }
+                 }
+            </style>
+        </head>
+        <body style="margin:0;padding:0;background-color:#D7DF0D;">
+            <!-- Outer wrapper -->
+            <table role="presentation"
+                   cellpadding="0"
+                   cellspacing="0"
+                   width="100%"
+                   style="background:linear-gradient(169deg,#D7DF0D 0%,#beda00 50%,#770071 100%);
+                          min-height:100vh">
+                <tr>
+                    <td align="center" style="padding:40px 16px;">
+                        <!-- Email card -->
+                        <table role="presentation"
+                               class="email-wrapper"
+                               cellpadding="0"
+                               cellspacing="0"
+                               width="600"
+                               style="background:#ffffff;
+                                      border-radius:16px;
+                                      box-shadow:0 8px 40px rgba(119,0,113,0.25);
+                                      overflow:hidden">
+                            <!-- ── Header ──────────────────────────────────────────── -->
+                            <tr>
+                                <td style="background:#770071;
+                                           padding:36px 40px 28px;
+                                           text-align:center;
+                                           border-bottom:4px solid #beda00">
+                                    <h1 class="header-title"
+                                        style="font-family:'YoMamaHeader',Arial,sans-serif;
+                                               font-size:36px;
+                                               color:#ffffff;
+                                               margin:0 0 8px;
+                                               letter-spacing:1px;
+                                               text-shadow:-1px -1px 0 #bd00b4,1px -1px 0 #bd00b4,-1px 1px 0 #bd00b4,1px 1px 0 #bd00b4">
+                                        Yo' Momma API
+                                    </h1>
+                                    <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                              color:#beda00;
+                                              font-size:13px;
+                                              margin:0;
+                                              letter-spacing:0.5px">The Premier Insult &amp; Joke API</p>
+                                </td>
+                            </tr>
+                            <!-- ── Body ───────────────────────────────────────────── -->
+                            <tr>
+                                <td class="email-card" style="padding:40px;">
+                                    <!-- Greeting -->
+                                    <p style="font-family:'YoMamaHeader',Arial,sans-serif;
+                                              font-size:22px;
+                                              color:#770071;
+                                              margin:0 0 12px">Welcome, {{ user.username }}! 🎉</p>
+                                    <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                              font-size:15px;
+                                              color:#333333;
+                                              line-height:1.7;
+                                              margin:0 0 24px">
+                                        Your account is live. You now have access to the full Yo' Momma API — a curated collection
+                                        of insults and jokes filterable by category, NSFW status, and more. We're glad you're here.
+                                    </p>
+                                    <!-- Divider -->
+                                    <hr style="border:none;border-top:2px solid #beda00;margin:0 0 28px;">
+                                    <!-- API Key block -->
+                                    <p style="font-family:'YoMamaHeader',Arial,sans-serif;
+                                              font-size:13px;
+                                              color:#770071;
+                                              margin:0 0 8px;
+                                              text-transform:uppercase;
+                                              letter-spacing:1px">Your API Key</p>
+                                    <table role="presentation"
+                                           cellpadding="0"
+                                           cellspacing="0"
+                                           width="100%"
+                                           style="margin:0 0 8px">
+                                        <tr>
+                                            <td style="background:#f5f5f5;
+                                                       border:2px solid #beda00;
+                                                       border-radius:8px;
+                                                       padding:14px 18px">
+                                                <code style="font-family:'Courier New',Courier,monospace;
+                                                             font-size:14px;
+                                                             color:#770071;
+                                                             word-break:break-all;
+                                                             letter-spacing:0.5px">{{ api_key }}</code>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                              font-size:12px;
+                                              color:#888888;
+                                              margin:0 0 28px;
+                                              line-height:1.5">
+                                        Keep this key private. Pass it as the <code style="background:#f5f5f5;
+              padding:1px 5px;
+              border-radius:3px;
+              font-size:11px">Authorization: Token &lt;key&gt;</code>
+                                        header in every request.
+                                    </p>
+                                    <!-- Divider -->
+                                    <hr style="border:none;border-top:2px solid #f0f0f0;margin:0 0 28px;">
+                                    <!-- Quick start -->
+                                    <p style="font-family:'YoMamaHeader',Arial,sans-serif;
+                                              font-size:13px;
+                                              color:#770071;
+                                              margin:0 0 16px;
+                                              text-transform:uppercase;
+                                              letter-spacing:1px">Quick Start</p>
+                                    <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                              font-size:14px;
+                                              color:#555555;
+                                              line-height:1.6;
+                                              margin:0 0 20px">Grab a random insult right now — no setup required:</p>
+                                    <!-- Code example -->
+                                    <table role="presentation"
+                                           cellpadding="0"
+                                           cellspacing="0"
+                                           width="100%"
+                                           style="margin:0 0 28px">
+                                        <tr>
+                                            <td style="background:#1a001a;
+                                                       border-radius:8px;
+                                                       padding:16px 20px;
+                                                       border-left:4px solid #beda00">
+                                                <code style="font-family:'Courier New',Courier,monospace;
+                                                             font-size:13px;
+                                                             color:#beda00;
+                                                             line-height:1.8;
+                                                             white-space:pre-wrap;
+                                                             display:block">GET https://api.yo-momma.io/api/insults/random/
+                                                Authorization: Token {{ api_key }}</code>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <!-- CTA buttons -->
+                                    <table role="presentation"
+                                           class="quick-links"
+                                           cellpadding="0"
+                                           cellspacing="0"
+                                           width="100%"
+                                           style="margin:0 0 32px">
+                                        <tr>
+                                            <td style="padding-right:8px;">
+                                                <a href="{{ docs_url }}"
+                                                   style="display:inline-block;
+                                                          background:#770071;
+                                                          color:#ffffff;
+                                                          font-family:'YoMamaHeader',Arial,sans-serif;
+                                                          font-size:13px;
+                                                          text-decoration:none;
+                                                          padding:12px 20px;
+                                                          border-radius:8px;
+                                                          border-bottom:3px solid #bd00b4;
+                                                          transition:background 0.2s">📚 Browse Docs</a>
+                                            </td>
+                                            <td style="padding-right:8px;">
+                                                <a href="{{ swagger_url }}"
+                                                   style="display:inline-block;
+                                                          background:#beda00;
+                                                          color:#770071;
+                                                          font-family:'YoMamaHeader',Arial,sans-serif;
+                                                          font-size:13px;
+                                                          text-decoration:none;
+                                                          padding:12px 20px;
+                                                          border-radius:8px;
+                                                          border-bottom:3px solid #770071">⚡ Swagger UI</a>
+                                            </td>
+                                            <td>
+                                                <a href="{{ graphql_url }}"
+                                                   style="display:inline-block;
+                                                          background:#ffffff;
+                                                          color:#770071;
+                                                          font-family:'YoMamaHeader',Arial,sans-serif;
+                                                          font-size:13px;
+                                                          text-decoration:none;
+                                                          padding:12px 20px;
+                                                          border-radius:8px;
+                                                          border:2px solid #770071">🔮 GraphQL</a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <!-- Help note -->
+                                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                                        <tr>
+                                            <td style="background:rgba(119,0,113,0.06);
+                                                       border-radius:8px;
+                                                       border-left:4px solid #770071;
+                                                       padding:14px 18px">
+                                                <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                                          font-size:13px;
+                                                          color:#555555;
+                                                          margin:0;
+                                                          line-height:1.6">
+                                                    Questions? Reach out at
+                                                    <a href="mailto:developer@yo-momma.io"
+                                                       style="color:#770071;
+                                                              text-decoration:underline">developer@yo-momma.io</a>
+                                                    or open an issue on
+                                                    <a href="https://github.com/Terry-BrooksJr/the-dozens-django/issues"
+                                                       style="color:#770071;
+                                                              text-decoration:underline">GitHub</a>.
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            <!-- ── Footer ─────────────────────────────────────────── -->
+                            <tr>
+                                <td style="background:#770071;
+                                           padding:24px 40px;
+                                           text-align:center;
+                                           border-top:4px solid #beda00">
+                                    <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                              font-size:12px;
+                                              color:rgba(255,255,255,0.7);
+                                              margin:0 0 6px">
+                                        You're receiving this because you registered at
+                                        <a href="{{ site_url }}" style="color:#beda00;text-decoration:none;">{{ site_domain }}</a>.
+                                    </p>
+                                    <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                              font-size:11px;
+                                              color:rgba(255,255,255,0.45);
+                                              margin:0">© {% now "Y" %} Yo' Momma API — The Dozens Project</p>
+                                </td>
+                            </tr>
+                        </table>
+                        <!-- /Email card -->
+                    </td>
+                </tr>
+            </table>
+        </body>
+    </html>
+{% endblock %}

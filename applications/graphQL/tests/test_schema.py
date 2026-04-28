@@ -73,8 +73,7 @@ class TestSchemaIntrospection(SimpleTestCase):
 
     def test_all_expected_query_fields_present(self):
         """All five query fields are present in the schema."""
-        result = self._execute(
-            """
+        result = self._execute("""
             {
                 __schema {
                     queryType {
@@ -84,8 +83,7 @@ class TestSchemaIntrospection(SimpleTestCase):
                     }
                 }
             }
-            """
-        )
+            """)
         self.assertIsNone(result.errors)
         field_names = {
             f["name"] for f in result.data["__schema"]["queryType"]["fields"]
@@ -96,8 +94,7 @@ class TestSchemaIntrospection(SimpleTestCase):
 
     def test_insult_type_is_active_field_in_introspection(self):
         """The Insult type exposes the computed isActive field."""
-        result = self._execute(
-            """
+        result = self._execute("""
             {
                 __type(name: "Insult") {
                     fields {
@@ -105,16 +102,14 @@ class TestSchemaIntrospection(SimpleTestCase):
                     }
                 }
             }
-            """
-        )
+            """)
         self.assertIsNone(result.errors)
         field_names = {f["name"] for f in result.data["__type"]["fields"]}
         self.assertIn("isActive", field_names)
 
     def test_insult_connection_type_in_introspection(self):
         """The InsultConnection type exposes totalCount and items fields."""
-        result = self._execute(
-            """
+        result = self._execute("""
             {
                 __type(name: "InsultConnection") {
                     fields {
@@ -122,8 +117,7 @@ class TestSchemaIntrospection(SimpleTestCase):
                     }
                 }
             }
-            """
-        )
+            """)
         self.assertIsNone(result.errors)
         field_names = {f["name"] for f in result.data["__type"]["fields"]}
         self.assertIn("totalCount", field_names)

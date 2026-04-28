@@ -17,8 +17,8 @@ from applications.API.endpoints import (
 
 urlpatterns = [
     # Health / liveness
-    path("ping/", PingEndpoint.as_view(), name="ping"),      # Traefik liveness probe
-    path("health/", HealthEndpoint.as_view(), name="health"), # deep readiness check
+    path("ping/", PingEndpoint.as_view(), name="ping"),  # Traefik liveness probe
+    path("health/", HealthEndpoint.as_view(), name="health"),  # deep readiness check
     # API documentation/schema endpoints
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path("swagger/", SpectacularSwaggerView.as_view(), name="swagger"),

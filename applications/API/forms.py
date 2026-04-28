@@ -137,13 +137,11 @@ class InsultReviewForm(ModelForm):
         self.helper.form_method = "post"
         self.helper.form_action = reverse("report-joke")
         self.helper.layout = Layout(
-            HTML(
-                """
+            HTML("""
                 <h3 class="application-text modal-title">Report Form</h3>
                 <br/>
                 <hr class="border border-primary border-3 opacity-75"/>
-            """
-            ),
+            """),
             Row(
                 Column("insult_reference_id", css_class="form-group col-md-6 mb-0"),
                 Column("anonymous", css_class="form-group col-md-6 mb-0"),

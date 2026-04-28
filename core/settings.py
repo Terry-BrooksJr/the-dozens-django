@@ -299,7 +299,7 @@ class Base(Configuration):
     #!SECTION End - Media, Files and Static Assests Storage
 
     # SECTION Start- Logging
-    LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <white>{message}</white>"
+    LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | {level.icon}<level><bold>{level: <8}</bold></level> |<blue>{message}</blue>"
     DEFAULT_LOGGER_CONFIG = {
         "format": LOG_FORMAT,
         "diagnose": False,
@@ -728,6 +728,17 @@ class Base(Configuration):
     REST_FRAMEWORK_EXTENSIONS = values.DictValue({"DEFAULT_CACHE_ERRORS": False})
     #!SECTION End - REST API.SWAGGER DOCUMENTATION SETTINGS
 
+    # SECTION Start - Djoser Settings
+    DJOSER = {
+        "SEND_CONFIRMATION_EMAIL": True,
+        "EMAIL": {
+            "confirmation": "applications.API.emails.WelcomeEmail",
+        },
+        "EMAIL_FRONTEND_DOMAIN": "api.yo-momma.io",
+        "EMAIL_FRONTEND_PROTOCOL": "https",
+    }
+    #!SECTION End - Djoser Settings
+
     #  SECTION Start - GraphQL Settings (Graphene-Django)
     GRAPHENE = values.DictValue(
         {
@@ -746,8 +757,13 @@ class Base(Configuration):
     #!SECTION End - GraphQL Settings (Graphene-Django)
 
     # SECTION - Email Settings (Django-Mailer)
-    MAILER_EMAIL_BACKEND = values.Value("mailer.backend.DbBackend", environ=False)
-    EMAIL_BACKEND = MAILER_EMAIL_BACKEND
+    # EMAIL_BACKEND routes Django's send_mail() calls into django-mailer's DB queue.
+    # MAILER_EMAIL_BACKEND is what django-mailer's send_mail management command uses
+    # to actually deliver queued messages — must be a real transport, NOT DbBackend.
+    EMAIL_BACKEND = "mailer.backend.DbBackend"
+    MAILER_EMAIL_BACKEND = values.Value(
+        "django.core.mail.backends.smtp.EmailBackend", environ=False
+    )
     EMAIL_HOST = values.Value(
         environ=True, environ_prefix=None, environ_name="EMAIL_SERVER"
     )
@@ -773,13 +789,13 @@ class Base(Configuration):
                     "CONNECTION_POOL_KWARGS": {
                         "max_connections": 100,
                         "retry_on_timeout": True,
-                        },
-                        "SOCKET_CONNECT_TIMEOUT": 2,
-                        "SOCKET_TIMEOUT": 2,
-                         },
-                    "TIMEOUT": 300,
-                 }
-                }
+                    },
+                    "SOCKET_CONNECT_TIMEOUT": 2,
+                    "SOCKET_TIMEOUT": 2,
+                },
+                "TIMEOUT": 300,
+            }
+        }
     )
 
     EMAIL_HOST = values.Value(
@@ -816,6 +832,7 @@ class Base(Configuration):
         "site_logo_classes": "img-circle",
         # Relative path to a favicon for your site, will default to site_logo if absent (ideally 32x32 px)
         "site_icon": None,
+        "related_modal_active": True,
         # Welcome text on the login screen
         "welcome_sign": "Welcome to the Yo Momma Jokes Backend",
         # Copyright on the footer
@@ -863,18 +880,18 @@ class Base(Configuration):
         # Whether to aut expand the menu
         "navigation_expanded": True,
         # Hide these apps when generating side menu e.g (auth)
-        "hide_apps": [],
+        "hide_apps": ["sites"],
         # Hide these models when generating side menu (e.g auth.user)
         "hide_models": [],
         # List of apps (and/or models) to base side menu ordering off of (does not need to contain all apps/models)
-        "order_with_respect_to": ["auth", "books", "books.author", "books.book"],
+        "order_with_respect_to": ["auth"],
         # Custom icons for side menu apps/models See https://fontawesome.com/icons?d=gallery&m=free&v=5.0.0,5.0.1,5.0.10,5.0.11,5.0.12,5.0.13,5.0.2,5.0.3,5.0.4,5.0.5,5.0.6,5.0.7,5.0.8,5.0.9,5.1.0,5.1.1,5.2.0,5.3.0,5.3.1,5.4.0,5.4.1,5.4.2,5.13.0,5.12.0,5.11.2,5.11.1,5.10.0,5.9.0,5.8.2,5.8.1,5.7.2,5.7.1,5.7.0,5.6.3,5.5.0,5.4.2
         # for the full list of 5.13.0 free icon classes
         "icons": {
             "auth": "fas fa-users-cog",
             "auth.user": "fas fa-user",
             "auth.Group": "fas fa-users",
-            "applications.API.Insult": "fa-regular fa-face-grin-tongue-wink",
+            "applications.API.Insult": "fas fa-face-grin-squint-tears",
             "applications.API.JokeReview": "fa-regular fa-file-circle-check",
         },
         # Icons that are used when one is not manually specified
@@ -1095,7 +1112,7 @@ class Production(Base):
         # Production: stdout only — no file sinks inside the container.
         # serialize=True emits newline-delimited JSON so Docker/Fluent Bit/Loki
         # can parse records without regex.
-        logger.add(sys.stdout, **{**Base.DEFAULT_LOGGER_CONFIG, "serialize": True})
+        logger.add(sys.stdout, **{**Base.DEFAULT_LOGGER_CONFIG, "serialize": False})
         if os.getenv("LAUNCHDARKLY_OBSERVABILITY_ENABLED", "false").lower() == "true":
             logger.add(ld_loguru_sink, **Base.DEFAULT_LOGGER_CONFIG)
 
@@ -1229,10 +1246,15 @@ class Development(Base):
     CORS_ALLOW_ALL_ORIGINS = values.BooleanValue(True, environ=False)
     CSRF_TRUSTED_ORIGINS = ["https://*", "http://*"]
     DEBUG = True
+    # Skip the mailer queue in dev — send directly via SMTP so emails arrive
+    # immediately without needing a separate send_mail process.
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     STATIC_URL = "/static/"
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, "static"),
     ]
+    # Serve directly from source dirs via gunicorn without needing collectstatic locally.
+    WHITENOISE_AUTOREFRESH = True
     STORAGES = {
         "default": {
             "BACKEND": "django.core.files.storage.FileSystemStorage",
