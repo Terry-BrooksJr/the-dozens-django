@@ -830,7 +830,7 @@ class Base(Configuration):
         "site_logo_classes": "img-circle",
         # Relative path to a favicon for your site, will default to site_logo if absent (ideally 32x32 px)
         "site_icon": None,
-        "related_modal_active":True, 
+        "related_modal_active": True,
         # Welcome text on the login screen
         "welcome_sign": "Welcome to the Yo Momma Jokes Backend",
         # Copyright on the footer
