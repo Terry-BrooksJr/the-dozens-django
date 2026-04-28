@@ -734,6 +734,8 @@ class Base(Configuration):
         "EMAIL": {
             "confirmation": "applications.API.emails.WelcomeEmail",
         },
+        "EMAIL_FRONTEND_DOMAIN": "api.yo-momma.io",
+        "EMAIL_FRONTEND_PROTOCOL": "https",
     }
     #!SECTION End - Djoser Settings
 

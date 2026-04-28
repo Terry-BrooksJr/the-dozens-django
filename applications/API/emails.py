@@ -20,7 +20,7 @@ class WelcomeEmail(ConfirmationEmail):
         )
 
         protocol = context.get("protocol", "https")
-        domain = "api.yo-momma.io"
+        domain = context.get("domain")
         base = f"{protocol}://{domain}"
 
         context.update(
@@ -36,11 +36,22 @@ class WelcomeEmail(ConfirmationEmail):
         return context
 
     def send(self, to=None, fail_silently=False, **kwargs):
-        if to is not None:
-            # Normal djoser path: render template, set self.to, hand off to mailer's DbBackend.
-            super().send(to, fail_silently=fail_silently, **kwargs)
-        else:
-            # django-mailer delivery path: email already rendered and self.to already set
-            # from the first call. Bypass djoser's send() (which requires `to`) and call
-            # Django's EmailMultiAlternatives.send() directly.
-            EmailMultiAlternatives.send(self, fail_silently=fail_silently)
+        recipients = to or getattr(self, "to", None) or []
+        logger.info("Welcome email send attempt | to={}", recipients)
+
+        try:
+            if to is not None:
+                if fail_silently is False and not kwargs:
+                    result = super().send(to)
+                else:
+                    result = super().send(to, fail_silently=fail_silently, **kwargs)
+            else:
+                # django-mailer delivery path: email already rendered, self.to already set.
+                result = EmailMultiAlternatives.send(self, fail_silently=fail_silently)
+
+            logger.info("Welcome email send success | to={}", recipients)
+            return result
+
+        except Exception:
+            logger.error("Welcome email send failure | to={}", recipients)
+            raise

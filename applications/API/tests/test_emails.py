@@ -99,9 +99,9 @@ class WelcomeEmailContextTests(TestCase):
         base = f"{ctx['protocol']}://{ctx['domain']}"
 
         self.assertEqual(ctx["site_url"], base)
-        self.assertEqual(ctx["docs_url"], f"{base}/")
-        self.assertEqual(ctx["swagger_url"], f"{base}/api/schema/swagger-ui/")
-        self.assertEqual(ctx["graphql_url"], f"{base}/graphql/")
+        self.assertEqual(ctx["docs_url"], f"{base}/api/redoc")
+        self.assertEqual(ctx["swagger_url"], f"{base}/api/swagger/")
+        self.assertEqual(ctx["graphql_url"], f"{base}/graphql/playground")
 
 
 @override_settings(**_EMAIL_OVERRIDES)
