@@ -20,7 +20,7 @@ services:
       - '8000:8000'
 
     environment:
-      - DOPPLER_TOKEN=${DOPPLER_TOKEN}
+      - DOPPLER_TOKEN=${DOPPLER_TOKEN:?DOPPLER_TOKEN is required}
   redis:
     image: redis:latest
     container_name: cache_database_dozens
