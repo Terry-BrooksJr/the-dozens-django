@@ -4,6 +4,7 @@
 .flaskenv*
 !.env.project
 !.env.vault
+!.env.example
 node_modules
 # Django #
 *.log
