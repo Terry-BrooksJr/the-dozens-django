@@ -98,6 +98,7 @@ class InsultAdmin(admin.ModelAdmin):
         "view_reports_link",
     )
     search_fields = ("reference_id", "added_by__username", "added_by__email")
+    list_filter = (HasPendingReviewFilter, "status", "nsfw", "category", "added_on")
     actions = [
         "approve_insult",
         "remove_insult",
@@ -106,6 +107,12 @@ class InsultAdmin(admin.ModelAdmin):
         "reclassify_as_sfw",
         "re_categorize",
     ]
+
+    def get_queryset(self, request):
+        # The model's default manager is PublicInsultManager (declared first),
+        # which filters to ACTIVE only. Use the plain objects manager so every
+        # status (Pending, Flagged, Rejected, Removed) is visible in the admin.
+        return Insult.objects.all()
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)

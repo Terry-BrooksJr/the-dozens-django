@@ -231,7 +231,7 @@
             <div class="nav-links">
                 <a href="https://yo-momma.io/" class="nav-link primary">← Main Site</a>
                 <a href="{% url 'swagger' %}" class="nav-link">Swagger UI</a>
-                <a href="/graphql" class="nav-link">GraphQL</a>
+                <a href="{% url 'playground' %}" class="nav-link">GraphQL</a>
                 <a href="{% url 'schema' %}" class="nav-link">OpenAPI Schema</a>
             </div>
         </div>
@@ -277,7 +277,9 @@
                   }
                   const customSettings = Object.assign({}, {
                        {
-                            settings | safe
+                            {
+                                 settings | safe
+                            }
                        }
                   }, {
                        theme: customTheme
@@ -290,7 +292,8 @@
                        theme: customTheme
                   };
                   {
-                       % endif %
+                       %
+                       endif %
                   } {
                        # djlint: on #
                   }
@@ -321,7 +324,7 @@
         <!-- Footer -->
         <div class="dozens-footer">
             <p>
-                &copy; {% now "Y" %} The Dozens API. Built with 😈 by <a href="https://www.brooksjr.com" target="_blank">Terry Brooks Jr</a>
+                © {% now "Y" %} The Dozens API. Built with 😈 by <a href="https://www.brooksjr.com" target="_blank">Terry Brooks Jr</a>
             </p>
         </div>
     </body>

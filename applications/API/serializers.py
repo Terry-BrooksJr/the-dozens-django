@@ -681,7 +681,7 @@ class CreateInsultSerializer(BaseInsultSerializer):
     nsfw = serializers.BooleanField(
         default=False, help_text="Indicates if the insult is NSFW (Not Safe For Work)."
     )
-    content = serializers.CharField(min_length=60)
+    content = serializers.CharField(min_length=45)
 
     # Read-only response fields
     reference_id = serializers.CharField(read_only=True)

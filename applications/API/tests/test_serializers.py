@@ -506,7 +506,7 @@ class TestCreateInsultSerializer(SerializerTestCase):
         self.assertIn("content", s.errors)
 
     def test_content_exactly_60_chars_passes(self):
-        content = "x" * 60
+        content = "x" * 45
         s = CreateInsultSerializer(data=self._payload(content=content))
         self.assertTrue(s.is_valid(), s.errors)
 

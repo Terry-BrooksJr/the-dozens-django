@@ -54,7 +54,7 @@ class CachedTemplateView(TemplateView):
         """
         Returns a view function for the template view with caching enabled.
         """
-        return cache_page(int(os.environ["CACHE_TTL"]))(
+        return cache_page(int(os.environ.get("CACHE_TTL", "86400")))(
             super(CachedTemplateView, cls).as_view(**initkwargs)
         )
 

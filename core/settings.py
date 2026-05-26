@@ -208,6 +208,119 @@ INSULT_REFERENCE_ID_PREFIX_OPTIONS = values.ListValue(
 )
 
 
+# ---------------------------------------------------------------------------
+# Shared configuration building blocks
+# ---------------------------------------------------------------------------
+# Plain lists/dicts that configuration classes compose via spread/concat so
+# each environment only declares its *differences* from the baseline.
+
+_INSTALLED_APPS_CORE = [
+    # 0) Instrumentation that wants to wrap others early
+    "jazzmin",
+    "django_prometheus",
+    # 1) Django built-ins
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.sites",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    # 2) DRF UI skin — must come BEFORE rest_framework
+    "rest_wind",
+    # 3) Core framework add-ons
+    "rest_framework",
+    "rest_framework.authtoken",
+    "django_filters",
+    # 4) Third-party apps
+    "corsheaders",
+    "storages",
+    "mailer",
+    "djoser",
+    "graphene_django",
+    "crispy_forms",
+    "crispy_bootstrap5",
+    # 5) API schema tooling (after DRF)
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
+]
+
+_INSTALLED_APPS_PROJECT = [
+    "applications.API",
+    "applications.graphQL",
+    "applications.ld_integration",
+]
+
+_MIDDLEWARE_CORE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.cache.UpdateCacheMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django.middleware.cache.FetchFromCacheMiddleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
+    "common.middleware.RequestIDMiddleware",
+]
+
+
+def _insert_after_middleware(base, after_item, *new_items):
+    """Return a copy of *base* with *new_items* inserted after *after_item*."""
+    result = list(base)
+    idx = result.index(after_item) + 1
+    for i, item in enumerate(new_items):
+        result.insert(idx + i, item)
+    return result
+
+
+_MIDDLEWARE_WITH_DEBUG = _insert_after_middleware(
+    _MIDDLEWARE_CORE,
+    "django.middleware.common.CommonMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
+)
+
+_REST_FRAMEWORK_COMMON = {
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 10,
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "applications.API.authentication.FlexibleTokenAuthentication",
+    ),
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+_REST_FRAMEWORK_DEV = {
+    **_REST_FRAMEWORK_COMMON,
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
+    ],
+    "DEFAULT_THROTTLE_RATES": {"anon": "1/minute", "user": "6/minute"},
+    "DEFAULT_PARSER_CLASSES": [
+        "rest_framework.parsers.JSONParser",
+    ],
+}
+
+_LOCAL_STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+
 class Base(Configuration):
     """
     Base configuration class for Django settings in the thedozens project.
@@ -264,7 +377,7 @@ class Base(Configuration):
     )
 
     LAUNCHDARKLY_SDK_KEY = os.getenv("LAUNCHDARKLY_SDK_KEY")
-    LAUNCHDARKLY_ENABLED = os.getenv("LAUNCHDARKLY_ENABLED").lower() == "true"
+    LAUNCHDARKLY_ENABLED = os.getenv("LAUNCHDARKLY_ENABLED", "false").lower() == "true"
     LAUNCHDARKLY_OBSERVABILITY_ENABLED = os.getenv(
         "LAUNCHDARKLY_OBSERVABILITY_ENABLED", ""
     ).lower() in ("1", "true", "yes", "on")
@@ -299,7 +412,7 @@ class Base(Configuration):
     #!SECTION End - Media, Files and Static Assests Storage
 
     # SECTION Start- Logging
-    LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | {level.icon}<level><bold>{level: <8}</bold></level> |<blue>{message}</blue>"
+    LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | {level.icon}  <level><bold> {level: <8}</bold></level> |<blue>{message}</blue>"
     DEFAULT_LOGGER_CONFIG = {
         "format": LOG_FORMAT,
         "diagnose": False,
@@ -359,7 +472,12 @@ class Base(Configuration):
             _logger_configured = True
     #!SECTION END - Logging
 
-    # Track if logger has been configured to prevent duplicate handlers
+    INSTALLED_APPS = values.ListValue(
+        _INSTALLED_APPS_CORE + _INSTALLED_APPS_PROJECT, environ=False
+    )
+
+    MIDDLEWARE = values.ListValue(_MIDDLEWARE_CORE, environ=False)
+
     DATABASES = values.DictValue(
         {
             "default": {
@@ -757,33 +875,16 @@ class Base(Configuration):
     #!SECTION End - GraphQL Settings (Graphene-Django)
 
     # SECTION - Email Settings (Django-Mailer)
-    # EMAIL_BACKEND routes Django's send_mail() calls into django-mailer's DB queue.
-    # MAILER_EMAIL_BACKEND is what django-mailer's send_mail management command uses
-    # to actually deliver queued messages — must be a real transport, NOT DbBackend.
     EMAIL_BACKEND = "mailer.backend.DbBackend"
     MAILER_EMAIL_BACKEND = values.Value(
         "django.core.mail.backends.smtp.EmailBackend", environ=False
     )
-    EMAIL_HOST = values.Value(
-        environ=True, environ_prefix=None, environ_name="EMAIL_SERVER"
-    )
-    EMAIL_PORT = values.PositiveIntegerValue(
-        environ=True, environ_prefix=None, environ_name="EMAIL_SSL_PORT"
-    )
-    EMAIL_USE_TLS = False
-    EMAIL_HOST_USER = values.Value(
-        environ=True, environ_prefix=None, environ_name="NOTIFICATION_SENDER_EMAIL"
-    )
-    EMAIL_HOST_PASSWORD = values.SecretValue(
-        environ=True, environ_prefix=None, environ_name="EMAIL_ACCT_PASSWORD"
-    )
-    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
     CACHES = values.DictValue(
         {
             "default": {
                 "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
-                "LOCATION": os.environ["REDIS_CACHE_TOKEN"],
+                "LOCATION": os.environ.get("REDIS_CACHE_TOKEN", ""),
                 "OPTIONS": {
                     "CLIENT_CLASS": "django_redis.client.DefaultClient",
                     "CONNECTION_POOL_KWARGS": {
@@ -812,6 +913,7 @@ class Base(Configuration):
     EMAIL_HOST_PASSWORD = values.SecretValue(
         environ=True, environ_prefix=None, environ_name="EMAIL_ACCT_PASSWORD"
     )
+    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
     MAILER_EMPTY_QUEUE_SLEEP = values.IntegerValue(
         environ=True, environ_prefix=None, environ_name="MAILER_EMPTY_QUEUE_SLEEP"
     )
@@ -832,7 +934,6 @@ class Base(Configuration):
         "site_logo_classes": "img-circle",
         # Relative path to a favicon for your site, will default to site_logo if absent (ideally 32x32 px)
         "site_icon": None,
-        "related_modal_active": True,
         # Welcome text on the login screen
         "welcome_sign": "Welcome to the Yo Momma Jokes Backend",
         # Copyright on the footer
@@ -891,7 +992,7 @@ class Base(Configuration):
             "auth": "fas fa-users-cog",
             "auth.user": "fas fa-user",
             "auth.Group": "fas fa-users",
-            "applications.API.Insult": "fas fa-face-grin-squint-tears",
+            "applications.API.Insult": "fas fa-users",
             "applications.API.JokeReview": "fa-regular fa-file-circle-check",
         },
         # Icons that are used when one is not manually specified
@@ -945,65 +1046,6 @@ class Production(Base):
         environ_prefix=None,
         environ_name="METRICS_SCRAPE_TOKEN",
     )
-    INSTALLED_APPS = values.ListValue(
-        [
-            # 0) Instrumentation that wants to wrap others early
-            "jazzmin",
-            "django_prometheus",
-            # 1) Django built-ins
-            "django.contrib.admin",
-            "django.contrib.auth",
-            "django.contrib.contenttypes",
-            "django.contrib.sessions",
-            "django.contrib.sites",
-            "django.contrib.messages",
-            "django.contrib.staticfiles",
-            # 2) DRF UI skin — must come BEFORE rest_framework so Django's template
-            #    loader finds rest_wind's rest_framework/base.html first
-            "rest_wind",
-            # 3) Core framework add-ons (foundation pieces)
-            "rest_framework",
-            "rest_framework.authtoken",
-            "django_filters",
-            # 4) Third-party apps (features)
-            "corsheaders",
-            "storages",
-            "mailer",
-            "djoser",
-            "graphene_django",
-            "crispy_forms",
-            "crispy_bootstrap5",
-            # 5) API schema tooling (after DRF)
-            "drf_spectacular",
-            "drf_spectacular_sidecar",
-            # 6) Your project apps (stuff you own)
-            "applications.API",
-            "applications.graphQL",
-            "applications.ld_integration",
-        ],
-        environ=False,
-    )
-
-    MIDDLEWARE = values.ListValue(
-        [
-            "django_prometheus.middleware.PrometheusBeforeMiddleware",
-            "corsheaders.middleware.CorsMiddleware",
-            "django.middleware.cache.UpdateCacheMiddleware",
-            "django.middleware.security.SecurityMiddleware",
-            "whitenoise.middleware.WhiteNoiseMiddleware",
-            "django.contrib.sessions.middleware.SessionMiddleware",
-            "django.middleware.common.CommonMiddleware",
-            "django.middleware.csrf.CsrfViewMiddleware",
-            "django.contrib.auth.middleware.AuthenticationMiddleware",
-            "django.contrib.messages.middleware.MessageMiddleware",
-            "django.middleware.clickjacking.XFrameOptionsMiddleware",
-            "django.middleware.cache.FetchFromCacheMiddleware",
-            "django_prometheus.middleware.PrometheusAfterMiddleware",
-            "applications.ld_integration.middleware.LaunchDarklyContextMiddleware",
-            "common.middleware.RequestIDMiddleware",
-        ],
-        environ=False,
-    )
     DEBUG = values.BooleanValue(False, environ=False)
 
     # ------------------------------------------------------------------ #
@@ -1056,35 +1098,18 @@ class Production(Base):
     )
     #!SECTION End - GraphQL Settings (Production overrides)
 
-    # SECTION Start - Production Database
-
-    #!SECTION End - Database and Caching
-    # SECTION Start - DRF Settings
     REST_FRAMEWORK = values.DictValue(
         {
+            **_REST_FRAMEWORK_COMMON,
             "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
-            "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-            "PAGE_SIZE": 10,
-            "DEFAULT_RENDERER_CLASSES": [
-                "rest_framework.renderers.JSONRenderer",
-                "rest_framework.renderers.BrowsableAPIRenderer",
-            ],
-            "DEFAULT_AUTHENTICATION_CLASSES": (
-                "applications.API.authentication.FlexibleTokenAuthentication",
-            ),
             "EXCEPTION_HANDLER": "applications.API.errors.yo_momma_exception_handler",
             "DEFAULT_THROTTLE_CLASSES": [
                 "rest_framework.throttling.AnonRateThrottle",
             ],
             "DEFAULT_THROTTLE_RATES": {"anon": "4/minute", "user": "12/minute"},
-            "DEFAULT_FILTER_BACKENDS": [
-                "django_filters.rest_framework.DjangoFilterBackend",
-            ],
-            "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
         },
         environ=False,
     )
-    #!SECTION End - DRF Settings
 
     # SECTION Start - API Schema / Docs (Production overrides)
     # Use CDN-hosted assets instead of drf-spectacular-sidecar so Swagger UI and
@@ -1126,106 +1151,13 @@ class Offline(Base):
     # of which hostname/port is used to reach the container.
     CSRF_TRUSTED_ORIGINS = ["http://localhost:8000", "http://127.0.0.1:8000"]
     STATIC_URL = "/static/"
-    STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, "static"),
-    ]
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-        },
-    }
+    STORAGES = _LOCAL_STORAGES
     INSTALLED_APPS = values.ListValue(
-        [
-            # 0) Instrumentation that wants to wrap others early
-            "jazzmin",
-            "django_prometheus",
-            # 1) Django built-ins
-            "django.contrib.admin",
-            "django.contrib.auth",
-            "django.contrib.contenttypes",
-            "django.contrib.sessions",
-            "django.contrib.sites",
-            "django.contrib.messages",
-            "django.contrib.staticfiles",
-            # 2) DRF UI skin — must come BEFORE rest_framework so Django's template
-            #    loader finds rest_wind's rest_framework/base.html first
-            "rest_wind",
-            # 3) Core framework add-ons (foundation pieces)
-            "rest_framework",
-            "rest_framework.authtoken",
-            "django_filters",
-            # 4) Third-party apps (features)
-            "corsheaders",
-            "storages",
-            "mailer",
-            "djoser",
-            "graphene_django",
-            "crispy_forms",
-            "crispy_bootstrap5",
-            # 5) API schema tooling (after DRF)
-            "drf_spectacular",
-            "drf_spectacular_sidecar",
-            # 6) Dev-only tooling
-            "debug_toolbar",
-            # 7) Your project apps (stuff you own)
-            "applications.API",
-            "applications.graphQL",
-            "applications.ld_integration",
-        ],
+        _INSTALLED_APPS_CORE + ["debug_toolbar"] + _INSTALLED_APPS_PROJECT,
         environ=False,
     )
-
-    MIDDLEWARE = values.ListValue(
-        [
-            "django_prometheus.middleware.PrometheusBeforeMiddleware",
-            "corsheaders.middleware.CorsMiddleware",
-            "django.middleware.cache.UpdateCacheMiddleware",
-            "django.middleware.security.SecurityMiddleware",
-            "whitenoise.middleware.WhiteNoiseMiddleware",
-            "django.contrib.sessions.middleware.SessionMiddleware",
-            "django.middleware.common.CommonMiddleware",
-            "debug_toolbar.middleware.DebugToolbarMiddleware",
-            "django.middleware.csrf.CsrfViewMiddleware",
-            "django.contrib.auth.middleware.AuthenticationMiddleware",
-            "django.contrib.messages.middleware.MessageMiddleware",
-            "django.middleware.clickjacking.XFrameOptionsMiddleware",
-            "django.middleware.cache.FetchFromCacheMiddleware",
-            "django_prometheus.middleware.PrometheusAfterMiddleware",
-            "common.middleware.RequestIDMiddleware",
-        ],
-        environ=False,
-    )
-    REST_FRAMEWORK = values.DictValue(
-        {
-            "DEFAULT_PERMISSION_CLASSES": [
-                "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
-            ],
-            "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-            "PAGE_SIZE": 10,
-            "DEFAULT_RENDERER_CLASSES": [
-                "rest_framework.renderers.JSONRenderer",
-                "rest_framework.renderers.BrowsableAPIRenderer",
-            ],
-            "DEFAULT_AUTHENTICATION_CLASSES": (
-                "applications.API.authentication.FlexibleTokenAuthentication",
-            ),
-            # "DEFAULT_THROTTLE_CLASSES": [
-            #     "rest_framework.throttling.AnonRateThrottle",
-            # ],
-            "DEFAULT_THROTTLE_RATES": {"anon": "1/minute", "user": "6/minute"},
-            "DEFAULT_PARSER_CLASSES": [
-                "rest_framework.parsers.JSONParser",
-            ],
-            "DEFAULT_FILTER_BACKENDS": [
-                "django_filters.rest_framework.DjangoFilterBackend",
-            ],
-            "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-        },
-        environ=False,
-    )
+    MIDDLEWARE = values.ListValue(_MIDDLEWARE_WITH_DEBUG, environ=False)
+    REST_FRAMEWORK = values.DictValue(_REST_FRAMEWORK_DEV, environ=False)
 
     # Single combined handler for console output with file rotation for debug logs
     if not Base._logger_configured:
@@ -1250,115 +1182,22 @@ class Development(Base):
     # immediately without needing a separate send_mail process.
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     STATIC_URL = "/static/"
-    STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, "static"),
-    ]
-    # Serve directly from source dirs via gunicorn without needing collectstatic locally.
     WHITENOISE_AUTOREFRESH = True
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-        },
-    }
+    STORAGES = _LOCAL_STORAGES
     INSTALLED_APPS = values.ListValue(
-        [
-            # 0) Instrumentation that wants to wrap others early
-            "jazzmin",
-            "django_prometheus",
-            # 1) Django built-ins
-            "django.contrib.admin",
-            "django.contrib.auth",
-            "django.contrib.contenttypes",
-            "django.contrib.sessions",
-            "django.contrib.sites",
-            "django.contrib.messages",
-            "django.contrib.staticfiles",
-            # 2) DRF UI skin — must come BEFORE rest_framework so Django's template
-            #    loader finds rest_wind's rest_framework/base.html first
-            "rest_wind",
-            # 3) Core framework add-ons (foundation pieces)
-            "rest_framework",
-            "rest_framework.authtoken",
-            "django_filters",
-            # 4) Third-party apps (features)
-            "corsheaders",
-            "storages",
-            "mailer",
-            "djoser",
-            "graphene_django",
-            "crispy_forms",
-            "crispy_bootstrap5",
-            # 5) API schema tooling (after DRF)
-            "drf_spectacular",
-            "drf_spectacular_sidecar",
-            # 6) Dev-only tooling
-            "debug_toolbar",
-            # 7) Your project apps (stuff you own)
-            "applications.API",
-            "applications.graphQL",
-            "applications.ld_integration",
-        ],
+        _INSTALLED_APPS_CORE + ["debug_toolbar"] + _INSTALLED_APPS_PROJECT,
         environ=False,
     )
-
     MIDDLEWARE = values.ListValue(
-        [
-            "kolo.middleware.KoloMiddleware",
-            "django_prometheus.middleware.PrometheusBeforeMiddleware",
-            "corsheaders.middleware.CorsMiddleware",
-            "django.middleware.cache.UpdateCacheMiddleware",
-            "django.middleware.security.SecurityMiddleware",
-            "whitenoise.middleware.WhiteNoiseMiddleware",
-            "django.contrib.sessions.middleware.SessionMiddleware",
-            "django.middleware.common.CommonMiddleware",
-            "debug_toolbar.middleware.DebugToolbarMiddleware",
-            "django.middleware.csrf.CsrfViewMiddleware",
-            "django.contrib.auth.middleware.AuthenticationMiddleware",
-            "django.contrib.messages.middleware.MessageMiddleware",
-            "django.middleware.clickjacking.XFrameOptionsMiddleware",
-            "django.middleware.cache.FetchFromCacheMiddleware",
+        ["kolo.middleware.KoloMiddleware"]
+        + _insert_after_middleware(
+            _MIDDLEWARE_WITH_DEBUG,
             "django_prometheus.middleware.PrometheusAfterMiddleware",
             "applications.ld_integration.middleware.LaunchDarklyContextMiddleware",
-            "common.middleware.RequestIDMiddleware",
-        ],
+        ),
         environ=False,
     )
-
-    #!SECTION End - Database and Caching
-
-    # SECTION Start - DRF Settings
-    REST_FRAMEWORK = values.DictValue(
-        {
-            "DEFAULT_PERMISSION_CLASSES": [
-                "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
-            ],
-            "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-            "PAGE_SIZE": 10,
-            "DEFAULT_RENDERER_CLASSES": [
-                "rest_framework.renderers.JSONRenderer",
-                "rest_framework.renderers.BrowsableAPIRenderer",
-            ],
-            "DEFAULT_AUTHENTICATION_CLASSES": (
-                "applications.API.authentication.FlexibleTokenAuthentication",
-            ),
-            # "DEFAULT_THROTTLE_CLASSES": [
-            #     "rest_framework.throttling.AnonRateThrottle",
-            # ],
-            "DEFAULT_THROTTLE_RATES": {"anon": "1/minute", "user": "6/minute"},
-            "DEFAULT_PARSER_CLASSES": [
-                "rest_framework.parsers.JSONParser",
-            ],
-            "DEFAULT_FILTER_BACKENDS": [
-                "django_filters.rest_framework.DjangoFilterBackend",
-            ],
-            "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-        },
-        environ=False,
-    )
-    #!SECTION End - DRF Settings
+    REST_FRAMEWORK = values.DictValue(_REST_FRAMEWORK_DEV, environ=False)
 
     # SECTION Start - Logging
     # Single combined handler for console output
@@ -1400,34 +1239,11 @@ class Testing(Development):
         environ=False,
     )
 
-    # Explicitly disable all throttle classes so no test ever receives a 429.
-    # Development leaves DEFAULT_THROTTLE_CLASSES absent (relying on DRF's
-    # default of []), but keeping DEFAULT_THROTTLE_RATES in the inherited dict
-    # alongside a persistent Redis cache can still produce spurious 429s when
-    # tests are re-run within the throttle window.
     REST_FRAMEWORK = values.DictValue(
         {
-            "DEFAULT_PERMISSION_CLASSES": [
-                "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
-            ],
-            "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-            "PAGE_SIZE": 10,
-            "DEFAULT_RENDERER_CLASSES": [
-                "rest_framework.renderers.JSONRenderer",
-                "rest_framework.renderers.BrowsableAPIRenderer",
-            ],
-            "DEFAULT_AUTHENTICATION_CLASSES": (
-                "applications.API.authentication.FlexibleTokenAuthentication",
-            ),
+            **_REST_FRAMEWORK_DEV,
             "DEFAULT_THROTTLE_CLASSES": [],
             "DEFAULT_THROTTLE_RATES": {"anon": "1000/minute", "user": "1000/minute"},
-            "DEFAULT_PARSER_CLASSES": [
-                "rest_framework.parsers.JSONParser",
-            ],
-            "DEFAULT_FILTER_BACKENDS": [
-                "django_filters.rest_framework.DjangoFilterBackend",
-            ],
-            "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
         },
         environ=False,
     )

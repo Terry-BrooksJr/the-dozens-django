@@ -33,5 +33,9 @@ urlpatterns = [
     # Machine-facing API endpoint — CSRF-exempt, JSON headers enforced
     path("", DozenGraphQLView.as_api_view(schema=schema)),
     # Interactive GraphiQL playground — pre-loaded with example headers/variables
-    path("playground/", DozenGraphQLView.as_playground_view(schema=schema)),
+    path(
+        "playground/",
+        DozenGraphQLView.as_playground_view(schema=schema),
+        name="playground",
+    ),
 ]

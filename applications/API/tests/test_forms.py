@@ -100,7 +100,7 @@ class InsultReviewFormTests(TestCase):
     def test_review_text_min_length_enforced_only_when_provided(self):
         """min_length=70 should fail if provided but too short; empty is allowed."""
         # Too short and provided -> invalid
-        data_short = self._base_payload(rationale_for_review="way too short")
+        self._base_payload(rationale_for_review="way too short")
 
         # Empty is allowed (field is not required)
         data_empty = self._base_payload(rationale_for_review="")
