@@ -456,6 +456,52 @@ class InsultAdminSearchTests(_InsultAdminBase):
 
 
 # ===========================================================================
+# list_filter — added_on date hierarchy
+# ===========================================================================
+
+
+class InsultAdminListFilterTests(_InsultAdminBase):
+    """Verify that list_filter includes added_on."""
+
+    def test_list_filter_includes_added_on(self):
+        self.assertIn("added_on", self.ma.list_filter)
+
+
+# ===========================================================================
+# get_queryset — all statuses visible
+# ===========================================================================
+
+
+class InsultAdminQuerysetTests(_InsultAdminBase):
+    """Admin changelist must expose every status, not just ACTIVE."""
+
+    def test_pending_insult_visible(self):
+        insult = self._make_insult(status=Insult.STATUS.PENDING)
+        qs = self.ma.get_queryset(self._request())
+        self.assertIn(insult, qs)
+
+    def test_removed_insult_visible(self):
+        insult = self._make_insult(status=Insult.STATUS.REMOVED)
+        qs = self.ma.get_queryset(self._request())
+        self.assertIn(insult, qs)
+
+    def test_rejected_insult_visible(self):
+        insult = self._make_insult(status=Insult.STATUS.REJECTED)
+        qs = self.ma.get_queryset(self._request())
+        self.assertIn(insult, qs)
+
+    def test_flagged_insult_visible(self):
+        insult = self._make_insult(status=Insult.STATUS.FLAGGED)
+        qs = self.ma.get_queryset(self._request())
+        self.assertIn(insult, qs)
+
+    def test_active_insult_visible(self):
+        insult = self._make_insult(status=Insult.STATUS.ACTIVE)
+        qs = self.ma.get_queryset(self._request())
+        self.assertIn(insult, qs)
+
+
+# ===========================================================================
 # view_reports_link  (requires admin URLs to be resolvable)
 # ===========================================================================
 

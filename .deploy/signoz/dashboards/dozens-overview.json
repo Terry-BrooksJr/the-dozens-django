@@ -1,5 +1,5 @@
 {
-  "description": "End-to-end service health for The Dozens stack \u2014 Traefik, Django API, Dragonfly, PostgreSQL.",
+  "description": "End-to-end service health for The Dozens stack — Traefik, Django API, Dragonfly, PostgreSQL.",
   "layout": [
     {
       "h": 5,
@@ -15,7 +15,7 @@
       "i": "panel-2",
       "moved": false,
       "static": false,
-      "w": 5,
+      "w": 4,
       "x": 4,
       "y": 0
     },
@@ -24,8 +24,8 @@
       "i": "panel-3",
       "moved": false,
       "static": false,
-      "w": 5,
-      "x": 9,
+      "w": 4,
+      "x": 8,
       "y": 0
     },
     {
@@ -33,9 +33,9 @@
       "i": "panel-4",
       "moved": false,
       "static": false,
-      "w": 5,
-      "x": 14,
-      "y": 0
+      "w": 7,
+      "x": 0,
+      "y": 5
     },
     {
       "h": 5,
@@ -43,8 +43,8 @@
       "moved": false,
       "static": false,
       "w": 5,
-      "x": 19,
-      "y": 0
+      "x": 7,
+      "y": 5
     },
     {
       "h": 8,
@@ -53,7 +53,7 @@
       "static": false,
       "w": 12,
       "x": 0,
-      "y": 5
+      "y": 10
     },
     {
       "h": 8,
@@ -61,17 +61,17 @@
       "moved": false,
       "static": false,
       "w": 12,
-      "x": 12,
-      "y": 5
+      "x": 0,
+      "y": 18
     },
     {
       "h": 8,
       "i": "panel-12",
       "moved": false,
       "static": false,
-      "w": 24,
+      "w": 12,
       "x": 0,
-      "y": 13
+      "y": 26
     },
     {
       "h": 8,
@@ -80,7 +80,7 @@
       "static": false,
       "w": 12,
       "x": 0,
-      "y": 21
+      "y": 34
     },
     {
       "h": 8,
@@ -88,17 +88,17 @@
       "moved": false,
       "static": false,
       "w": 12,
-      "x": 12,
-      "y": 21
+      "x": 0,
+      "y": 42
     },
     {
       "h": 8,
       "i": "panel-22",
       "moved": false,
       "static": false,
-      "w": 24,
+      "w": 12,
       "x": 0,
-      "y": 29
+      "y": 50
     },
     {
       "h": 8,
@@ -107,7 +107,7 @@
       "static": false,
       "w": 12,
       "x": 0,
-      "y": 37
+      "y": 58
     },
     {
       "h": 8,
@@ -115,8 +115,8 @@
       "moved": false,
       "static": false,
       "w": 12,
-      "x": 12,
-      "y": 37
+      "x": 0,
+      "y": 66
     },
     {
       "h": 4,
@@ -125,7 +125,7 @@
       "static": false,
       "w": 6,
       "x": 0,
-      "y": 45
+      "y": 74
     },
     {
       "h": 4,
@@ -134,7 +134,7 @@
       "static": false,
       "w": 6,
       "x": 6,
-      "y": 45
+      "y": 74
     },
     {
       "h": 8,
@@ -143,7 +143,7 @@
       "static": false,
       "w": 12,
       "x": 0,
-      "y": 49
+      "y": 78
     },
     {
       "h": 8,
@@ -151,8 +151,8 @@
       "moved": false,
       "static": false,
       "w": 12,
-      "x": 12,
-      "y": 49
+      "x": 0,
+      "y": 86
     },
     {
       "h": 6,
@@ -161,25 +161,7 @@
       "static": false,
       "w": 12,
       "x": 0,
-      "y": 57
-    },
-    {
-      "h": 6,
-      "i": "panel-43",
-      "moved": false,
-      "static": false,
-      "w": 4,
-      "x": 12,
-      "y": 57
-    },
-    {
-      "h": 6,
-      "i": "panel-44",
-      "moved": false,
-      "static": false,
-      "w": 4,
-      "x": 16,
-      "y": 57
+      "y": 94
     },
     {
       "h": 6,
@@ -187,8 +169,26 @@
       "moved": false,
       "static": false,
       "w": 4,
-      "x": 20,
-      "y": 57
+      "x": 0,
+      "y": 100
+    },
+    {
+      "h": 6,
+      "i": "panel-44",
+      "moved": false,
+      "static": false,
+      "w": 4,
+      "x": 4,
+      "y": 100
+    },
+    {
+      "h": 6,
+      "i": "panel-43",
+      "moved": false,
+      "static": false,
+      "w": 4,
+      "x": 8,
+      "y": 100
     },
     {
       "h": 8,
@@ -197,7 +197,7 @@
       "static": false,
       "w": 12,
       "x": 0,
-      "y": 63
+      "y": 106
     },
     {
       "h": 8,
@@ -205,92 +205,96 @@
       "moved": false,
       "static": false,
       "w": 12,
-      "x": 12,
-      "y": 63
+      "x": 0,
+      "y": 114
     },
     {
       "h": 7,
       "i": "panel-47",
       "moved": false,
       "static": false,
-      "w": 8,
+      "w": 4,
       "x": 0,
-      "y": 71
+      "y": 122
     },
     {
       "h": 7,
       "i": "panel-48",
       "moved": false,
       "static": false,
-      "w": 8,
-      "x": 8,
-      "y": 71
+      "w": 4,
+      "x": 4,
+      "y": 122
     },
     {
       "h": 7,
       "i": "panel-49",
       "moved": false,
       "static": false,
-      "w": 8,
-      "x": 16,
-      "y": 71
+      "w": 4,
+      "x": 8,
+      "y": 122
     },
     {
       "h": 8,
       "i": "panel-50",
       "moved": false,
       "static": false,
-      "w": 8,
+      "w": 6,
       "x": 0,
-      "y": 78
+      "y": 129
     },
     {
       "h": 8,
       "i": "panel-51",
       "moved": false,
       "static": false,
-      "w": 8,
-      "x": 8,
-      "y": 78
+      "w": 6,
+      "x": 6,
+      "y": 129
     },
     {
-      "h": 8,
+      "h": 6,
       "i": "panel-52",
       "moved": false,
       "static": false,
-      "w": 8,
-      "x": 16,
-      "y": 78
+      "w": 4,
+      "x": 0,
+      "y": 137
     },
     {
       "h": 6,
       "i": "panel-53",
       "moved": false,
       "static": false,
-      "w": 12,
-      "x": 0,
-      "y": 86
+      "w": 4,
+      "x": 4,
+      "y": 137
     },
     {
       "h": 6,
       "i": "panel-54",
       "moved": false,
       "static": false,
-      "w": 12,
-      "x": 12,
-      "y": 86
+      "w": 4,
+      "x": 8,
+      "y": 137
     }
   ],
+  "panelMap": {},
   "tags": [
     "the-dozens",
     "production",
     "overview"
   ],
-  "title": "The Dozens \u2014 Production Overview",
+  "title": "The Dozens — Production Overview",
+  "uploadedGrafana": false,
   "variables": {},
+  "version": "v5",
   "widgets": [
     {
       "description": "Targets currently scraping successfully (up == 1).",
+      "fillSpans": false,
       "id": "panel-1",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -328,11 +332,11 @@
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
       "title": "Scrape Targets Up",
-      "yAxisUnit": "none",
-      "fillSpans": false
+      "yAxisUnit": "none"
     },
     {
       "description": "Total API request rate across all Django endpoints.",
+      "fillSpans": false,
       "id": "panel-2",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -370,11 +374,11 @@
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
       "title": "API Request Rate",
-      "yAxisUnit": "reqps",
-      "fillSpans": false
+      "yAxisUnit": "reqps"
     },
     {
       "description": "Percentage of API responses returning 5xx status codes.",
+      "fillSpans": false,
       "id": "panel-3",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -412,11 +416,11 @@
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
       "title": "API Error Rate (5xx)",
-      "yAxisUnit": "percent",
-      "fillSpans": false
+      "yAxisUnit": "percent"
     },
     {
       "description": "95th percentile request latency across all Django endpoints.",
+      "fillSpans": false,
       "id": "panel-4",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -454,11 +458,11 @@
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
       "title": "API p95 Latency",
-      "yAxisUnit": "s",
-      "fillSpans": false
+      "yAxisUnit": "s"
     },
     {
       "description": "Overall cache hit ratio (hits / (hits + misses)).",
+      "fillSpans": false,
       "id": "panel-5",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -496,11 +500,11 @@
       "softMin": 0,
       "timePreferance": "GLOBAL_TIME",
       "title": "Cache Hit Ratio",
-      "yAxisUnit": "percentunit",
-      "fillSpans": false
+      "yAxisUnit": "percentunit"
     },
     {
       "description": "Request rate per Traefik entrypoint.",
+      "fillSpans": false,
       "id": "panel-10",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -537,12 +541,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Traefik \u2014 Requests/sec by Entrypoint",
-      "yAxisUnit": "reqps",
-      "fillSpans": false
+      "title": "Traefik — Requests/sec by Entrypoint",
+      "yAxisUnit": "reqps"
     },
     {
       "description": "Traefik response codes grouped by class.",
+      "fillSpans": false,
       "id": "panel-11",
       "isStacked": true,
       "nullZeroValues": "zero",
@@ -579,12 +583,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Traefik \u2014 Response Codes",
-      "yAxisUnit": "reqps",
-      "fillSpans": false
+      "title": "Traefik — Response Codes",
+      "yAxisUnit": "reqps"
     },
     {
       "description": "p50 / p95 / p99 service duration.",
+      "fillSpans": false,
       "id": "panel-12",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -600,19 +604,19 @@
         "promql": [
           {
             "disabled": false,
-            "legend": "p50 \u2014 {{service}}",
+            "legend": "p50 — {{service}}",
             "name": "A",
             "query": "histogram_quantile(0.50, sum(rate(traefik_service_request_duration_seconds_bucket{job=\"traefik\"}[5m])) by (service, le))"
           },
           {
             "disabled": false,
-            "legend": "p95 \u2014 {{service}}",
+            "legend": "p95 — {{service}}",
             "name": "B",
             "query": "histogram_quantile(0.95, sum(rate(traefik_service_request_duration_seconds_bucket{job=\"traefik\"}[5m])) by (service, le))"
           },
           {
             "disabled": false,
-            "legend": "p99 \u2014 {{service}}",
+            "legend": "p99 — {{service}}",
             "name": "C",
             "query": "histogram_quantile(0.99, sum(rate(traefik_service_request_duration_seconds_bucket{job=\"traefik\"}[5m])) by (service, le))"
           }
@@ -633,12 +637,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Traefik \u2014 Service Latency (p50 / p95 / p99)",
-      "yAxisUnit": "s",
-      "fillSpans": false
+      "title": "Traefik — Service Latency (p50 / p95 / p99)",
+      "yAxisUnit": "s"
     },
     {
       "description": "Django requests per HTTP method.",
+      "fillSpans": false,
       "id": "panel-20",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -675,12 +679,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Django \u2014 Requests/sec by Method",
-      "yAxisUnit": "reqps",
-      "fillSpans": false
+      "title": "Django — Requests/sec by Method",
+      "yAxisUnit": "reqps"
     },
     {
       "description": "Response code distribution.",
+      "fillSpans": false,
       "id": "panel-21",
       "isStacked": true,
       "nullZeroValues": "zero",
@@ -717,12 +721,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Django \u2014 Response Codes",
-      "yAxisUnit": "reqps",
-      "fillSpans": false
+      "title": "Django — Response Codes",
+      "yAxisUnit": "reqps"
     },
     {
       "description": "p50 / p95 / p99 request latency by view.",
+      "fillSpans": false,
       "id": "panel-22",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -738,19 +742,19 @@
         "promql": [
           {
             "disabled": false,
-            "legend": "p50 \u2014 {{view}}",
+            "legend": "p50 — {{view}}",
             "name": "A",
             "query": "histogram_quantile(0.50, sum(rate(dozens_api_django_http_requests_latency_seconds_by_view_method_bucket{job=\"api\"}[5m])) by (view, le))"
           },
           {
             "disabled": false,
-            "legend": "p95 \u2014 {{view}}",
+            "legend": "p95 — {{view}}",
             "name": "B",
             "query": "histogram_quantile(0.95, sum(rate(dozens_api_django_http_requests_latency_seconds_by_view_method_bucket{job=\"api\"}[5m])) by (view, le))"
           },
           {
             "disabled": false,
-            "legend": "p99 \u2014 {{view}}",
+            "legend": "p99 — {{view}}",
             "name": "C",
             "query": "histogram_quantile(0.99, sum(rate(dozens_api_django_http_requests_latency_seconds_by_view_method_bucket{job=\"api\"}[5m])) by (view, le))"
           }
@@ -771,12 +775,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Django \u2014 Per-View Latency (p50 / p95 / p99)",
-      "yAxisUnit": "s",
-      "fillSpans": false
+      "title": "Django — Per-View Latency (p50 / p95 / p99)",
+      "yAxisUnit": "s"
     },
     {
       "description": "Request rate segmented by status and filters.",
+      "fillSpans": false,
       "id": "panel-30",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -813,12 +817,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Random Insult \u2014 Request Rate",
-      "yAxisUnit": "reqps",
-      "fillSpans": false
+      "title": "Random Insult — Request Rate",
+      "yAxisUnit": "reqps"
     },
     {
       "description": "p95 duration per processing stage inside the endpoint.",
+      "fillSpans": false,
       "id": "panel-31",
       "isStacked": true,
       "nullZeroValues": "zero",
@@ -855,12 +859,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Random Insult \u2014 p95 Stage Duration",
-      "yAxisUnit": "s",
-      "fillSpans": false
+      "title": "Random Insult — p95 Stage Duration",
+      "yAxisUnit": "s"
     },
     {
       "description": "SQL queries executed per random insult request (rolling average).",
+      "fillSpans": false,
       "id": "panel-32",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -898,11 +902,11 @@
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
       "title": "SQL Queries per Request",
-      "yAxisUnit": "none",
-      "fillSpans": false
+      "yAxisUnit": "none"
     },
     {
       "description": "Requests that returned no matching insult.",
+      "fillSpans": false,
       "id": "panel-33",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -940,11 +944,11 @@
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
       "title": "Empty Queryset Rate",
-      "yAxisUnit": "reqps",
-      "fillSpans": false
+      "yAxisUnit": "reqps"
     },
     {
       "description": "Cache hit vs miss rate broken down by cache prefix.",
+      "fillSpans": false,
       "id": "panel-40",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -960,13 +964,13 @@
         "promql": [
           {
             "disabled": false,
-            "legend": "hit \u2014 {{dozens_api_django_cache_prefix}}",
+            "legend": "hit — {{dozens_api_django_cache_prefix}}",
             "name": "A",
             "query": "sum by (dozens_api_django_cache_prefix) (rate(dozens_api_django_cache_hits_total[5m]))"
           },
           {
             "disabled": false,
-            "legend": "miss \u2014 {{dozens_api_django_cache_prefix}}",
+            "legend": "miss — {{dozens_api_django_cache_prefix}}",
             "name": "B",
             "query": "sum by (dozens_api_django_cache_prefix) (rate(dozens_api_django_cache_misses_total[5m]))"
           }
@@ -987,12 +991,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Cache \u2014 Hit / Miss Rate by Prefix",
-      "yAxisUnit": "cps",
-      "fillSpans": false
+      "title": "Cache — Hit / Miss Rate by Prefix",
+      "yAxisUnit": "cps"
     },
     {
       "description": "p95 duration of cache operations, broken down by prefix and operation.",
+      "fillSpans": false,
       "id": "panel-41",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1029,12 +1033,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Cache \u2014 p95 Operation Duration",
-      "yAxisUnit": "s",
-      "fillSpans": false
+      "title": "Cache — p95 Operation Duration",
+      "yAxisUnit": "s"
     },
     {
       "description": "Cache invalidations per second, broken down by reason.",
+      "fillSpans": false,
       "id": "panel-42",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1071,12 +1075,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Cache \u2014 Invalidations by Reason",
-      "yAxisUnit": "cps",
-      "fillSpans": false
+      "title": "Cache — Invalidations by Reason",
+      "yAxisUnit": "cps"
     },
     {
       "description": "Dragonfly memory used vs max.",
+      "fillSpans": false,
       "id": "panel-43",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1119,12 +1123,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Dragonfly \u2014 Memory Used",
-      "yAxisUnit": "bytes",
-      "fillSpans": false
+      "title": "Dragonfly — Memory Used",
+      "yAxisUnit": "bytes"
     },
     {
       "description": "Active client connections to Dragonfly.",
+      "fillSpans": false,
       "id": "panel-44",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1161,12 +1165,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Dragonfly \u2014 Connected Clients",
-      "yAxisUnit": "none",
-      "fillSpans": false
+      "title": "Dragonfly — Connected Clients",
+      "yAxisUnit": "none"
     },
     {
       "description": "Commands executed per second, broken down by command type.",
+      "fillSpans": false,
       "id": "panel-55",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1203,12 +1207,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Dragonfly \u2014 Commands/sec by Type",
-      "yAxisUnit": "cps",
-      "fillSpans": false
+      "title": "Dragonfly — Commands/sec by Type",
+      "yAxisUnit": "cps"
     },
     {
-      "description": "Cache hit ratio per prefix \u2014 identifies which cache domains are underperforming.",
+      "description": "Cache hit ratio per prefix — identifies which cache domains are underperforming.",
+      "fillSpans": false,
       "id": "panel-45",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1245,12 +1249,12 @@
       "softMax": 1,
       "softMin": 0,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Cache \u2014 Hit Ratio by Prefix",
-      "yAxisUnit": "percentunit",
-      "fillSpans": false
+      "title": "Cache — Hit Ratio by Prefix",
+      "yAxisUnit": "percentunit"
     },
     {
       "description": "p95 DB time while rebuilding caches after a miss.",
+      "fillSpans": false,
       "id": "panel-46",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1266,13 +1270,13 @@
         "promql": [
           {
             "disabled": false,
-            "legend": "p95 \u2014 {{dozens_api_django_cache_prefix}}",
+            "legend": "p95 — {{dozens_api_django_cache_prefix}}",
             "name": "A",
             "query": "histogram_quantile(0.95, sum by (dozens_api_django_cache_prefix, le) (rate(dozens_api_django_cache_db_query_seconds_bucket{status=\"success\"}[5m])))"
           },
           {
             "disabled": false,
-            "legend": "p99 \u2014 {{dozens_api_django_cache_prefix}}",
+            "legend": "p99 — {{dozens_api_django_cache_prefix}}",
             "name": "B",
             "query": "histogram_quantile(0.99, sum by (dozens_api_django_cache_prefix, le) (rate(dozens_api_django_cache_db_query_seconds_bucket{status=\"success\"}[5m])))"
           }
@@ -1293,12 +1297,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Cache \u2014 DB Rebuild Latency (p95 / p99)",
-      "yAxisUnit": "s",
-      "fillSpans": false
+      "title": "Cache — DB Rebuild Latency (p95 / p99)",
+      "yAxisUnit": "s"
     },
     {
       "description": "Rate of cache DB-rebuild errors.",
+      "fillSpans": false,
       "id": "panel-47",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1335,12 +1339,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Cache \u2014 DB Rebuild Error Rate",
-      "yAxisUnit": "cps",
-      "fillSpans": false
+      "title": "Cache — DB Rebuild Error Rate",
+      "yAxisUnit": "cps"
     },
     {
       "description": "Per-endpoint cache hit / miss rate.",
+      "fillSpans": false,
       "id": "panel-48",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1356,13 +1360,13 @@
         "promql": [
           {
             "disabled": false,
-            "legend": "hit \u2014 {{endpoint}}",
+            "legend": "hit — {{endpoint}}",
             "name": "A",
             "query": "sum by (endpoint) (rate(endpoint_dozens_api_django_cache_hits_total[5m]))"
           },
           {
             "disabled": false,
-            "legend": "miss \u2014 {{endpoint}}",
+            "legend": "miss — {{endpoint}}",
             "name": "B",
             "query": "sum by (endpoint) (rate(endpoint_dozens_api_django_cache_misses_total[5m]))"
           }
@@ -1383,12 +1387,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Endpoint Cache \u2014 Hit / Miss by Path",
-      "yAxisUnit": "cps",
-      "fillSpans": false
+      "title": "Endpoint Cache — Hit / Miss by Path",
+      "yAxisUnit": "cps"
     },
     {
-      "description": "Hit ratio per endpoint path \u2014 surface endpoints where caching is failing.",
+      "description": "Hit ratio per endpoint path — surface endpoints where caching is failing.",
+      "fillSpans": false,
       "id": "panel-49",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1425,12 +1429,12 @@
       "softMax": 1,
       "softMin": 0,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Endpoint Cache \u2014 Hit Ratio by Path",
-      "yAxisUnit": "percentunit",
-      "fillSpans": false
+      "title": "Endpoint Cache — Hit Ratio by Path",
+      "yAxisUnit": "percentunit"
     },
     {
       "description": "Active connections versus max_connections.",
+      "fillSpans": false,
       "id": "panel-50",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1473,12 +1477,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Postgres \u2014 Connections",
-      "yAxisUnit": "none",
-      "fillSpans": false
+      "title": "Postgres — Connections",
+      "yAxisUnit": "none"
     },
     {
       "description": "Commit vs rollback rate per database.",
+      "fillSpans": false,
       "id": "panel-51",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1494,13 +1498,13 @@
         "promql": [
           {
             "disabled": false,
-            "legend": "commit \u2014 {{datname}}",
+            "legend": "commit — {{datname}}",
             "name": "A",
             "query": "sum by (datname) (rate(pg_stat_database_xact_commit{job=\"postgres\"}[5m]))"
           },
           {
             "disabled": false,
-            "legend": "rollback \u2014 {{datname}}",
+            "legend": "rollback — {{datname}}",
             "name": "B",
             "query": "sum by (datname) (rate(pg_stat_database_xact_rollback{job=\"postgres\"}[5m]))"
           }
@@ -1521,12 +1525,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Postgres \u2014 Transactions/sec",
-      "yAxisUnit": "ops",
-      "fillSpans": false
+      "title": "Postgres — Transactions/sec",
+      "yAxisUnit": "ops"
     },
     {
       "description": "On-disk size per database.",
+      "fillSpans": false,
       "id": "panel-52",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1563,12 +1567,12 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Postgres \u2014 Database Size",
-      "yAxisUnit": "bytes",
-      "fillSpans": false
+      "title": "Postgres — Database Size",
+      "yAxisUnit": "bytes"
     },
     {
       "description": "Cache hit ratio inside Postgres shared buffers (higher is better).",
+      "fillSpans": false,
       "id": "panel-53",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1605,12 +1609,12 @@
       "softMax": 1,
       "softMin": 0,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Postgres \u2014 Buffer Cache Hit Ratio",
-      "yAxisUnit": "percentunit",
-      "fillSpans": false
+      "title": "Postgres — Buffer Cache Hit Ratio",
+      "yAxisUnit": "percentunit"
     },
     {
       "description": "Deadlocks detected per database.",
+      "fillSpans": false,
       "id": "panel-54",
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -1647,9 +1651,9 @@
       "softMax": null,
       "softMin": null,
       "timePreferance": "GLOBAL_TIME",
-      "title": "Postgres \u2014 Deadlocks/sec",
-      "yAxisUnit": "ops",
-      "fillSpans": false
+      "title": "Postgres — Deadlocks/sec",
+      "yAxisUnit": "ops"
     }
-  ]
+  ],
+  "uuid": "019e5c2c-6bd8-7aa6-9bf4-15c0b1bc6b0a"
 }

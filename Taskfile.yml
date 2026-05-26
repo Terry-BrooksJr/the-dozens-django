@@ -10,6 +10,10 @@ env:
   PYTHONPATH: "{{ .TASKFILE_DIR }}"
   TEMP_STATIC_DIR: ${TEMP_STATIC_DIR}
 silent: true
+vars:
+  # Single source-of-truth for lintable code — every lint task references this.
+  # Directories are recursed; standalone root-level .py files are listed explicitly.
+  PY_SOURCES: applications common core run .deploy conftest.py pytest_dozens_plugin.py
 tasks:
   default:
     cmds:
@@ -175,22 +179,25 @@ tasks:
     cmds:
       - echo "🔍 Running Python linting and formatting..."
       - echo "🧹 Running autoflake (unused imports/variables check)..."
-      - .venv/bin/autoflake --check --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
+      - .venv/bin/autoflake --check --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports {{.PY_SOURCES}}
       - echo "📋 Running isort (import sorting)..."
-      - .venv/bin/isort . --check-only --diff
+      - .venv/bin/isort {{.PY_SOURCES}} --check-only --diff
       - echo "⚫ Running black (code formatting)..."
-      - .venv/bin/black . --check --diff
+      - .venv/bin/black {{.PY_SOURCES}} --check --diff
       - echo "🚀 Running ruff (fast linting)..."
-      - .venv/bin/ruff check .
+      - .venv/bin/ruff check {{.PY_SOURCES}}
       - echo "🔧 Running pylint (comprehensive linting)..."
-      # NOTE: `**/*.py` glob is replaced with `find` — shell globstar is not
-      # guaranteed in Task's subshell and silently passes no files to pylint.
-      - .venv/bin/pylint $(find . -name '*.py' -not -path './.venv/*' -not -path './migrations/*') --load-plugins=pylint_django,pylint_celery --django-settings-module=core.settings
+      - .venv/bin/pylint $(find {{.PY_SOURCES}} -name '*.py' -not -path '*/migrations/*') --load-plugins=pylint_django,pylint_celery --django-settings-module=core.settings
       - echo "🔒 Running bandit (security linting)..."
-      # NOTE: exclude updated from `./venv` → `./.venv` to match actual venv path.
-      - .venv/bin/bandit -r . -f json --exclude=./tests,./.venv
+      - .venv/bin/bandit -r {{.PY_SOURCES}} -c pyproject.toml
       - echo "🎯 Running mypy (type checking)..."
-      - .venv/bin/mypy .
+      # Runs via run/mypy_runner.py to bootstrap django-configurations importer
+      # before django-stubs tries to import settings.  Doppler secrets are stubbed
+      # because mypy only needs the settings structure, not real values.
+      - >-
+        SECRET_KEY=x GITHUB_ACCESS_TOKEN=x RECAPTCHA_PRIVATE_KEY=x RECAPTCHA_PUBLIC_KEY=x
+        DO_SPACES_KEY=x DO_SPACES_SECRET=x DO_SPACES_BUCKET=x EMAIL_ACCT_PASSWORD=x
+        .venv/bin/python run/mypy_runner.py {{.PY_SOURCES}}
       - echo "🌟 Running djlint (Django template linting)..."
       - .venv/bin/djlint --check templates/**/*.html
       - echo "✅ All linting checks completed!"
@@ -198,26 +205,48 @@ tasks:
     interactive: false
 
   lint:fix:
-    desc: Automatically fix linting and formatting issues
+    desc: Automatically fix linting and formatting issues, then report what's left
     dir: .
     cmds:
+      # ── Phase 1: Auto-fix (order matters — cleanups → lint fixes → formatting) ──
       - echo "🔧 Auto-fixing Python linting and formatting issues..."
       - echo "🧹 Running autoflake (removing unused imports/variables)..."
-      - cmd: .venv/bin/autoflake --in-place --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports .
+      - cmd: .venv/bin/autoflake --in-place --recursive --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports {{.PY_SOURCES}}
         ignore_error: true
-      - echo "📋 Running isort (import sorting)..."
-      - cmd: .venv/bin/isort .
+      - echo "📋 Running isort (sorting imports)..."
+      - cmd: .venv/bin/isort {{.PY_SOURCES}}
         ignore_error: true
-      - echo "⚫ Running black (code formatting)..."
-      - cmd: .venv/bin/black .
+      - echo "🚀 Running ruff (auto-fix with unsafe fixes)..."
+      - cmd: .venv/bin/ruff check {{.PY_SOURCES}} --fix --unsafe-fixes
         ignore_error: true
-      - echo "🚀 Running ruff (auto-fix)..."
-      - cmd: .venv/bin/ruff check . --fix
+      - echo "⚫ Running black (code formatting — runs last to reformat all changes)..."
+      - cmd: .venv/bin/black {{.PY_SOURCES}}
         ignore_error: true
       - echo "🌟 Running djlint (Django template auto-fix)..."
       - cmd: .venv/bin/djlint --reformat templates/**/*.html
         ignore_error: true
-      - echo "✅ Auto-fix completed! Run 'task lint:lint' to check remaining issues."
+      # ── Phase 2: Verify — run non-fixable linters so you see what's left ──
+      - echo ""
+      - echo "─────────────────────────────────────────────"
+      - echo "🔍 Verifying remaining issues..."
+      - echo "─────────────────────────────────────────────"
+      - echo "🚀 Ruff..."
+      - cmd: .venv/bin/ruff check {{.PY_SOURCES}}
+        ignore_error: true
+      - echo "🔧 Pylint..."
+      - cmd: .venv/bin/pylint $(find {{.PY_SOURCES}} -name '*.py' -not -path '*/migrations/*') --load-plugins=pylint_django,pylint_celery --django-settings-module=core.settings
+        ignore_error: true
+      - echo "🔒 Bandit..."
+      - cmd: .venv/bin/bandit -r {{.PY_SOURCES}} -c pyproject.toml
+        ignore_error: true
+      - echo "🎯 Mypy..."
+      - cmd: >-
+          SECRET_KEY=x GITHUB_ACCESS_TOKEN=x RECAPTCHA_PRIVATE_KEY=x RECAPTCHA_PUBLIC_KEY=x
+          DO_SPACES_KEY=x DO_SPACES_SECRET=x DO_SPACES_BUCKET=x EMAIL_ACCT_PASSWORD=x
+          .venv/bin/python run/mypy_runner.py {{.PY_SOURCES}}
+        ignore_error: true
+      - echo ""
+      - echo "✅ Auto-fix completed! Review any remaining issues above."
     silent: false
     interactive: false
 

@@ -156,7 +156,7 @@ class InsultThemeConsistencyTests(TestCase):
     def test_bulk_create_consistency(self):
         """Test that bulk creation doesn't bypass theme consistency."""
         # Bulk create with mismatched themes
-        insults = Insult.objects.bulk_create(
+        Insult.objects.bulk_create(
             [
                 Insult(
                     content=f"Bulk insult {i}",

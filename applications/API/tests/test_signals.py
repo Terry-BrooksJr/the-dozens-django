@@ -197,7 +197,7 @@ class NotifyAdminsPendingInsultSignalTests(TestCase):
         anon = User.objects.create_user(
             username="anon_contrib", email="anon@example.com", password="x"
         )
-        insult = self._create_insult(added_by=anon)
+        self._create_insult(added_by=anon)
         self.assertIn(anon.username, mail.outbox[0].body)
 
     def test_body_contains_category(self):

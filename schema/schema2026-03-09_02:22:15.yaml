@@ -1360,7 +1360,7 @@ components:
           description: Category key or name for the insult.
         content:
           type: string
-          minLength: 60
+          minLength: 45
         nsfw:
           type: boolean
           default: false
@@ -1395,7 +1395,7 @@ components:
           description: Category key or name for the insult.
         content:
           type: string
-          minLength: 60
+          minLength: 45
         nsfw:
           type: boolean
           default: false

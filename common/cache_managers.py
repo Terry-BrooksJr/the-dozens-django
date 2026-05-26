@@ -75,14 +75,14 @@ class GenericDataCacheManager(BaseCacheManager):
     """
 
     # Default cache timeout (24 hours)
-    CACHE_TIMEOUT = int(os.environ["CACHE_TTL"])
+    CACHE_TIMEOUT = int(os.environ.get("CACHE_TTL", "86400"))
 
     def __init__(
         self,
         model_class: Type[models.Model],
         cache_prefix: str = None,
         data_builder: Callable = None,
-        cache_timeout: int = int(os.environ["CACHE_TTL"]),
+        cache_timeout: int = int(os.environ.get("CACHE_TTL", "86400")),
     ):
         super().__init__(model_class, cache_prefix)
 

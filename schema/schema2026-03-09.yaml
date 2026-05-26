@@ -502,7 +502,7 @@ paths:
               Token authentication required
 
         ##  Request Body:
-              content (str): Insult content (minimum 60 characters, UTF-8)
+              content (str): Insult content (minimum 45 characters, UTF-8)
               nsfw (bool): Explicit content flag
               category (str): Category key or name
       summary: Create New Insult
@@ -1360,7 +1360,7 @@ components:
           description: Category key or name for the insult.
         content:
           type: string
-          minLength: 60
+          minLength: 45
         nsfw:
           type: boolean
           default: false
@@ -1395,7 +1395,7 @@ components:
           description: Category key or name for the insult.
         content:
           type: string
-          minLength: 60
+          minLength: 45
         nsfw:
           type: boolean
           default: false

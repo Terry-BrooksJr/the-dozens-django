@@ -101,13 +101,14 @@ class InsultReviewFormTests(TestCase):
         """min_length=70 should fail if provided but too short; empty is allowed."""
         # Too short and provided -> invalid
         data_short = self._base_payload(rationale_for_review="way too short")
+        form_short = InsultReviewForm(data=data_short)
+        self.assertFalse(form_short.is_valid())
+        self.assertIn("rationale_for_review", form_short.errors)
 
         # Empty is allowed (field is not required)
         data_empty = self._base_payload(rationale_for_review="")
         form_empty = InsultReviewForm(data=data_empty)
-        # form_short = InsultReviewForm(data=form_short)
         self.assertFalse(form_empty.is_valid(), form_empty.errors.as_json())
-        # self.assertFalse(form_short.is_valid(), form_short.errors.as_json())
 
     def assert_form_invalid_and_error_present(self, form_data, expected_error):
         """

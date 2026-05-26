@@ -62,7 +62,7 @@ urlpatterns = [
     ),
     path("admin/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),
-    path("metrics", metrics_view, name="prometheus-django-metrics"),
+    path("metrics", ExportToDjangoView, name="prometheus-django-metrics"),
     path("api/", include(API_URLS)),
     path("auth/token/logout/", TokenDestroyView.as_view(), name="token_logout"),
     re_path(r"^auth/", include("djoser.urls")),
