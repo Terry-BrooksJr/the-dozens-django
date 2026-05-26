@@ -500,12 +500,13 @@ class TestCreateInsultSerializer(SerializerTestCase):
 
     # ── content validation ───────────────────────────────────────────────────
 
-    def test_content_shorter_than_60_chars_fails(self):
-        s = CreateInsultSerializer(data=self._payload(content="Too short."))
+    def test_content_shorter_than_45_chars_fails(self):
+        content = "x" * 44
+        s = CreateInsultSerializer(data=self._payload(content=content))
         self.assertFalse(s.is_valid())
         self.assertIn("content", s.errors)
 
-    def test_content_exactly_60_chars_passes(self):
+    def test_content_exactly_45_chars_passes(self):
         content = "x" * 45
         s = CreateInsultSerializer(data=self._payload(content=content))
         self.assertTrue(s.is_valid(), s.errors)

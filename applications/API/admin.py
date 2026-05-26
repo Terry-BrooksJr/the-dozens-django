@@ -109,10 +109,14 @@ class InsultAdmin(admin.ModelAdmin):
     ]
 
     def get_queryset(self, request):
-        # The model's default manager is PublicInsultManager (declared first),
-        # which filters to ACTIVE only. Use the plain objects manager so every
-        # status (Pending, Flagged, Rejected, Removed) is visible in the admin.
-        return Insult.objects.all()
+        # The default manager is PublicInsultManager (active-only). Mirror what
+        # super().get_queryset() does (ordering, etc.) but through the
+        # unfiltered manager so every status is visible in the admin.
+        qs = Insult.objects.get_queryset()
+        ordering = self.get_ordering(request)
+        if ordering:
+            qs = qs.order_by(*ordering)
+        return qs
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)

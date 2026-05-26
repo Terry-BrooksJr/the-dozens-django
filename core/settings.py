@@ -272,7 +272,13 @@ _MIDDLEWARE_CORE = [
 def _insert_after_middleware(base, after_item, *new_items):
     """Return a copy of *base* with *new_items* inserted after *after_item*."""
     result = list(base)
-    idx = result.index(after_item) + 1
+    try:
+        idx = result.index(after_item) + 1
+    except ValueError:
+        raise ValueError(
+            f"Middleware {after_item!r} not found in the base middleware list. "
+            f"Was it renamed or removed?"
+        ) from None
     for i, item in enumerate(new_items):
         result.insert(idx + i, item)
     return result
