@@ -470,12 +470,29 @@ def create_category_cache_manager(model_class, key_field="key", name_field="name
                 "name_to_key": {},
             }
 
+    prefix = f"{model_class.__name__}_categories"
+
     manager = GenericDataCacheManager(
         model_class=model_class,
-        cache_prefix=f"{model_class.__name__}_categories",
+        cache_prefix=prefix,
         data_builder=category_data_builder,
         cache_timeout=86400,  # 1 day
     )
+
+    _original_get_cache_keys = manager.get_cache_keys
+
+    def _category_cache_keys():
+        keys = _original_get_cache_keys()
+        keys.update(
+            {
+                "categories": f"{prefix}:categories_v1",
+                "key_to_name": f"{prefix}:key_to_name_v1",
+                "name_to_key": f"{prefix}:name_to_key_v1",
+            }
+        )
+        return keys
+
+    manager.get_cache_keys = _category_cache_keys
 
     # Add convenience methods
     def get_category_name_by_key(key: str) -> Optional[str]:

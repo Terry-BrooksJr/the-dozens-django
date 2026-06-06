@@ -643,14 +643,6 @@ def test_create_category_cache_manager_builder_returns_expected_maps(
     assert built["name_to_key"][category.name.lower()] == category.category_key
 
 
-@pytest.mark.xfail(
-    reason=(
-        "create_category_cache_manager binds convenience methods that call "
-        "GenericDataCacheManager.get_cached_data() with unsupported keys "
-        "('categories', 'key_to_name', 'name_to_key')."
-    ),
-    strict=True,
-)
 def test_create_category_cache_manager_convenience_methods(category, second_category):
     manager = performance.create_category_cache_manager(
         InsultCategory,

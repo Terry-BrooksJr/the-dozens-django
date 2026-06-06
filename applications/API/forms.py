@@ -233,10 +233,13 @@ class InsultReviewForm(ModelForm):
 
         # Validate Min Char Length only when provided
         if review_basis and len(review_basis) < 70:
-            raise ValidationError(
-                _(
-                    "Please Ensure The Basis of your review request is 70 characters or more."
-                )
+            self.add_error(
+                "rationale_for_review",
+                ValidationError(
+                    _(
+                        "Please Ensure The Basis of your review request is 70 characters or more."
+                    )
+                ),
             )
         return cleaned_data
 
