@@ -45,7 +45,7 @@ COPY --chown=api:api run ./run
 COPY --chown=api:api schema ./schema
 COPY --chown=api:api static ./static
 COPY --chown=api:api templates ./templates
-COPY --chown=api:api .deploy/gunicorn.conf.py  ./.deploy/gunicorn.conf.py 
+COPY --chown=api:api .deploy/gunicorn.conf.py  ./.deploy/gunicorn.conf.py
 
 ENV PYTHONPATH="/src:/src/applications/API:/src/applications/graphQL:/src/applications/frontend:/src/common:/src/run"
 
