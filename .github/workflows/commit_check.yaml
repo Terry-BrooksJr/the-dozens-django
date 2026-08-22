@@ -7,7 +7,7 @@ on:
 
 env:
   PYTHON_VERSION: '3.11'
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: the-dozens
 
 jobs:
   lint:
@@ -126,21 +126,17 @@ jobs:
           if [[ "${{ needs.lint.result }}" == "success" &&
                 "${{ needs.test.result }}" == "success" &&
                 "${{ needs.security-scan.result }}" == "success" ]]; then
-
             echo "✅ All checks passed!"
             exit 0
-
           else
-
             echo "❌ Some checks failed:"
             echo "Lint: ${{ needs.lint.result }}"
             echo "Test: ${{ needs.test.result }}"
             echo "Security: ${{ needs.security-scan.result }}"
             exit 1
-
           fi
 
-   docker:
+  docker:
     name: Build and Publish Docker Image
 
     needs:
@@ -186,12 +182,9 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
           provenance: mode=max
           sbom: true
