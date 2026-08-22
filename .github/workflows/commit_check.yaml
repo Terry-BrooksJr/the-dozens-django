@@ -142,9 +142,6 @@ jobs:
     needs:
       - build-status
 
-    # Publish only after successful CI on main
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
     runs-on: ubuntu-latest
 
     steps:
