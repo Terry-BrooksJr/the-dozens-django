@@ -170,14 +170,14 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: ./Dockerfile
+          file: .deploy/Dockerfile
           call: check
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: ./Dockerfile
+          file: .deploy/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
