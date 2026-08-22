@@ -512,8 +512,12 @@ class Base(Configuration):
     AWS_STORAGE_BUCKET_NAME = values.SecretValue(
         environ=True, environ_prefix=None, environ_name="DO_SPACES_BUCKET"
     )
-    AWS_S3_ENDPOINT_URL = "https://nyc3.digitaloceanspaces.com"
-    AWS_REGION_NAME = "nyc3"
+    AWS_S3_ENDPOINT_URL = values.SecretValue(
+        environ=True, environ_prefix=None, environ_name="S3_ENDPOINT_URL"
+    )
+    AWS_REGION_NAME = values.SecretValue(
+        environ=True, environ_prefix=None, environ_name="S3_REGION_NAME"
+    )
     AWS_QUERYSTRING_AUTH = False
     AWS_S3_OBJECT_PARAMETERS = {
         "CacheControl": "max-age=86400",
