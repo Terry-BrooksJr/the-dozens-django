@@ -905,7 +905,7 @@ class Base(Configuration):
                         "SOCKET_CONNECT_TIMEOUT": 2,
                         "SOCKET_TIMEOUT": 2,
                     },
-                    TIMEOUT: 600
+                    "TIMEOUT": 600
             }
         }
     else:
