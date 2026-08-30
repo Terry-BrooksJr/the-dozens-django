@@ -1,5 +1,6 @@
 name: CI Pipeline
 
+
 on:
   push:
   pull_request:
@@ -12,6 +13,7 @@ env:
 jobs:
   lint:
     runs-on: ubuntu-latest
+
 
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +32,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+
     services:
       postgres:
         image: postgres:15
@@ -38,14 +41,17 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_db
 
+
         options: >-
           --health-cmd "pg_isready -U root -d test_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
+
         ports:
           - 5432:5432
+
 
     steps:
       - uses: actions/checkout@v4
@@ -74,6 +80,11 @@ jobs:
             --config "$DOPPLER_CONFIG" \
             --token "$DOPPLER_TOKEN" \
             -- task test:coverage
+          doppler run \
+            --project "$DOPPLER_PROJECT" \
+            --config "$DOPPLER_CONFIG" \
+            --token "$DOPPLER_TOKEN" \
+            -- task test:coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -83,6 +94,7 @@ jobs:
 
   security-scan:
     runs-on: ubuntu-latest
+
 
     steps:
       - uses: actions/checkout@v4
@@ -118,7 +130,13 @@ jobs:
       - test
       - security-scan
 
+    needs:
+      - lint
+      - test
+      - security-scan
+
     runs-on: ubuntu-latest
+
 
     steps:
       - name: Check build status
@@ -126,14 +144,18 @@ jobs:
           if [[ "${{ needs.lint.result }}" == "success" &&
                 "${{ needs.test.result }}" == "success" &&
                 "${{ needs.security-scan.result }}" == "success" ]]; then
+
             echo "✅ All checks passed!"
             exit 0
+
           else
+
             echo "❌ Some checks failed:"
             echo "Lint: ${{ needs.lint.result }}"
             echo "Test: ${{ needs.test.result }}"
             echo "Security: ${{ needs.security-scan.result }}"
             exit 1
+
           fi
 
   docker:
