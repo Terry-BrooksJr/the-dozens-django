@@ -130,11 +130,6 @@ jobs:
       - test
       - security-scan
 
-    needs:
-      - lint
-      - test
-      - security-scan
-
     runs-on: ubuntu-latest
 
 
