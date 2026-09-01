@@ -889,26 +889,32 @@ class Base(Configuration):
     MAILER_EMAIL_BACKEND = values.Value(
         "django.core.mail.backends.smtp.EmailBackend", environ=False
     )
+    USE_REDIS_CACHE = os.getenv("USE_REDIS_CACHE", "true").lower() == "true"
 
-    CACHES = values.DictValue(
-        {
+    if USE_REDIS_CACHE:
+        CACHES = {
             "default": {
                 "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
-                "LOCATION": os.environ.get("REDIS_CACHE_TOKEN", ""),
-                "OPTIONS": {
-                    "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                    "CONNECTION_POOL_KWARGS": {
-                        "max_connections": 100,
-                        "retry_on_timeout": True,
+                    "LOCATION": os.environ.get("REDIS_CACHE_TOKEN", ""),
+                    "OPTIONS": {
+                        "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                        "CONNECTION_POOL_KWARGS": {
+                            "max_connections": 100,
+                            "retry_on_timeout": True,
+                        },
+                        "SOCKET_CONNECT_TIMEOUT": 2,
+                        "SOCKET_TIMEOUT": 2,
                     },
-                    "SOCKET_CONNECT_TIMEOUT": 2,
-                    "SOCKET_TIMEOUT": 2,
-                },
-                "TIMEOUT": 300,
+                    "TIMEOUT": 600
             }
         }
-    )
-
+    else:
+        CACHES = {
+            "default": {
+                "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+                "LOCATION": "the-dozens-local",
+            }
+        }    
     EMAIL_HOST = values.Value(
         environ=True, environ_prefix=None, environ_name="EMAIL_SERVER"
     )
