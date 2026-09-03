@@ -14,7 +14,7 @@ import os
 import sys
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
-os.environ.setdefault("DJANGO_CONFIGURATION", "Testing")
+os.environ.setdefault("DJANGO_CONFIGURATION", "Staging")
 
 from configurations import importer  # noqa: E402
 

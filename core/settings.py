@@ -333,7 +333,7 @@ class Base(Configuration):
     Provides core settings for application definition, logging, database, static files, authentication, and integrations.
 
     This class centralizes environment-based and default values for the Django project, including logging, database, static/media storage, REST API documentation, GraphQL, and email settings.
-    It is intended to be subclassed for specific environments such as Production, Development, Offline, and Testing.
+    It is intended to be subclassed for specific environments such as Production, Development, Offline, and Staging.
     """
 
     # SECTION Start - Application definition
@@ -1231,16 +1231,14 @@ class Development(Base):
         Base._logger_configured = True
 
 
-class Testing(Development):
-    DATABASES = values.DictValue(
-        {
-            "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": os.path.join(str(BASE_DIR), "test_db.sqlite3"),
-            }
-        },
-        environ=False,
-    )
+class Staging(Development):
+    """CI-only configuration used exclusively for GitHub Actions commit checks.
+
+    Runs against the real `postgres` service container defined in the
+    `test` job of `.github/workflows/commit_check.yaml` (via PG_DATABASE_*
+    / POSTGRES_DB env vars inherited from `Base.DATABASES`), rather than
+    SQLite, so tests exercise the same database engine used in production.
+    """
 
     # Use an in-process memory cache so throttle counters and response caches
     # do not persist across test runs (Redis would survive between runs and
@@ -1265,10 +1263,10 @@ class Testing(Development):
     )
 
 
-# Configure logger for Testing environment
+# Configure logger for Staging environment
 # Must be done at module level AFTER class definition
 # Disable loguru's diagnostic features to avoid conflicts with coverage tracing
-if os.getenv("DJANGO_CONFIGURATION") == "Testing" and Base.configure_base_logger():
+if os.getenv("DJANGO_CONFIGURATION") == "Staging" and Base.configure_base_logger():
     logger.remove()
     logger.add(
         Base.DEFAULT_HANDLER,
@@ -1281,7 +1279,7 @@ if os.getenv("DJANGO_CONFIGURATION") == "Testing" and Base.configure_base_logger
 
 
 # --- Coerce APPEND_COMPONENTS for all configurations ---
-for _cfg in (Base, Production, Development, Offline, Testing):
+for _cfg in (Base, Production, Development, Offline, Staging):
     _cfg.SPECTACULAR_SETTINGS = _normalize_append_components(
         dict(_cfg.SPECTACULAR_SETTINGS)
     )

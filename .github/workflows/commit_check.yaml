@@ -74,11 +74,20 @@ jobs:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
           DOPPLER_PROJECT: ${{ vars.DOPPLER_PROJECT }}
           DOPPLER_CONFIG: ${{ vars.DOPPLER_CONFIG }}
+          # Point the Staging Django configuration at the `postgres` service
+          # container above rather than whatever DB Doppler's config might
+          # define. --preserve-env below keeps Doppler from clobbering these.
+          PG_DATABASE_HOST: localhost
+          PG_DATABASE_PORT: '5432'
+          PG_DATABASE_USER: root
+          PG_DATABASE_PASSWORD: postgres
+          POSTGRES_DB: test_db
         run: |
           doppler run \
             --project "$DOPPLER_PROJECT" \
             --config "$DOPPLER_CONFIG" \
             --token "$DOPPLER_TOKEN" \
+            --preserve-env \
             -- task test:coverage
 
       - name: Upload coverage to Codecov

@@ -99,7 +99,7 @@ tasks:
     dir: .
     desc: Run all tests with pytest-cov and generate cobertura.xml (primary CI task)
     env:
-      DJANGO_CONFIGURATION: Testing
+      DJANGO_CONFIGURATION: Staging
     cmds:
       - PYTHONPATH="${PYTHONPATH}" .venv/bin/coverage erase
       - >-
@@ -263,7 +263,7 @@ tasks:
   test:coverage:
     desc: Run all tests with pytest-cov; generates term, XML, and HTML reports
     env:
-      DJANGO_CONFIGURATION: Testing
+      DJANGO_CONFIGURATION: Staging
     cmds:
       - >-
         PYTHONPATH="${PYTHONPATH}" .venv/bin/pytest --cov --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml:cobertura.xml --cov-report=html:htmlcov --no-cov-on-fail -v
