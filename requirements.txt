@@ -70,7 +70,7 @@ graphene-django==3.2.3
 graphql-core==3.2.7
 graphql-relay==3.2.0
 grpcio==1.78.0
-gunicorn==23.0.0
+gunicorn==26.0.0
 h11==0.16.0
 hf-xet==1.2.0
 hiredis==3.3.0
