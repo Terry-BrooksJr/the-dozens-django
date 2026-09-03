@@ -1235,11 +1235,30 @@ class Development(Base):
 class Staging(Development):
     """CI-only configuration used exclusively for GitHub Actions commit checks.
 
-    Runs against the real `postgres` service container defined in the
-    `test` job of `.github/workflows/commit_check.yaml` (via PG_DATABASE_*
-    / POSTGRES_DB env vars inherited from `Base.DATABASES`), rather than
-    SQLite, so tests exercise the same database engine used in production.
+    Runs against Postgres rather than SQLite so tests exercise the same
+    database engine used in production. The defaults below match the
+    `postgres` service container defined in the `test` job of
+    `.github/workflows/commit_check.yaml`, which sets these same
+    PG_DATABASE_*/POSTGRES_DB values explicitly. They also let this
+    configuration run locally (`task test:coverage`, `task run:test`,
+    or bare pytest) against a local Postgres instance with the same
+    credentials, without requiring every env var to be set by hand.
     """
+
+    DATABASES = values.DictValue(
+        {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": os.getenv("POSTGRES_DB", "test_db"),
+                "USER": os.getenv("PG_DATABASE_USER", "root"),
+                "PASSWORD": os.getenv("PG_DATABASE_PASSWORD", "postgres"),
+                "HOST": os.getenv("PG_DATABASE_HOST", "localhost"),
+                "DISABLE_SERVER_SIDE_CURSORS": True,
+                "PORT": os.getenv("PG_DATABASE_PORT", "5432"),
+            }
+        },
+        environ=False,
+    )
 
     # Use an in-process memory cache so throttle counters and response caches
     # do not persist across test runs (Redis would survive between runs and
