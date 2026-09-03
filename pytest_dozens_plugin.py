@@ -34,7 +34,13 @@ def pytest_load_initial_conftests(early_config, parser, args):  # noqa: ARG001
     # install() calls validate(), which raises ImproperlyConfigured if
     # DJANGO_CONFIGURATION is not already defined.
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
-    os.environ.setdefault("DJANGO_CONFIGURATION", "Testing")
+    # Force DJANGO_CONFIGURATION to Testing during pytest runs (or allow
+    # explicit override via PYTEST_DJANGO_CONFIGURATION). Using setdefault
+    # causes issues when Doppler or parent environment injects
+    # DJANGO_CONFIGURATION (e.g. Development or Production).
+    os.environ["DJANGO_CONFIGURATION"] = os.getenv(
+        "PYTEST_DJANGO_CONFIGURATION", "Testing"
+    )
 
     from configurations import importer
 
