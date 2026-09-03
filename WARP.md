@@ -53,7 +53,7 @@ The project uses **django-configurations** with four environment classes:
 - **Production**: Full security, Highlight.io logging, rate limiting (4/min anon, 12/min user)
 - **Development**: Debug toolbar, relaxed CORS, lower rate limits (1/min anon, 6/min user)  
 - **Offline**: Same as Development but for fully disconnected environments
-- **Testing**: Minimal configuration for test runs
+- **Staging**: CI-only configuration used exclusively by the GitHub Actions commit-check workflow. Runs against real PostgreSQL (not SQLite) via the `postgres` service container defined in `.github/workflows/commit_check.yaml`, with a LocMem cache backend so throttle counters don't persist across test runs
 
 **Key Environment Variables** (managed via Doppler):
 - `SECRET_KEY`, `SITE_ID`, `CACHE_TTL`
