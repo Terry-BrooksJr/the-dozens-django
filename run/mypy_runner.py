@@ -15,6 +15,11 @@ import sys
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 os.environ.setdefault("DJANGO_CONFIGURATION", "Staging")
+os.environ.setdefault("POSTGRES_DB", "mypy")
+os.environ.setdefault("PG_DATABASE_USER", "mypy")
+os.environ.setdefault("PG_DATABASE_PASSWORD", "mypy")
+os.environ.setdefault("PG_DATABASE_HOST", "localhost")
+os.environ.setdefault("PG_DATABASE_PORT", "5432")
 
 from configurations import importer  # noqa: E402
 
