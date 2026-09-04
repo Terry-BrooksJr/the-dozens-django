@@ -59,7 +59,7 @@ The project uses **django-configurations** with four environment classes:
 - `SECRET_KEY`, `SITE_ID`, `CACHE_TTL`
 - `POSTGRES_DB`, `PG_DATABASE_USER`, `PG_DATABASE_PASSWORD`, `PG_DATABASE_HOST`, `PG_DATABASE_PORT`
 - `REDIS_CACHE_TOKEN`, `PATH_TO_DB_ROOT_CERT`
-- `DO_SPACES_KEY`, `DO_SPACES_SECRET`, `DO_SPACES_BUCKET` (DigitalOcean Spaces for static files)
+- `S3_OBJECT_STORAGE_KEY`, `S3_OBJECT_STORAGE_SECRET`, `S3_OBJECT_STORAGE_BUCKET_NAME`, `S3_ENDPOINT_URL` (S3-compatible object storage for static files)
 - `ALLOWED_HOSTS`, `ALLOWED_ORIGINS` (production domains)
 - `TEMP_STATIC_DIR` (local static collection directory)
 
