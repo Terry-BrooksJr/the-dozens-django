@@ -507,10 +507,10 @@ class Base(Configuration):
         environ=True, environ_prefix=None, environ_name="S3_OBJECT_STORAGE_KEY"
     )
     AWS_SECRET_ACCESS_KEY = values.SecretValue(
-        environ=True, environ_prefix=None, environ_name="DO_SPACES_SECRET"
+        environ=True, environ_prefix=None, environ_name="S3_OBJECT_STORAGE_SECRET"
     )
     AWS_STORAGE_BUCKET_NAME = values.SecretValue(
-        environ=True, environ_prefix=None, environ_name="DO_SPACES_BUCKET"
+        environ=True, environ_prefix=None, environ_name="S3_OBJECT_STORAGE_BUCKET_NAME"
     )
     AWS_S3_ENDPOINT_URL = values.SecretValue(
         environ=True, environ_prefix=None, environ_name="S3_ENDPOINT_URL"
