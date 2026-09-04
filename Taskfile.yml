@@ -48,19 +48,20 @@ tasks:
     silent: false
 
   freeze:
-    desc: Pin current dependencies and export requirements files
+    desc: Export locked production, development, and test requirements
     cmds:
-      - .venv/bin/poetry sync
-      - .venv/bin/poetry export --without dev,test --without-hashes --without-urls > ./requirements/base.txt
-      - .venv/bin/poetry export  --without-hashes --without-urls > ./requirements/dev.txt
+      - .venv/bin/poetry lock
+      - .venv/bin/poetry export --only main --without-hashes --without-urls --output ./requirements/base.txt
+      - .venv/bin/poetry export --only dev --without-hashes --without-urls --output ./requirements/dev.txt
+      - .venv/bin/poetry export --only test --without-hashes --without-urls --output ./requirements/test.txt
     generates:
-      - ./requirements/dev.txt
       - ./requirements/base.txt
+      - ./requirements/dev.txt
+      - ./requirements/test.txt
       - ./poetry.lock
     sources:
+      - ./pyproject.toml
       - ./poetry.lock
-      - ./requirements/dev.txt
-      - ./requirements/base.txt
     silent: false
 
   db_sync:
@@ -99,7 +100,7 @@ tasks:
     dir: .
     desc: Run all tests with pytest-cov and generate cobertura.xml (primary CI task)
     env:
-      DJANGO_CONFIGURATION: Testing
+      DJANGO_CONFIGURATION: Staging
     cmds:
       - PYTHONPATH="${PYTHONPATH}" .venv/bin/coverage erase
       - >-
@@ -263,7 +264,7 @@ tasks:
   test:coverage:
     desc: Run all tests with pytest-cov; generates term, XML, and HTML reports
     env:
-      DJANGO_CONFIGURATION: Testing
+      DJANGO_CONFIGURATION: Staging
     cmds:
       - >-
         PYTHONPATH="${PYTHONPATH}" .venv/bin/pytest --cov --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml:cobertura.xml --cov-report=html:htmlcov --no-cov-on-fail -v
@@ -292,3 +293,10 @@ tasks:
     requires:
       vars:
         - CODACY_PROJECT_TOKEN
+  
+  deps:upgrade:
+    desc: Resolve dependencies to the newest mutually compatible versions
+    cmds:
+      - .venv/bin/poetry update
+      - .venv/bin/poetry show --outdated
+    silent: false
