@@ -105,11 +105,11 @@ jobs:
             --preserve-env \
             -- task test:coverage
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+      - name: Upload coverage to Codacy
+        uses: codacy/codacy-coverage-reporter-action@v1
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./cobertura.xml
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: ./cobertura.xml
 
   security-scan:
     runs-on: ubuntu-latest

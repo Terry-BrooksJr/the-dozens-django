@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /src
 
-COPY requirements.txt ./
+COPY requirements/base.txt ./requirements.txt
 RUN python -m pip install --no-cache-dir --timeout=300 -r requirements.txt
 
 # -----------------------------------------------------------
