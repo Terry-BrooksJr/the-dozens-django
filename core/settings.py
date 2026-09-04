@@ -504,7 +504,7 @@ class Base(Configuration):
     )
     # SECTION Start - Static files & Templates
     AWS_ACCESS_KEY_ID = values.SecretValue(
-        environ=True, environ_prefix=None, environ_name="DO_SPACES_KEY"
+        environ=True, environ_prefix=None, environ_name="S3_OBJECT_STORAGE_KEY"
     )
     AWS_SECRET_ACCESS_KEY = values.SecretValue(
         environ=True, environ_prefix=None, environ_name="DO_SPACES_SECRET"

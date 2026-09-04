@@ -196,7 +196,7 @@ tasks:
       # because mypy only needs the settings structure, not real values.
       - >-
         SECRET_KEY=x GITHUB_ACCESS_TOKEN=x RECAPTCHA_PRIVATE_KEY=x RECAPTCHA_PUBLIC_KEY=x
-        DO_SPACES_KEY=x DO_SPACES_SECRET=x DO_SPACES_BUCKET=x EMAIL_ACCT_PASSWORD=x
+        S3_OBJECT_STORAGE_KEY=x DO_SPACES_SECRET=x DO_SPACES_BUCKET=x EMAIL_ACCT_PASSWORD=x
         .venv/bin/python run/mypy_runner.py {{.PY_SOURCES}}
       - echo "🌟 Running djlint (Django template linting)..."
       - .venv/bin/djlint --check templates/**/*.html
@@ -242,7 +242,7 @@ tasks:
       - echo "🎯 Mypy..."
       - cmd: >-
           SECRET_KEY=x GITHUB_ACCESS_TOKEN=x RECAPTCHA_PRIVATE_KEY=x RECAPTCHA_PUBLIC_KEY=x
-          DO_SPACES_KEY=x DO_SPACES_SECRET=x DO_SPACES_BUCKET=x EMAIL_ACCT_PASSWORD=x
+          S3_OBJECT_STORAGE_KEY=x DO_SPACES_SECRET=x DO_SPACES_BUCKET=x EMAIL_ACCT_PASSWORD=x
           .venv/bin/python run/mypy_runner.py {{.PY_SOURCES}}
         ignore_error: true
       - echo ""
