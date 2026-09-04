@@ -52,6 +52,18 @@ jobs:
         ports:
           - 5432:5432
 
+      redis:
+        image: redis:7-alpine
+
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+        ports:
+          - 6379:6379
+
 
     steps:
       - uses: actions/checkout@v4
@@ -74,11 +86,23 @@ jobs:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
           DOPPLER_PROJECT: ${{ vars.DOPPLER_PROJECT }}
           DOPPLER_CONFIG: ${{ vars.DOPPLER_CONFIG }}
+          # Point the Staging Django configuration at the `postgres`/`redis`
+          # service containers above rather than whatever Doppler's config
+          # might define. --preserve-env below keeps Doppler from
+          # clobbering these.
+          PG_DATABASE_HOST: localhost
+          PG_DATABASE_PORT: '5432'
+          PG_DATABASE_USER: root
+          PG_DATABASE_PASSWORD: postgres
+          POSTGRES_DB: test_db
+          USE_REDIS_CACHE: 'true'
+          REDIS_CACHE_TOKEN: redis://localhost:6379/0
         run: |
           doppler run \
             --project "$DOPPLER_PROJECT" \
             --config "$DOPPLER_CONFIG" \
             --token "$DOPPLER_TOKEN" \
+            --preserve-env \
             -- task test:coverage
 
       - name: Upload coverage to Codacy
@@ -150,7 +174,7 @@ jobs:
 
   docker:
     name: Build and Publish Docker Image
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     needs:
       - build-status
 

@@ -333,7 +333,7 @@ class Base(Configuration):
     Provides core settings for application definition, logging, database, static files, authentication, and integrations.
 
     This class centralizes environment-based and default values for the Django project, including logging, database, static/media storage, REST API documentation, GraphQL, and email settings.
-    It is intended to be subclassed for specific environments such as Production, Development, Offline, and Testing.
+    It is intended to be subclassed for specific environments such as Production, Development, Offline, and Staging.
     """
 
     # SECTION Start - Application definition
@@ -436,14 +436,15 @@ class Base(Configuration):
         "retention": "30 days",  # delete rotated files older than 30 days
         "compression": "gz",  # compress rotated files
     }
+    LOG_FILE_DIR = os.getenv("LOG_FILE_DIRECTORY", "logs")
     PRIMARY_LOG_FILE = Path(
-        os.path.join(BASE_DIR, "logs", "primary_ops.log")
+        os.path.join(BASE_DIR, LOG_FILE_DIR, "primary_ops.log")
     )  # pyrefly: ignore
     CRITICAL_LOG_FILE = Path(
-        os.path.join(BASE_DIR, "logs", "fatal.log")
+        os.path.join(BASE_DIR, LOG_FILE_DIR, "fatal.log")
     )  # pyrefly: ignore
     DEBUG_LOG_FILE = Path(
-        os.path.join(BASE_DIR, "logs", "utility.log")
+        os.path.join(BASE_DIR, LOG_FILE_DIR, "utility.log")
     )  # pyrefly: ignore
     DEBUG_PROPAGATE_EXCEPTIONS = True
     DEFAULT_HANDLER = sys.stdout
@@ -504,13 +505,13 @@ class Base(Configuration):
     )
     # SECTION Start - Static files & Templates
     AWS_ACCESS_KEY_ID = values.SecretValue(
-        environ=True, environ_prefix=None, environ_name="DO_SPACES_KEY"
+        environ=True, environ_prefix=None, environ_name="S3_OBJECT_STORAGE_KEY"
     )
     AWS_SECRET_ACCESS_KEY = values.SecretValue(
-        environ=True, environ_prefix=None, environ_name="DO_SPACES_SECRET"
+        environ=True, environ_prefix=None, environ_name="S3_OBJECT_STORAGE_SECRET"
     )
     AWS_STORAGE_BUCKET_NAME = values.SecretValue(
-        environ=True, environ_prefix=None, environ_name="DO_SPACES_BUCKET"
+        environ=True, environ_prefix=None, environ_name="S3_OBJECT_STORAGE_BUCKET_NAME"
     )
     AWS_S3_ENDPOINT_URL = values.SecretValue(
         environ=True, environ_prefix=None, environ_name="S3_ENDPOINT_URL"
@@ -1231,12 +1232,29 @@ class Development(Base):
         Base._logger_configured = True
 
 
-class Testing(Development):
+class Staging(Development):
+    """CI-only configuration used exclusively for GitHub Actions commit checks.
+
+    Runs against Postgres rather than SQLite so tests exercise the same
+    database engine used in production. The defaults below match the
+    `postgres` service container defined in the `test` job of
+    `.github/workflows/commit_check.yaml`, which sets these same
+    PG_DATABASE_*/POSTGRES_DB values explicitly. They also let this
+    configuration run locally (`task test:coverage`, `task run:test`,
+    or bare pytest) against a local Postgres instance with the same
+    credentials, without requiring every env var to be set by hand.
+    """
+
     DATABASES = values.DictValue(
         {
             "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": os.path.join(str(BASE_DIR), "test_db.sqlite3"),
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": os.getenv("POSTGRES_DB", "test_db"),
+                "USER": os.getenv("PG_DATABASE_USER", "root"),
+                "PASSWORD": os.getenv("PG_DATABASE_PASSWORD", "postgres"),
+                "HOST": os.getenv("PG_DATABASE_HOST", "localhost"),
+                "DISABLE_SERVER_SIDE_CURSORS": True,
+                "PORT": os.getenv("PG_DATABASE_PORT", "5432"),
             }
         },
         environ=False,
@@ -1265,10 +1283,10 @@ class Testing(Development):
     )
 
 
-# Configure logger for Testing environment
+# Configure logger for Staging environment
 # Must be done at module level AFTER class definition
 # Disable loguru's diagnostic features to avoid conflicts with coverage tracing
-if os.getenv("DJANGO_CONFIGURATION") == "Testing" and Base.configure_base_logger():
+if os.getenv("DJANGO_CONFIGURATION") == "Staging" and Base.configure_base_logger():
     logger.remove()
     logger.add(
         Base.DEFAULT_HANDLER,
@@ -1281,7 +1299,7 @@ if os.getenv("DJANGO_CONFIGURATION") == "Testing" and Base.configure_base_logger
 
 
 # --- Coerce APPEND_COMPONENTS for all configurations ---
-for _cfg in (Base, Production, Development, Offline, Testing):
+for _cfg in (Base, Production, Development, Offline, Staging):
     _cfg.SPECTACULAR_SETTINGS = _normalize_append_components(
         dict(_cfg.SPECTACULAR_SETTINGS)
     )
