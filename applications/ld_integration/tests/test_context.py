@@ -14,13 +14,16 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from django.contrib.auth.models import AnonymousUser, User
-from django.test import RequestFactory, TestCase
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
+from django.test import RequestFactory, SimpleTestCase, TestCase
 
 from applications.ld_integration.context import context_from_request
 
+User = get_user_model()
 
-class ContextFromRequestAnonymousTests(TestCase):
+
+class ContextFromRequestAnonymousTests(SimpleTestCase):
     def setUp(self):
         self.factory = RequestFactory()
 

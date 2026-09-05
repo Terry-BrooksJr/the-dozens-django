@@ -11,12 +11,12 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, SimpleTestCase
 
 from applications.ld_integration.middleware import LaunchDarklyContextMiddleware
 
 
-class LaunchDarklyContextMiddlewareTests(TestCase):
+class LaunchDarklyContextMiddlewareTests(SimpleTestCase):
     def setUp(self):
         self.factory = RequestFactory()
 

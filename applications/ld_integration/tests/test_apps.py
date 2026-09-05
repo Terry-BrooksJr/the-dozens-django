@@ -8,6 +8,7 @@ Covers:
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
@@ -46,31 +47,25 @@ class LDIntegrationConfigReadyTests(TestCase):
         )
 
     def test_ready_uses_defaults_when_settings_are_absent(self):
-        from django.conf import settings
-
+        # A bare object with none of the LAUNCHDARKLY_* attributes — unlike
+        # override_settings, this can actually represent "unset" rather than
+        # whatever the real project settings happen to define (which would
+        # make this test pass regardless of ready()'s fallback values).
+        fake_settings = SimpleNamespace()
         config = _make_config()
 
-        with patch(
-            "applications.ld_integration.apps.configure_launchdarkly"
-        ) as mock_configure:
+        with (
+            patch("applications.ld_integration.apps.settings", fake_settings),
+            patch(
+                "applications.ld_integration.apps.configure_launchdarkly"
+            ) as mock_configure,
+        ):
             config.ready()
 
-        _, kwargs = mock_configure.call_args
-        self.assertEqual(
-            kwargs["sdk_key"], getattr(settings, "LAUNCHDARKLY_SDK_KEY", "")
-        )
-        self.assertEqual(
-            kwargs["enabled"], getattr(settings, "LAUNCHDARKLY_ENABLED", True)
-        )
-        self.assertEqual(
-            kwargs["obs_enabled"],
-            getattr(settings, "LAUNCHDARKLY_OBSERVABILITY_ENABLED", False),
-        )
-        self.assertEqual(
-            kwargs["service_name"],
-            getattr(settings, "LAUNCHDARKLY_SERVICE_NAME", "django-service"),
-        )
-        self.assertEqual(
-            kwargs["service_version"],
-            getattr(settings, "LAUNCHDARKLY_SERVICE_VERSION", "dev"),
+        mock_configure.assert_called_once_with(
+            sdk_key="",
+            enabled=True,
+            obs_enabled=False,
+            service_name="django-service",
+            service_version="dev",
         )
