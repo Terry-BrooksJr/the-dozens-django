@@ -1,14 +1,17 @@
 FROM python:3.11-slim-bookworm AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq-dev \
+    libpq5 \
     libmagic1 \
     curl \
+    ca-certificates \
+    gnupg \
+    && curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
 
-COPY requirements.txt ./
+COPY requirements/base.txt ./requirements.txt
 RUN python -m pip install --no-cache-dir --timeout=300 -r requirements.txt
 
 # -----------------------------------------------------------
@@ -24,8 +27,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     libmagic1 \
     curl \
+    ca-certificates \
+    gnupg \
+    && curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
+    
 RUN useradd --shell /bin/bash --create-home api
 
 WORKDIR /src
@@ -42,7 +49,7 @@ COPY --chown=api:api run ./run
 COPY --chown=api:api schema ./schema
 COPY --chown=api:api static ./static
 COPY --chown=api:api templates ./templates
-COPY --chown=api:api .deploy/gunicorn.conf.py  ./.deploy/gunicorn.conf.py 
+COPY --chown=api:api .deploy/gunicorn.conf.py  ./.deploy/gunicorn.conf.py
 
 ENV PYTHONPATH="/src:/src/applications/API:/src/applications/graphQL:/src/applications/frontend:/src/common:/src/run"
 
@@ -55,4 +62,4 @@ EXPOSE 9555
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:9555/api/health/ || exit 1
 
-CMD ["gunicorn", "-c", ".deploy/gunicorn.conf.py", "core.wsgi:application"]
+CMD [ "gunicorn", "-c", ".deploy/gunicorn.conf.py", "core.wsgi:application"]

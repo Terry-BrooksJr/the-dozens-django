@@ -53,13 +53,13 @@ The project uses **django-configurations** with four environment classes:
 - **Production**: Full security, Highlight.io logging, rate limiting (4/min anon, 12/min user)
 - **Development**: Debug toolbar, relaxed CORS, lower rate limits (1/min anon, 6/min user)  
 - **Offline**: Same as Development but for fully disconnected environments
-- **Testing**: Minimal configuration for test runs
+- **Staging**: CI-only configuration used exclusively by the GitHub Actions commit-check workflow. Runs against real PostgreSQL (not SQLite) via the `postgres` service container defined in `.github/workflows/commit_check.yaml`, with a LocMem cache backend so throttle counters don't persist across test runs
 
 **Key Environment Variables** (managed via Doppler):
 - `SECRET_KEY`, `SITE_ID`, `CACHE_TTL`
 - `POSTGRES_DB`, `PG_DATABASE_USER`, `PG_DATABASE_PASSWORD`, `PG_DATABASE_HOST`, `PG_DATABASE_PORT`
 - `REDIS_CACHE_TOKEN`, `PATH_TO_DB_ROOT_CERT`
-- `DO_SPACES_KEY`, `DO_SPACES_SECRET`, `DO_SPACES_BUCKET` (DigitalOcean Spaces for static files)
+- `S3_OBJECT_STORAGE_KEY`, `S3_OBJECT_STORAGE_SECRET`, `S3_OBJECT_STORAGE_BUCKET_NAME`, `S3_ENDPOINT_URL` (S3-compatible object storage for static files)
 - `ALLOWED_HOSTS`, `ALLOWED_ORIGINS` (production domains)
 - `TEMP_STATIC_DIR` (local static collection directory)
 
