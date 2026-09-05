@@ -99,6 +99,7 @@ testpaths = [
   "applications/API/tests",
   "applications/graphQL/tests",
   "applications/frontend/tests",
+  "applications/ld_integration/tests",
   "core/tests",
   "common/tests"
 

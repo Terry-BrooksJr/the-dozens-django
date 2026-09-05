@@ -1,10 +1,14 @@
-[![CI Pipeline](https://github.com/Terry-BrooksJr/the-dozens-django/actions/workflows/commit_check.yaml/badge.svg)](https://github.com/Terry-BrooksJr/the-dozens-django/actions/workflows/commit_check.yaml) 
+[![CI Pipeline](https://github.com/Terry-BrooksJr/the-dozens-django/actions/workflows/commit_check.yaml/badge.svg)](https://github.com/Terry-BrooksJr/the-dozens-django/actions/workflows/commit_check.yaml)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/70f7aef1a778458f8553b024aa0f80fe)](https://app.codacy.com/gh/Terry-BrooksJr/the-dozens-django/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/70f7aef1a778458f8553b024aa0f80fe)](https://app.codacy.com/gh/Terry-BrooksJr/the-dozens-django/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 [![Better Stack Badge](https://uptime.betterstack.com/status-badges/v2/monitor/2hq41.svg)](https://uptime.betterstack.com/?utm_source=status_badge)
+![Docker Image Version](https://img.shields.io/docker/v/terrybrooks/the-dozens?sort=date&style=plastic&logo=docker&logoSize=auto&label=Lastest%20Version&link=https%3A%2F%2Fhub.docker.com%2Frepository%2Fdocker%2Fterrybrooks%2Fthe-dozens%2Ftags)
+
+
+
 # The Dozens — Django/DRF API
 
-A playful, production‑ready REST API for “yo momma” style jokes (aka *Insults*), built with **Django 5** and **Django REST Framework**. It ships with token auth, robust filtering, schema‑first API docs (OpenAPI 3 via **drf‑spectacular**), caching, pagination, linting/type‑checking, and a container‑friendly runtime. 
+A playful, production‑ready REST API for “yo momma” style jokes (aka *Insults*), built with **Django 5** and **Django REST Framework**. It ships with token auth, robust filtering, schema‑first API docs (OpenAPI 3 via **drf‑spectacular**), caching, pagination, linting/type‑checking, and a container‑friendly runtime.
 
 > TL;DR: Run `task install && task db_sync && task run:dev 8888` and hit `http://127.0.0.1:8888/api/insults/`.
 
@@ -13,32 +17,34 @@ A playful, production‑ready REST API for “yo momma” style jokes (aka *Insu
 ## Table of Contents
 
 - [The Dozens — Django/DRF API](#the-dozens--djangodrf-api)
-  - [Table of Contents](#table-of-contents)
-  - [Demo \& Status](#demo--status)
-  - [Features](#features)
-  - [Architecture](#architecture)
-  - [Tech Stack](#tech-stack)
-  - [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Environment](#environment)
-    - [Install \& Run](#install--run)
-  - [Task Runner (Taskfile.yml)](#task-runner-taskfileyml)
-  - [Configuration](#configuration)
-  - [API Overview](#api-overview)
-    - [List insults''](#list-insults)
-    - [List insults by category](#list-insults-by-category)
-    - [Retrieve / Update / Delete](#retrieve--update--delete)
-    - [Random insult'](#random-insult)
-    - [List categories](#list-categories)
-    - [Authentication](#authentication)
-  - [Schema \& Docs](#schema--docs)
-  - [Caching \& Performance](#caching--performance)
-  - [Testing \& Linting](#testing--linting)
-  - [Deployment](#deployment)
-  - [Project Layout](#project-layout)
-  - [Troubleshooting](#troubleshooting)
-  - [Contributing](#contributing)
-  - [License](#license)
+   - [Table of Contents](#table-of-contents)
+   - [Demo \& Status](#demo--status)
+   - [Features](#features)
+   - [Architecture](#architecture)
+   - [Tech Stack](#tech-stack)
+   - [Getting Started](#getting-started)
+      - [Prerequisites](#prerequisites)
+      - [Environment](#environment)
+      - [Install \& Run](#install--run)
+
+   - [Task Runner (Taskfile.yml)](#task-runner-taskfileyml)
+   - [Configuration](#configuration)
+   - [API Overview](#api-overview)
+      - [List insults''](#list-insults)
+      - [List insults by category](#list-insults-by-category)
+      - [Retrieve / Update / Delete](#retrieve--update--delete)
+      - [Random insult'](#random-insult)
+      - [List categories](#list-categories)
+      - [Authentication](#authentication)
+
+   - [Schema \& Docs](#schema--docs)
+   - [Caching \& Performance](#caching--performance)
+   - [Testing \& Linting](#testing--linting)
+   - [Deployment](#deployment)
+   - [Project Layout](#project-layout)
+   - [Troubleshooting](#troubleshooting)
+   - [Contributing](#contributing)
+   - [License](#license)
 
 ---
 
@@ -68,6 +74,7 @@ This is an actively developed project; expect frequent improvements.
 - **core/** — Django project settings, URLs, WSGI.
 
 Key models:
+
 - `Insult` — content, category, status, nsfw, added_by, timestamps.
 - `InsultCategory` — short key (`P`), human name (`Poor`).
 - `InsultReview` — moderation/review data.
@@ -92,6 +99,7 @@ Key models:
 - [Doppler](https://www.doppler.com/) CLI if you use secrets syncing (optional but supported)
 
 ### Environment
+
 Create a `.envrc` or export the following (the Taskfile expects some of these):
 
 ```env
@@ -158,39 +166,44 @@ Base path examples use `http://127.0.0.1:8888`.
 **GET** `/api/insults/`
 
 Query params:
+
 - `nsfw` — `true|false` (optional)
 - `page`, `page_size` — pagination
 
 > If you include a category in this endpoint, you’ll get `400` with guidance to use the category route.
 
 Example:
+
 ```bash
 curl -s 'http://127.0.0.1:8888/api/insults/?nsfw=false' | jq
 ```
 
 ### List insults by category
 
-**GET** `/api/insults/<category_name>/`
+__GET__ `/api/insults/<category_name>/`
 
-- `category_name` accepts either the **key** (e.g., `P`) or **name** (e.g., `Poor`).
+- `category_name` accepts either the __key__ (e.g., `P`) or __name__ (e.g., `Poor`).
 
 Example:
+
 ```bash
 curl -s 'http://127.0.0.1:8888/api/insults/Poor/' | jq
 ```
 
 ### Retrieve / Update / Delete
 
-**GET/PUT/PATCH/DELETE** `/api/insults/<reference_id>/`
+__GET/PUT/PATCH/DELETE__ `/api/insults/<reference_id>/`
 
 - Read is public; write requires token and ownership.
 
 Example (retrieve):
+
 ```bash
 curl -s 'http://127.0.0.1:8888/api/insults/SNICKER_NDc4/' | jq
 ```
 
 Example (update):
+
 ```bash
 curl -X PATCH \
   -H 'Authorization: Token <YOUR_TOKEN>' \
@@ -259,7 +272,7 @@ $ task lint:lint
 $ task lint:fix
 ```
 
-Type‑checking is enforced with **mypy**. Security scanning via **bandit**. Pylint is configured with `pylint_django` and `pylint_celery`.
+Type‑checking is enforced with __mypy__. Security scanning via __bandit__. Pylint is configured with `pylint_django` and `pylint_celery`.
 
 ## Deployment
 
@@ -298,7 +311,7 @@ Type‑checking is enforced with **mypy**. Security scanning via **bandit**. Pyl
 
 - **401 when creating/updating**: Ensure you’re sending `Authorization: Token <token>` and that the token user matches the insult owner.
 - **Category validation errors**: You can pass either the category **name** or **key**; the API normalizes internally.
-- **Redis/Dragonfly connection**: Confirm `CACHE_URL` and that the cache service is reachable.
+- __Redis/Dragonfly connection__: Confirm `CACHE_URL` and that the cache service is reachable.
 - **OpenAPI warnings**: Run `task schema` and address any serializer/view annotations flagged by drf‑spectacular.
 
 ## Contributing
