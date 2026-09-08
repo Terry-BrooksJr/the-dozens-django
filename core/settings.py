@@ -25,6 +25,8 @@ from configurations import Configuration, values
 from github import Github
 from loguru import logger
 
+from applications.ld_integration.client import configure_launchdarkly
+
 
 # --- drf-spectacular postprocessing hook to inject TokenAuth without using APPEND_COMPONENTS ---
 def add_token_auth_scheme(result, generator, request, public):
@@ -216,6 +218,12 @@ INSULT_REFERENCE_ID_PREFIX_OPTIONS = values.ListValue(
 
 _INSTALLED_APPS_CORE = [
     # 0) Instrumentation that wants to wrap others early
+    # ld_integration must be first: its AppConfig.ready() configures the
+    # LaunchDarkly client and observability plugin, which patch httpx/anthropic
+    # globally. Any app that makes those calls during its own ready() before
+    # this runs gets its early spans silently dropped ("observability singleton
+    # used before it was initialized").
+    "applications.ld_integration",
     "jazzmin",
     "django_prometheus",
     # 1) Django built-ins
@@ -248,7 +256,6 @@ _INSTALLED_APPS_CORE = [
 _INSTALLED_APPS_PROJECT = [
     "applications.API",
     "applications.graphQL",
-    "applications.ld_integration",
 ]
 
 _MIDDLEWARE_CORE = [
@@ -388,6 +395,14 @@ class Base(Configuration):
         "LAUNCHDARKLY_OBSERVABILITY_ENABLED", ""
     ).lower() in ("1", "true", "yes", "on")
     LAUNCHDARKLY_SERVICE_NAME = os.getenv("LAUNCHDARKLY_SERVICE_NAME")
+
+    configure_launchdarkly(
+        sdk_key=LAUNCHDARKLY_SDK_KEY,
+        enabled=LAUNCHDARKLY_ENABLED,
+        obs_enabled=LAUNCHDARKLY_OBSERVABILITY_ENABLED,
+        service_name=LAUNCHDARKLY_SERVICE_NAME or "django-service",
+        service_version=os.getenv("LAUNCHDARKLY_SERVICE_VERSION", "dev"),
+    )
 
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
     SESSION_CACHE_ALIAS = "default"
@@ -896,17 +911,18 @@ class Base(Configuration):
         CACHES = {
             "default": {
                 "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
-                    "LOCATION": os.environ.get("REDIS_CACHE_TOKEN", ""),
-                    "OPTIONS": {
-                        "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                        "CONNECTION_POOL_KWARGS": {
-                            "max_connections": 100,
-                            "retry_on_timeout": True,
-                        },
-                        "SOCKET_CONNECT_TIMEOUT": 2,
-                        "SOCKET_TIMEOUT": 2,
+                "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX"),
+                "LOCATION": os.getenv("REDIS_CACHE_TOKEN", ""),
+                "OPTIONS": {
+                    "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                    "CONNECTION_POOL_KWARGS": {
+                        "max_connections": 100,
+                        "retry_on_timeout": True,
                     },
-                    "TIMEOUT": 600
+                    "SOCKET_CONNECT_TIMEOUT": 2,
+                    "SOCKET_TIMEOUT": 2,
+                },
+                "TIMEOUT": 600,
             }
         }
     else:
@@ -915,7 +931,7 @@ class Base(Configuration):
                 "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
                 "LOCATION": "the-dozens-local",
             }
-        }    
+        }
     EMAIL_HOST = values.Value(
         environ=True, environ_prefix=None, environ_name="EMAIL_SERVER"
     )
@@ -1268,6 +1284,7 @@ class Staging(Development):
             "default": {
                 "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
                 "LOCATION": "testing-cache",
+                "KEY_PREFIX": "dozens-stg",
             }
         },
         environ=False,
