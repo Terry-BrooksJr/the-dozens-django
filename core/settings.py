@@ -358,6 +358,7 @@ class Base(Configuration):
         environ_name="GITHUB_ACCESS_TOKEN",
     )
     logger_configured = False
+    _logger_configured = False
     logger_lock = threading.Lock()
 
     @classmethod
@@ -464,7 +465,7 @@ class Base(Configuration):
     DEBUG_PROPAGATE_EXCEPTIONS = True
     DEFAULT_HANDLER = sys.stdout
     with logger_lock:
-        if not logger_configured:
+        if not _logger_configured:
             for _p in (PRIMARY_LOG_FILE, CRITICAL_LOG_FILE, DEBUG_LOG_FILE):
                 _p.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1164,15 +1165,9 @@ class Production(Base):
 
     # SECTION Start - Logging
     LAUNCHDARKLY_SERVICE_VERSION = os.getenv("LAUNCHDARKLY_SERVICE_VERSION")
-
-    if Base._logger_configured:
-        logger.remove()
-        # Production: stdout only — no file sinks inside the container.
-        # serialize=True emits newline-delimited JSON so Docker/Fluent Bit/Loki
-        # can parse records without regex.
-        logger.add(sys.stdout, **{**Base.DEFAULT_LOGGER_CONFIG, "serialize": False})
-        if os.getenv("LAUNCHDARKLY_OBSERVABILITY_ENABLED", "false").lower() == "true":
-            logger.add(ld_loguru_sink, **Base.DEFAULT_LOGGER_CONFIG)
+    # Base already wires up the 3 file sinks + stdout + the LaunchDarkly sink.
+    # Point LOG_FILE_DIRECTORY at a bind-mounted host directory to persist
+    # primary_ops.log/fatal.log/utility.log outside the container.
 
 
 class Offline(Base):
