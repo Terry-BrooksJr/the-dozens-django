@@ -109,7 +109,7 @@ testpaths = [
 format_css=true
 format_js=true
 ignore="H021,T001,H008,H030,H031,H006"
-
+extend_exclude = "templates/drf_spectacular/*"
 [tool.djlint.css]
 indent_size=5
 

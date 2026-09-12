@@ -134,9 +134,7 @@ def get_client():
     Assumes configure_launchdarkly() already ran via AppConfig.ready().
     Returns None if the LaunchDarkly SDK is not installed.
     """
-    if not LDCLIENT_AVAILABLE:
-        return None
-    return ld_client.get()
+    return ld_client.get() if LDCLIENT_AVAILABLE else None
 
 
 def postfork_reinit():
