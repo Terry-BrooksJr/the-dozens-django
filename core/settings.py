@@ -197,9 +197,6 @@ def ld_loguru_sink(message):
         observe.record_log(str(record.get("message")), level_no, attributes=attrs)
 
 
-NSFW_WORD_LIST_URI = values.URLValue(
-    environ=True, environ_prefix=None, environ_name="NSFW_WORD_LIST_URI"
-)
 GLOBAL_NOW = datetime.now(tz=timezone.utc)
 
 BASE_DIR = values.PathValue(Path(__file__).resolve().parent.parent, environ=False)
@@ -358,7 +355,6 @@ class Base(Configuration):
         environ_name="GITHUB_ACCESS_TOKEN",
     )
     logger_configured = False
-    _logger_configured = False
     logger_lock = threading.Lock()
 
     @classmethod
@@ -396,7 +392,6 @@ class Base(Configuration):
         "LAUNCHDARKLY_OBSERVABILITY_ENABLED", ""
     ).lower() in ("1", "true", "yes", "on")
     LAUNCHDARKLY_SERVICE_NAME = os.getenv("LAUNCHDARKLY_SERVICE_NAME")
-
     configure_launchdarkly(
         sdk_key=LAUNCHDARKLY_SDK_KEY,
         enabled=LAUNCHDARKLY_ENABLED,
@@ -465,7 +460,7 @@ class Base(Configuration):
     DEBUG_PROPAGATE_EXCEPTIONS = True
     DEFAULT_HANDLER = sys.stdout
     with logger_lock:
-        if not _logger_configured:
+        if not logger_configured:
             for _p in (PRIMARY_LOG_FILE, CRITICAL_LOG_FILE, DEBUG_LOG_FILE):
                 _p.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1165,9 +1160,15 @@ class Production(Base):
 
     # SECTION Start - Logging
     LAUNCHDARKLY_SERVICE_VERSION = os.getenv("LAUNCHDARKLY_SERVICE_VERSION")
-    # Base already wires up the 3 file sinks + stdout + the LaunchDarkly sink.
-    # Point LOG_FILE_DIRECTORY at a bind-mounted host directory to persist
-    # primary_ops.log/fatal.log/utility.log outside the container.
+
+    if Base._logger_configured:
+        logger.remove()
+        # Production: stdout only — no file sinks inside the container.
+        # serialize=True emits newline-delimited JSON so Docker/Fluent Bit/Loki
+        # can parse records without regex.
+        logger.add(sys.stdout, **{**Base.DEFAULT_LOGGER_CONFIG, "serialize": False})
+        if os.getenv("LAUNCHDARKLY_OBSERVABILITY_ENABLED", "false").lower() == "true":
+            logger.add(ld_loguru_sink, **Base.DEFAULT_LOGGER_CONFIG)
 
 
 class Offline(Base):
