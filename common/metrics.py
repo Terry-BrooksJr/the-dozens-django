@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from functools import lru_cache
 
 from prometheus_client import Counter, Histogram
@@ -132,7 +132,7 @@ def init_cache_invalidation_metrics() -> None:
     Safe to call from AppConfig.ready — failures are suppressed so they
     never block Django startup.
     """
-    try:
+    with suppress(Exception):
         from common.cache_managers import cache_registry
 
         registry_prefixes = {
@@ -142,8 +142,6 @@ def init_cache_invalidation_metrics() -> None:
         }
         registry_prefixes.update(_CACHE_INVALIDATION_STATIC_PREFIXES)
         _pre_register_invalidation_labels(tuple(registry_prefixes))
-    except Exception:
-        pass
 
 
 class _MetricsFacade:

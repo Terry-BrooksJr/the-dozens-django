@@ -109,7 +109,7 @@ testpaths = [
 format_css=true
 format_js=true
 ignore="H021,T001,H008,H030,H031,H006"
-
+extend_exclude = "templates/drf_spectacular/*"
 [tool.djlint.css]
 indent_size=5
 
@@ -122,6 +122,13 @@ skip = [".venv", "migrations"]
 
 [tool.mypy]
 plugins = ["mypy_django_plugin.main"]
+check_typed_exception = false
+python_version = "3.13"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+check_untyped_defs = true
+disallow_untyped_defs = true
 
 [tool.django-stubs]
 django_settings_module = "core.settings"

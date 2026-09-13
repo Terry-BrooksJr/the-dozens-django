@@ -21,6 +21,7 @@ class ApiRequest:
             url=f"{self.get_url}/api/{category}",
             params={"nsfw": nsfw},
             headers=self.set_headers(),
+            timeout=60,
         )
 
 
