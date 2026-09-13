@@ -897,10 +897,16 @@ class Base(Configuration):
     #!SECTION End - GraphQL Settings (Graphene-Django)
 
     # SECTION - Email Settings (Django-Mailer)
-    EMAIL_BACKEND = "mailer.backend.DbBackend"
+    # ImmediateDbBackend queues through django-mailer (for the MessageLog
+    # audit trail) and drains the queue in the same call, since nothing in
+    # this deploy schedules `manage.py send_mail` to do it later.
+    EMAIL_BACKEND = "core.mailer_backends.ImmediateDbBackend"
     MAILER_EMAIL_BACKEND = values.Value(
         "django.core.mail.backends.smtp.EmailBackend", environ=False
     )
+    # DB row locking (select_for_update) already prevents double-sends;
+    # the file lock exists for long-running send_mail loops, which we don't use.
+    MAILER_USE_FILE_LOCK = False
     USE_REDIS_CACHE = os.getenv("USE_REDIS_CACHE", "true").lower() == "true"
 
     if USE_REDIS_CACHE:
@@ -1207,9 +1213,6 @@ class Development(Base):
     CORS_ALLOW_ALL_ORIGINS = values.BooleanValue(True, environ=False)
     CSRF_TRUSTED_ORIGINS = ["https://*", "http://*"]
     DEBUG = True
-    # Skip the mailer queue in dev — send directly via SMTP so emails arrive
-    # immediately without needing a separate send_mail process.
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     STATIC_URL = "/static/"
     WHITENOISE_AUTOREFRESH = True
     STORAGES = _LOCAL_STORAGES

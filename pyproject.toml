@@ -122,6 +122,13 @@ skip = [".venv", "migrations"]
 
 [tool.mypy]
 plugins = ["mypy_django_plugin.main"]
+check_typed_exception = false
+python_version = "3.13"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+check_untyped_defs = true
+disallow_untyped_defs = true
 
 [tool.django-stubs]
 django_settings_module = "core.settings"

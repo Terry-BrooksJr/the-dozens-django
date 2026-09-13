@@ -84,7 +84,7 @@ class ContextFromRequestAuthenticatedTests(TestCase):
         user = User.objects.create_user(
             username="jdoe2",
             email="jdoe2@example.com",
-            password="pw",
+            password="pw",  # type: ignore
             is_staff=True,
             is_superuser=True,
         )
@@ -113,7 +113,7 @@ class ContextFromRequestAuthenticatedTests(TestCase):
         user = User.objects.create_user(
             username="jdoe4",
             email="jdoe4@example.com",
-            password="pw",
+            password="pw",  # type: ignore
             first_name="Jane",
             last_name="Doe",
         )

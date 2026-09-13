@@ -7,6 +7,7 @@ This module:
 - Provides the custom 'yo_momma_exception_handler' for runtime errors.
 """
 
+import contextlib
 from typing import Any, Dict
 
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse
@@ -471,14 +472,10 @@ def yo_momma_exception_handler(exc: Exception, context: Dict[str, Any]) -> Respo
     # Try to pull an error code from DRF/APIException if present
     default_code = getattr(exc, "default_code", None)
     if isinstance(exc, APIException) and hasattr(exc, "get_codes"):
-        try:
+        with contextlib.suppress(Exception):
             codes = exc.get_codes()
             if isinstance(codes, str):
                 default_code = codes
-        except Exception:
-            # Don't let broken get_codes() kill the handler
-            pass
-
     current_code = data.get("code", default_code or "error")
 
     # Extract request context for structured logging
