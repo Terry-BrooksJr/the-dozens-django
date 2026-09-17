@@ -24,6 +24,8 @@ except ImportError:
 from configurations import Configuration, values
 from github import Github
 from loguru import logger
+from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
+from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
 
 
 # --- drf-spectacular postprocessing hook to inject TokenAuth without using APPEND_COMPONENTS ---
@@ -419,6 +421,16 @@ class Base(Configuration):
 
     # SECTION Start- Logging
     LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | {level.icon}  <level><bold> {level: <8}</bold></level> |<blue>{message}</blue>"
+    # Stdlib-logging equivalent of LOG_FORMAT (Loguru's `{time}`/`<tag>` markup
+    # isn't valid for logging.Formatter, which needs %(...)s directives).
+    # Used to pre-empt opentelemetry-instrumentation-logging: LoggingInstrumentor
+    # calls logging.basicConfig(format=DEFAULT_LOGGING_FORMAT, ...) when the
+    # LaunchDarkly Observability plugin instruments logging, but basicConfig()
+    # is a no-op once the root logger already has a handler. Configuring stdlib
+    # logging with this format first (see ld_integration/apps.py) keeps
+    # stdlib-only loggers like django.request from switching to the OTel
+    # trace_id/span_id format.
+    DEFAULT_LOG_FORMAT = "%(asctime)s | %(levelname)-8s | [%(name)s] - %(message)s"
     DEFAULT_LOGGER_CONFIG = {
         "format": LOG_FORMAT,
         "diagnose": False,
@@ -475,6 +487,8 @@ class Base(Configuration):
                 stream_sinks.append(ld_loguru_sink)
             for sink in stream_sinks:
                 logger.add(sink, **DEFAULT_LOGGER_CONFIG)
+
+         
 
             _logger_configured = True
     #!SECTION END - Logging
@@ -1148,13 +1162,23 @@ class Production(Base):
 
     # SECTION Start - Logging
     LAUNCHDARKLY_SERVICE_VERSION = os.getenv("LAUNCHDARKLY_SERVICE_VERSION")
-
+    # Loki Log Handler - May Replace OTEL in future iterations 
+                
+    LOKI_HANDLER = LokiLoggerHandler(
+                    url=os.environ["LOKI_URL"],
+                    labels={"application": "dozen_api", "environment": "Production"},
+                    label_keys={},
+                    timeout=10,
+                    default_formatter=LoguruFormatter(),
+    )
+    logger.configure(handlers=[{"sink": LOKI_HANDLER, "serialize": True}])
     if Base._logger_configured:
         logger.remove()
         # Production: stdout only — no file sinks inside the container.
         # serialize=True emits newline-delimited JSON so Docker/Fluent Bit/Loki
         # can parse records without regex.
         logger.add(sys.stdout, **{**Base.DEFAULT_LOGGER_CONFIG, "serialize": False})
+
         if os.getenv("LAUNCHDARKLY_OBSERVABILITY_ENABLED", "false").lower() == "true":
             logger.add(ld_loguru_sink, **Base.DEFAULT_LOGGER_CONFIG)
 
@@ -1219,6 +1243,15 @@ class Development(Base):
     # SECTION Start - Logging
     # Single combined handler for console output
     # Force logger configuration for Development environment
+    # Loki Log Handler - May Replace OTEL in future iterations 
+    LOKI_HANDLER = LokiLoggerHandler(
+                    url=os.environ["LOKI_URL"],
+                    labels={"application": "dozen_api", "environment": "Development"},
+                    label_keys={},
+                    timeout=10,
+                    default_formatter=LoguruFormatter(),
+    )
+    logger.configure(handlers=[{"sink": LOKI_HANDLER, "serialize": True}])
     if not Base._logger_configured:
         logger.remove()
         logger.add(
@@ -1296,6 +1329,7 @@ if os.getenv("DJANGO_CONFIGURATION") == "Staging" and Base.configure_base_logger
         catch=False,
         backtrace=False,
     )
+
 
 
 # --- Coerce APPEND_COMPONENTS for all configurations ---

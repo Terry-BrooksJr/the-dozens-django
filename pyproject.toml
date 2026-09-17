@@ -52,6 +52,7 @@ boto3 = "*"
 drf-restwind = "*"
 pygithub = "*"
 django-jazzmin = "*"
+loki-logger-handler = "^1.1.2"
 
 [tool.poetry.group.test]
 optional = true
