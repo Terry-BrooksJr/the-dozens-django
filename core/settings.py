@@ -28,9 +28,6 @@ from common.helpers import (
     ld_loguru_sink,
     log_warning,
 )
-from common.helpers import (
-    add_token_auth_scheme,
-)  # noqa: F401 (kept for core.settings.add_token_auth_scheme back-compat)
 
 NSFW_WORD_LIST_URI = values.URLValue(
     environ=True, environ_prefix=None, environ_name="NSFW_WORD_LIST_URI"
