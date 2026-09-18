@@ -488,8 +488,6 @@ class Base(Configuration):
             for sink in stream_sinks:
                 logger.add(sink, **DEFAULT_LOGGER_CONFIG)
 
-         
-
             _logger_configured = True
     #!SECTION END - Logging
 
@@ -910,17 +908,17 @@ class Base(Configuration):
         CACHES = {
             "default": {
                 "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
-                    "LOCATION": os.environ.get("REDIS_CACHE_TOKEN", ""),
-                    "OPTIONS": {
-                        "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                        "CONNECTION_POOL_KWARGS": {
-                            "max_connections": 100,
-                            "retry_on_timeout": True,
-                        },
-                        "SOCKET_CONNECT_TIMEOUT": 2,
-                        "SOCKET_TIMEOUT": 2,
+                "LOCATION": os.environ.get("REDIS_CACHE_TOKEN", ""),
+                "OPTIONS": {
+                    "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                    "CONNECTION_POOL_KWARGS": {
+                        "max_connections": 100,
+                        "retry_on_timeout": True,
                     },
-                    "TIMEOUT": 600
+                    "SOCKET_CONNECT_TIMEOUT": 2,
+                    "SOCKET_TIMEOUT": 2,
+                },
+                "TIMEOUT": 600,
             }
         }
     else:
@@ -929,7 +927,7 @@ class Base(Configuration):
                 "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
                 "LOCATION": "the-dozens-local",
             }
-        }    
+        }
     EMAIL_HOST = values.Value(
         environ=True, environ_prefix=None, environ_name="EMAIL_SERVER"
     )
@@ -1162,14 +1160,14 @@ class Production(Base):
 
     # SECTION Start - Logging
     LAUNCHDARKLY_SERVICE_VERSION = os.getenv("LAUNCHDARKLY_SERVICE_VERSION")
-    # Loki Log Handler - May Replace OTEL in future iterations 
-                
+    # Loki Log Handler - May Replace OTEL in future iterations
+
     LOKI_HANDLER = LokiLoggerHandler(
-                    url=os.environ["LOKI_URL"],
-                    labels={"application": "dozen_api", "environment": "Production"},
-                    label_keys={},
-                    timeout=10,
-                    default_formatter=LoguruFormatter(),
+        url=os.environ["LOKI_URL"],
+        labels={"application": "dozen_api", "environment": "Production"},
+        label_keys={},
+        timeout=10,
+        default_formatter=LoguruFormatter(),
     )
     logger.configure(handlers=[{"sink": LOKI_HANDLER, "serialize": True}])
     if Base._logger_configured:
@@ -1243,13 +1241,13 @@ class Development(Base):
     # SECTION Start - Logging
     # Single combined handler for console output
     # Force logger configuration for Development environment
-    # Loki Log Handler - May Replace OTEL in future iterations 
+    # Loki Log Handler - May Replace OTEL in future iterations
     LOKI_HANDLER = LokiLoggerHandler(
-                    url=os.environ["LOKI_URL"],
-                    labels={"application": "dozen_api", "environment": "Development"},
-                    label_keys={},
-                    timeout=10,
-                    default_formatter=LoguruFormatter(),
+        url=os.environ["LOKI_URL"],
+        labels={"application": "dozen_api", "environment": "Development"},
+        label_keys={},
+        timeout=10,
+        default_formatter=LoguruFormatter(),
     )
     logger.configure(handlers=[{"sink": LOKI_HANDLER, "serialize": True}])
     if not Base._logger_configured:
@@ -1329,7 +1327,6 @@ if os.getenv("DJANGO_CONFIGURATION") == "Staging" and Base.configure_base_logger
         catch=False,
         backtrace=False,
     )
-
 
 
 # --- Coerce APPEND_COMPONENTS for all configurations ---

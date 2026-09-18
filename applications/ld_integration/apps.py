@@ -19,7 +19,9 @@ class LDIntegrationConfig(AppConfig):
         # handler, so configuring our own format here first keeps that OTel
         # format from taking over.
         logging.basicConfig(
-            format=getattr(settings, "DEFAULT_LOG_FORMAT", "%(asctime)s %(levelname)s %(message)s"),
+            format=getattr(
+                settings, "DEFAULT_LOG_FORMAT", "%(asctime)s %(levelname)s %(message)s"
+            ),
             level=logging.INFO,
         )
         configure_launchdarkly(

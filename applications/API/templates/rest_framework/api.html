@@ -77,7 +77,7 @@
   class="is-drawer-close:tooltip is-drawer-close:tooltip-right rtl:is-drawer-close:tooltip-left"
   data-tip='{% trans "GraphQL" %}'
 >
-  <a href="/graphql">
+  <a href='{% url "playground" %}'>
     <i data-lucide="git-merge" class="size-4 lg:size-6"></i>
     <span class="is-drawer-close:sr-only">{% trans "GraphQL" %}</span>
   </a>
@@ -101,7 +101,7 @@
   class="is-drawer-close:tooltip is-drawer-close:tooltip-right rtl:is-drawer-close:tooltip-left"
   data-tip='{% trans "Profile" %}'
 >
-  <a href="/auth/users/me/">
+  <a href='{% url "user-me" %}'>
     <i data-lucide="circle-user" class="size-4 lg:size-6"></i>
     <span class="is-drawer-close:sr-only">{% trans "Profile" %}</span>
   </a>
@@ -111,7 +111,7 @@
   class="is-drawer-close:tooltip is-drawer-close:tooltip-right rtl:is-drawer-close:tooltip-left"
   data-tip='{% trans "Admin" %}'
 >
-  <a href="/admin/">
+  <a href='{% url "admin-dash" %}'>
     <i data-lucide="shield" class="size-4 lg:size-6"></i>
     <span class="is-drawer-close:sr-only">{% trans "Admin" %}</span>
   </a>

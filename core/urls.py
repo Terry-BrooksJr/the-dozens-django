@@ -60,7 +60,7 @@ urlpatterns = [
         admin.site.admin_view(grafana_dashboard_view),
         name="admin-grafana-dashboard",
     ),
-    path("admin/", admin.site.urls),
+    path("admin/", admin.site.urls, name="admin-dash"),
     path("api-auth/", include("rest_framework.urls")),
     path("metrics", ExportToDjangoView, name="prometheus-django-metrics"),
     path("api/", include(API_URLS)),

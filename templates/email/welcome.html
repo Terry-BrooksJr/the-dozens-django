@@ -1,5 +1,5 @@
 {% load static %}
-{% block subject %}Welcome to the Yo' Momma API, {{ user.username }}!{% endblock %}
+{% block subject %}Welcome to the Yo' Momma API, {{ user.username }}!{% endblock subject %}
 {% block html_body %}
     <!DOCTYPE html>
     <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
@@ -326,4 +326,4 @@
             </table>
         </body>
     </html>
-{% endblock %}
+{% endblock html_body %}
