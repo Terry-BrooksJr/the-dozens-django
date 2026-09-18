@@ -18,7 +18,7 @@ import os
 User = get_user_model()
 
 DASHBOARD_URL_NAME = "admin-grafana-dashboard"
-GRAFANA_URL = os.environ["GRAFANA_DASHBOARD_URL"]
+GRAFANA_URL = os.getenv("GRAFANA_DASHBOARD_URL", "")
 
 
 class GrafanaDashboardViewTests(TestCase):
