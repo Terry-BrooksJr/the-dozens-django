@@ -293,7 +293,7 @@ tasks:
     requires:
       vars:
         - CODACY_PROJECT_TOKEN
-  
+
   deps:upgrade:
     desc: Resolve dependencies to the newest mutually compatible versions
     cmds:

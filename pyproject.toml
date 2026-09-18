@@ -52,6 +52,7 @@ boto3 = "*"
 drf-restwind = "*"
 pygithub = "*"
 django-jazzmin = "*"
+loki-logger-handler = "^1.1.2"
 
 [tool.poetry.group.test]
 optional = true
@@ -74,11 +75,11 @@ pylint-django = "*"
 pylint-celery = "*"
 bandit = "*"
 django-stubs = { version = "*", extras = ["compatible-mypy"] }
-pre-commit = "*"
 kolo = "*"
 autoflake = "*"
 ruff = "*"
 djlint = "*"
+pre-commit = "^4.6.2"
 
 [tool.poetry.requires-plugins]
 poetry-plugin-export = ">=1.8"

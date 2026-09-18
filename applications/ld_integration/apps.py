@@ -1,3 +1,5 @@
+import logging
+
 from django.apps import AppConfig
 from django.conf import settings
 
@@ -5,10 +7,37 @@ from .client import configure_launchdarkly
 
 
 class LDIntegrationConfig(AppConfig):
+    """AppConfig for the LaunchDarkly integration app.
+
+    Owns process startup for LaunchDarkly: establishing the stdlib logging
+    format before the SDK's Observability plugin can install its own, then
+    initializing the LaunchDarkly client from Django settings.
+    """
+
     default_auto_field = "django.db.models.BigAutoField"
     name = "applications.ld_integration"
 
     def ready(self):
+        """Django lifecycle hook: configure stdlib logging, then the LaunchDarkly client.
+
+        Runs once Django has loaded all apps. Order matters here (see the
+        inline note below): `logging.basicConfig()` must run before
+        `configure_launchdarkly()` so our log format wins over the one the
+        Observability plugin would otherwise install.
+        """
+        # Must run before configure_launchdarkly(): once the LaunchDarkly
+        # Observability plugin instruments logging, it calls
+        # logging.basicConfig(format=<OTel trace_id/span_id format>, ...) to
+        # correlate stdlib logs (e.g. django.request) with traces.
+        # logging.basicConfig() is a no-op once the root logger already has a
+        # handler, so configuring our own format here first keeps that OTel
+        # format from taking over.
+        logging.basicConfig(
+            format=getattr(
+                settings, "DEFAULT_LOG_FORMAT", "%(asctime)s %(levelname)s %(message)s"
+            ),
+            level=logging.INFO,
+        )
         configure_launchdarkly(
             sdk_key=getattr(settings, "LAUNCHDARKLY_SDK_KEY", ""),
             enabled=getattr(settings, "LAUNCHDARKLY_ENABLED", True),
