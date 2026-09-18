@@ -12,6 +12,7 @@ import logging
 import os
 import sys
 import threading
+import time
 import warnings
 from datetime import datetime, timezone
 from pathlib import Path
@@ -114,6 +115,11 @@ def log_warning(
     logger.warning(
         f"{filename}:{lineno}{file_info} - {category.__name__}: {message}{line_info}"
     )
+
+
+def _force_utc_time(record: dict) -> None:
+    """Loguru patcher: log timestamps in UTC regardless of TIME_ZONE/server tz."""
+    record["time"] = record["time"].astimezone(timezone.utc)
 
 
 # --- LaunchDarkly Observability: Loguru sink ---
@@ -420,7 +426,10 @@ class Base(Configuration):
     #!SECTION End - Media, Files and Static Assests Storage
 
     # SECTION Start- Logging
-    LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | {level.icon}  <level><bold> {level: <8}</bold></level> |<blue>{message}</blue>"
+    # Timestamps are forced to UTC (see _force_utc_time patcher and the
+    # logging.Formatter.converter override below) regardless of TIME_ZONE, so
+    # log lines from different hosts/containers stay directly comparable.
+    LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}Z</green> | {level.icon}  <level><bold> {level: <8}</bold></level> |<blue>{message}</blue>"
     # Stdlib-logging equivalent of LOG_FORMAT (Loguru's `{time}`/`<tag>` markup
     # isn't valid for logging.Formatter, which needs %(...)s directives).
     # Used to pre-empt opentelemetry-instrumentation-logging: LoggingInstrumentor
@@ -430,7 +439,9 @@ class Base(Configuration):
     # logging with this format first (see ld_integration/apps.py) keeps
     # stdlib-only loggers like django.request from switching to the OTel
     # trace_id/span_id format.
-    DEFAULT_LOG_FORMAT = "%(asctime)s | %(levelname)-8s | [%(name)s] - %(message)s"
+    # %(asctime)s already appends milliseconds (`,SSS`) by default; the
+    # trailing "Z" marks the timestamp as UTC once converter=gmtime is set.
+    DEFAULT_LOG_FORMAT = "%(asctime)sZ | %(levelname)-8s | [%(name)s] - %(message)s"
     DEFAULT_LOGGER_CONFIG = {
         "format": LOG_FORMAT,
         "diagnose": False,
@@ -468,6 +479,12 @@ class Base(Configuration):
             logger.remove()
             warnings.filterwarnings("default")
             warnings.showwarning = log_warning
+
+            # Make every stdlib logging.Formatter (ours, gunicorn's, Django's)
+            # render timestamps in UTC instead of TIME_ZONE/server-local time.
+            logging.Formatter.converter = time.gmtime
+            # Same for Loguru, which otherwise stamps records with local time.
+            logger.configure(patcher=_force_utc_time)
 
             # opentelemetry-instrumentation-logging forwards all Python log-record
             # extras to OTel as span/log attributes. Django's own loggers routinely
