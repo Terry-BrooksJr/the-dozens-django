@@ -39,8 +39,11 @@ class _ResetsLoggingConfigured(SimpleTestCase):
 
 
 class ConfigureLoggingCommonTests(_ResetsLoggingConfigured):
+    """Tests for `Base._configure_logging_common`, the shared once-per-process setup guard."""
+
     @patch("core.settings.logger")
     def test_first_call_performs_setup_and_sets_flag(self, mock_logger):
+        """The first call performs setup, returns True, and flips the shared guard."""
         performed = Base._configure_logging_common()
 
         self.assertTrue(performed)
@@ -50,6 +53,7 @@ class ConfigureLoggingCommonTests(_ResetsLoggingConfigured):
 
     @patch("core.settings.logger")
     def test_second_call_is_a_no_op(self, mock_logger):
+        """A second call returns False and performs no further logger setup."""
         Base._configure_logging_common()
         mock_logger.reset_mock()
 
@@ -61,6 +65,7 @@ class ConfigureLoggingCommonTests(_ResetsLoggingConfigured):
 
     @patch("core.settings.logger")
     def test_concurrent_callers_configure_exactly_once(self, mock_logger):
+        """Under concurrent callers, exactly one performs setup and the rest no-op."""
         results = []
         barrier = threading.Barrier(8)
 
@@ -80,8 +85,11 @@ class ConfigureLoggingCommonTests(_ResetsLoggingConfigured):
 
 
 class OfflineLoggingTests(_ResetsLoggingConfigured):
+    """Tests for `Offline.configure_logging`."""
+
     @patch("core.settings.logger")
     def test_adds_single_debug_console_sink(self, mock_logger):
+        """Offline adds exactly one sink: the console at DEBUG level."""
         Offline.configure_logging()
 
         mock_logger.add.assert_called_once()
@@ -90,6 +98,7 @@ class OfflineLoggingTests(_ResetsLoggingConfigured):
 
     @patch("core.settings.logger")
     def test_skips_sinks_when_already_configured(self, mock_logger):
+        """No sinks are added when the shared `Base._logging_configured` guard is already set."""
         # The guard lives on Base, shared across every environment subclass -
         # setting it on Offline alone would not stop configure_logging().
         Base._logging_configured = True
@@ -100,8 +109,11 @@ class OfflineLoggingTests(_ResetsLoggingConfigured):
 
 
 class DevelopmentLoggingTests(_ResetsLoggingConfigured):
+    """Tests for `Development.configure_logging`."""
+
     @patch("core.settings.logger")
     def test_no_loki_sink_when_loki_url_unset(self, mock_logger):
+        """Without LOKI_URL set, only the console sink is added."""
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("LOKI_URL", None)
             Development.configure_logging()
@@ -111,6 +123,7 @@ class DevelopmentLoggingTests(_ResetsLoggingConfigured):
     @patch("core.settings.LokiLoggerHandler")
     @patch("core.settings.logger")
     def test_adds_loki_sink_when_loki_url_set(self, mock_logger, mock_loki_handler):
+        """With LOKI_URL and LOKI_PASSWORD set, a Loki handler sink is added alongside the console sink."""
         with patch.dict(
             os.environ,
             {"LOKI_URL": "http://loki.example.com", "LOKI_PASSWORD": "secret"},
@@ -128,8 +141,11 @@ class DevelopmentLoggingTests(_ResetsLoggingConfigured):
 
 
 class ProductionLoggingTests(_ResetsLoggingConfigured):
+    """Tests for `Production.configure_logging`."""
+
     @patch("core.settings.logger")
     def test_stdout_only_when_loki_and_ld_disabled(self, mock_logger):
+        """With Loki and LaunchDarkly Observability both disabled, only stdout gets a sink."""
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("LOKI_URL", None)
             with patch.object(Production, "LAUNCHDARKLY_OBSERVABILITY_ENABLED", False):
@@ -142,6 +158,7 @@ class ProductionLoggingTests(_ResetsLoggingConfigured):
     def test_adds_loki_and_launchdarkly_sinks_when_enabled(
         self, mock_logger, mock_loki_handler
     ):
+        """With LOKI_URL set and LaunchDarkly Observability enabled, stdout, Loki, and LD all get sinks."""
         with patch.dict(
             os.environ,
             {"LOKI_URL": "http://loki.example.com", "LOKI_PASSWORD": "secret"},
@@ -155,11 +172,14 @@ class ProductionLoggingTests(_ResetsLoggingConfigured):
 
 
 class StagingLoggingTests(_ResetsLoggingConfigured):
+    """Tests for `Staging.configure_logging`."""
+
     @patch("core.settings.LokiLoggerHandler")
     @patch("core.settings.logger")
     def test_ignores_loki_url_and_adds_single_warning_sink(
         self, mock_logger, mock_loki_handler
     ):
+        """Staging never adds a Loki sink even if LOKI_URL is set, and adds one WARNING-level console sink."""
         with patch.dict(
             os.environ,
             {"LOKI_URL": "http://loki.example.com", "LOKI_PASSWORD": "secret"},

@@ -175,6 +175,14 @@ class Base(Configuration):
 
     @classmethod
     def get_github_api(cls):
+        """Return a PyGithub `Repository` handle for this project's GitHub repo.
+
+        Authenticates with `GITHUB_API_TOKEN` and looks up
+        `GITHUB_API_OWNER/GITHUB_API_REPO`.
+
+        Returns:
+            github.Repository.Repository: The repo object for further API calls.
+        """
         g = Github(cls.GITHUB_API_TOKEN)
         return g.get_repo(f"{cls.GITHUB_API_OWNER}/{cls.GITHUB_API_REPO}")
 
@@ -921,6 +929,13 @@ class Base(Configuration):
 
 
 class Production(Base):
+    """Production environment configuration.
+
+    Locks down DEBUG, trusts the Traefik reverse proxy for scheme/host
+    detection, and configures logging for stdout plus optional Loki and
+    LaunchDarkly Observability sinks (see `configure_logging`).
+    """
+
     ALLOWED_HOSTS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_HOSTS"
     )
@@ -1049,6 +1064,13 @@ class Production(Base):
 
 
 class Offline(Base):
+    """Configuration for the local Docker Compose environment.
+
+    Runs with DEBUG on, permissive ALLOWED_HOSTS/CORS/CSRF for reaching the
+    container under any local hostname, and local filesystem storage instead
+    of S3-backed storage.
+    """
+
     INTERNAL_IPS = ["*"]
     ALLOWED_HOSTS = ["*"]
     DEBUG = True
@@ -1081,6 +1103,13 @@ class Offline(Base):
 
 
 class Development(Base):
+    """Configuration for running the project directly on a developer machine.
+
+    Runs with DEBUG on, local dev CSRF/CORS origins, direct-SMTP email,
+    local filesystem storage, Kolo profiling middleware, and console logging
+    with an optional Loki sink when `LOKI_URL` is set.
+    """
+
     INTERNAL_IPS = ["127.0.0.1"]
     ALLOWED_HOSTS = values.ListValue(["*", "localhost"], environ=False)
     CORS_ALLOW_ALL_ORIGINS = values.BooleanValue(True, environ=False)

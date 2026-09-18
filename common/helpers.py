@@ -136,6 +136,22 @@ def _force_utc_time(record: dict) -> None:
 
 
 def _otel_safe_value(value, *, _depth: int = 0):
+    """
+    Recursively coerce an arbitrary value into an OpenTelemetry-safe form.
+
+    OTel attributes must be primitives (or sequences/mappings of primitives).
+    This walks lists/tuples/sets/dicts, truncates them to 50 items to avoid
+    huge payloads, stringifies anything beyond a depth of 3 to avoid runaway
+    recursion, and falls back to `str()` for unrecognized object types (e.g.
+    a Django WSGIRequest that ends up in `extra`).
+
+    Args:
+        value: The value to sanitize.
+        _depth: Internal recursion depth guard; callers should not set this.
+
+    Returns:
+        A primitive, or a list/dict of primitives, safe to hand to OTel.
+    """
     if value is None or isinstance(value, (bool, int, float, str)):
         return value
 
@@ -171,7 +187,25 @@ def _safe_get_host(req) -> str | None:
 
 
 def ld_loguru_sink(message):
-    """Loguru sink that forwards logs to LaunchDarkly Observability safely."""
+    """
+    Loguru sink that forwards a log record to LaunchDarkly Observability.
+
+    Maps the Loguru level name to a standard `logging` level number, builds a
+    small set of OTel-style attributes (logger name, source file/function/
+    line), flattens a Django request found under the `request` extra key into
+    `http.*` attributes, sanitizes any remaining `extra` values via
+    `_otel_safe_value`, and attaches exception info when present. Silently
+    no-ops if `ldobserve` is not installed, and never raises - a log sink
+    failure must not take down the caller that logged the message.
+
+    Args:
+        message: A Loguru `Message` object; `message.record` holds the
+            structured log data (level, name, file, function, line, extra,
+            exception, message).
+
+    Returns:
+        None. Forwards the record to `observe.record_log` as a side effect.
+    """
     record = message.record
 
     # Map Loguru level names to standard logging level numbers.
