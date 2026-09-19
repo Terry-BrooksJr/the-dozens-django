@@ -31,6 +31,8 @@ tasks:
     cmds:
       - echo "Completing Pre-Start Environment Check For Development..."
       - echo "Django Configuration:${DJANGO_CONFIGURATION}"
+      - echo "Doppler Project:${DOPPLER_PROJECT}"
+      - echo "Doppler Env:${DOPPLER_CONFIG}"
       - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 -m gunicorn -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{or .CLI_ARGS 8000}} --reload
     # NOTE: `source .envrc` removed — no-op in a non-interactive subshell.
     # NOTE: `-t 1` (connect timeout) removed — it conflicted with --timeout 120.
@@ -266,8 +268,12 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Staging
     cmds:
+      - echo "Completing Pre-Start Environment Check For Testing with Coverage Upload..."
+      - echo "Django Configuration:${DJANGO_CONFIGURATION}"
+      - echo "Doppler Project:${DOPPLER_PROJECT}"
+      - echo "Doppler Env:${DOPPLER_CONFIG}"
       - >-
-        PYTHONPATH="${PYTHONPATH}" .venv/bin/pytest --cov --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml:cobertura.xml --cov-report=html:htmlcov --no-cov-on-fail -v
+        PYTHONPATH="${PYTHONPATH}" .venv/bin/pytest --cov --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml:cobertura.xml --cov-report=html:htmlcov --no-cov-on-fail -v --exitfirst
     # source= and omit= are defined once in [tool.coverage.run] in pyproject.toml;
     # --cov (without an argument) honours that config rather than duplicating it here.
     silent: false

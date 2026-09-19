@@ -298,10 +298,15 @@ class OtelSafeValueTests(TestCase):
     """Tests for `_otel_safe_value`, the OTel attribute sanitizer."""
 
     def test_primitives_are_returned_unchanged(self):
-        """None, bools, ints, floats, strings, and bytes pass through (bytes decoded)."""
-        for value in (None, True, False, 1, 1.5, "text", b"bytes"):
+        """None, bools, ints, and floats pass through unchanged."""
+        for value in (None, True, False, 1, 1.5, "text"):
             with self.subTest(value=value):
                 self.assertEqual(_otel_safe_value(value), value)
+
+    def test_bytes_are_decoded_to_str(self):
+        """Bytes values are decoded to str (UTF-8, replacing undecodable bytes) rather than passed through."""
+        self.assertEqual(_otel_safe_value(b"bytes"), "bytes")
+        self.assertEqual(_otel_safe_value(b"\xff\xfe"), "��")
 
     def test_list_is_recursively_sanitized(self):
         """Each element of a list is sanitized, preserving primitive values."""

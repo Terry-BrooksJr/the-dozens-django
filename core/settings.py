@@ -1185,12 +1185,12 @@ class Staging(Development):
         {
             "default": {
                 "ENGINE": "django.db.backends.postgresql",
-                "NAME": os.getenv("POSTGRES_DB", "test_db"),
-                "USER": os.getenv("PG_DATABASE_USER", "root"),
-                "PASSWORD": os.getenv("PG_DATABASE_PASSWORD", "postgres"),
-                "HOST": os.getenv("PG_DATABASE_HOST", "localhost"),
+                "NAME": "dozens_dev",
+                "USER": "dozens_dev_user",
+                "PASSWORD": os.getenv("PG_DEV_DATABASE", "postgres"),
+                "HOST": "127.0.0.1",
                 "DISABLE_SERVER_SIDE_CURSORS": True,
-                "PORT": os.getenv("PG_DATABASE_PORT", "5432"),
+                "PORT": "5432",
             }
         },
         environ=False,

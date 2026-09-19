@@ -104,6 +104,7 @@ testpaths = [
   "core/tests",
   "common/tests"
 
+
 ]
 
 [tool.djlint]
