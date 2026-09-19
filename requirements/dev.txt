@@ -1,4 +1,4 @@
-anyio==4.15.0 ; python_version >= "3.11" and python_version < "4.0"
+anyio==4.14.2 ; python_version >= "3.11" and python_version < "4.0"
 asgiref==3.12.1 ; python_version >= "3.11" and python_version < "4.0"
 astroid==3.3.11 ; python_version >= "3.11" and python_version < "4.0"
 autoflake==2.4.0 ; python_version >= "3.11" and python_version < "4.0"
