@@ -11,6 +11,8 @@ Covers:
 - _otel_safe_value: recursively sanitizes values for OTel (depth cap, truncation)
 - _safe_get_host: never raises, even when request.get_host() does
 - ld_loguru_sink: builds OTel attrs from a Loguru record and forwards to ldobserve
+- SanitizingLoguruFormatter: guarantees the loki_logger_handler formatter output
+  is JSON-serializable even when `extra` holds a non-primitive value
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ from unittest.mock import patch
 from django.test import TestCase
 
 from common.helpers import (
+    SanitizingLoguruFormatter,
     _force_utc_time,
     _insert_after_middleware,
     _normalize_append_components,
@@ -517,3 +520,84 @@ class LdLoguruSinkTests(TestCase):
 
         attrs = mock_observe.record_log.call_args[1]["attributes"]
         self.assertTrue(all(v is not None for v in attrs.values()))
+
+
+def _make_loki_record(**overrides):
+    """Build a fake Loguru record dict shaped for `loki_logger_handler`'s
+    `LoguruFormatter.format()`, which (unlike `ld_loguru_sink`) reads it as a
+    plain dict rather than a `Message` wrapper.
+    """
+    record = {
+        "time": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        "message": "hello world",
+        "process": SimpleNamespace(id=123),
+        "thread": SimpleNamespace(id=456),
+        "function": "do_thing",
+        "module": "module",
+        "name": "myapp.module",
+        "level": SimpleNamespace(name="INFO"),
+        "extra": {},
+        "exception": None,
+        "file": SimpleNamespace(name="module.py", path="/src/myapp/module.py"),
+        "line": 42,
+    }
+    record.update(overrides)
+    return record
+
+
+class SanitizingLoguruFormatterTests(TestCase):
+    """Tests for `SanitizingLoguruFormatter`.
+
+    `loki_logger_handler`'s own `LoguruFormatter.format()` merges Loguru's
+    `extra` dict straight into the record it later hands to `json.dumps()`.
+    Anything bound via `logger.bind(...)` that isn't a JSON primitive - a
+    Django/DRF request, a model instance - survives that merge untouched and
+    blows up `json.dumps()` on `LokiLoggerHandler`'s background flush thread.
+    """
+
+    def test_non_serializable_extra_value_is_stringified(self):
+        """A non-primitive value bound via `extra` is stringified, not left as-is."""
+
+        class Unserializable:
+            def __repr__(self):
+                return "<Unserializable>"
+
+        record = _make_loki_record(extra={"request": Unserializable()})
+
+        formatted, _ = SanitizingLoguruFormatter().format(record)
+
+        json.dumps(formatted)  # must not raise
+        self.assertEqual(formatted["request"], "<Unserializable>")
+
+    def test_primitive_extra_values_pass_through_unchanged(self):
+        """Primitive `extra` values and the base fields are left untouched."""
+        record = _make_loki_record(extra={"count": 3, "flag": True})
+
+        formatted, _ = SanitizingLoguruFormatter().format(record)
+
+        self.assertEqual(formatted["count"], 3)
+        self.assertEqual(formatted["flag"], True)
+        self.assertEqual(formatted["message"], "hello world")
+        self.assertEqual(formatted["name"], "myapp.module")
+
+    def test_error_level_exception_traceback_is_json_serializable(self):
+        """At ERROR level, exception details are attached and remain JSON-safe
+        even when the bound `extra` also carries a non-primitive value.
+        """
+        try:
+            raise ValueError("boom")
+        except ValueError:
+            import sys
+
+            exc_info = sys.exc_info()
+
+        record = _make_loki_record(
+            level=SimpleNamespace(name="ERROR"),
+            exception=exc_info,
+            extra={"request": SimpleNamespace(path="/x", method="GET")},
+        )
+
+        formatted, _ = SanitizingLoguruFormatter().format(record)
+
+        json.dumps(formatted)  # must not raise
+        self.assertIn("stacktrace", formatted)

@@ -79,6 +79,7 @@ launchdarkly-server-sdk==9.17.0 ; python_version >= "3.11" and python_version < 
 lockfile==0.12.2 ; python_version >= "3.11" and python_version < "4.0"
 logtail-python==0.2.10 ; python_version >= "3.11" and python_version < "4.0"
 loguru==0.7.3 ; python_version >= "3.11" and python_version < "4.0"
+loki-logger-handler==1.1.2 ; python_version >= "3.11" and python_version < "4.0"
 markdown==3.10.3 ; python_version >= "3.11" and python_version < "4.0"
 markupsafe==3.0.3 ; python_version >= "3.11" and python_version < "4.0"
 msgpack==1.2.2 ; python_version >= "3.11" and python_version < "4.0"

@@ -21,6 +21,7 @@ except ImportError:
     observe = None
 
 from loguru import logger
+from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
 
 
 # --- drf-spectacular postprocessing hook to inject TokenAuth without using APPEND_COMPONENTS ---
@@ -255,3 +256,28 @@ def ld_loguru_sink(message):
     if observe is not None:
         with contextlib.suppress(Exception):
             observe.record_log(str(record.get("message")), level_no, attributes=attrs)
+
+
+class SanitizingLoguruFormatter(LoguruFormatter):
+    """`LoguruFormatter` that guarantees its output is JSON-serializable.
+
+    `loki_logger_handler`'s own `LoguruFormatter.format()` merges Loguru's
+    `extra` dict straight into the record it later hands to
+    `json.dumps()` (in `loki_logger_handler.stream.Stream.append_value`).
+    Anything bound via `logger.bind(...)` that isn't a JSON primitive - a
+    Django/DRF request, a model instance, an exception - survives that merge
+    untouched and blows up `json.dumps()` on `LokiLoggerHandler`'s background
+    flush thread, which surfaces as an unhandled exception in an `atexit`
+    callback (the flush thread reports errors there since callers never see
+    it synchronously). Route every top-level value through the same
+    sanitizer already used for the LaunchDarkly Observability sink so that
+    can never happen, regardless of what a future `logger.bind(...)` call
+    attaches.
+    """
+
+    def format(self, record):
+        formatted, loki_metadata = super().format(record)
+        formatted = {k: _otel_safe_value(v) for k, v in formatted.items()}
+        if loki_metadata:
+            loki_metadata = {k: _otel_safe_value(v) for k, v in loki_metadata.items()}
+        return formatted, loki_metadata

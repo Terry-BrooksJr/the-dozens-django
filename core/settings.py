@@ -19,9 +19,9 @@ from configurations import Configuration, values
 from github import Github
 from loguru import logger
 from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
-from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
 
 from common.helpers import (
+    SanitizingLoguruFormatter,
     _force_utc_time,
     _insert_after_middleware,
     _normalize_append_components,
@@ -1045,10 +1045,10 @@ class Production(Base):
                 loki_handler = LokiLoggerHandler(
                     url=loki_url,
                     auth=("lokiadmin", loki_password),
-                    labels={"application": "dozen_api", "environment": "Development"},
+                    labels={"application": "dozen_api", "environment": "Production"},
                     label_keys={},
                     timeout=10,
-                    default_formatter=LoguruFormatter(),
+                    default_formatter=SanitizingLoguruFormatter(),
                 )
                 logger.add(loki_handler, serialize=True)
 
@@ -1154,7 +1154,7 @@ class Development(Base):
                     labels={"application": "dozen_api", "environment": "Development"},
                     label_keys={},
                     timeout=10,
-                    default_formatter=LoguruFormatter(),
+                    default_formatter=SanitizingLoguruFormatter(),
                 )
                 logger.add(loki_handler, serialize=True)
 
