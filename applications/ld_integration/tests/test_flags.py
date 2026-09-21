@@ -82,7 +82,7 @@ class BoolFlagTests(TestCase):
     def test_launchdarkly_enabled_defaults_true_when_setting_absent(self):
         fake_settings = SimpleNamespace()  # deliberately has no LAUNCHDARKLY_ENABLED
         with patch.object(flags, "settings", fake_settings):
-            self.assertTrue(flags._enabled())
+            self.assertTrue(flags.is_enabled())
 
 
 class JsonFlagTests(TestCase):

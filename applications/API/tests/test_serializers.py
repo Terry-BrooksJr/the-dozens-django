@@ -168,35 +168,35 @@ class TestCachedBulkSerializer(SerializerTestCase):
 
 
 class TestBaseInsultSerializerNormalize(SerializerTestCase):
-    """Tests for _normalize_category_input."""
+    """Tests for normalize_category_input."""
 
     def test_normalizes_insult_category_instance_to_key(self):
-        result = BaseInsultSerializer._normalize_category_input(self.category)
+        result = BaseInsultSerializer.normalize_category_input(self.category)
         self.assertEqual(result, "P")
 
     def test_normalizes_string_with_space_dash_separator(self):
-        result = BaseInsultSerializer._normalize_category_input("P - Poor")
+        result = BaseInsultSerializer.normalize_category_input("P - Poor")
         self.assertEqual(result, "P")
 
     def test_normalizes_string_with_em_dash_separator(self):
-        result = BaseInsultSerializer._normalize_category_input("P–Poor")
+        result = BaseInsultSerializer.normalize_category_input("P–Poor")
         self.assertEqual(result, "P")
 
     def test_normalizes_string_with_plain_dash_separator(self):
-        result = BaseInsultSerializer._normalize_category_input("P-Poor")
+        result = BaseInsultSerializer.normalize_category_input("P-Poor")
         self.assertEqual(result, "P")
 
     def test_normalizes_plain_string_strips_whitespace(self):
-        result = BaseInsultSerializer._normalize_category_input("  Poor  ")
+        result = BaseInsultSerializer.normalize_category_input("  Poor  ")
         self.assertEqual(result, "Poor")
 
     def test_returns_non_string_non_instance_unchanged(self):
-        result = BaseInsultSerializer._normalize_category_input(42)
+        result = BaseInsultSerializer.normalize_category_input(42)
         self.assertEqual(result, 42)
 
 
 class TestBaseInsultSerializerFormatHelpers(SerializerTestCase):
-    """Tests for format_category and _format_date."""
+    """Tests for format_category and format_date."""
 
     def test_format_category_capitalizes_lowercase_input(self):
         result = BaseInsultSerializer.format_category("poor")
@@ -212,7 +212,7 @@ class TestBaseInsultSerializerFormatHelpers(SerializerTestCase):
 
     def test_format_date_returns_non_empty_string(self):
         iso = "2024-01-01T00:00:00+00:00"
-        result = BaseInsultSerializer._format_date(iso)
+        result = BaseInsultSerializer.format_date(iso)
         self.assertIsInstance(result, str)
         self.assertGreater(len(result), 0)
 
@@ -256,7 +256,7 @@ class TestBaseInsultSerializerResolveCategory(SerializerTestCase):
 
 
 class TestBaseInsultSerializerComputeMethods(SerializerTestCase):
-    """Tests for _compute_added_by_display and _compute_added_on_display."""
+    """Tests for compute_added_by_display and compute_added_on_display."""
 
     def _serializer(self):
         return OptimizedInsultSerializer()
@@ -266,21 +266,21 @@ class TestBaseInsultSerializerComputeMethods(SerializerTestCase):
             added_by = None
 
         self.assertEqual(
-            self._serializer()._compute_added_by_display(FakeObj()), "Anon Jokester"
+            self._serializer().compute_added_by_display(FakeObj()), "Anon Jokester"
         )
 
     def test_compute_added_by_display_no_first_name_returns_username(self):
         class FakeObj:
             added_by = self.anon_user  # anon_user has no first_name
 
-        result = self._serializer()._compute_added_by_display(FakeObj())
+        result = self._serializer().compute_added_by_display(FakeObj())
         self.assertEqual(result, "anon")
 
     def test_compute_added_by_display_first_and_last_name(self):
         class FakeObj:
             added_by = self.user  # first_name="Terry", last_name="Brooks"
 
-        result = self._serializer()._compute_added_by_display(FakeObj())
+        result = self._serializer().compute_added_by_display(FakeObj())
         self.assertEqual(result, "Terry B.")
 
     def test_compute_added_by_display_first_name_only(self):
@@ -295,18 +295,18 @@ class TestBaseInsultSerializerComputeMethods(SerializerTestCase):
         class FakeObj:
             added_by = user
 
-        result = self._serializer()._compute_added_by_display(FakeObj())
+        result = self._serializer().compute_added_by_display(FakeObj())
         self.assertEqual(result, "Jordan")
 
     def test_compute_added_on_display_no_date_returns_empty_string(self):
         class FakeObj:
             added_on = None
 
-        result = self._serializer()._compute_added_on_display(FakeObj())
+        result = self._serializer().compute_added_on_display(FakeObj())
         self.assertEqual(result, "")
 
     def test_compute_added_on_display_with_date_returns_non_empty_string(self):
-        result = self._serializer()._compute_added_on_display(self.insult)
+        result = self._serializer().compute_added_on_display(self.insult)
         self.assertIsInstance(result, str)
         self.assertGreater(len(result), 0)
 

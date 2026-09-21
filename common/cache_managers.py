@@ -195,10 +195,22 @@ class GenericDataCacheManager(BaseCacheManager):
             super().invalidate_cache(reason)
             self._module_cache.clear()
 
+    def get_module_cache_entry(self, cache_key: str) -> Any:
+        """Read a single entry from the module-level (in-process) cache tier."""
+        return self._module_cache.get(cache_key)
+
+    def set_module_cache_entry(self, cache_key: str, value: Any) -> None:
+        """Write a single entry into the module-level (in-process) cache tier."""
+        self._module_cache[cache_key] = value
+
+    def get_module_cache_snapshot(self) -> Dict[str, Any]:
+        """Return a shallow copy of the module-level cache tier's current contents."""
+        return dict(self._module_cache)
+
     def _register_signals(self):
         """Register signal handlers for automatic cache invalidation."""
 
-        def handle_model_change(sender, instance, **kwargs):
+        def handle_model_change(instance, **kwargs):
             if kwargs.get("created"):
                 reason = "post_save_created"
             elif "post_save" in str(kwargs):
@@ -261,7 +273,7 @@ class FormChoicesCacheManager(GenericDataCacheManager):
         self.filter_kwargs = filter_kwargs or {}
 
         # Build data builder function
-        data_builder = self._build_form_choices_data
+        data_builder = self.build_form_choices_data
         super().__init__(model_class, cache_prefix, data_builder)
 
     def get_cache_keys(self) -> Dict[str, str]:
@@ -278,7 +290,7 @@ class FormChoicesCacheManager(GenericDataCacheManager):
             return f"{self.choice_field.replace('_', ' ').title()}: {value}"
         return str(obj)
 
-    def _build_form_choices_data(self) -> Dict[str, Any]:
+    def build_form_choices_data(self) -> Dict[str, Any]:
         """Build form choices and queryset data from database."""
         try:
             # Build queryset with filters

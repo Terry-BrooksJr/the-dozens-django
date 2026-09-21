@@ -10,7 +10,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 1. **Environment Setup**: Ensure you have Doppler CLI installed and configured with project tokens
 2. **Installation**: `task install` (installs Poetry dependencies)
-3. **Database**: `task db_sync` (runs migrations)  
+3. **Database**: `task db_sync` (runs migrations)
 4. **Development Server**: `task run:dev -- 8000` (starts on port 8000)
 
 ## Essential Commands
@@ -36,7 +36,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 The project follows Django's app-based architecture with three main applications:
 
 - **`applications/API`**: Django REST Framework endpoints for insult CRUD operations, filtering, and random selection
-- **`applications/graphQL`**: GraphQL schema using Graphene-Django for alternative query interface  
+- **`applications/graphQL`**: GraphQL schema using Graphene-Django for alternative query interface
 - **`applications/frontend`**: Template-based views, GitHub issue reporting, and home page
 
 **Core Infrastructure**:
@@ -51,7 +51,7 @@ The project follows Django's app-based architecture with three main applications
 The project uses **django-configurations** with four environment classes:
 
 - **Production**: Full security, Highlight.io logging, rate limiting (4/min anon, 12/min user)
-- **Development**: Debug toolbar, relaxed CORS, lower rate limits (1/min anon, 6/min user)  
+- **Development**: Debug toolbar, relaxed CORS, lower rate limits (1/min anon, 6/min user)
 - **Offline**: Same as Development but for fully disconnected environments
 - **Staging**: CI-only configuration used exclusively by the GitHub Actions commit-check workflow. Runs against real PostgreSQL (not SQLite) via the `postgres` service container defined in `.github/workflows/commit_check.yaml`, with a LocMem cache backend so throttle counters don't persist across test runs
 
@@ -77,7 +77,7 @@ The project uses **django-configurations** with four environment classes:
 
 **Linting/Formatting Pipeline**:
 - **black**: Code formatting
-- **ruff**: Fast linting with auto-fix capability  
+- **ruff**: Fast linting with auto-fix capability
 - **mypy**: Static type checking with django-stubs
 - **pylint**: Comprehensive linting with pylint-django plugin
 - **bandit**: Security vulnerability scanning
@@ -101,7 +101,7 @@ task django -- test --keepdb    # Preserve test DB between runs
 
 **QA Checklist**:
 1. `task lint:fix` - Auto-fix formatting issues
-2. `task lint:lint` - Verify all linting passes  
+2. `task lint:lint` - Verify all linting passes
 3. `task run:test` - Ensure tests pass
 4. `task schema` - Validate OpenAPI schema compliance
 
@@ -109,7 +109,7 @@ task django -- test --keepdb    # Preserve test DB between runs
 
 **CRITICAL: After ANY file edit**, you MUST run `codacy_cli_analyze` tool with:
 - `rootPath`: workspace path
-- `file`: path of edited file  
+- `file`: path of edited file
 - If issues found, propose and apply fixes immediately
 
 **After dependency changes** (npm install, pip install, etc.), you MUST run `codacy_cli_analyze` with:
@@ -143,7 +143,7 @@ task build-image  # Builds for linux/amd64 and linux/arm64
 - Doppler project configured with production secrets
 - SSL termination (proxy/load balancer handles HTTPS)
 
-**Health Checks**: 
+**Health Checks**:
 - Django admin at `/admin/`
 - API documentation at `/api/swagger/` and `/api/redoc/`
 - Prometheus metrics at `/metrics`

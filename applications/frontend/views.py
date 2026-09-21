@@ -38,9 +38,13 @@ class StatusPageView(TemplateView):
     template_name = "status.html"
 
 
-def page_not_found_view(request, exception):
+def page_not_found_view(request, exception):  # pylint: disable=unused-argument
     """Custom 404 handler: serves the image-based 404 page for browser requests,
-    falls back to a JSON response for API clients."""
+    falls back to a JSON response for API clients.
+
+    `exception` is unused but required: Django's URL resolver always calls a
+    custom 404 handler as `callback(request, exception=exception)`.
+    """
     if request.content_type == "application/json" or request.path.startswith(
         ("/api/", "/auth/", "/graphql")
     ):
@@ -166,7 +170,9 @@ class ReportJokeView(CreateAPIView):
         Returns:
             Response | None: A DRF Response object indicating the result of the operation.
         """
-        logger.bind(request=request).debug("Received request to report joke.")
+        logger.bind(
+            request_path=request.path, request_method=request.method
+        ).debug("Received request to report joke.")
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             vd = dict(serializer.validated_data)
@@ -180,7 +186,8 @@ class ReportJokeView(CreateAPIView):
                     body=formatted_issue.get("issue_body"),
                 )
                 logger.bind(
-                    request=request,
+                    request_path=request.path,
+                    request_method=request.method,
                     insult_reference_id=ref_id,
                     review_type=review_type,
                     anonymous=anonymous,
@@ -193,7 +200,8 @@ class ReportJokeView(CreateAPIView):
                 )
             except Exception as e:
                 logger.bind(
-                    request=request,
+                    request_path=request.path,
+                    request_method=request.method,
                     insult_reference_id=ref_id,
                     review_type=review_type,
                     anonymous=anonymous,
@@ -204,7 +212,8 @@ class ReportJokeView(CreateAPIView):
                     status=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )
         logger.bind(
-            request=request,
+            request_path=request.path,
+            request_method=request.method,
             validation_errors=serializer.errors,
         ).warning("Invalid form submission for joke review.")
         return Response(

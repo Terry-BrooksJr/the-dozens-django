@@ -175,3 +175,4 @@ WARP.md
 lint.txt
 .poetry
 .agents
+.envrc

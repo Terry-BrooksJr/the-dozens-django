@@ -123,13 +123,13 @@ class CachedInsultListView(performance.CachedResponseMixin):
 
 
 class DummyMutationBase:
-    def perform_create(self, serializer):
+    def perform_create(self, _serializer):
         return "created"
 
-    def perform_update(self, serializer):
+    def perform_update(self, _serializer):
         return "updated"
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, _instance):
         return "destroyed"
 
 
@@ -256,7 +256,7 @@ def clear_redis_cache():
 # ---------------------------------------------------------------------
 
 
-def test_get_cache_key_includes_expected_components(api_rf, insults, metrics_spy):
+def test_get_cache_key_includes_expected_components(api_rf, insults):
     request = api_rf.get("/api/insults/?page=2&search=fire")
     force_authenticate(request, user=insults[0].added_by)
 
@@ -280,7 +280,7 @@ def test_get_cache_key_includes_expected_components(api_rf, insults, metrics_spy
     assert key.endswith("page_2:page_size_20_cache_key")
 
 
-def test_get_cache_key_uses_anon_for_unauthenticated_user(api_rf, insults, metrics_spy):
+def test_get_cache_key_uses_anon_for_unauthenticated_user(api_rf):
     request = api_rf.get("/api/insults/")
     request.user = SimpleNamespace(is_authenticated=False, pk=None)
 
@@ -328,7 +328,7 @@ def test_get_cached_response_returns_none_and_increments_miss(
 
 
 @override_settings(VIEW_CACHE_TTL=777)
-def test_cache_response_stores_json_response_as_string(api_rf, insults, metrics_spy):
+def test_cache_response_stores_json_response_as_string(api_rf, insults):
     request = api_rf.get("/api/insults/")
     request.user = insults[0].added_by
 
@@ -342,7 +342,7 @@ def test_cache_response_stores_json_response_as_string(api_rf, insults, metrics_
     assert cached_value == '{"ok": true}'
 
 
-def test_get_optimized_queryset_applies_select_related(api_rf, insults, metrics_spy):
+def test_get_optimized_queryset_applies_select_related(api_rf, insults):
     request = api_rf.get("/api/insults/")
     request.user = insults[0].added_by
 
@@ -371,7 +371,7 @@ def test_get_cached_bulk_data_uses_manager_cache_hit(api_rf, insults, metrics_sp
         {"insult_id": insults[0].insult_id},
         {"insult_id": insults[1].insult_id},
     ]
-    view._cache_manager = FakeManager(model_class=Insult, cached_data=cached_rows)
+    view.set_cache_manager(FakeManager(model_class=Insult, cached_data=cached_rows))
 
     fresh_queryset, extra_data = view.get_cached_bulk_data(
         "bulk-key",
@@ -396,7 +396,7 @@ def test_get_cached_bulk_data_uses_redis_fallback_hit(api_rf, insults, metrics_s
     ).order_by("insult_id")
     view = CachedInsultListView(queryset=queryset)
     view.request = Request(request)
-    view._cache_manager = None
+    view.set_cache_manager(None)
 
     extra_data = {"total_count": 2, "timestamp": "2026-01-01T00:00:00"}
     cache.set(
@@ -429,7 +429,7 @@ def test_get_cached_bulk_data_builds_from_db_and_caches_result(
     ).order_by("insult_id")
     view = CachedInsultListView(queryset=queryset)
     view.request = Request(request)
-    view._cache_manager = None
+    view.set_cache_manager(None)
 
     returned_queryset, extra_data = view.get_cached_bulk_data(
         "bulk-build-key",
@@ -451,7 +451,7 @@ def test_get_cached_bulk_data_builds_from_db_and_caches_result(
     metrics_spy.increment_cache.assert_called_once_with("Insult", "miss")
 
 
-def test_list_returns_serialized_results_via_bulk_path(api_rf, insults, metrics_spy):
+def test_list_returns_serialized_results_via_bulk_path(api_rf, insults):
     request = api_rf.get("/api/insults/?page=1&page_size=20")
     request.user = insults[0].added_by
 
@@ -470,7 +470,7 @@ def test_list_returns_serialized_results_via_bulk_path(api_rf, insults, metrics_
     assert response.data[1]["insult_id"] == insults[1].insult_id
 
 
-def test_retrieve_caches_and_returns_single_object(api_rf, insults, metrics_spy):
+def test_retrieve_caches_and_returns_single_object(api_rf, insults):
     request = api_rf.get("/api/insults/1/")
     request.user = insults[0].added_by
 
@@ -495,9 +495,7 @@ def test_retrieve_caches_and_returns_single_object(api_rf, insults, metrics_spy)
 # ---------------------------------------------------------------------
 
 
-def test_init_cache_manager_registers_manager_when_missing(
-    monkeypatch, api_rf, insults
-):
+def test_init_cache_manager_registers_manager_when_missing(monkeypatch):
     fake_registry = FakeRegistry()
     monkeypatch.setattr(performance, "cache_registry", fake_registry)
     monkeypatch.setattr(
@@ -510,7 +508,7 @@ def test_init_cache_manager_registers_manager_when_missing(
     assert manager is not None
     assert manager.model_class is Insult
     assert manager.cache_prefix == "Insult_view"
-    assert view._cache_manager is manager
+    assert view.get_cache_manager() is manager
 
 
 def test_init_cache_manager_reuses_existing_manager(monkeypatch):
@@ -522,7 +520,7 @@ def test_init_cache_manager_reuses_existing_manager(monkeypatch):
 
     view = CachedInsultListView(queryset=Insult.objects.all())
 
-    assert view._cache_manager is existing
+    assert view.get_cache_manager() is existing
 
 
 # ---------------------------------------------------------------------
@@ -566,22 +564,22 @@ def test_perform_create_update_destroy_trigger_invalidation(monkeypatch):
 
 
 def test_invalidation_reason_post_save_created():
-    reason = performance._invalidation_reason(post_save, {"created": True})
+    reason = performance.invalidation_reason(post_save, {"created": True})
     assert reason == "post_save_created"
 
 
 def test_invalidation_reason_post_save_updated():
-    reason = performance._invalidation_reason(post_save, {"created": False})
+    reason = performance.invalidation_reason(post_save, {"created": False})
     assert reason == "post_save_updated"
 
 
 def test_invalidation_reason_post_delete():
-    reason = performance._invalidation_reason(post_delete, {})
+    reason = performance.invalidation_reason(post_delete, {})
     assert reason == "post_delete"
 
 
 def test_invalidation_reason_unknown_signal():
-    reason = performance._invalidation_reason(m2m_changed, {})
+    reason = performance.invalidation_reason(m2m_changed, {})
     assert reason == "unknown_signal"
 
 
@@ -677,14 +675,14 @@ def test_cached_bulk_serializer_to_representation_clears_field_cache(insults):
     serializer = CachedFieldSerializer()
     serializer.set_cached_field_value(insults[0], "expensive_value", 123)
 
-    assert serializer._field_cache
+    assert serializer.has_cached_fields()
 
     data = serializer.to_representation(
         {"insult_id": insults[0].insult_id, "content": insults[0].content}
     )
 
     assert data["insult_id"] == insults[0].insult_id
-    assert serializer._field_cache == {}
+    assert not serializer.has_cached_fields()
 
 
 def test_optimized_list_serializer_applies_queryset_optimizations(insults):

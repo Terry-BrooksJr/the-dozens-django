@@ -8,12 +8,12 @@ from .client import get_client
 from .context import context_from_request
 
 
-def _enabled() -> bool:
+def is_enabled() -> bool:
     return getattr(settings, "LAUNCHDARKLY_ENABLED", True)
 
 
 def bool_flag(flag_key: str, request=None, *, default: bool = False) -> bool:
-    if not _enabled():
+    if not is_enabled():
         return default
 
     ctx = context_from_request(request) if request is not None else None
@@ -24,7 +24,7 @@ def bool_flag(flag_key: str, request=None, *, default: bool = False) -> bool:
 
 
 def json_flag(flag_key: str, request=None, *, default: Any = None) -> Any:
-    if not _enabled():
+    if not is_enabled():
         return default
 
     ctx = context_from_request(request) if request is not None else None

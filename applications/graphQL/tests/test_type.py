@@ -39,7 +39,7 @@ class TestInsultTypeResolveIsActive(SimpleTestCase):
 
     def _resolve(self, status: str) -> bool:
         fake = self._FakeInsult(status)
-        return InsultType.resolve_is_active(fake, info=None)
+        return InsultType.resolve_is_active(fake, None)
 
     def test_active_returns_true(self):
         """status='A' (Active) → True."""

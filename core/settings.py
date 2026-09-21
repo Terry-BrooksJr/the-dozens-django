@@ -6,196 +6,29 @@ Django settings for thedozens project.
 
 """
 
-import contextlib
-import json
 import logging
 import os
 import sys
 import threading
+import time
 import warnings
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TextIO
 
-try:
-    import ldobserve.observe as observe
-except ImportError:
-    observe = None
 from configurations import Configuration, values
 from github import Github
 from loguru import logger
+from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
 
 from applications.ld_integration.client import configure_launchdarkly
-
-
-# --- drf-spectacular postprocessing hook to inject TokenAuth without using APPEND_COMPONENTS ---
-def add_token_auth_scheme(result, generator, request, public):
-    """
-    Add a TokenAuth security scheme to the generated OpenAPI schema. This hook ensures that token-based authentication is documented without requiring direct settings overrides.
-
-    The function safely mutates the schema result to include an apiKey-based authorization header definition. It is designed to be resilient to schema generation errors and will silently fail if modifications cannot be applied.
-
-    Args:
-        result: The current OpenAPI schema representation being built or post-processed.
-        generator: The schema generator instance invoking this hook.
-        request: The HTTP request associated with schema generation, if available.
-        public: A boolean indicating whether the schema is being generated for public consumption.
-
-    Returns:
-        The OpenAPI schema result with the TokenAuth security scheme injected when possible.
-    """
-    with contextlib.suppress(Exception):
-        components = result.setdefault("components", {})
-        security_schemes = components.setdefault("securitySchemes", {})
-        security_schemes["TokenAuth"] = {
-            "type": "apiKey",
-            "in": "header",
-            "name": "Authorization",
-            "description": (
-                "Token-based authentication. Supply your token like so:\n\n"
-                "`Authorization: Token <your_token>`"
-            ),
-        }
-    return result
-
-
-def _normalize_append_components(settings_dict: dict) -> dict:
-    """
-    Normalize the APPEND_COMPONENTS value in a settings dictionary. This function ensures the configuration is always stored as a dictionary for consistent downstream usage.
-
-    The function converts JSON string representations to dictionaries and replaces invalid or missing values with an empty dictionary. It returns the updated settings dictionary so that callers can work with a predictable APPEND_COMPONENTS structure.
-
-    Args:
-        settings_dict: A settings mapping that may contain an APPEND_COMPONENTS entry in various formats.
-
-    Returns:
-        The same settings dictionary with APPEND_COMPONENTS normalized to a dictionary.
-    """
-    ac = settings_dict.get("APPEND_COMPONENTS")
-    if isinstance(ac, str):
-        try:
-            parsed = json.loads(ac)
-            settings_dict["APPEND_COMPONENTS"] = (
-                parsed if isinstance(parsed, dict) else {}
-            )
-        except Exception:
-            settings_dict["APPEND_COMPONENTS"] = {}
-    elif ac is None:
-        settings_dict["APPEND_COMPONENTS"] = {}
-    return settings_dict
-
-
-def log_warning(
-    message: str,
-    category: type[Warning],
-    filename: str,
-    lineno: int,
-    file: TextIO | None = None,
-    line: str | None = None,
-) -> None:
-    """
-    Format and route Python warning messages through the application's structured logger. This helper replaces the default warnings.showwarning to provide consistent, contextual log output.
-
-    The function builds a single log line containing file, line number, warning category, message, and the original source line when available. It then emits the warning using the configured loguru logger at the warning level.
-
-    Args:
-        message: The warning message text to be logged.
-        category: The class of the warning being emitted.
-        filename: The name of the file where the warning originated.
-        lineno: The line number in the source file where the warning was triggered.
-        file: Optional file-like stream associated with the warning output, if any.
-        line: Optional source code line that caused the warning, if available.
-
-    Returns:
-        None. The function performs logging as a side effect.
-    """
-    file_info = f" [{getattr(file, 'name', '')}]" if file else ""
-    line_info = f" | {line.strip()}" if line else ""
-    logger.warning(
-        f"{filename}:{lineno}{file_info} - {category.__name__}: {message}{line_info}"
-    )
-
-
-# --- LaunchDarkly Observability: Loguru sink ---
-# OpenTelemetry attributes must be primitives / sequences / mappings of primitives.
-# Django sometimes attaches a full WSGIRequest object to log records (e.g., key "request").
-# We strip/flatten that to safe values before sending to LaunchDarkly Observability.
-
-
-def _otel_safe_value(value, *, _depth: int = 0):
-    if value is None or isinstance(value, (bool, int, float, str, bytes)):
-        return value
-
-    # Avoid deep / huge structures
-    if _depth >= 3:
-        return str(value)
-
-    if isinstance(value, (list, tuple, set)):
-        return [_otel_safe_value(v, _depth=_depth + 1) for v in list(value)[:50]]
-
-    if isinstance(value, dict):
-        out = {}
-        for k, v in list(value.items())[:50]:
-            out[str(k)] = _otel_safe_value(v, _depth=_depth + 1)
-        return out
-
-    # Fallback: stringify unknown objects (e.g. WSGIRequest)
-    return str(value)
-
-
-def ld_loguru_sink(message):
-    """Loguru sink that forwards logs to LaunchDarkly Observability safely."""
-    record = message.record
-
-    # Map Loguru level names to standard logging level numbers.
-    level_name = record["level"].name
-    level_map = {
-        "TRACE": 5,
-        "DEBUG": 10,
-        "INFO": 20,
-        "SUCCESS": 20,
-        "WARNING": 30,
-        "ERROR": 40,
-        "CRITICAL": 50,
-    }
-    level_no = level_map.get(level_name, 20)
-
-    attrs = {
-        "logger.name": record.get("name"),
-        "code.filepath": record.get("file").path if record.get("file") else None,
-        "code.function": record.get("function"),
-        "code.lineno": record.get("line"),
-    }
-
-    # Include Loguru extras, but ensure they are OTEL-safe.
-    extra = dict(record.get("extra") or {})
-
-    # Special-case Django request objects: flatten the useful bits.
-    req = extra.pop("request", None)
-    if req is not None:
-        attrs["http.target"] = getattr(req, "path", None)
-        attrs["http.method"] = getattr(req, "method", None)
-        attrs["http.host"] = getattr(
-            getattr(req, "get_host", None), "__call__", lambda: None
-        )()
-
-    for k, v in extra.items():
-        attrs[str(k)] = _otel_safe_value(v)
-
-    # Attach exception info if present
-    exc = record.get("exception")
-    if exc:
-        attrs["exception.type"] = _otel_safe_value(getattr(exc, "type", None))
-        attrs["exception.value"] = _otel_safe_value(getattr(exc, "value", None))
-        attrs["exception.traceback"] = _otel_safe_value(getattr(exc, "traceback", None))
-
-    # Remove nulls to keep payload clean
-    attrs = {k: v for k, v in attrs.items() if v is not None}
-
-    # Send to LaunchDarkly Observability (no-op if ldobserve is not installed)
-    if observe is not None:
-        observe.record_log(str(record.get("message")), level_no, attributes=attrs)
-
+from common.helpers import (
+    SanitizingLoguruFormatter,
+    _force_utc_time,
+    _insert_after_middleware,
+    _normalize_append_components,
+    ld_loguru_sink,
+    log_warning,
+)
 
 GLOBAL_NOW = datetime.now(tz=timezone.utc)
 
@@ -273,21 +106,6 @@ _MIDDLEWARE_CORE = [
 ]
 
 
-def _insert_after_middleware(base, after_item, *new_items):
-    """Return a copy of *base* with *new_items* inserted after *after_item*."""
-    result = list(base)
-    try:
-        idx = result.index(after_item) + 1
-    except ValueError:
-        raise ValueError(
-            f"Middleware {after_item!r} not found in the base middleware list. "
-            f"Was it renamed or removed?"
-        ) from None
-    for i, item in enumerate(new_items):
-        result.insert(idx + i, item)
-    return result
-
-
 _MIDDLEWARE_WITH_DEBUG = _insert_after_middleware(
     _MIDDLEWARE_CORE,
     "django.middleware.common.CommonMiddleware",
@@ -354,25 +172,17 @@ class Base(Configuration):
         environ_prefix=None,
         environ_name="GITHUB_ACCESS_TOKEN",
     )
-    logger_configured = False
-    logger_lock = threading.Lock()
-
-    @classmethod
-    def configure_base_logger(cls) -> bool:
-        """Configure the base logger exactly once per process.
-
-        Returns:
-            True if configuration should proceed (first caller).
-            False if already configured.
-        """
-        with cls.logger_lock:
-            if cls.logger_configured:
-                return False
-            cls.logger_configured = True
-            return True
 
     @classmethod
     def get_github_api(cls):
+        """Return a PyGithub `Repository` handle for this project's GitHub repo.
+
+        Authenticates with `GITHUB_API_TOKEN` and looks up
+        `GITHUB_API_OWNER/GITHUB_API_REPO`.
+
+        Returns:
+            github.Repository.Repository: The repo object for further API calls.
+        """
         g = Github(cls.GITHUB_API_TOKEN)
         return g.get_repo(f"{cls.GITHUB_API_OWNER}/{cls.GITHUB_API_REPO}")
 
@@ -429,7 +239,11 @@ class Base(Configuration):
     #!SECTION End - Media, Files and Static Assests Storage
 
     # SECTION Start- Logging
-    LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | {level.icon}  <level><bold> {level: <8}</bold></level> |<blue>{message}</blue>"
+    # Timestamps are forced to UTC (see _force_utc_time patcher and the
+    # logging.Formatter.converter override below) regardless of TIME_ZONE, so
+    # log lines from different hosts/containers stay directly comparable.
+    LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}Z</green> | {level.icon}  <level><bold> {level: <8}</bold></level> |<blue>{message}</blue>"
+
     DEFAULT_LOGGER_CONFIG = {
         "format": LOG_FORMAT,
         "diagnose": False,
@@ -459,35 +273,109 @@ class Base(Configuration):
     )  # pyrefly: ignore
     DEBUG_PROPAGATE_EXCEPTIONS = True
     DEFAULT_HANDLER = sys.stdout
-    with logger_lock:
-        if not logger_configured:
-            for _p in (PRIMARY_LOG_FILE, CRITICAL_LOG_FILE, DEBUG_LOG_FILE):
-                _p.parent.mkdir(parents=True, exist_ok=True)
+
+    # Guards configure_logging_common() so it runs exactly once per process
+    # no matter how many times post_setup() fires (autoreload, test runner).
+    _logging_configured = False
+    _logging_lock = threading.Lock()
+
+    @classmethod
+    def is_logging_configured(cls) -> bool:
+        """Whether `configure_logging_common()` has already run in this process."""
+        return Base._logging_configured
+
+    @classmethod
+    def set_logging_configured_state(cls, value: bool) -> None:
+        """Force the shared, process-wide logging guard to a specific state.
+
+        Public accessor for the `_logging_configured` flag, for test
+        setup/teardown that needs to simulate an already-configured process
+        or reset the guard between tests.
+        """
+        Base._logging_configured = bool(value)
+
+    @classmethod
+    def configure_logging_common(cls) -> bool:
+        """Process-wide logging setup shared by every environment.
+
+        Runs once via post_setup() (see below), which django-configurations
+        calls only on the concrete class DJANGO_CONFIGURATION selects — unlike
+        the previous implementation, this no longer runs once per Base
+        subclass *defined* in this module (Production/Offline/Development/
+        Staging all executed unconditionally at import time, in file order,
+        each stomping on whatever logging setup the previous one made,
+        regardless of which environment was actually active).
+
+        Returns:
+            True if this call performed setup (first caller this process).
+            False if logging was already configured (subclasses should skip
+            adding their own sinks too).
+        """
+        # Always use the state owned by Base.  Subclasses may override or
+        # inherit these attributes, but logging configuration is process-wide.
+        with Base._logging_lock:
+            # Keep the guard on Base itself: assigning through ``cls`` would
+            # create a separate flag on whichever environment subclass ran
+            # first.
+            if Base._logging_configured:
+                return False
+
+            for log_file in (
+                cls.PRIMARY_LOG_FILE,
+                cls.CRITICAL_LOG_FILE,
+                cls.DEBUG_LOG_FILE,
+            ):
+                log_file.parent.mkdir(parents=True, exist_ok=True)
 
             logger.remove()
             warnings.filterwarnings("default")
             warnings.showwarning = log_warning
 
-            # opentelemetry-instrumentation-logging forwards all Python log-record
-            # extras to OTel as span/log attributes. Django's own loggers routinely
-            # include `extra={"request": <WSGIRequest>}`, which OTel cannot
-            # serialise and emits a WARNING for. Raising this logger's threshold to
-            # ERROR silences that noise without hiding genuine OTel mis-use in our
-            # own code.
+            # Make every stdlib logging.Formatter (ours, gunicorn's, Django's)
+            # render timestamps in UTC instead of TIME_ZONE/server-local time.
+            logging.Formatter.converter = time.gmtime
+            # Same for Loguru, which otherwise stamps records with local time.
+            logger.configure(patcher=_force_utc_time)
+
             logging.getLogger("opentelemetry.attributes").setLevel(logging.ERROR)
+            Base._logging_configured = True
+            return Base._logging_configured
 
-            # File sinks: rotate daily, retain 30 days, compress rotated files.
-            for file_sink in (PRIMARY_LOG_FILE, CRITICAL_LOG_FILE, DEBUG_LOG_FILE):
-                logger.add(file_sink, **FILE_LOGGER_CONFIG)
+    @classmethod
+    def configure_logging(cls):
+        """Default sinks: rotating log files + stdout (+ optional LD sink).
 
-            # Non-file sinks: no rotation/retention parameters.
-            stream_sinks = [DEFAULT_HANDLER]
-            if LAUNCHDARKLY_OBSERVABILITY_ENABLED:
-                stream_sinks.append(ld_loguru_sink)
-            for sink in stream_sinks:
-                logger.add(sink, **DEFAULT_LOGGER_CONFIG)
+        Concrete environments (Offline, Development, Production, Staging)
+        override this with their own sinks; this only applies if Base is
+        ever configured directly.
+        """
+        if not cls.configure_logging_common():
+            return
 
-            _logger_configured = True
+        # File sinks: rotate daily, retain 30 days, compress rotated files.
+        for file_sink in (
+            cls.PRIMARY_LOG_FILE,
+            cls.CRITICAL_LOG_FILE,
+            cls.DEBUG_LOG_FILE,
+        ):
+            logger.add(file_sink, **cls.FILE_LOGGER_CONFIG)
+
+        # Non-file sinks: no rotation/retention parameters.
+        stream_sinks = [cls.DEFAULT_HANDLER]
+        if cls.LAUNCHDARKLY_OBSERVABILITY_ENABLED:
+            stream_sinks.append(ld_loguru_sink)
+        for sink in stream_sinks:
+            logger.add(sink, **cls.DEFAULT_LOGGER_CONFIG)
+
+    @classmethod
+    def post_setup(cls):
+        """django-configurations lifecycle hook: runs once Value()s resolve,
+        only on the selected configuration class — the explicit place for
+        logging init instead of side effects in class bodies at import time.
+        """
+        super().post_setup()
+        cls.configure_logging()
+
     #!SECTION END - Logging
 
     INSTALLED_APPS = values.ListValue(
@@ -550,7 +438,7 @@ class Base(Configuration):
             "OPTIONS": {},
         },
         "staticfiles": {
-            "BACKEND": "core.storage_backends.StaticStorage",
+            "BACKEND": "common.storage_backends.StaticStorage",
             "LOCATION": AWS_LOCATION,
             "AWS_S3_OBJECT_PARAMETERS": {
                 "CacheControl": "max-age=86400",
@@ -561,7 +449,7 @@ class Base(Configuration):
             "AWS_S3_ENDPOINT_URL": AWS_S3_ENDPOINT_URL,
         },
         "media": {
-            "BACKEND": "core.storage_backends.MediaStorage",
+            "BACKEND": "common.storage_backends.MediaStorage",
             "LOCATION": "media",
             "AWS_S3_OBJECT_PARAMETERS": {
                 "CacheControl": "max-age=86400",
@@ -844,7 +732,7 @@ class Base(Configuration):
                 },
             },
         },
-        "POSTPROCESSING_HOOKS": ["core.settings.add_token_auth_scheme"],
+        "POSTPROCESSING_HOOKS": ["common.helpers.add_token_auth_scheme"],
         "SWAGGER_UI_SETTINGS": {
             "deepLinking": True,
             "persistAuthorization": True,
@@ -913,8 +801,8 @@ class Base(Configuration):
         CACHES = {
             "default": {
                 "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
-                "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX"),
-                "LOCATION": os.getenv("REDIS_CACHE_TOKEN", ""),
+                "KEY_PREFIX": os.environ.get("CACHE_KEY_PREFIX", ""),
+                "LOCATION": os.environ.get("REDIS_CACHE_TOKEN", ""),
                 "OPTIONS": {
                     "CLIENT_CLASS": "django_redis.client.DefaultClient",
                     "CONNECTION_POOL_KWARGS": {
@@ -1069,6 +957,13 @@ class Base(Configuration):
 
 
 class Production(Base):
+    """Production environment configuration.
+
+    Locks down DEBUG, trusts the Traefik reverse proxy for scheme/host
+    detection, and configures logging for stdout plus optional Loki and
+    LaunchDarkly Observability sinks (see `configure_logging`).
+    """
+
     ALLOWED_HOSTS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_HOSTS"
     )
@@ -1167,17 +1062,43 @@ class Production(Base):
     # SECTION Start - Logging
     LAUNCHDARKLY_SERVICE_VERSION = os.getenv("LAUNCHDARKLY_SERVICE_VERSION")
 
-    if Base._logger_configured:
-        logger.remove()
-        # Production: stdout only — no file sinks inside the container.
-        # serialize=True emits newline-delimited JSON so Docker/Fluent Bit/Loki
-        # can parse records without regex.
-        logger.add(sys.stdout, **{**Base.DEFAULT_LOGGER_CONFIG, "serialize": False})
-        if os.getenv("LAUNCHDARKLY_OBSERVABILITY_ENABLED", "false").lower() == "true":
-            logger.add(ld_loguru_sink, **Base.DEFAULT_LOGGER_CONFIG)
+    @classmethod
+    def configure_logging(cls):
+        """Production: stdout (+ optional Loki, + optional LD sink). No file
+        sinks inside the container.
+        """
+        if not cls.configure_logging_common():
+            return
+
+        # Loki Log Handler - May Replace OTEL in future iterations
+        if loki_url := os.getenv("LOKI_URL"):
+            if loki_password := os.getenv("LOKI_PASSWORD"):
+                loki_handler = LokiLoggerHandler(
+                    url=loki_url,
+                    auth=("lokiadmin", loki_password),
+                    labels={"application": "dozen_api", "environment": "Production"},
+                    label_keys={},
+                    timeout=10,
+                    default_formatter=SanitizingLoguruFormatter(),
+                )
+                logger.add(loki_handler, serialize=True)
+
+        # serialize=False: plain text to stdout for local `docker logs`
+        # readability; Loki gets its own serialized sink above.
+        logger.add(sys.stdout, **{**cls.DEFAULT_LOGGER_CONFIG, "serialize": False})
+
+        if cls.LAUNCHDARKLY_OBSERVABILITY_ENABLED:
+            logger.add(ld_loguru_sink, **cls.DEFAULT_LOGGER_CONFIG)
 
 
 class Offline(Base):
+    """Configuration for the local Docker Compose environment.
+
+    Runs with DEBUG on, permissive ALLOWED_HOSTS/CORS/CSRF for reaching the
+    container under any local hostname, and local filesystem storage instead
+    of S3-backed storage.
+    """
+
     INTERNAL_IPS = ["*"]
     ALLOWED_HOSTS = ["*"]
     DEBUG = True
@@ -1194,24 +1115,38 @@ class Offline(Base):
     MIDDLEWARE = values.ListValue(_MIDDLEWARE_WITH_DEBUG, environ=False)
     REST_FRAMEWORK = values.DictValue(_REST_FRAMEWORK_DEV, environ=False)
 
-    # Single combined handler for console output with file rotation for debug logs
-    if not Base._logger_configured:
+    @classmethod
+    def configure_logging(cls):
+        """Offline (local Docker): console only, verbose diagnostics."""
+        if not cls.configure_logging_common():
+            return
         logger.add(
-            Base.DEFAULT_HANDLER,
-            format=Base.LOG_FORMAT,
+            cls.DEFAULT_HANDLER,
+            format=cls.LOG_FORMAT,
             diagnose=True,
             catch=True,
             backtrace=False,
             level="DEBUG",
         )
-        Base._logger_configured = True
 
 
 class Development(Base):
+    """Configuration for running the project directly on a developer machine.
+
+    Runs with DEBUG on, local dev CSRF/CORS origins, direct-SMTP email,
+    local filesystem storage, Kolo profiling middleware, and console logging
+    with an optional Loki sink when `LOKI_URL` is set.
+    """
+
     INTERNAL_IPS = ["127.0.0.1"]
     ALLOWED_HOSTS = values.ListValue(["*", "localhost"], environ=False)
     CORS_ALLOW_ALL_ORIGINS = values.BooleanValue(True, environ=False)
-    CSRF_TRUSTED_ORIGINS = ["https://*", "http://*"]
+    # Django's CSRF_TRUSTED_ORIGINS wildcard requires a base domain after the
+    # "*" (e.g. "https://*.example.com" trusts subdomains of example.com); a
+    # bare "https://*" has an empty subdomain pattern, which
+    # django.utils.http.is_same_domain() rejects unconditionally — so this
+    # was matching no origin at all. List the actual local dev origins instead.
+    CSRF_TRUSTED_ORIGINS = ["http://localhost:8000", "http://127.0.0.1:8000"]
     DEBUG = True
     STATIC_URL = "/static/"
     WHITENOISE_AUTOREFRESH = True
@@ -1232,19 +1167,33 @@ class Development(Base):
     REST_FRAMEWORK = values.DictValue(_REST_FRAMEWORK_DEV, environ=False)
 
     # SECTION Start - Logging
-    # Single combined handler for console output
-    # Force logger configuration for Development environment
-    if not Base._logger_configured:
-        logger.remove()
+    @classmethod
+    def configure_logging(cls):
+        """Development: console output, plus Loki when LOKI_URL is set."""
+        if not cls.configure_logging_common():
+            return
+
+        # Loki Log Handler - May Replace OTEL in future iterations
+        if loki_url := os.getenv("LOKI_URL"):
+            if loki_password := os.getenv("LOKI_PASSWORD"):
+                loki_handler = LokiLoggerHandler(
+                    url=loki_url,
+                    auth=("lokiadmin", loki_password),
+                    labels={"application": "dozen_api", "environment": "Development"},
+                    label_keys={},
+                    timeout=10,
+                    default_formatter=SanitizingLoguruFormatter(),
+                )
+                logger.add(loki_handler, serialize=True)
+
         logger.add(
-            Base.DEFAULT_HANDLER,
-            format=Base.LOG_FORMAT,
+            cls.DEFAULT_HANDLER,
+            format=cls.LOG_FORMAT,
             diagnose=True,
             catch=True,
             backtrace=False,
             level="DEBUG",
         )
-        Base._logger_configured = True
 
 
 class Staging(Development):
@@ -1264,12 +1213,12 @@ class Staging(Development):
         {
             "default": {
                 "ENGINE": "django.db.backends.postgresql",
-                "NAME": os.getenv("POSTGRES_DB", "test_db"),
-                "USER": os.getenv("PG_DATABASE_USER", "root"),
-                "PASSWORD": os.getenv("PG_DATABASE_PASSWORD", "postgres"),
-                "HOST": os.getenv("PG_DATABASE_HOST", "localhost"),
+                "NAME": "dozens_dev",
+                "USER": "dozens_dev_user",
+                "PASSWORD": os.getenv("PG_DEV_DATABASE", "postgres"),
+                "HOST": "127.0.0.1",
                 "DISABLE_SERVER_SIDE_CURSORS": True,
-                "PORT": os.getenv("PG_DATABASE_PORT", "5432"),
+                "PORT": "5432",
             }
         },
         environ=False,
@@ -1298,20 +1247,22 @@ class Staging(Development):
         environ=False,
     )
 
-
-# Configure logger for Staging environment
-# Must be done at module level AFTER class definition
-# Disable loguru's diagnostic features to avoid conflicts with coverage tracing
-if os.getenv("DJANGO_CONFIGURATION") == "Staging" and Base.configure_base_logger():
-    logger.remove()
-    logger.add(
-        Base.DEFAULT_HANDLER,
-        format=Base.LOG_FORMAT,
-        level="WARNING",
-        diagnose=False,
-        catch=False,
-        backtrace=False,
-    )
+    @classmethod
+    def configure_logging(cls):
+        """CI (GitHub Actions commit checks): console only, warnings+ only,
+        diagnostics disabled since they conflict with coverage tracing.
+        Deliberately does not call Development's Loki-sending behavior.
+        """
+        if not cls.configure_logging_common():
+            return
+        logger.add(
+            cls.DEFAULT_HANDLER,
+            format=cls.LOG_FORMAT,
+            level="WARNING",
+            diagnose=False,
+            catch=False,
+            backtrace=False,
+        )
 
 
 # --- Coerce APPEND_COMPONENTS for all configurations ---

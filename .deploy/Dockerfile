@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bookworm AS builder
+FROM python:3.14-slim-bookworm AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
@@ -15,7 +15,7 @@ COPY requirements/base.txt ./requirements.txt
 RUN python -m pip install --no-cache-dir --timeout=300 -r requirements.txt
 
 # -----------------------------------------------------------
-FROM python:3.11-slim-bookworm
+FROM python:3.14-slim-bookworm
 
 ARG DJANGO_CONFIGURATION="Production"
 ENV DJANGO_CONFIGURATION=${DJANGO_CONFIGURATION} \
@@ -32,13 +32,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
-    
+
 RUN useradd --shell /bin/bash --create-home api
 
 WORKDIR /src
 
 # Copy installed packages from builder
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code

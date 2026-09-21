@@ -9,83 +9,75 @@ authors = [
 ]
 license = "MIT"
 readme = "README.md"
-package-mode = false
-dynamic = ["dependencies"]
 requires-python = ">=3.11,<4.0"
+dependencies = [
+    "django",
+    "markdown",
+    "djangorestframework",
+    "django-filter",
+    "python-dotenv",
+    "loguru",
+    "logtail-python",
+    "psycopg2-binary",
+    "redis[hiredis]",
+    "django-mailer",
+    "graphene-django",
+    "uritemplate",
+    "django-rest-swagger",
+    "django-crispy-forms",
+    "crispy-bootstrap5",
+    "django-cacheops",
+    "gunicorn",
+    "django-prometheus",
+    "django-redis",
+    "drf-spectacular",
+    "requests",
+    "django-recaptcha",
+    "launchdarkly-server-sdk",
+    "launchdarkly-observability",
+    "django-configurations",
+    "django-cors-headers",
+    "django-storages",
+    "djoser",
+    "drf-spectacular-sidecar",
+    "drf-extensions>=0.8.0",  # <0.8 imports stdlib distutils, removed in Python 3.12+
+    "humanize",
+    "arrow",
+    "whitenoise",
+    "boto3",
+    "drf-restwind",
+    "pygithub",
+    "django-jazzmin",
+    "loki-logger-handler>=1.1.2,<2.0.0",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.11,<4.0"
-django = "*"
-markdown = "*"
-djangorestframework = "*"
-django-filter = "*"
-python-dotenv = "*"
-loguru = "*"
-logtail-python = "*"
-psycopg2-binary = "*"
-redis = { extras = ["hiredis"], version = "*" }
-django-mailer = "*"
-graphene-django = "*"
-uritemplate = "*"
-django-rest-swagger = "*"
-django-crispy-forms = "*"
-crispy-bootstrap5 = "*"
-django-cacheops = "*"
-gunicorn = "*"
-django-prometheus = "*"
-django-redis = "*"
-drf-spectacular = "*"
-requests = "*"
-django-recaptcha = "*"
-launchdarkly-server-sdk = "*"
-launchdarkly-observability = "*"
-django-configurations = "*"
-django-cors-headers = "*"
-django-storages = "*"
-djoser = "*"
-drf-spectacular-sidecar = "*"
-drf-extensions = "*"
-humanize = "*"
-arrow = "*"
-whitenoise = "*"
-boto3 = "*"
-drf-restwind = "*"
-pygithub = "*"
-django-jazzmin = "*"
+[dependency-groups]
+test = [
+    "pytest-django",
+    "coverage",
+    "pytest-cov",
+]
+dev = [
+    "django-debug-toolbar",
+    "black",
+    "isort",
+    "mypy",
+    "pylint",
+    "pylint-django",
+    "pylint-celery",
+    "bandit",
+    "django-stubs[compatible-mypy]",
+    "kolo",
+    "autoflake",
+    "ruff",
+    "djlint",
+    "pre-commit>=4.6.2,<5.0.0",
+]
 
-[tool.poetry.group.test]
-optional = true
-
-[tool.poetry.group.test.dependencies]
-pytest-django = "*"
-coverage = "*"
-pytest-cov = "*"
-
-[tool.poetry.group.dev]
-optional = true
-
-[tool.poetry.group.dev.dependencies]
-django-debug-toolbar = "*"
-black = "*"
-isort = "*"
-mypy = "*"
-pylint = "*"
-pylint-django = "*"
-pylint-celery = "*"
-bandit = "*"
-django-stubs = { version = "*", extras = ["compatible-mypy"] }
-pre-commit = "*"
-kolo = "*"
-autoflake = "*"
-ruff = "*"
-djlint = "*"
-
-[tool.poetry.requires-plugins]
-poetry-plugin-export = ">=1.8"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+# No [build-system] table is declared, so uv already treats this project as
+# an unpackaged application (mirrors Poetry's former `package-mode = false`).
+package = false
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "core.settings"
@@ -103,6 +95,7 @@ testpaths = [
   "core/tests",
   "common/tests"
 
+
 ]
 
 [tool.djlint]
@@ -118,7 +111,14 @@ indent_size=5
 
 [tool.isort]
 profile = "black"
-skip = [".venv", "migrations"]
+skip = [".venv"]
+extend_skip_glob = ["*/migrations/*"]
+
+known_first_party = [
+    "applications",
+    "core",
+    "common",
+]
 
 [tool.mypy]
 plugins = ["mypy_django_plugin.main"]
