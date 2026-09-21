@@ -3,10 +3,12 @@
 import os
 import sys
 
-print("EXECUTABLE:", sys.executable)
-print("DOPPLER_ENV:", os.getenv("DOPPLER_ENV"))
-print("DOPPLER_PROJECT:", os.getenv("DOPPLER_PROJECT"))
-print("SECRET_KEY exists:", bool(os.getenv("SECRET_KEY")))
+from loguru import logger
+
+logger.info(f"EXECUTABLE: {sys.executable}")
+logger.info(f"DOPPLER_ENV: {os.getenv('DOPPLER_ENV')}")
+logger.info(f"DOPPLER_PROJECT: {os.getenv('DOPPLER_PROJECT')}")
+logger.info(f"SECRET_KEY exists: {bool(os.getenv('SECRET_KEY'))}")
 # Add the parent directory to the Python path so we can import core
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

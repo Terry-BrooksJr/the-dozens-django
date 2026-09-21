@@ -18,13 +18,16 @@ Covers:
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.test import TestCase
+from loguru import logger as loguru_logger
 
 from common.helpers import (
+    InterceptHandler,
     SanitizingLoguruFormatter,
     _force_utc_time,
     _insert_after_middleware,
@@ -521,6 +524,22 @@ class LdLoguruSinkTests(TestCase):
         attrs = mock_observe.record_log.call_args[1]["attributes"]
         self.assertTrue(all(v is not None for v in attrs.values()))
 
+    def test_skips_records_bridged_from_stdlib(self):
+        """A record tagged `_bridged_from_stdlib` is never forwarded to `observe.record_log`.
+
+        InterceptHandler bridges stdlib logging into Loguru so third-party
+        logs also reach the console/file/Loki sinks, but LaunchDarkly's own
+        LDLoggingHandler already exports those same records to Observability
+        independently (it's attached directly to the stdlib root logger) -
+        forwarding them here too would double-report every third-party log.
+        """
+        message = _make_record(extra={"_bridged_from_stdlib": True})
+
+        with patch("common.helpers.observe") as mock_observe:
+            ld_loguru_sink(message)
+
+        mock_observe.record_log.assert_not_called()
+
 
 def _make_loki_record(**overrides):
     """Build a fake Loguru record dict shaped for `loki_logger_handler`'s
@@ -601,3 +620,106 @@ class SanitizingLoguruFormatterTests(TestCase):
 
         json.dumps(formatted)  # must not raise
         self.assertIn("stacktrace", formatted)
+
+
+class InterceptHandlerTests(TestCase):
+    """Tests for InterceptHandler, the stdlib `logging` -> Loguru bridge."""
+
+    def setUp(self):
+        super().setUp()
+        self._sink_calls = []
+        sink_id = loguru_logger.add(
+            lambda m: self._sink_calls.append(m), format="{message}"
+        )
+        self.addCleanup(loguru_logger.remove, sink_id)
+
+        self.stdlib_logger = logging.getLogger("intercept-handler-test")
+        self.stdlib_logger.setLevel(logging.DEBUG)
+        self.stdlib_logger.propagate = False
+        self.handler = InterceptHandler()
+        self.stdlib_logger.addHandler(self.handler)
+        self.addCleanup(self.stdlib_logger.removeHandler, self.handler)
+
+    def test_bridges_stdlib_record_into_loguru_sink(self):
+        """A normal stdlib log call reaches Loguru's sinks, tagged as bridged."""
+        self.stdlib_logger.info("hello from stdlib")
+
+        self.assertEqual(len(self._sink_calls), 1)
+        self.assertIn("hello from stdlib", str(self._sink_calls[0]))
+        self.assertTrue(self._sink_calls[0].record["extra"]["_bridged_from_stdlib"])
+
+    def test_tags_bridged_record_with_original_stdlib_logger_name(self):
+        """The original stdlib logger name survives under `extra.stdlib_logger_name`.
+
+        Loguru's own `{name}` is derived from the resolved caller frame, not
+        from the stdlib logger's `.name` - this is what lets a sink recover
+        the real source (e.g. `ldclient.util`) if it wants it.
+        """
+        self.stdlib_logger.info("hi")
+
+        self.assertEqual(
+            self._sink_calls[0].record["extra"]["stdlib_logger_name"],
+            "intercept-handler-test",
+        )
+
+    def test_maps_known_stdlib_level_to_matching_loguru_level(self):
+        """A standard level name (WARNING) maps to Loguru's own level of the same name."""
+        self.stdlib_logger.warning("careful")
+
+        self.assertEqual(self._sink_calls[0].record["level"].name, "WARNING")
+
+    def test_unrecognized_level_number_falls_back_to_levelno(self):
+        """A level number with no matching Loguru level name still gets through, by number."""
+        self.stdlib_logger.log(15, "between DEBUG and INFO")
+
+        self.assertEqual(self._sink_calls[0].record["level"].no, 15)
+
+    def test_excluded_sdk_loggers_are_not_bridged_into_loguru(self):
+        """ldobserve/opentelemetry records never reach Loguru's sinks.
+
+        They're routed through the plain fallback formatter instead (see
+        `InterceptHandler`'s docstring): bridging them risks a same-thread
+        reentrant `logger.log()` call if something in Loguru's own sink
+        pipeline (e.g. `ld_loguru_sink` -> `observe.record_log`) triggers one
+        of these SDKs' internal loggers synchronously, and they're already
+        exported to LaunchDarkly Observability independently regardless.
+        """
+        for logger_name in ("ldobserve.observe", "opentelemetry.sdk._logs"):
+            with self.subTest(logger_name=logger_name):
+                self._sink_calls.clear()
+                excluded_logger = logging.getLogger(logger_name)
+                excluded_logger.propagate = False
+                excluded_logger.addHandler(self.handler)
+                try:
+                    with patch(
+                        "common.helpers._fallback_console_handler"
+                    ) as mock_fallback:
+                        excluded_logger.warning("sdk-internal warning")
+                    mock_fallback.emit.assert_called_once()
+                finally:
+                    excluded_logger.removeHandler(self.handler)
+
+                self.assertEqual(self._sink_calls, [])
+
+    def test_reentrant_stdlib_log_from_within_a_sink_is_dropped_not_recursed(self):
+        """A sink that itself logs via stdlib `logging` mid-dispatch doesn't recurse.
+
+        Simulates the real failure mode this guards against: a Loguru sink
+        (e.g. `ld_loguru_sink` calling into the LaunchDarkly SDK) can trigger
+        a *new* stdlib log call on the same thread while the original one is
+        still being forwarded. Without the reentrancy guard, that second
+        call would itself be bridged and dispatched to every sink - including
+        this one - recursively. With the guard, it's silently dropped instead.
+        """
+
+        def reentrant_sink(message):
+            if "reentrant" not in str(message):
+                logging.getLogger("intercept-handler-test").warning("reentrant")
+
+        sink_id = loguru_logger.add(reentrant_sink, format="{message}")
+        self.addCleanup(loguru_logger.remove, sink_id)
+
+        self.stdlib_logger.info("original")
+
+        messages = [str(m) for m in self._sink_calls]
+        self.assertEqual(messages, ["original\n"])

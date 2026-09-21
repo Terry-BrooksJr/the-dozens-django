@@ -12,9 +12,8 @@ from gunicorn.glogging import Logger as GunicornLogger
 # Gunicorn's own error log ordinarily reads server-local time via
 # time.localtime() and has no way to render milliseconds through strftime
 # (datefmt), so its timestamps drift from the app's own UTC+ms log format
-# (see core.settings LOG_FORMAT/DEFAULT_LOG_FORMAT). Fix both here so this
-# takes effect even before the Django app (and its own converter override)
-# is imported.
+# (see core.settings LOG_FORMAT). Fix both here so this takes effect even
+# before the Django app (and its own converter override) is imported.
 logging.Formatter.converter = time.gmtime
 
 

@@ -234,7 +234,6 @@ class Base(Configuration):
     # log lines from different hosts/containers stay directly comparable.
     LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}Z</green> | {level.icon}  <level><bold> {level: <8}</bold></level> |<blue>{message}</blue>"
 
-    DEFAULT_LOG_FORMAT = "%(asctime)sZ | %(levelname)-8s | [%(name)s] - %(message)s"
     DEFAULT_LOGGER_CONFIG = {
         "format": LOG_FORMAT,
         "diagnose": False,
