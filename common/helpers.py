@@ -25,7 +25,7 @@ from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
 
 
 # --- drf-spectacular postprocessing hook to inject TokenAuth without using APPEND_COMPONENTS ---
-def add_token_auth_scheme(result, generator, request, public):
+def add_token_auth_scheme(result, **kwargs):
     """
     Add a TokenAuth security scheme to the generated OpenAPI schema. This hook ensures that token-based authentication is documented without requiring direct settings overrides.
 
@@ -33,9 +33,10 @@ def add_token_auth_scheme(result, generator, request, public):
 
     Args:
         result: The current OpenAPI schema representation being built or post-processed.
-        generator: The schema generator instance invoking this hook.
-        request: The HTTP request associated with schema generation, if available.
-        public: A boolean indicating whether the schema is being generated for public consumption.
+        **kwargs: drf-spectacular's other postprocessing hook arguments
+            (`generator`, `request`, `public`), unused here - accepted only
+            because drf-spectacular always calls hooks with all four as
+            keyword arguments.
 
     Returns:
         The OpenAPI schema result with the TokenAuth security scheme injected when possible.

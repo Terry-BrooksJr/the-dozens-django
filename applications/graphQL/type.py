@@ -71,14 +71,14 @@ class InsultType(DjangoObjectType):
         )
     )
 
-    def resolve_is_active(self, info) -> bool:
+    def resolve_is_active(self, _info) -> bool:
         """Resolve the computed ``isActive`` convenience field.
 
         Derives the boolean active state directly from the ``status`` field
         without requiring an additional database query.
 
         Args:
-            info: GraphQL execution context (unused).
+            _info: GraphQL execution context (unused).
 
         Returns:
             bool: ``True`` if the insult's status is ``"A"`` (Active),

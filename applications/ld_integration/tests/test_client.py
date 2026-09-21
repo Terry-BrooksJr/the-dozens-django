@@ -164,7 +164,7 @@ class ConfigureLaunchdarklySuccessTests(ResetConfiguredStateMixin, TestCase):
     @patch.object(ld_client_module, "ld_client")
     @patch.object(ld_client_module, "Config")
     def test_success_with_observability_plugin_attached(
-        self, mock_config_cls, mock_ld_client, _mock_should_init
+        self, mock_config_cls, _mock_ld_client, _mock_should_init
     ):
         mock_obs_plugin_cls = MagicMock()
         mock_obs_config_cls = MagicMock()
@@ -196,7 +196,7 @@ class ConfigureLaunchdarklySuccessTests(ResetConfiguredStateMixin, TestCase):
     @patch.object(ld_client_module, "ld_client")
     @patch.object(ld_client_module, "Config")
     def test_obs_enabled_false_does_not_attach_plugin(
-        self, mock_config_cls, mock_ld_client, _mock_should_init
+        self, mock_config_cls, _mock_ld_client, _mock_should_init
     ):
         mock_obs_plugin_cls = MagicMock()
         mock_obs_config_cls = MagicMock()

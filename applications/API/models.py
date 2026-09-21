@@ -765,7 +765,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
 
 
 @receiver(post_save, sender=Insult)
-def generate_reference_id(sender, instance, created, **kwargs):
+def generate_reference_id(instance, created, **kwargs):
     if created:
         ref_id = instance.set_reference_id()
         logger.info(
@@ -774,7 +774,7 @@ def generate_reference_id(sender, instance, created, **kwargs):
 
 
 @receiver(post_save, sender=InsultReview)
-def flag_insult(sender, instance, created, **kwargs):
+def flag_insult(instance, created, **kwargs):
     """
     Flags the insult as needing review when a new InsultReview is created.
 
@@ -782,10 +782,11 @@ def flag_insult(sender, instance, created, **kwargs):
     whenever a new InsultReview is saved. It ensures the related Insult is flagged for review and is not visible in the API.
 
     Args:
-        sender: The model class sending the signal.
         instance: The instance of InsultReview being saved.
         created: Boolean indicating if a new record was created.
-        **kwargs: Additional keyword arguments.
+        **kwargs: Additional keyword arguments (includes `sender`, unused here
+            since the `@receiver(..., sender=InsultReview)` filter already
+            guarantees this only fires for InsultReview).
 
     Returns:
         None
@@ -803,7 +804,7 @@ def flag_insult(sender, instance, created, **kwargs):
 
 
 @receiver(post_delete, sender=InsultReview)
-def decrement_report_count(sender, instance, **kwargs):
+def decrement_report_count(instance, **kwargs):
     """
     Decrements the report count for an insult when an InsultReview is deleted.
 

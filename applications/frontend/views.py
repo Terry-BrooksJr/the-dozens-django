@@ -38,9 +38,13 @@ class StatusPageView(TemplateView):
     template_name = "status.html"
 
 
-def page_not_found_view(request, exception):
+def page_not_found_view(request, exception):  # pylint: disable=unused-argument
     """Custom 404 handler: serves the image-based 404 page for browser requests,
-    falls back to a JSON response for API clients."""
+    falls back to a JSON response for API clients.
+
+    `exception` is unused but required: Django's URL resolver always calls a
+    custom 404 handler as `callback(request, exception=exception)`.
+    """
     if request.content_type == "application/json" or request.path.startswith(
         ("/api/", "/auth/", "/graphql")
     ):

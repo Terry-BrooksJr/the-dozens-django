@@ -123,13 +123,13 @@ class CachedInsultListView(performance.CachedResponseMixin):
 
 
 class DummyMutationBase:
-    def perform_create(self, serializer):
+    def perform_create(self, _serializer):
         return "created"
 
-    def perform_update(self, serializer):
+    def perform_update(self, _serializer):
         return "updated"
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, _instance):
         return "destroyed"
 
 
@@ -256,7 +256,7 @@ def clear_redis_cache():
 # ---------------------------------------------------------------------
 
 
-def test_get_cache_key_includes_expected_components(api_rf, insults, metrics_spy):
+def test_get_cache_key_includes_expected_components(api_rf, insults):
     request = api_rf.get("/api/insults/?page=2&search=fire")
     force_authenticate(request, user=insults[0].added_by)
 
@@ -280,7 +280,7 @@ def test_get_cache_key_includes_expected_components(api_rf, insults, metrics_spy
     assert key.endswith("page_2:page_size_20_cache_key")
 
 
-def test_get_cache_key_uses_anon_for_unauthenticated_user(api_rf, insults, metrics_spy):
+def test_get_cache_key_uses_anon_for_unauthenticated_user(api_rf):
     request = api_rf.get("/api/insults/")
     request.user = SimpleNamespace(is_authenticated=False, pk=None)
 
@@ -328,7 +328,7 @@ def test_get_cached_response_returns_none_and_increments_miss(
 
 
 @override_settings(VIEW_CACHE_TTL=777)
-def test_cache_response_stores_json_response_as_string(api_rf, insults, metrics_spy):
+def test_cache_response_stores_json_response_as_string(api_rf, insults):
     request = api_rf.get("/api/insults/")
     request.user = insults[0].added_by
 
@@ -342,7 +342,7 @@ def test_cache_response_stores_json_response_as_string(api_rf, insults, metrics_
     assert cached_value == '{"ok": true}'
 
 
-def test_get_optimized_queryset_applies_select_related(api_rf, insults, metrics_spy):
+def test_get_optimized_queryset_applies_select_related(api_rf, insults):
     request = api_rf.get("/api/insults/")
     request.user = insults[0].added_by
 
@@ -451,7 +451,7 @@ def test_get_cached_bulk_data_builds_from_db_and_caches_result(
     metrics_spy.increment_cache.assert_called_once_with("Insult", "miss")
 
 
-def test_list_returns_serialized_results_via_bulk_path(api_rf, insults, metrics_spy):
+def test_list_returns_serialized_results_via_bulk_path(api_rf, insults):
     request = api_rf.get("/api/insults/?page=1&page_size=20")
     request.user = insults[0].added_by
 
@@ -470,7 +470,7 @@ def test_list_returns_serialized_results_via_bulk_path(api_rf, insults, metrics_
     assert response.data[1]["insult_id"] == insults[1].insult_id
 
 
-def test_retrieve_caches_and_returns_single_object(api_rf, insults, metrics_spy):
+def test_retrieve_caches_and_returns_single_object(api_rf, insults):
     request = api_rf.get("/api/insults/1/")
     request.user = insults[0].added_by
 
@@ -495,9 +495,7 @@ def test_retrieve_caches_and_returns_single_object(api_rf, insults, metrics_spy)
 # ---------------------------------------------------------------------
 
 
-def test_init_cache_manager_registers_manager_when_missing(
-    monkeypatch, api_rf, insults
-):
+def test_init_cache_manager_registers_manager_when_missing(monkeypatch):
     fake_registry = FakeRegistry()
     monkeypatch.setattr(performance, "cache_registry", fake_registry)
     monkeypatch.setattr(

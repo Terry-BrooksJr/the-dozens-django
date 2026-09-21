@@ -210,7 +210,7 @@ class GenericDataCacheManager(BaseCacheManager):
     def _register_signals(self):
         """Register signal handlers for automatic cache invalidation."""
 
-        def handle_model_change(sender, instance, **kwargs):
+        def handle_model_change(instance, **kwargs):
             if kwargs.get("created"):
                 reason = "post_save_created"
             elif "post_save" in str(kwargs):
