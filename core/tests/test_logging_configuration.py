@@ -3,7 +3,7 @@
 Tests for the Loguru logging configuration lifecycle in core.settings.
 
 Covers:
-- Base._configure_logging_common(): runs exactly once per class, even under
+- Base.configure_logging_common(): runs exactly once per class, even under
   concurrent callers, and reports whether it performed setup.
 - Offline/Development/Production/Staging.configure_logging(): the sinks each
   environment installs, including the optional Loki and LaunchDarkly sinks.
@@ -23,41 +23,41 @@ from core.settings import Base, Development, Offline, Production, Staging
 class _ResetsLoggingConfigured(SimpleTestCase):
     """Resets the shared, process-wide logging guard around each test.
 
-    `_configure_logging_common` deliberately checks and sets
-    `Base._logging_configured` (not `cls._logging_configured`) so that the
-    guard is shared across every environment subclass - so tests must reset
-    it on `Base` regardless of which subclass's `configure_logging()` they
-    exercise, or a prior test configuring any subclass would make this one's
-    call a silent no-op.
+    `configure_logging_common` deliberately checks and sets the guard via
+    `Base.is_logging_configured()`/`Base.set_logging_configured_state()`
+    (not `cls.`) so that the guard is shared across every environment
+    subclass - so tests must reset it on `Base` regardless of which
+    subclass's `configure_logging()` they exercise, or a prior test
+    configuring any subclass would make this one's call a silent no-op.
     """
 
     def setUp(self):
         super().setUp()
-        original = Base.__dict__.get("_logging_configured", False)
-        self.addCleanup(setattr, Base, "_logging_configured", original)
-        Base._logging_configured = False
+        original = Base.is_logging_configured()
+        self.addCleanup(Base.set_logging_configured_state, original)
+        Base.set_logging_configured_state(False)
 
 
 class ConfigureLoggingCommonTests(_ResetsLoggingConfigured):
-    """Tests for `Base._configure_logging_common`, the shared once-per-process setup guard."""
+    """Tests for `Base.configure_logging_common`, the shared once-per-process setup guard."""
 
     @patch("core.settings.logger")
     def test_first_call_performs_setup_and_sets_flag(self, mock_logger):
         """The first call performs setup, returns True, and flips the shared guard."""
-        performed = Base._configure_logging_common()
+        performed = Base.configure_logging_common()
 
         self.assertTrue(performed)
-        self.assertTrue(Base._logging_configured)
+        self.assertTrue(Base.is_logging_configured())
         mock_logger.remove.assert_called_once()
         mock_logger.configure.assert_called_once()
 
     @patch("core.settings.logger")
     def test_second_call_is_a_no_op(self, mock_logger):
         """A second call returns False and performs no further logger setup."""
-        Base._configure_logging_common()
+        Base.configure_logging_common()
         mock_logger.reset_mock()
 
-        performed_again = Base._configure_logging_common()
+        performed_again = Base.configure_logging_common()
 
         self.assertFalse(performed_again)
         mock_logger.remove.assert_not_called()
@@ -71,7 +71,7 @@ class ConfigureLoggingCommonTests(_ResetsLoggingConfigured):
 
         def call():
             barrier.wait()
-            results.append(Base._configure_logging_common())
+            results.append(Base.configure_logging_common())
 
         threads = [threading.Thread(target=call) for _ in range(8)]
         for thread in threads:
@@ -98,10 +98,10 @@ class OfflineLoggingTests(_ResetsLoggingConfigured):
 
     @patch("core.settings.logger")
     def test_skips_sinks_when_already_configured(self, mock_logger):
-        """No sinks are added when the shared `Base._logging_configured` guard is already set."""
+        """No sinks are added when the shared `Base.is_logging_configured()` guard is already set."""
         # The guard lives on Base, shared across every environment subclass -
         # setting it on Offline alone would not stop configure_logging().
-        Base._logging_configured = True
+        Base.set_logging_configured_state(True)
 
         Offline.configure_logging()
 

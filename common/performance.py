@@ -135,6 +135,14 @@ class CachedResponseMixin(GenericAPIView):
             else:
                 self._cache_manager = cache_registry.get(manager_name)
 
+    def get_cache_manager(self):
+        """Return the cache manager registered for this view, if any."""
+        return getattr(self, "_cache_manager", None)
+
+    def set_cache_manager(self, cache_manager) -> None:
+        """Set (or override) the cache manager used by this view."""
+        self._cache_manager = cache_manager
+
     def get_cache_key(self, action_name: str = "default", **kwargs: Any) -> str:
         """Generate a unique cache key based on the request and model information."""
         user_id: Union[int, str] = (
@@ -546,6 +554,10 @@ class CachedBulkSerializerMixin:
             cache_key = f"{obj.pk}_{field_name}"
             self._field_cache[cache_key] = value
 
+    def has_cached_fields(self) -> bool:
+        """Whether any field values are currently cached on this serializer instance."""
+        return bool(self._field_cache)
+
     def to_representation(self, instance):
         """Override to handle bulk optimizations."""
         self._field_cache.clear()
@@ -581,7 +593,7 @@ class OptimizedListSerializer(serializers.ListSerializer):
 # ===================================================================
 
 
-def _invalidation_reason(signal, kwargs: dict) -> str:
+def invalidation_reason(signal, kwargs: dict) -> str:
     """
     Derive a stable, human-readable invalidation reason from a Django signal.
 
@@ -604,7 +616,7 @@ def invalidate_cache(sender: Model, **kwargs: Any) -> None:
     """
     model_name: str = sender.__name__
     signal = kwargs.get("signal")
-    reason = _invalidation_reason(signal, kwargs)
+    reason = invalidation_reason(signal, kwargs)
     logger.debug(f"Signal Received For {model_name} (reason={reason})")
 
     # First, try to invalidate any registered cache managers for this model

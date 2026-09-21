@@ -175,7 +175,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
     )
 
     @staticmethod
-    def _normalize_category_input(value: str) -> str:
+    def normalize_category_input(value: str) -> str:
         """Normalize category input values.
 
         Args:
@@ -214,7 +214,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         if not category_key:
             return {"category_key": "", "category_name": "Uncategorized"}
 
-        key = self._normalize_category_input(category_key)
+        key = self.normalize_category_input(category_key)
 
         if category_name := type(self).cacher.get_category_name_by_key(key):
             return {"category_key": key, "category_name": category_name}
@@ -232,7 +232,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
                 f"Category with key '{key}' does not exist."
             ) from e
 
-    def _compute_added_on_display(self, obj) -> str:
+    def compute_added_on_display(self, obj) -> str:
         """
         Generate a formatted string representation of the 'added_on' datetime for the given object.
         Returns a formatted date string or an empty string if the date is not available.
@@ -252,7 +252,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         except Exception:
             return str(dt)
 
-    def _compute_added_by_display(self, obj) -> str:
+    def compute_added_by_display(self, obj) -> str:
         """
         Generate a display string for the user who added the insult.
         Returns a formatted name, username, or a default string if the user is anonymous.
@@ -350,7 +350,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
                 return validated
 
         if isinstance(value, str):
-            value = cls._normalize_category_input(value)
+            value = cls.normalize_category_input(value)
 
         # Try case-sensitive category key lookup first (cached)
         if category_name := cls.cacher.get_category_name_by_key(value):
@@ -418,7 +418,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
     @staticmethod
     @lru_cache(maxsize=128)
-    def _format_date(date_iso: str) -> str:
+    def format_date(date_iso: str) -> str:
         """
         Format date using humanize library with caching.
         Uses ISO string for hashable cache key.
@@ -448,7 +448,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         return self.get_cached_field_value(
             obj,
             "added_on",
-            compute_method_name="_compute_added_on_display",
+            compute_method_name="compute_added_on_display",
         )
 
     def to_internal_value(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -520,7 +520,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
             Optional[str]: The formatted display name for the user who added the insult.
         """
         return self.get_cached_field_value(
-            obj, "added_by", compute_method_name="_compute_added_by_display"
+            obj, "added_by", compute_method_name="compute_added_by_display"
         )
 
 

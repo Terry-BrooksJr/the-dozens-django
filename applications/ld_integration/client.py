@@ -41,7 +41,7 @@ class LDInitResult:
     reason: str
 
 
-def _should_init_in_this_process() -> bool:
+def should_init_in_this_process() -> bool:
     """
     Django dev server uses an autoreloader that imports twice.
     RUN_MAIN is set in the reloader child process.
@@ -54,6 +54,22 @@ def _should_init_in_this_process() -> bool:
         return True
     # In production (gunicorn/uwsgi), RUN_MAIN usually isn't set.
     return os.getenv("DJANGO_SETTINGS_MODULE") is not None
+
+
+def is_configured() -> bool:
+    """Whether `configure_launchdarkly()` has already completed in this process."""
+    return _configured
+
+
+def set_configured_state(value: bool) -> None:
+    """Force the "already configured" guard to a specific state.
+
+    Public accessor for the module-level `_configured` singleton flag, for
+    test setup/teardown that needs to simulate an already-configured process
+    or reset the guard between tests.
+    """
+    global _configured
+    _configured = bool(value)
 
 
 def configure_launchdarkly(
@@ -100,7 +116,7 @@ def configure_launchdarkly(
             enabled=False, configured=False, reason="Missing LAUNCHDARKLY_SDK_KEY"
         )
 
-    if not _should_init_in_this_process():
+    if not should_init_in_this_process():
         return LDInitResult(
             enabled=False, configured=False, reason="Skipped init in non-app process"
         )

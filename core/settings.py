@@ -265,13 +265,28 @@ class Base(Configuration):
     DEBUG_PROPAGATE_EXCEPTIONS = True
     DEFAULT_HANDLER = sys.stdout
 
-    # Guards _configure_logging_common() so it runs exactly once per process
+    # Guards configure_logging_common() so it runs exactly once per process
     # no matter how many times post_setup() fires (autoreload, test runner).
     _logging_configured = False
     _logging_lock = threading.Lock()
 
     @classmethod
-    def _configure_logging_common(cls) -> bool:
+    def is_logging_configured(cls) -> bool:
+        """Whether `configure_logging_common()` has already run in this process."""
+        return Base._logging_configured
+
+    @classmethod
+    def set_logging_configured_state(cls, value: bool) -> None:
+        """Force the shared, process-wide logging guard to a specific state.
+
+        Public accessor for the `_logging_configured` flag, for test
+        setup/teardown that needs to simulate an already-configured process
+        or reset the guard between tests.
+        """
+        Base._logging_configured = bool(value)
+
+    @classmethod
+    def configure_logging_common(cls) -> bool:
         """Process-wide logging setup shared by every environment.
 
         Runs once via post_setup() (see below), which django-configurations
@@ -325,7 +340,7 @@ class Base(Configuration):
         override this with their own sinks; this only applies if Base is
         ever configured directly.
         """
-        if not cls._configure_logging_common():
+        if not cls.configure_logging_common():
             return
 
         # File sinks: rotate daily, retain 30 days, compress rotated files.
@@ -1036,7 +1051,7 @@ class Production(Base):
         """Production: stdout (+ optional Loki, + optional LD sink). No file
         sinks inside the container.
         """
-        if not cls._configure_logging_common():
+        if not cls.configure_logging_common():
             return
 
         # Loki Log Handler - May Replace OTEL in future iterations
@@ -1087,7 +1102,7 @@ class Offline(Base):
     @classmethod
     def configure_logging(cls):
         """Offline (local Docker): console only, verbose diagnostics."""
-        if not cls._configure_logging_common():
+        if not cls.configure_logging_common():
             return
         logger.add(
             cls.DEFAULT_HANDLER,
@@ -1142,7 +1157,7 @@ class Development(Base):
     @classmethod
     def configure_logging(cls):
         """Development: console output, plus Loki when LOKI_URL is set."""
-        if not cls._configure_logging_common():
+        if not cls.configure_logging_common():
             return
 
         # Loki Log Handler - May Replace OTEL in future iterations
@@ -1224,7 +1239,7 @@ class Staging(Development):
         diagnostics disabled since they conflict with coverage tracing.
         Deliberately does not call Development's Loki-sending behavior.
         """
-        if not cls._configure_logging_common():
+        if not cls.configure_logging_common():
             return
         logger.add(
             cls.DEFAULT_HANDLER,

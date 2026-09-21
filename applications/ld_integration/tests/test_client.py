@@ -2,12 +2,12 @@
 Tests for applications.ld_integration.client.
 
 Covers:
-- _should_init_in_this_process: RUN_MAIN=true, RUN_MAIN unset + DJANGO_SETTINGS_MODULE set/unset
+- should_init_in_this_process: RUN_MAIN=true, RUN_MAIN unset + DJANGO_SETTINGS_MODULE set/unset
 - configure_launchdarkly:
     * ldclient not installed -> disabled, not configured
     * enabled=False -> disabled, not configured
     * missing sdk_key -> disabled, not configured
-    * not the "app" process (per _should_init_in_this_process) -> disabled, not configured
+    * not the "app" process (per should_init_in_this_process) -> disabled, not configured
     * already configured -> short-circuits without re-initializing the SDK
     * success path without observability plugin
     * success path with observability plugin available and obs_enabled=True
@@ -46,18 +46,18 @@ class ResetConfiguredStateMixin:
 
     def setUp(self):
         super().setUp()
-        self._original_configured = ld_client_module._configured
-        ld_client_module._configured = False
+        self._original_configured = ld_client_module.is_configured()
+        ld_client_module.set_configured_state(False)
 
     def tearDown(self):
-        ld_client_module._configured = self._original_configured
+        ld_client_module.set_configured_state(self._original_configured)
         super().tearDown()
 
 
 class ShouldInitInThisProcessTests(TestCase):
     def test_run_main_true_returns_true(self):
         with patch.dict(ld_client_module.os.environ, {"RUN_MAIN": "true"}):
-            self.assertTrue(ld_client_module._should_init_in_this_process())
+            self.assertTrue(ld_client_module.should_init_in_this_process())
 
     def test_no_run_main_but_django_settings_module_set_returns_true(self):
         with (
@@ -67,11 +67,11 @@ class ShouldInitInThisProcessTests(TestCase):
                 {"DJANGO_SETTINGS_MODULE": "core.settings"},
             ),
         ):
-            self.assertTrue(ld_client_module._should_init_in_this_process())
+            self.assertTrue(ld_client_module.should_init_in_this_process())
 
     def test_neither_run_main_nor_django_settings_module_returns_false(self):
         with _unset_env("RUN_MAIN", "DJANGO_SETTINGS_MODULE"):
-            self.assertFalse(ld_client_module._should_init_in_this_process())
+            self.assertFalse(ld_client_module.should_init_in_this_process())
 
 
 class ConfigureLaunchdarklyNotAvailableTests(ResetConfiguredStateMixin, TestCase):
@@ -117,7 +117,7 @@ class ConfigureLaunchdarklyGuardClauseTests(ResetConfiguredStateMixin, TestCase)
         self.assertFalse(result.configured)
         self.assertIn("LAUNCHDARKLY_SDK_KEY", result.reason)
 
-    @patch.object(ld_client_module, "_should_init_in_this_process", return_value=False)
+    @patch.object(ld_client_module, "should_init_in_this_process", return_value=False)
     def test_wrong_process_returns_disabled_result(self, _mock_should_init):
         result = ld_client_module.configure_launchdarkly(
             sdk_key="sdk-123",
@@ -133,7 +133,7 @@ class ConfigureLaunchdarklyGuardClauseTests(ResetConfiguredStateMixin, TestCase)
 
 
 class ConfigureLaunchdarklySuccessTests(ResetConfiguredStateMixin, TestCase):
-    @patch.object(ld_client_module, "_should_init_in_this_process", return_value=True)
+    @patch.object(ld_client_module, "should_init_in_this_process", return_value=True)
     @patch.object(ld_client_module, "ld_client")
     @patch.object(ld_client_module, "Config")
     def test_success_without_observability(
@@ -158,9 +158,9 @@ class ConfigureLaunchdarklySuccessTests(ResetConfiguredStateMixin, TestCase):
         mock_config_cls.assert_called_once_with(sdk_key="sdk-123", plugins=[])
         mock_ld_client.set_config.assert_called_once()
         mock_ld_client.get.assert_called_once()
-        self.assertTrue(ld_client_module._configured)
+        self.assertTrue(ld_client_module.is_configured())
 
-    @patch.object(ld_client_module, "_should_init_in_this_process", return_value=True)
+    @patch.object(ld_client_module, "should_init_in_this_process", return_value=True)
     @patch.object(ld_client_module, "ld_client")
     @patch.object(ld_client_module, "Config")
     def test_success_with_observability_plugin_attached(
@@ -192,7 +192,7 @@ class ConfigureLaunchdarklySuccessTests(ResetConfiguredStateMixin, TestCase):
             sdk_key="sdk-123", plugins=[mock_obs_plugin_instance]
         )
 
-    @patch.object(ld_client_module, "_should_init_in_this_process", return_value=True)
+    @patch.object(ld_client_module, "should_init_in_this_process", return_value=True)
     @patch.object(ld_client_module, "ld_client")
     @patch.object(ld_client_module, "Config")
     def test_obs_enabled_false_does_not_attach_plugin(
@@ -216,13 +216,13 @@ class ConfigureLaunchdarklySuccessTests(ResetConfiguredStateMixin, TestCase):
         mock_obs_plugin_cls.assert_not_called()
         mock_config_cls.assert_called_once_with(sdk_key="sdk-123", plugins=[])
 
-    @patch.object(ld_client_module, "_should_init_in_this_process", return_value=True)
+    @patch.object(ld_client_module, "should_init_in_this_process", return_value=True)
     @patch.object(ld_client_module, "ld_client")
     @patch.object(ld_client_module, "Config")
     def test_already_configured_short_circuits(
         self, mock_config_cls, mock_ld_client, _mock_should_init
     ):
-        ld_client_module._configured = True
+        ld_client_module.set_configured_state(True)
 
         result = ld_client_module.configure_launchdarkly(
             sdk_key="sdk-123",
