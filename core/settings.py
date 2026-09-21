@@ -20,6 +20,7 @@ from github import Github
 from loguru import logger
 from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
 
+from applications.ld_integration.client import configure_launchdarkly
 from common.helpers import (
     SanitizingLoguruFormatter,
     _force_utc_time,
@@ -29,9 +30,6 @@ from common.helpers import (
     log_warning,
 )
 
-NSFW_WORD_LIST_URI = values.URLValue(
-    environ=True, environ_prefix=None, environ_name="NSFW_WORD_LIST_URI"
-)
 GLOBAL_NOW = datetime.now(tz=timezone.utc)
 
 BASE_DIR = values.PathValue(Path(__file__).resolve().parent.parent, environ=False)
@@ -50,6 +48,12 @@ INSULT_REFERENCE_ID_PREFIX_OPTIONS = values.ListValue(
 
 _INSTALLED_APPS_CORE = [
     # 0) Instrumentation that wants to wrap others early
+    # ld_integration must be first: its AppConfig.ready() configures the
+    # LaunchDarkly client and observability plugin, which patch httpx/anthropic
+    # globally. Any app that makes those calls during its own ready() before
+    # this runs gets its early spans silently dropped ("observability singleton
+    # used before it was initialized").
+    "applications.ld_integration",
     "jazzmin",
     "django_prometheus",
     # 1) Django built-ins
@@ -82,7 +86,6 @@ _INSTALLED_APPS_CORE = [
 _INSTALLED_APPS_PROJECT = [
     "applications.API",
     "applications.graphQL",
-    "applications.ld_integration",
 ]
 
 _MIDDLEWARE_CORE = [
@@ -199,6 +202,13 @@ class Base(Configuration):
         "LAUNCHDARKLY_OBSERVABILITY_ENABLED", ""
     ).lower() in ("1", "true", "yes", "on")
     LAUNCHDARKLY_SERVICE_NAME = os.getenv("LAUNCHDARKLY_SERVICE_NAME")
+    configure_launchdarkly(
+        sdk_key=LAUNCHDARKLY_SDK_KEY,
+        enabled=LAUNCHDARKLY_ENABLED,
+        obs_enabled=LAUNCHDARKLY_OBSERVABILITY_ENABLED,
+        service_name=LAUNCHDARKLY_SERVICE_NAME or "django-service",
+        service_version=os.getenv("LAUNCHDARKLY_SERVICE_VERSION", "dev"),
+    )
 
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
     SESSION_CACHE_ALIAS = "default"
@@ -775,16 +785,23 @@ class Base(Configuration):
     #!SECTION End - GraphQL Settings (Graphene-Django)
 
     # SECTION - Email Settings (Django-Mailer)
-    EMAIL_BACKEND = "mailer.backend.DbBackend"
+    # ImmediateDbBackend queues through django-mailer (for the MessageLog
+    # audit trail) and drains the queue in the same call, since nothing in
+    # this deploy schedules `manage.py send_mail` to do it later.
+    EMAIL_BACKEND = "core.mailer_backends.ImmediateDbBackend"
     MAILER_EMAIL_BACKEND = values.Value(
         "django.core.mail.backends.smtp.EmailBackend", environ=False
     )
+    # DB row locking (select_for_update) already prevents double-sends;
+    # the file lock exists for long-running send_mail loops, which we don't use.
+    MAILER_USE_FILE_LOCK = False
     USE_REDIS_CACHE = os.getenv("USE_REDIS_CACHE", "true").lower() == "true"
 
     if USE_REDIS_CACHE:
         CACHES = {
             "default": {
                 "BACKEND": "django_prometheus.cache.backends.redis.RedisCache",
+                "KEY_PREFIX": os.environ.get("CACHE_KEY_PREFIX", ""),
                 "LOCATION": os.environ.get("REDIS_CACHE_TOKEN", ""),
                 "OPTIONS": {
                     "CLIENT_CLASS": "django_redis.client.DefaultClient",
@@ -1131,9 +1148,6 @@ class Development(Base):
     # was matching no origin at all. List the actual local dev origins instead.
     CSRF_TRUSTED_ORIGINS = ["http://localhost:8000", "http://127.0.0.1:8000"]
     DEBUG = True
-    # Skip the mailer queue in dev — send directly via SMTP so emails arrive
-    # immediately without needing a separate send_mail process.
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     STATIC_URL = "/static/"
     WHITENOISE_AUTOREFRESH = True
     STORAGES = _LOCAL_STORAGES
@@ -1218,6 +1232,7 @@ class Staging(Development):
             "default": {
                 "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
                 "LOCATION": "testing-cache",
+                "KEY_PREFIX": "dozens-stg",
             }
         },
         environ=False,

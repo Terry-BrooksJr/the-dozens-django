@@ -173,4 +173,6 @@ WARP.md
 .claude
 .kolo
 lint.txt
+.poetry
+.agents
 .envrc

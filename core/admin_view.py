@@ -10,6 +10,11 @@ def grafana_dashboard_view(request):
     context = {
         **admin.site.each_context(request),
         "title": "Observability Dashboard",
-        "grafana_url": (os.environ.get("GRAFANA_DASHBOARD_URL")),
+        "grafana_url": (
+            os.environ.get(
+                "GRAFANA_DASHBOARD_URL",
+                "https://grafana.yo-momma.io/public-dashboards/3e019b7bcf4e421ab1abe08549e69efb",
+            )
+        ),
     }
     return TemplateResponse(request, "admin/grafana_dashboard.html", context)
