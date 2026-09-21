@@ -1,6 +1,6 @@
 runtimes:
     - node@22.2.0
-    - python@3.11.11
+    - python@3.14.7
 tools:
     - eslint@8.57.0
     - pylint@3.3.9

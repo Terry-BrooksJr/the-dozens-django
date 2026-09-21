@@ -31,6 +31,7 @@ from common.helpers import (
     SanitizingLoguruFormatter,
     _force_utc_time,
     _insert_after_middleware,
+    _launchdarkly_observability_ready,
     _normalize_append_components,
     _otel_safe_value,
     _safe_get_host,
@@ -414,6 +415,17 @@ def _make_record(**overrides):
 class LdLoguruSinkTests(TestCase):
     """Tests for `ld_loguru_sink`, the LaunchDarkly Observability Loguru sink."""
 
+    def setUp(self):
+        super().setUp()
+        # Most of these tests exercise what happens once LaunchDarkly is
+        # configured; the not-yet-ready path has its own dedicated tests
+        # below, which override this per-test.
+        patcher = patch(
+            "common.helpers._launchdarkly_observability_ready", return_value=True
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_noop_when_observe_unavailable(self):
         """Does nothing (and does not raise) when `ldobserve` is not installed."""
         message = _make_record()
@@ -539,6 +551,78 @@ class LdLoguruSinkTests(TestCase):
             ld_loguru_sink(message)
 
         mock_observe.record_log.assert_not_called()
+
+    def test_skips_forwarding_before_launchdarkly_is_configured(self):
+        """Nothing is forwarded while `configure_launchdarkly()` hasn't finished yet.
+
+        `ld_loguru_sink` is registered as a Loguru sink during settings
+        resolution, well before `LDIntegrationConfig.ready()` actually
+        initializes the LaunchDarkly client/Observability plugin. Forwarding
+        anyway during that gap is exactly what makes ldobserve log "The
+        observability singleton was used before it was initialized." for
+        every log line emitted at startup - skipping the forward instead
+        avoids triggering that warning in the first place.
+        """
+        message = _make_record()
+
+        with (
+            patch("common.helpers.observe") as mock_observe,
+            patch(
+                "common.helpers._launchdarkly_observability_ready",
+                return_value=False,
+            ),
+        ):
+            ld_loguru_sink(message)
+
+        mock_observe.record_log.assert_not_called()
+
+    def test_forwards_once_launchdarkly_becomes_configured(self):
+        """Forwarding resumes normally once LaunchDarkly finishes initializing."""
+        message = _make_record()
+
+        with (
+            patch("common.helpers.observe") as mock_observe,
+            patch(
+                "common.helpers._launchdarkly_observability_ready",
+                return_value=True,
+            ),
+        ):
+            ld_loguru_sink(message)
+
+        mock_observe.record_log.assert_called_once()
+
+    def test_readiness_check_is_skipped_when_observe_unavailable(self):
+        """`_launchdarkly_observability_ready` isn't even consulted when `ldobserve` isn't installed."""
+        message = _make_record()
+
+        with (
+            patch("common.helpers.observe", None),
+            patch(
+                "common.helpers._launchdarkly_observability_ready"
+            ) as mock_ready,
+        ):
+            ld_loguru_sink(message)  # must not raise
+
+        mock_ready.assert_not_called()
+
+
+class LaunchdarklyObservabilityReadyTests(TestCase):
+    """Tests for `_launchdarkly_observability_ready`."""
+
+    def test_reflects_client_is_configured_result(self):
+        """Returns whatever `applications.ld_integration.client.is_configured()` reports."""
+        for expected in (True, False):
+            with self.subTest(expected=expected):
+                with patch(
+                    "applications.ld_integration.client.is_configured",
+                    return_value=expected,
+                ):
+                    self.assertIs(_launchdarkly_observability_ready(), expected)
+
+    def test_returns_false_without_raising_when_client_import_fails(self):
+        """An import/attribute error while checking readiness is swallowed, not raised."""
+        with patch.dict("sys.modules", {"applications.ld_integration.client": None}):
+            self.assertFalse(_launchdarkly_observability_ready())
 
 
 def _make_loki_record(**overrides):

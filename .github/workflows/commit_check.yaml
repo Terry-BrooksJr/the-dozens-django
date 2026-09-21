@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 env:
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: '3.14'
   IMAGE_NAME: the-dozens
 
 jobs:
@@ -131,7 +131,6 @@ jobs:
 
       - name: Run Bandit Report
         run: |
-          .venv/bin/pip install --quiet bandit
           echo "Running static security analysis..."
           .venv/bin/bandit -r . -f json -o bandit-report.json || true
 

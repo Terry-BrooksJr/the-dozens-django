@@ -335,6 +335,33 @@ def _safe_get_host(req) -> str | None:
     return None
 
 
+def _launchdarkly_observability_ready() -> bool:
+    """Whether `configure_launchdarkly()` has finished initializing the LaunchDarkly SDK.
+
+    `ld_loguru_sink` is registered as a Loguru sink during Django settings
+    resolution (`core.settings.Base.post_setup()` -> `configure_logging()`),
+    which runs well before `applications.ld_integration.apps.
+    LDIntegrationConfig.ready()` actually initializes the LaunchDarkly client
+    and its Observability plugin. Every log emitted in that gap - Django/app
+    startup logs, our own Loguru calls - would otherwise call
+    `observe.record_log()` before ldobserve's internal singleton exists,
+    which ldobserve doesn't treat as an error: it logs "The observability
+    singleton was used before it was initialized." on every such call
+    instead. Checking readiness first lets the sink skip forwarding until
+    initialization actually completes, eliminating that startup noise at the
+    source rather than just reformatting it.
+
+    Deferred import: `applications.ld_integration` is a specific Django app,
+    not shared infrastructure like the rest of this module, so the import is
+    scoped here to avoid coupling `common.helpers` to it at import time.
+    """
+    with contextlib.suppress(Exception):
+        from applications.ld_integration.client import is_configured
+
+        return is_configured()
+    return False
+
+
 def ld_loguru_sink(message):
     """
     Loguru sink that forwards a log record to LaunchDarkly Observability.
@@ -351,7 +378,11 @@ def ld_loguru_sink(message):
     (tagged `extra={"_bridged_from_stdlib": True}`): those already reach
     LaunchDarkly Observability independently, via the SDK's own
     `LDLoggingHandler` on the stdlib root logger, so forwarding them here
-    too would double-report every third-party log line.
+    too would double-report every third-party log line. Also skips
+    forwarding anything logged before `configure_launchdarkly()` has
+    finished (see `_launchdarkly_observability_ready`), rather than
+    triggering ldobserve's own "used before it was initialized" warning on
+    every log line emitted during that startup window.
 
     Args:
         message: A Loguru `Message` object; `message.record` holds the
@@ -364,6 +395,9 @@ def ld_loguru_sink(message):
     record = message.record
 
     if record.get("extra", {}).get("_bridged_from_stdlib"):
+        return
+
+    if observe is not None and not _launchdarkly_observability_ready():
         return
 
     # Map Loguru level names to standard logging level numbers.

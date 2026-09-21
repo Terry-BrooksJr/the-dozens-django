@@ -5,6 +5,7 @@
 # because threads do not survive fork.
 
 import logging
+import os
 import time
 
 from gunicorn.glogging import Logger as GunicornLogger
@@ -36,7 +37,13 @@ bind = "0.0.0.0:9555"
 workers = 4  # 2 × nCPUs; 4 workers × 4 threads = 16 concurrent per replica
 worker_class = "gthread"
 threads = 4
-worker_tmp_dir = "/dev/shm"
+# /dev/shm (a tmpfs, faster than disk for gunicorn's heartbeat file) only
+# exists on Linux - the container this actually deploys to. Falling back to
+# None lets gunicorn use its own default temp dir instead of crashing
+# ("/dev/shm doesn't exist. Can't create workertmp.") when this config is
+# loaded on a machine without it, e.g. running `task run:prod` locally on
+# macOS.
+worker_tmp_dir = "/dev/shm" if os.path.isdir("/dev/shm") else None
 timeout = 60  # was 120; fail fast under burst so workers recycle sooner
 graceful_timeout = 30
 max_requests = 1000
@@ -46,9 +53,21 @@ loglevel = "info"
 # Gunicorn expects this name in python config.
 wsgi_app = "core.wsgi:application"
 
-# Important for worker-based servers: initialize app in master before fork,
-# then run post_fork hook in each worker.
-preload_app = True
+# NOT preloaded: LaunchDarkly Observability's OTel exporter opens a live
+# gRPC channel during Django app init (applications.ld_integration.apps.
+# LDIntegrationConfig.ready() -> configure_launchdarkly()). gRPC's C-core is
+# not fork-safe - preloading (initializing the app once in the master, then
+# forking workers from it) forks that live channel into every worker, which
+# segfaults immediately after fork ("Worker was sent SIGSEGV", visible as
+# gRPC's own "FD from fork parent still in poll list" just before it). This
+# is not platform-specific; it reproduces on Linux the same way. ldclient
+# (LaunchDarkly's feature-flag SDK proper) exposes postfork() specifically
+# to recover from this under a preloaded master - see post_fork() below -
+# but ldobserve's OTel/gRPC layer has no equivalent public API to reinit
+# post-fork, so preloading can't be made safe here. Each worker instead
+# performs its own full app init (including LaunchDarkly/ldobserve) after
+# it's already a separate process, so no live gRPC channel is ever forked.
+preload_app = False
 
 
 def post_fork(server, worker):
