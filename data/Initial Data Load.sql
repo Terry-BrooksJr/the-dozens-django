@@ -1,5 +1,5 @@
 
--- CREATE FUNCTION TO GENERATE INSULT REFERENCE ID 
+-- CREATE FUNCTION TO GENERATE INSULT REFERENCE ID
 CREATE OR REPLACE FUNCTION create_reference_id_base64(primary_key text)
 RETURNS text
 LANGUAGE plpgsql
@@ -878,4 +878,4 @@ INSERT INTO insults (content,added_on, nsfw, status, added_by_id, category_id, t
 VALUES ('Yo mama so ugly, she walked into a Haunted House and walked back out with a job application.', NOW(), TRUE, 'A', 1, 'U', 'APP', 0);
 
 COMMIT;
-SELECT * FROM insults; 
+SELECT * FROM insults;
