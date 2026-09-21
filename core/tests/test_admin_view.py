@@ -10,10 +10,11 @@ Covers:
 
 from __future__ import annotations
 
+import os
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-import os
 
 User = get_user_model()
 

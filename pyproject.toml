@@ -120,7 +120,14 @@ indent_size=5
 
 [tool.isort]
 profile = "black"
-skip = [".venv", "migrations"]
+skip = [".venv"]
+extend_skip_glob = ["*/migrations/*"]
+
+known_first_party = [
+    "applications",
+    "core",
+    "common",
+]
 
 [tool.mypy]
 plugins = ["mypy_django_plugin.main"]
