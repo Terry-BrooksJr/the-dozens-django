@@ -1,0 +1,12 @@
+---
+exclude_paths:
+  - "schema/schema*.yaml"
+  - "static/graphene_django/graphiql.js"
+engines:
+  semgrep:
+    exclude_paths:
+      - "applications/API/tests/**"
+      - "applications/graphQL/tests/**"
+      - "applications/frontend/tests/**"
+      - "common/tests/**"
+      - "core/tests/**"

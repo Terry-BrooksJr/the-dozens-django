@@ -180,7 +180,7 @@ class Query(ObjectType):
     # ------------------------------------------------------------------
 
     def resolve_random_insult(
-        root, info, category: Optional[str] = None
+        root, _info, category: Optional[str] = None
     ) -> Optional[Insult]:
         """Return a randomly selected active insult, optionally scoped to a category.
 
@@ -190,7 +190,7 @@ class Query(ObjectType):
 
         Args:
             root: The root query object (unused).
-            info: GraphQL execution context carrying request and schema metadata.
+            _info: GraphQL execution context (unused).
             category: Optional category key (e.g. ``"P"``) to restrict the draw.
                       When omitted or empty, any active insult is eligible.
 
@@ -203,7 +203,7 @@ class Query(ObjectType):
             queryset = queryset.filter(category=category)
         return queryset.order_by("?").first()
 
-    def resolve_insult_by_id(root, info, reference_id: str) -> Insult:
+    def resolve_insult_by_id(root, _info, reference_id: str) -> Insult:
         """Return the insult with the given primary-key ID.
 
         Performs a direct primary-key lookup and raises a descriptive
@@ -213,7 +213,7 @@ class Query(ObjectType):
 
         Args:
             root: The root query object (unused).
-            info: GraphQL execution context carrying request and schema metadata.
+            _info: GraphQL execution context (unused).
             reference_id: The integer primary key of the insult to retrieve.
                           Corresponds to ``Insult.insult_id``.
 
@@ -229,7 +229,7 @@ class Query(ObjectType):
         return insult
 
     def resolve_insults_by_category(
-        root, info, category: str, offset: int = 0, limit: int = 10
+        root, _info, category: str, offset: int = 0, limit: int = 10
     ) -> InsultConnection:
         """Return a paginated list of active insults belonging to a specific category.
 
@@ -240,7 +240,7 @@ class Query(ObjectType):
 
         Args:
             root: The root query object (unused).
-            info: GraphQL execution context carrying request and schema metadata.
+            _info: GraphQL execution context (unused).
             category: Category key to filter by (e.g. ``"P"`` for Poor).
                       Must match the ``category_key`` of a valid InsultCategory.
             offset: Number of matching records to skip before returning results.
@@ -259,7 +259,7 @@ class Query(ObjectType):
         return InsultConnection(total_count=total, items=items)
 
     def resolve_insults_by_status(
-        root, info, status: str, offset: int = 0, limit: int = 10
+        root, _info, status: str, offset: int = 0, limit: int = 10
     ) -> InsultConnection:
         """Return a paginated list of insults filtered by moderation status.
 
@@ -270,7 +270,7 @@ class Query(ObjectType):
 
         Args:
             root: The root query object (unused).
-            info: GraphQL execution context carrying request and schema metadata.
+            _info: GraphQL execution context (unused).
             status: A valid moderation status code — one of ``"A"`` (Active),
                     ``"X"`` (Removed), ``"P"`` (Pending), ``"R"`` (Rejected),
                     or ``"F"`` (Flagged for Review).
@@ -290,7 +290,7 @@ class Query(ObjectType):
         return InsultConnection(total_count=total, items=items)
 
     def resolve_insults_by_classification(
-        root, info, nsfw: bool, offset: int = 0, limit: int = 10
+        root, _info, nsfw: bool, offset: int = 0, limit: int = 10
     ) -> InsultConnection:
         """Return a paginated list of insults filtered by NSFW classification.
 
@@ -300,7 +300,7 @@ class Query(ObjectType):
 
         Args:
             root: The root query object (unused).
-            info: GraphQL execution context carrying request and schema metadata.
+            _info: GraphQL execution context (unused).
             nsfw: Pass ``True`` to return only adult/explicit content;
                   pass ``False`` to return only safe-for-work content.
             offset: Number of matching records to skip before returning results.

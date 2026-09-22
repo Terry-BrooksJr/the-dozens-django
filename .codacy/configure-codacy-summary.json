@@ -1,0 +1,209 @@
+{
+  "summary": {
+    "enabledPatterns": { "before": 820, "after": 1465 },
+    "enabledTools": { "before": 15, "after": 18 },
+    "issues": { "before": 1351, "after": 1742 },
+    "analysisRuntime": { "before": 9375, "after": 49915 }
+  },
+  "toolChanges": [
+    {
+      "toolId": "Biome",
+      "action": "disabled",
+      "reason": "Redundant JS/TS linter — the project has zero authored JS/TS files (its only JS file is vendored third-party code, now excluded); ESLint9 alone covers the negligible remaining surface.",
+      "patternsAffected": 232
+    },
+    {
+      "toolId": "remark-lint",
+      "action": "disabled",
+      "reason": "Had 0 patterns enabled on Cloud already (effectively inert) and is redundant with markdownlint for Markdown linting.",
+      "patternsAffected": 0
+    },
+    {
+      "toolId": "PSScriptAnalyzer",
+      "action": "disabled",
+      "reason": "Wrong stack — no .ps1 PowerShell files exist anywhere in the repository despite Powershell appearing in GitHub's language detection.",
+      "patternsAffected": 45
+    },
+    {
+      "toolId": "ESLint8",
+      "action": "disabled",
+      "reason": "Upgraded to ESLint9 — no project eslint config file constrains the version, so the newer major version was selected. The only JS file it would touch (vendored graphiql.js) is now excluded anyway.",
+      "patternsAffected": 181
+    },
+    {
+      "toolId": "ESLint9",
+      "action": "enabled",
+      "reason": "Replaces ESLint8 (version upgrade, see above).",
+      "patternsAffected": 169
+    },
+    {
+      "toolId": "Ruff",
+      "action": "enabled",
+      "reason": "Modern Python linter covering performance/security/best-practice concerns Pylint's defaults don't (PEP 585/604 annotations, blind-except, datetime.UTC misuse, etc.). Runs via pyproject.toml (no [tool.ruff] section exists, so Ruff's own defaults apply) — see localConfigTools.",
+      "patternsAffected": 0
+    },
+    {
+      "toolId": "Trivy",
+      "action": "enabled",
+      "reason": "Dependency vulnerability (SCA) scanning — found real CVEs in requirements.txt, including unpatched Django versions (3 High/Critical).",
+      "patternsAffected": 6
+    },
+    {
+      "toolId": "Semgrep",
+      "action": "enabled",
+      "reason": "Broad Python/Django/YAML security and correctness scanning (CSRF, XSS escaping, MD5 usage, insecure random, missing request timeouts, unpinned GitHub Actions). One bogus pattern removed and test directories excluded — see patternChanges/fileExclusions.",
+      "patternsAffected": 754
+    },
+    {
+      "toolId": "Checkov",
+      "action": "enabled",
+      "reason": "IaC and OpenAPI security scanning (Dockerfile, GitHub Actions, OpenAPI schema secrets).",
+      "patternsAffected": 103
+    },
+    {
+      "toolId": "Lizard",
+      "action": "enabled",
+      "reason": "Adds cyclomatic-complexity and function-length metrics, a gap in the previous tool set.",
+      "patternsAffected": 4
+    },
+    {
+      "toolId": "SQLFluff",
+      "action": "enabled",
+      "reason": "Adds SQL linting coverage for the repo's committed .sql file. Currently 0 issues because the one large seed-data file exceeds the default parse-size limit, not because it's unused.",
+      "patternsAffected": 14
+    }
+  ],
+  "patternChanges": [
+    {
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "toolId": "Semgrep",
+      "action": "disabled",
+      "reason": "Enforces a 'RAC_* table naming' rule from an unrelated organization's coding standard — not applicable to this project. Produced 408 false positives, one for nearly every statement in data/Initial Data Load.sql. Largest single noise source found.",
+      "delta": 0,
+      "parameters": []
+    },
+    {
+      "patternId": "Prospector_pydocstyle",
+      "toolId": "Prospector",
+      "action": "disabled",
+      "reason": "100% overlaps Pylint's own docstring rules (C0114/C0115/C0116) and contradicts the project's own .configs/.prospector.yaml, which explicitly sets doc-warnings: false. Would have produced 744 duplicate/unwanted findings.",
+      "delta": 0,
+      "parameters": []
+    },
+    {
+      "patternId": "Prospector_bandit",
+      "toolId": "Prospector",
+      "action": "disabled",
+      "reason": "Duplicates the dedicated Bandit tool's coverage of the same B-codes, but ignores the project's pyproject.toml [tool.bandit] exclude_dirs for test fixtures — the dedicated Bandit tool respects that convention and is kept instead. Would have produced 110 duplicate findings.",
+      "delta": 0,
+      "parameters": []
+    },
+    {
+      "patternId": "Prospector_pycodestyle",
+      "toolId": "Prospector",
+      "action": "disabled",
+      "reason": "Every one of its 38 findings (all E501 line-too-long) was a strict subset of Pylint's own C0301 line-length findings at the same file/line — zero unique signal.",
+      "delta": 0,
+      "parameters": []
+    }
+  ],
+  "fileExclusions": {
+    "global": [
+      "schema/schema*.yaml",
+      "static/graphene_django/graphiql.js"
+    ],
+    "perTool": {
+      "Semgrep": [
+        "applications/API/tests/**",
+        "applications/graphQL/tests/**",
+        "applications/frontend/tests/**",
+        "common/tests/**",
+        "core/tests/**"
+      ]
+    }
+  },
+  "securityCoverage": {
+    "deduplication": [
+      "Prospector_bandit disabled — same B-code security concerns remain covered by the dedicated Bandit tool, which additionally respects the project's own test-directory exclusions that Prospector's bundled bandit check ignores."
+    ],
+    "newCoverage": [
+      "Semgrep security/correctness findings (27 issues after tuning: missing CSRF token, unescaped Django template XSS, MD5 usage, insecure random, missing request timeout, unpinned GitHub Actions SHAs)",
+      "Trivy dependency vulnerability scanning (27 issues: 3 High/Critical unpatched Django CVEs in requirements.txt)",
+      "Checkov IaC/OpenAPI security scanning (3 issues after generated-schema exclusion)"
+    ],
+    "noisyButKept": [
+      "Semgrep hashicorp-tf-password secret-detection pattern kept fully active — only excluded for test directories (applications/API/tests, applications/graphQL/tests, applications/frontend/tests, common/tests, core/tests) that contain known dummy fixture passwords like 'pass1234', matching the project's existing pyproject.toml [tool.bandit] exclude_dirs convention exactly."
+    ]
+  },
+  "keyImprovements": [
+    "Removed a bogus Semgrep rule enforcing an unrelated organization's 'RAC_* table naming' policy that produced 408 false positives against a SQL seed-data file — the single largest noise source in the repository.",
+    "Excluded auto-generated, timestamped OpenAPI schema snapshots (schema/schema*.yaml, produced by the Taskfile's `spectacular` dump task) — eliminated 175 stale-documentation issues (100% of Spectral's findings, most of Checkov's OpenAPI findings) with zero loss of real coverage.",
+    "Deduplicated Prospector's docstring, line-length, and bandit sub-checks against Pylint and the dedicated Bandit tool, removing 892 redundant findings while keeping every concern covered by the more precise tool.",
+    "Added 5 new tools (Ruff, Semgrep, Trivy, Checkov, Lizard), adding dependency-CVE scanning, broader Python/Django security coverage, and complexity metrics that were previously entirely missing.",
+    "Excluded a vendored third-party JS file (graphene_django's bundled GraphiQL UI script) that accounted for 100% of Biome and ESLint findings, and removed Biome/PSScriptAnalyzer/remark-lint as redundant or wrong-stack tools.",
+    "Excluded test directories from Semgrep's secrets scanner to match the project's existing Bandit convention, removing 7 false positives on dummy test-fixture passwords while keeping the scanner active everywhere else."
+  ],
+  "localConfigTools": [
+    {
+      "toolId": "PyLintPython3",
+      "configFile": "pyproject.toml",
+      "issueCount": 1171,
+      "note": "Governed entirely by pyproject.toml, which has no [tool.pylint] section — so pure Pylint defaults apply (very strict on docstrings, naming, and line length at 100 chars). This is the dominant source of issues (67% of the total after tuning) and cannot be tuned via Codacy patterns; add a [tool.pylint] section to pyproject.toml to relax it."
+    },
+    {
+      "toolId": "Ruff",
+      "configFile": "pyproject.toml",
+      "issueCount": 384,
+      "note": "Governed by pyproject.toml, which has no [tool.ruff] section — Ruff's own default rule set applies. Includes 24 confirmed false positives (Ruff_EXE001/EXE005 'shebang' rules misfiring on the project's `#!SECTION` comment-region markers in core/settings.py). Not fixable via Codacy config; add `[tool.ruff] extend-ignore = [\"EXE001\", \"EXE005\"]` to pyproject.toml to fix."
+    },
+    {
+      "toolId": "Bandit",
+      "configFile": "pyproject.toml",
+      "issueCount": 10,
+      "note": "Governed by the existing [tool.bandit] section (skips B101, excludes test directories) — working as intended and producing real findings (e.g. requests without timeout, insecure temp file usage, non-cryptographic random)."
+    },
+    {
+      "toolId": "Prospector",
+      "configFile": ".configs/.prospector.yaml",
+      "issueCount": 81,
+      "note": "On Codacy Cloud, Prospector already runs in local-configuration-file mode and correctly picks up .configs/.prospector.yaml (including its pylint_django-aware pylint sub-check, 81 findings) — the Cloud import correctly rejected (409) an attempt to switch it to Codacy-managed patterns. Locally, the Analysis CLI could not resolve this non-default config path (produced 0 issues even with the path set explicitly), so the local config uses explicit managed patterns instead, minus the patterns that duplicated Pylint/Bandit. Cloud and local Prospector behavior intentionally differ for this reason."
+    }
+  ],
+  "codacyYaml": "---\nexclude_paths:\n  - \"schema/schema*.yaml\"\n  - \"static/graphene_django/graphiql.js\"\nengines:\n  semgrep:\n    exclude_paths:\n      - \"applications/API/tests/**\"\n      - \"applications/graphQL/tests/**\"\n      - \"applications/frontend/tests/**\"\n      - \"common/tests/**\"\n      - \"core/tests/**\"\n",
+  "importResults": {
+    "status": "completed_with_errors",
+    "toolsConfigured": 18,
+    "toolsEnabled": ["Ruff", "Trivy", "Semgrep", "ESLint9", "Checkov", "Lizard", "SQLFluff"],
+    "toolsDisabled": ["Biome", "ESLint8", "remark-lint", "PSScriptAnalyzer"],
+    "errors": [
+      {
+        "toolId": "SQLFluff",
+        "error": "Conflict (409)",
+        "detail": "Unable to update Project Tool Patterns, repository is using a Configuration File. Resolved manually afterward via `codacy tool SQLFluff --enable`."
+      },
+      {
+        "toolId": "Prospector",
+        "error": "Conflict (409)",
+        "detail": "Unable to update Project Tool Patterns, repository is using a Configuration File. Investigated and left as-is deliberately — see localConfigTools; Cloud's existing local-config setup for Prospector is correct and should not be overridden."
+      }
+    ],
+    "warnings": [
+      "First import attempt (without --force) also failed on Biome and ESLint8 with 'Cannot disable a tool that is enabled by a standard' (2 errors) — resolved by retrying with --force after user confirmation.",
+      "Unlinking the 'Standard' Coding Standard caused Codacy to auto-enable 2 tools never requested (PMD, TSQLLint) as an apparent fallback default — both were wrong-stack (no Java/Apex, no T-SQL) and were disabled manually via `codacy tool <name> --disable`.",
+      "The new file exclusions (schema/schema*.yaml, static/graphene_django/graphiql.js, Semgrep test-dir excludes) do NOT yet apply on Codacy Cloud — Cloud only reads .codacy.yaml from the repository's default branch (master), and this file currently only exists uncommitted on the feat_adds_loki_log_handler branch. Confirmed via post-import Cloud overview: spectral_operation-description and spectral_oas3-valid-media-example (both scoped to schema/schema*.yaml) still show 25 issues each. Exclusions will take effect once .codacy.yaml is committed and merged to master."
+    ],
+    "codingStandards": ["Standard (unlinked via --force)"],
+    "forceUsed": true
+  },
+  "cloudVerification": {
+    "reanalysisCompleted": true,
+    "issuesBefore": 923,
+    "issuesAfter": 1381,
+    "patternsDisabled": [],
+    "warnings": [
+      "Issue count rose (923 → 1381) primarily because 5 new tools with real, previously-uncovered findings went live (Semgrep, Trivy, Checkov, Lizard, plus ESLint9's fuller ruleset) — not a regression in tuning quality.",
+      "Post-import overview still shows the full 175 schema/schema*.yaml-scoped issues (Spectral + Checkov) because .codacy.yaml has not been committed to master yet (see importResults.warnings).",
+      "Prospector_pylint (81 issues) appears in the post-import overview — this is Cloud correctly running the project's own .configs/.prospector.yaml (with its pylint_django plugin), not leftover noise; see localConfigTools."
+    ]
+  }
+}

@@ -10,6 +10,8 @@ Covers:
 
 from __future__ import annotations
 
+import os
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -17,9 +19,7 @@ from django.urls import reverse
 User = get_user_model()
 
 DASHBOARD_URL_NAME = "admin-grafana-dashboard"
-GRAFANA_URL = (
-    "https://grafana.yo-momma.io/public-dashboards/3691683c85b749c989b9f3339b52a600"
-)
+GRAFANA_URL = os.getenv("GRAFANA_DASHBOARD_URL", "")
 
 
 class GrafanaDashboardViewTests(TestCase):

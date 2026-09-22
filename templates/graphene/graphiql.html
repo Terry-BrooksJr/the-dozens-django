@@ -278,9 +278,9 @@ add "&raw" to the end of the URL within a browser.
                 or pick one of the example queries pre-loaded in the editor.
             </p>
             <nav class="nav-links">
-                <a href="/api/swagger/"     class="nav-link">REST Docs (Swagger)</a>
-                <a href="/api/redoc/"    class="nav-link">ReDoc</a>
-                <a href="/graphql/playground/" class="nav-link active">GraphQL Playground</a>
+                <a href='{% url "swagger" %}'     class="nav-link">REST Docs (Swagger)</a>
+                <a href='{% url "redoc" %}'     class="nav-link">ReDoc</a>
+                <a href='{% url "playground" %}'  class="nav-link active">GraphQL Playground</a>
             </nav>
         </div>
         <!-- ── GraphiQL IDE ──────────────────────────────────────────────────────── -->

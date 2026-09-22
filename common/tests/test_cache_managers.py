@@ -33,7 +33,7 @@ FormChoicesCacheManager
   - get_form_choices: returns cached choices list
   - get_queryset_json: returns cached JSON string
   - get_choices_and_queryset: returns both together
-  - _build_form_choices_data: builds (value, display) tuples from queryset
+  - build_form_choices_data: builds (value, display) tuples from queryset
 
 Factory functions
   - create_form_choices_manager: creates and auto-registers manager
@@ -332,7 +332,7 @@ class GenericDataCacheManagerTests(TestCase):
     def test_get_cached_data_module_cache_hit(self):
         """If data is in module-level cache, Django cache is never consulted."""
         mgr = _make_generic_manager(prefix="modcache")
-        mgr._module_cache["data"] = ["item1", "item2"]
+        mgr.set_module_cache_entry("data", ["item1", "item2"])
 
         with patch("common.cache_managers.cache") as mock_cache:
             result = mgr.get_cached_data("data")
@@ -349,7 +349,7 @@ class GenericDataCacheManagerTests(TestCase):
             result = mgr.get_cached_data("data")
 
         self.assertEqual(result, ["redis_item"])
-        self.assertEqual(mgr._module_cache.get("data"), ["redis_item"])
+        self.assertEqual(mgr.get_module_cache_entry("data"), ["redis_item"])
 
     def test_get_cached_data_miss_calls_builder_and_caches(self):
         builder = MagicMock(return_value={"data": ["fresh"]})
@@ -393,14 +393,14 @@ class GenericDataCacheManagerTests(TestCase):
 
     def test_invalidate_cache_clears_both_levels(self):
         mgr = _make_generic_manager(prefix="inv_test")
-        mgr._module_cache["data"] = ["stale"]
+        mgr.set_module_cache_entry("data", ["stale"])
 
         with patch("common.cache_managers.cache") as mock_cache:
             mock_cache.delete_many = MagicMock()
             mgr.invalidate_cache("test")
 
         mock_cache.delete_many.assert_called_once()
-        self.assertEqual(mgr._module_cache, {})
+        self.assertEqual(mgr.get_module_cache_snapshot(), {})
 
     def test_get_cache_stats_keys(self):
         mgr = _make_generic_manager(prefix="stats_test", timeout=120)
@@ -477,7 +477,7 @@ class FormChoicesCacheManagerTests(TestCase):
 
     def test_build_form_choices_data_structure(self):
         mgr = self._make_manager(choice_data=[{"color": "red"}])
-        result = mgr._build_form_choices_data()
+        result = mgr.build_form_choices_data()
         self.assertIn("choices", result)
         self.assertIn("queryset", result)
         # choices should be list of (value, display) tuples
@@ -495,7 +495,7 @@ class FormChoicesCacheManagerTests(TestCase):
             choice_field="color",
             cache_prefix="err_test",
         )
-        result = mgr._build_form_choices_data()
+        result = mgr.build_form_choices_data()
         self.assertEqual(result["choices"], [])
         self.assertEqual(result["queryset"], "[]")
 

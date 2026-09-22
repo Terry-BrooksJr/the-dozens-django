@@ -38,12 +38,7 @@ dill==0.4.1
     # via pylint
 distlib==0.4.3
     # via virtualenv
-django==5.2.17 ; python_full_version < '3.12'
-    # via
-    #   django-debug-toolbar
-    #   django-stubs
-    #   django-stubs-ext
-django==6.1.1 ; python_full_version >= '3.12'
+django==5.2.17
     # via
     #   django-debug-toolbar
     #   django-stubs

@@ -1,6 +1,6 @@
 ---
 name: 'Setup Python Environment'
-description: 'Setup Python, Poetry, and virtual environment with caching'
+description: 'Setup Python, uv, and virtual environment with caching'
 inputs:
   python-version:
     description: 'Python version to use'
@@ -23,16 +23,8 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install Poetry
-      shell: bash
-      run: curl -sSL https://install.python-poetry.org | python3 -
-
-    - name: Add Poetry to PATH
-      shell: bash
-      run: echo "${HOME}/.local/bin" >> $GITHUB_PATH
-
-    - name: Setup Python
-      uses: actions/setup-python@v5
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
       with:
         enable-cache: true
 

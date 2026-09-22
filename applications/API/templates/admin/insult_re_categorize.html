@@ -24,9 +24,9 @@
   </fieldset>
 
   <div class="submit-row">
-    <input type="submit" name="apply" value="{% trans 'Re-categorize' %}">
+    <input type="submit" name="apply" value='{% trans "Re-categorize" %}'>
     &nbsp;
-    <a href="{% url 'admin:API_insult_changelist' %}">{% trans 'Cancel' %}</a>
+    <a href='{% url "admin:API_insult_changelist" %}'>{% trans "Cancel" %}</a>
   </div>
 </form>
 
@@ -38,4 +38,4 @@
   {% endfor %}
 </ul>
 {% endif %}
-{% endblock %}
+{% endblock content %}

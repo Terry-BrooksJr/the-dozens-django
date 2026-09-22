@@ -1,0 +1,809 @@
+# -*- coding: utf-8 -*-
+"""
+Tests for common.helpers.
+
+Covers:
+- add_token_auth_scheme: mutates/returns the OpenAPI schema dict, never raises
+- _normalize_append_components: coerces APPEND_COMPONENTS to a dict
+- log_warning: formats warnings.showwarning args and routes them to loguru
+- _insert_after_middleware: inserts items after a marker without mutating input
+- _force_utc_time: Loguru patcher converts record["time"] to UTC
+- _otel_safe_value: recursively sanitizes values for OTel (depth cap, truncation)
+- _safe_get_host: never raises, even when request.get_host() does
+- ld_loguru_sink: builds OTel attrs from a Loguru record and forwards to ldobserve
+- SanitizingLoguruFormatter: guarantees the loki_logger_handler formatter output
+  is JSON-serializable even when `extra` holds a non-primitive value
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from django.test import TestCase
+from loguru import logger as loguru_logger
+
+from common.helpers import (
+    InterceptHandler,
+    SanitizingLoguruFormatter,
+    _force_utc_time,
+    _insert_after_middleware,
+    _launchdarkly_observability_ready,
+    _normalize_append_components,
+    _otel_safe_value,
+    _safe_get_host,
+    add_token_auth_scheme,
+    ld_loguru_sink,
+    log_warning,
+)
+
+
+class AddTokenAuthSchemeTests(TestCase):
+    """Tests for `add_token_auth_scheme`, the drf-spectacular postprocessing hook."""
+
+    def test_adds_token_auth_scheme_to_empty_result(self):
+        """A TokenAuth apiKey scheme is injected into an empty schema result."""
+        result = add_token_auth_scheme({}, generator=None, request=None, public=True)
+
+        scheme = result["components"]["securitySchemes"]["TokenAuth"]
+        self.assertEqual(scheme["type"], "apiKey")
+        self.assertEqual(scheme["in"], "header")
+        self.assertEqual(scheme["name"], "Authorization")
+
+    def test_preserves_existing_components_and_schemes(self):
+        """Existing security schemes survive alongside the injected TokenAuth scheme."""
+        result = {
+            "components": {
+                "securitySchemes": {"Basic": {"type": "http", "scheme": "basic"}}
+            }
+        }
+
+        add_token_auth_scheme(result, generator=None, request=None, public=True)
+
+        self.assertIn("Basic", result["components"]["securitySchemes"])
+        self.assertIn("TokenAuth", result["components"]["securitySchemes"])
+
+    def test_mutates_and_returns_same_object(self):
+        """The function mutates the input dict in place and returns that same object."""
+        result = {}
+
+        returned = add_token_auth_scheme(
+            result, generator=None, request=None, public=True
+        )
+
+        self.assertIs(returned, result)
+
+    def test_idempotent_on_repeated_calls(self):
+        """Calling the hook twice produces an identical TokenAuth scheme, not duplicates."""
+        result = {}
+        add_token_auth_scheme(result, generator=None, request=None, public=True)
+        first = result["components"]["securitySchemes"]["TokenAuth"]
+
+        add_token_auth_scheme(result, generator=None, request=None, public=True)
+        second = result["components"]["securitySchemes"]["TokenAuth"]
+
+        self.assertEqual(first, second)
+
+    def test_non_dict_input_is_returned_unchanged_without_raising(self):
+        """A non-dict `result` (e.g. None) is returned unchanged instead of raising."""
+        # None has no .setdefault(); the function must swallow the error and
+        # still return the original value rather than raising.
+        result = add_token_auth_scheme(None, generator=None, request=None, public=True)
+
+        self.assertIsNone(result)
+
+    def test_non_mutable_input_type_is_returned_unchanged(self):
+        """A string `result` is returned unchanged since it can't be mutated like a dict."""
+        result = add_token_auth_scheme(
+            "not-a-dict", generator=None, request=None, public=False
+        )
+
+        self.assertEqual(result, "not-a-dict")
+
+
+class NormalizeAppendComponentsTests(TestCase):
+    """Tests for `_normalize_append_components`, the APPEND_COMPONENTS coercer."""
+
+    def test_none_becomes_empty_dict(self):
+        """A None APPEND_COMPONENTS value is normalized to an empty dict."""
+        settings_dict = {"APPEND_COMPONENTS": None}
+
+        result = _normalize_append_components(settings_dict)
+
+        self.assertEqual(result["APPEND_COMPONENTS"], {})
+
+    def test_missing_key_becomes_empty_dict(self):
+        """A missing APPEND_COMPONENTS key is added as an empty dict."""
+        settings_dict = {}
+
+        result = _normalize_append_components(settings_dict)
+
+        self.assertEqual(result["APPEND_COMPONENTS"], {})
+
+    def test_valid_json_object_string_is_parsed(self):
+        """A JSON object string is parsed into an equivalent dict."""
+        settings_dict = {"APPEND_COMPONENTS": json.dumps({"foo": "bar"})}
+
+        result = _normalize_append_components(settings_dict)
+
+        self.assertEqual(result["APPEND_COMPONENTS"], {"foo": "bar"})
+
+    def test_valid_json_non_object_values_become_empty_dict(self):
+        """Valid JSON that isn't an object (list, string, number, bool, null) becomes an empty dict."""
+        for value in ([1, 2, 3], "not a dictionary", 123, True, None):
+            with self.subTest(value=value):
+                settings_dict = {"APPEND_COMPONENTS": json.dumps(value)}
+
+                result = _normalize_append_components(settings_dict)
+
+                self.assertEqual(result["APPEND_COMPONENTS"], {})
+
+    def test_invalid_json_string_becomes_empty_dict(self):
+        """A malformed JSON string is swallowed and normalized to an empty dict."""
+        settings_dict = {"APPEND_COMPONENTS": "{not valid json"}
+
+        result = _normalize_append_components(settings_dict)
+
+        self.assertEqual(result["APPEND_COMPONENTS"], {})
+
+    def test_invalid_non_string_value_becomes_empty_dict(self):
+        """A non-string, non-dict value (e.g. an int) becomes an empty dict."""
+        settings_dict = {"APPEND_COMPONENTS": 123}
+
+        result = _normalize_append_components(settings_dict)
+
+        self.assertEqual(result["APPEND_COMPONENTS"], {})
+
+    def test_existing_dict_value_is_left_untouched(self):
+        """An APPEND_COMPONENTS value that is already a dict is passed through as-is."""
+        original = {"already": "a-dict"}
+        settings_dict = {"APPEND_COMPONENTS": original}
+
+        result = _normalize_append_components(settings_dict)
+
+        self.assertIs(result["APPEND_COMPONENTS"], original)
+
+    def test_returns_same_dict_object(self):
+        """The function returns the same settings dict object it was given, not a copy."""
+        settings_dict = {"APPEND_COMPONENTS": None}
+
+        result = _normalize_append_components(settings_dict)
+
+        self.assertIs(result, settings_dict)
+
+
+class LogWarningTests(TestCase):
+    """Tests for `log_warning`, the `warnings.showwarning` replacement."""
+
+    def test_formats_and_logs_minimal_warning(self):
+        """A warning with no file/line extras logs as `filename:lineno - Category: message`."""
+        with patch("common.helpers.logger") as mock_logger:
+            log_warning("deprecated thing", DeprecationWarning, "mymodule.py", 42)
+
+        mock_logger.warning.assert_called_once_with(
+            "mymodule.py:42 - DeprecationWarning: deprecated thing"
+        )
+
+    def test_includes_file_name_when_provided(self):
+        """When a `file` stream is passed, its `.name` is appended in brackets."""
+        fake_file = SimpleNamespace(name="/var/log/warnings.log")
+
+        with patch("common.helpers.logger") as mock_logger:
+            log_warning("watch out", UserWarning, "mymodule.py", 10, file=fake_file)
+
+        message = mock_logger.warning.call_args[0][0]
+        self.assertIn("[/var/log/warnings.log]", message)
+
+    def test_includes_stripped_source_line_when_provided(self):
+        """When a source `line` is passed, it is appended stripped of surrounding whitespace."""
+        with patch("common.helpers.logger") as mock_logger:
+            log_warning(
+                "watch out",
+                UserWarning,
+                "mymodule.py",
+                10,
+                line="  x = 1  \n",
+            )
+
+        message = mock_logger.warning.call_args[0][0]
+        self.assertIn("| x = 1", message)
+
+    def test_omits_file_and_line_segments_when_absent(self):
+        """Without `file` or `line`, the message contains no bracket/pipe segments."""
+        with patch("common.helpers.logger") as mock_logger:
+            log_warning("plain", UserWarning, "mymodule.py", 1)
+
+        message = mock_logger.warning.call_args[0][0]
+        self.assertNotIn("[", message)
+        self.assertNotIn("|", message)
+
+
+class InsertAfterMiddlewareTests(TestCase):
+    """Tests for `_insert_after_middleware`, the middleware-list splicing helper."""
+
+    def test_inserts_single_item_after_marker(self):
+        """A single new item is inserted immediately after the marker item."""
+        base = ["a", "b", "c"]
+
+        result = _insert_after_middleware(base, "b", "x")
+
+        self.assertEqual(result, ["a", "b", "x", "c"])
+
+    def test_inserts_multiple_items_in_order(self):
+        """Multiple new items are inserted after the marker, preserving their given order."""
+        base = ["a", "b", "c"]
+
+        result = _insert_after_middleware(base, "a", "x", "y", "z")
+
+        self.assertEqual(result, ["a", "x", "y", "z", "b", "c"])
+
+    def test_inserts_after_last_item(self):
+        """Inserting after the final item in the base list appends the new items."""
+        base = ["a", "b", "c"]
+
+        result = _insert_after_middleware(base, "c", "x")
+
+        self.assertEqual(result, ["a", "b", "c", "x"])
+
+    def test_does_not_mutate_original_list(self):
+        """The base list passed in is left unmodified; a new list is returned."""
+        base = ["a", "b", "c"]
+
+        _insert_after_middleware(base, "b", "x")
+
+        self.assertEqual(base, ["a", "b", "c"])
+
+    def test_missing_marker_raises_value_error(self):
+        """A marker item that isn't in the base list raises ValueError naming the marker."""
+        base = ["a", "b", "c"]
+
+        with self.assertRaises(ValueError) as ctx:
+            _insert_after_middleware(base, "missing", "x")
+
+        self.assertIn("missing", str(ctx.exception))
+
+    def test_no_new_items_returns_equivalent_copy(self):
+        """Passing no new items returns an equal but distinct copy of the base list."""
+        base = ["a", "b", "c"]
+
+        result = _insert_after_middleware(base, "b")
+
+        self.assertEqual(result, base)
+        self.assertIsNot(result, base)
+
+
+class ForceUtcTimeTests(TestCase):
+    """Tests for `_force_utc_time`, the Loguru UTC timestamp patcher."""
+
+    def test_converts_aware_non_utc_time_to_utc(self):
+        """A tz-aware, non-UTC timestamp is converted to UTC representing the same instant."""
+        chicago = timezone(timedelta(hours=-5))
+        local_time = datetime(2026, 9, 17, 16, 21, 27, tzinfo=chicago)
+        record = {"time": local_time}
+
+        _force_utc_time(record)
+
+        self.assertEqual(record["time"].tzinfo, timezone.utc)
+        self.assertEqual(record["time"], local_time)  # same instant
+        self.assertEqual(record["time"].hour, 21)
+
+    def test_already_utc_time_is_unchanged_in_value(self):
+        """A timestamp already in UTC is left with the same value and tzinfo."""
+        utc_time = datetime(2026, 9, 17, 21, 21, 27, tzinfo=timezone.utc)
+        record = {"time": utc_time}
+
+        _force_utc_time(record)
+
+        self.assertEqual(record["time"], utc_time)
+        self.assertEqual(record["time"].tzinfo, timezone.utc)
+
+
+class OtelSafeValueTests(TestCase):
+    """Tests for `_otel_safe_value`, the OTel attribute sanitizer."""
+
+    def test_primitives_are_returned_unchanged(self):
+        """None, bools, ints, and floats pass through unchanged."""
+        for value in (None, True, False, 1, 1.5, "text"):
+            with self.subTest(value=value):
+                self.assertEqual(_otel_safe_value(value), value)
+
+    def test_bytes_are_decoded_to_str(self):
+        """Bytes values are decoded to str (UTF-8, replacing undecodable bytes) rather than passed through."""
+        self.assertEqual(_otel_safe_value(b"bytes"), "bytes")
+        self.assertEqual(_otel_safe_value(b"\xff\xfe"), "��")
+
+    def test_list_is_recursively_sanitized(self):
+        """Each element of a list is sanitized, preserving primitive values."""
+        result = _otel_safe_value([1, "two", 3.0])
+
+        self.assertEqual(result, [1, "two", 3.0])
+
+    def test_tuple_and_set_are_converted_to_list(self):
+        """Tuples and sets are normalized to plain lists."""
+        self.assertEqual(_otel_safe_value((1, 2)), [1, 2])
+        self.assertEqual(sorted(_otel_safe_value({1, 2})), [1, 2])
+
+    def test_dict_keys_are_stringified(self):
+        """Non-string dict keys are coerced to strings; values are sanitized."""
+        result = _otel_safe_value({1: "one", "two": 2})
+
+        self.assertEqual(result, {"1": "one", "two": 2})
+
+    def test_list_longer_than_50_is_truncated(self):
+        """A list longer than 50 items is truncated to its first 50 entries."""
+        result = _otel_safe_value(list(range(60)))
+
+        self.assertEqual(len(result), 50)
+        self.assertEqual(result, list(range(50)))
+
+    def test_dict_longer_than_50_is_truncated(self):
+        """A dict with more than 50 keys is truncated to 50 entries."""
+        big = {str(i): i for i in range(60)}
+
+        result = _otel_safe_value(big)
+
+        self.assertEqual(len(result), 50)
+
+    def test_unknown_object_is_stringified(self):
+        """An object of an unrecognized type is converted via `str()`."""
+
+        class Thing:
+            def __str__(self):
+                return "a-thing"
+
+        self.assertEqual(_otel_safe_value(Thing()), "a-thing")
+
+    def test_deep_nesting_is_stringified_past_depth_limit(self):
+        """Nesting past depth 3 is stringified instead of recursed into further."""
+        # depth 0 -> [depth1 -> [depth2 -> [depth3, stringified here]]]
+        nested = [[[[1, 2, 3]]]]
+
+        result = _otel_safe_value(nested)
+
+        self.assertEqual(result, [[["[1, 2, 3]"]]])
+
+
+class SafeGetHostTests(TestCase):
+    """Tests for `_safe_get_host`, the exception-swallowing `request.get_host()` wrapper."""
+
+    def test_returns_host_on_success(self):
+        """Returns the host string when `request.get_host()` succeeds."""
+        req = SimpleNamespace(get_host=lambda: "example.com")
+
+        self.assertEqual(_safe_get_host(req), "example.com")
+
+    def test_returns_none_when_get_host_raises(self):
+        """Returns None instead of raising when `request.get_host()` raises (e.g. DisallowedHost)."""
+
+        def boom():
+            raise Exception("DisallowedHost-like failure")
+
+        req = SimpleNamespace(get_host=boom)
+
+        self.assertIsNone(_safe_get_host(req))
+
+    def test_returns_none_when_get_host_missing(self):
+        """Returns None when the request object has no `get_host` attribute."""
+        req = SimpleNamespace()
+
+        self.assertIsNone(_safe_get_host(req))
+
+    def test_returns_none_for_none_request(self):
+        """Returns None when the request itself is None."""
+        self.assertIsNone(_safe_get_host(None))
+
+
+def _make_record(**overrides):
+    """Build a fake Loguru `Message`-like object wrapping a record dict for `ld_loguru_sink` tests."""
+    record = {
+        "level": SimpleNamespace(name="INFO"),
+        "name": "myapp.module",
+        "file": SimpleNamespace(path="/src/myapp/module.py"),
+        "function": "do_thing",
+        "line": 123,
+        "extra": {},
+        "exception": None,
+        "message": "hello world",
+    }
+    record.update(overrides)
+    return SimpleNamespace(record=record)
+
+
+class LdLoguruSinkTests(TestCase):
+    """Tests for `ld_loguru_sink`, the LaunchDarkly Observability Loguru sink."""
+
+    def setUp(self):
+        super().setUp()
+        # Most of these tests exercise what happens once LaunchDarkly is
+        # configured; the not-yet-ready path has its own dedicated tests
+        # below, which override this per-test.
+        patcher = patch(
+            "common.helpers._launchdarkly_observability_ready", return_value=True
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_noop_when_observe_unavailable(self):
+        """Does nothing (and does not raise) when `ldobserve` is not installed."""
+        message = _make_record()
+
+        with patch("common.helpers.observe", None):
+            ld_loguru_sink(message)  # must not raise
+
+    def test_forwards_basic_attrs_to_observe(self):
+        """Forwards message text, mapped level number, and code.* attrs to `observe.record_log`."""
+        message = _make_record()
+
+        with patch("common.helpers.observe") as mock_observe:
+            ld_loguru_sink(message)
+
+        mock_observe.record_log.assert_called_once()
+        text, level_no = mock_observe.record_log.call_args[0]
+        attrs = mock_observe.record_log.call_args[1]["attributes"]
+
+        self.assertEqual(text, "hello world")
+        self.assertEqual(level_no, 20)  # INFO
+        self.assertEqual(attrs["logger.name"], "myapp.module")
+        self.assertEqual(attrs["code.filepath"], "/src/myapp/module.py")
+        self.assertEqual(attrs["code.function"], "do_thing")
+        self.assertEqual(attrs["code.lineno"], 123)
+
+    def test_missing_file_yields_no_filepath_attr(self):
+        """When the record has no `file`, `code.filepath` is omitted from attrs."""
+        message = _make_record(file=None)
+
+        with patch("common.helpers.observe") as mock_observe:
+            ld_loguru_sink(message)
+
+        attrs = mock_observe.record_log.call_args[1]["attributes"]
+        self.assertNotIn("code.filepath", attrs)
+
+    def test_level_name_mapping(self):
+        """Each Loguru level name maps to its standard `logging` level number, with an unknown name defaulting to INFO (20)."""
+        cases = {
+            "TRACE": 5,
+            "DEBUG": 10,
+            "INFO": 20,
+            "SUCCESS": 20,
+            "WARNING": 30,
+            "ERROR": 40,
+            "CRITICAL": 50,
+            "SOMETHING_UNKNOWN": 20,
+        }
+        for level_name, expected in cases.items():
+            with self.subTest(level_name=level_name):
+                message = _make_record(level=SimpleNamespace(name=level_name))
+                with patch("common.helpers.observe") as mock_observe:
+                    ld_loguru_sink(message)
+                level_no = mock_observe.record_log.call_args[0][1]
+                self.assertEqual(level_no, expected)
+
+    def test_request_extra_is_flattened_into_http_attrs(self):
+        """A Django-request-like object under the `request` extra key is flattened into `http.*` attrs."""
+        req = SimpleNamespace(
+            path="/api/insults/",
+            method="POST",
+            get_host=lambda: "yo-momma.io",
+        )
+        message = _make_record(extra={"request": req, "custom": "value"})
+
+        with patch("common.helpers.observe") as mock_observe:
+            ld_loguru_sink(message)
+
+        attrs = mock_observe.record_log.call_args[1]["attributes"]
+        self.assertEqual(attrs["http.target"], "/api/insults/")
+        self.assertEqual(attrs["http.method"], "POST")
+        self.assertEqual(attrs["http.host"], "yo-momma.io")
+        self.assertEqual(attrs["custom"], "value")
+
+    def test_request_with_failing_get_host_does_not_raise_and_omits_host(self):
+        """A request whose `get_host()` raises does not crash the sink and omits `http.host`."""
+
+        def boom():
+            raise Exception("bad host header")
+
+        req = SimpleNamespace(path="/x", method="GET", get_host=boom)
+        message = _make_record(extra={"request": req})
+
+        with patch("common.helpers.observe") as mock_observe:
+            ld_loguru_sink(message)  # must not raise
+
+        attrs = mock_observe.record_log.call_args[1]["attributes"]
+        self.assertNotIn("http.host", attrs)
+
+    def test_exception_info_is_attached(self):
+        """When the record has exception info, `exception.type`/`exception.value` attrs are set."""
+        exc = SimpleNamespace(type=ValueError, value=ValueError("bad"), traceback=None)
+        message = _make_record(exception=exc)
+
+        with patch("common.helpers.observe") as mock_observe:
+            ld_loguru_sink(message)
+
+        attrs = mock_observe.record_log.call_args[1]["attributes"]
+        self.assertIn("exception.type", attrs)
+        self.assertIn("exception.value", attrs)
+
+    def test_null_attrs_are_stripped(self):
+        """Attributes with a None value are removed from the payload sent to `observe`."""
+        message = _make_record(file=None)
+
+        with patch("common.helpers.observe") as mock_observe:
+            ld_loguru_sink(message)
+
+        attrs = mock_observe.record_log.call_args[1]["attributes"]
+        self.assertTrue(all(v is not None for v in attrs.values()))
+
+    def test_skips_records_bridged_from_stdlib(self):
+        """A record tagged `_bridged_from_stdlib` is never forwarded to `observe.record_log`.
+
+        InterceptHandler bridges stdlib logging into Loguru so third-party
+        logs also reach the console/file/Loki sinks, but LaunchDarkly's own
+        LDLoggingHandler already exports those same records to Observability
+        independently (it's attached directly to the stdlib root logger) -
+        forwarding them here too would double-report every third-party log.
+        """
+        message = _make_record(extra={"_bridged_from_stdlib": True})
+
+        with patch("common.helpers.observe") as mock_observe:
+            ld_loguru_sink(message)
+
+        mock_observe.record_log.assert_not_called()
+
+    def test_skips_forwarding_before_launchdarkly_is_configured(self):
+        """Nothing is forwarded while `configure_launchdarkly()` hasn't finished yet.
+
+        `ld_loguru_sink` is registered as a Loguru sink during settings
+        resolution, well before `LDIntegrationConfig.ready()` actually
+        initializes the LaunchDarkly client/Observability plugin. Forwarding
+        anyway during that gap is exactly what makes ldobserve log "The
+        observability singleton was used before it was initialized." for
+        every log line emitted at startup - skipping the forward instead
+        avoids triggering that warning in the first place.
+        """
+        message = _make_record()
+
+        with (
+            patch("common.helpers.observe") as mock_observe,
+            patch(
+                "common.helpers._launchdarkly_observability_ready",
+                return_value=False,
+            ),
+        ):
+            ld_loguru_sink(message)
+
+        mock_observe.record_log.assert_not_called()
+
+    def test_forwards_once_launchdarkly_becomes_configured(self):
+        """Forwarding resumes normally once LaunchDarkly finishes initializing."""
+        message = _make_record()
+
+        with (
+            patch("common.helpers.observe") as mock_observe,
+            patch(
+                "common.helpers._launchdarkly_observability_ready",
+                return_value=True,
+            ),
+        ):
+            ld_loguru_sink(message)
+
+        mock_observe.record_log.assert_called_once()
+
+    def test_readiness_check_is_skipped_when_observe_unavailable(self):
+        """`_launchdarkly_observability_ready` isn't even consulted when `ldobserve` isn't installed."""
+        message = _make_record()
+
+        with (
+            patch("common.helpers.observe", None),
+            patch(
+                "common.helpers._launchdarkly_observability_ready"
+            ) as mock_ready,
+        ):
+            ld_loguru_sink(message)  # must not raise
+
+        mock_ready.assert_not_called()
+
+
+class LaunchdarklyObservabilityReadyTests(TestCase):
+    """Tests for `_launchdarkly_observability_ready`."""
+
+    def test_reflects_client_is_configured_result(self):
+        """Returns whatever `applications.ld_integration.client.is_configured()` reports."""
+        for expected in (True, False):
+            with self.subTest(expected=expected):
+                with patch(
+                    "applications.ld_integration.client.is_configured",
+                    return_value=expected,
+                ):
+                    self.assertIs(_launchdarkly_observability_ready(), expected)
+
+    def test_returns_false_without_raising_when_client_import_fails(self):
+        """An import/attribute error while checking readiness is swallowed, not raised."""
+        with patch.dict("sys.modules", {"applications.ld_integration.client": None}):
+            self.assertFalse(_launchdarkly_observability_ready())
+
+
+def _make_loki_record(**overrides):
+    """Build a fake Loguru record dict shaped for `loki_logger_handler`'s
+    `LoguruFormatter.format()`, which (unlike `ld_loguru_sink`) reads it as a
+    plain dict rather than a `Message` wrapper.
+    """
+    record = {
+        "time": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        "message": "hello world",
+        "process": SimpleNamespace(id=123),
+        "thread": SimpleNamespace(id=456),
+        "function": "do_thing",
+        "module": "module",
+        "name": "myapp.module",
+        "level": SimpleNamespace(name="INFO"),
+        "extra": {},
+        "exception": None,
+        "file": SimpleNamespace(name="module.py", path="/src/myapp/module.py"),
+        "line": 42,
+    }
+    record.update(overrides)
+    return record
+
+
+class SanitizingLoguruFormatterTests(TestCase):
+    """Tests for `SanitizingLoguruFormatter`.
+
+    `loki_logger_handler`'s own `LoguruFormatter.format()` merges Loguru's
+    `extra` dict straight into the record it later hands to `json.dumps()`.
+    Anything bound via `logger.bind(...)` that isn't a JSON primitive - a
+    Django/DRF request, a model instance - survives that merge untouched and
+    blows up `json.dumps()` on `LokiLoggerHandler`'s background flush thread.
+    """
+
+    def test_non_serializable_extra_value_is_stringified(self):
+        """A non-primitive value bound via `extra` is stringified, not left as-is."""
+
+        class Unserializable:
+            def __repr__(self):
+                return "<Unserializable>"
+
+        record = _make_loki_record(extra={"request": Unserializable()})
+
+        formatted, _ = SanitizingLoguruFormatter().format(record)
+
+        json.dumps(formatted)  # must not raise
+        self.assertEqual(formatted["request"], "<Unserializable>")
+
+    def test_primitive_extra_values_pass_through_unchanged(self):
+        """Primitive `extra` values and the base fields are left untouched."""
+        record = _make_loki_record(extra={"count": 3, "flag": True})
+
+        formatted, _ = SanitizingLoguruFormatter().format(record)
+
+        self.assertEqual(formatted["count"], 3)
+        self.assertEqual(formatted["flag"], True)
+        self.assertEqual(formatted["message"], "hello world")
+        self.assertEqual(formatted["name"], "myapp.module")
+
+    def test_error_level_exception_traceback_is_json_serializable(self):
+        """At ERROR level, exception details are attached and remain JSON-safe
+        even when the bound `extra` also carries a non-primitive value.
+        """
+        try:
+            raise ValueError("boom")
+        except ValueError:
+            import sys
+
+            exc_info = sys.exc_info()
+
+        record = _make_loki_record(
+            level=SimpleNamespace(name="ERROR"),
+            exception=exc_info,
+            extra={"request": SimpleNamespace(path="/x", method="GET")},
+        )
+
+        formatted, _ = SanitizingLoguruFormatter().format(record)
+
+        json.dumps(formatted)  # must not raise
+        self.assertIn("stacktrace", formatted)
+
+
+class InterceptHandlerTests(TestCase):
+    """Tests for InterceptHandler, the stdlib `logging` -> Loguru bridge."""
+
+    def setUp(self):
+        super().setUp()
+        self._sink_calls = []
+        sink_id = loguru_logger.add(
+            lambda m: self._sink_calls.append(m), format="{message}"
+        )
+        self.addCleanup(loguru_logger.remove, sink_id)
+
+        self.stdlib_logger = logging.getLogger("intercept-handler-test")
+        self.stdlib_logger.setLevel(logging.DEBUG)
+        self.stdlib_logger.propagate = False
+        self.handler = InterceptHandler()
+        self.stdlib_logger.addHandler(self.handler)
+        self.addCleanup(self.stdlib_logger.removeHandler, self.handler)
+
+    def test_bridges_stdlib_record_into_loguru_sink(self):
+        """A normal stdlib log call reaches Loguru's sinks, tagged as bridged."""
+        self.stdlib_logger.info("hello from stdlib")
+
+        self.assertEqual(len(self._sink_calls), 1)
+        self.assertIn("hello from stdlib", str(self._sink_calls[0]))
+        self.assertTrue(self._sink_calls[0].record["extra"]["_bridged_from_stdlib"])
+
+    def test_tags_bridged_record_with_original_stdlib_logger_name(self):
+        """The original stdlib logger name survives under `extra.stdlib_logger_name`.
+
+        Loguru's own `{name}` is derived from the resolved caller frame, not
+        from the stdlib logger's `.name` - this is what lets a sink recover
+        the real source (e.g. `ldclient.util`) if it wants it.
+        """
+        self.stdlib_logger.info("hi")
+
+        self.assertEqual(
+            self._sink_calls[0].record["extra"]["stdlib_logger_name"],
+            "intercept-handler-test",
+        )
+
+    def test_maps_known_stdlib_level_to_matching_loguru_level(self):
+        """A standard level name (WARNING) maps to Loguru's own level of the same name."""
+        self.stdlib_logger.warning("careful")
+
+        self.assertEqual(self._sink_calls[0].record["level"].name, "WARNING")
+
+    def test_unrecognized_level_number_falls_back_to_levelno(self):
+        """A level number with no matching Loguru level name still gets through, by number."""
+        self.stdlib_logger.log(15, "between DEBUG and INFO")
+
+        self.assertEqual(self._sink_calls[0].record["level"].no, 15)
+
+    def test_excluded_sdk_loggers_are_not_bridged_into_loguru(self):
+        """ldobserve/opentelemetry records never reach Loguru's sinks.
+
+        They're routed through the plain fallback formatter instead (see
+        `InterceptHandler`'s docstring): bridging them risks a same-thread
+        reentrant `logger.log()` call if something in Loguru's own sink
+        pipeline (e.g. `ld_loguru_sink` -> `observe.record_log`) triggers one
+        of these SDKs' internal loggers synchronously, and they're already
+        exported to LaunchDarkly Observability independently regardless.
+        """
+        for logger_name in ("ldobserve.observe", "opentelemetry.sdk._logs"):
+            with self.subTest(logger_name=logger_name):
+                self._sink_calls.clear()
+                excluded_logger = logging.getLogger(logger_name)
+                excluded_logger.propagate = False
+                excluded_logger.addHandler(self.handler)
+                try:
+                    with patch(
+                        "common.helpers._fallback_console_handler"
+                    ) as mock_fallback:
+                        excluded_logger.warning("sdk-internal warning")
+                    mock_fallback.emit.assert_called_once()
+                finally:
+                    excluded_logger.removeHandler(self.handler)
+
+                self.assertEqual(self._sink_calls, [])
+
+    def test_reentrant_stdlib_log_from_within_a_sink_is_dropped_not_recursed(self):
+        """A sink that itself logs via stdlib `logging` mid-dispatch doesn't recurse.
+
+        Simulates the real failure mode this guards against: a Loguru sink
+        (e.g. `ld_loguru_sink` calling into the LaunchDarkly SDK) can trigger
+        a *new* stdlib log call on the same thread while the original one is
+        still being forwarded. Without the reentrancy guard, that second
+        call would itself be bridged and dispatched to every sink - including
+        this one - recursively. With the guard, it's silently dropped instead.
+        """
+
+        def reentrant_sink(message):
+            if "reentrant" not in str(message):
+                logging.getLogger("intercept-handler-test").warning("reentrant")
+
+        sink_id = loguru_logger.add(reentrant_sink, format="{message}")
+        self.addCleanup(loguru_logger.remove, sink_id)
+
+        self.stdlib_logger.info("original")
+
+        messages = [str(m) for m in self._sink_calls]
+        self.assertEqual(messages, ["original\n"])
