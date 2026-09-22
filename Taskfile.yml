@@ -43,6 +43,10 @@ tasks:
     desc: Install project dependencies into the virtual environment
     cmds:
       - uv sync --group test --group dev
+      # .git/hooks/pre-commit is local-only (never committed), and pre-commit
+      # has no auto-discovery for a config outside repo root, so every fresh
+      # clone needs this re-run to point the hook at .configs/.
+      - .venv/bin/pre-commit install -c .configs/.pre-commit-config.yaml
     silent: false
 
   freeze:

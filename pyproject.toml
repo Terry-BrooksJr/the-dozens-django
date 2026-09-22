@@ -97,7 +97,7 @@ DJANGO_SETTINGS_MODULE = "core.settings"
 # never found that way - it's loaded explicitly via -p instead, exactly like
 # pytest_dozens_plugin.
 pythonpath = [".configs"]
-addopts = ["-p", "pytest_dozens_plugin", "-p", "conftest"]
+addopts = ["-p", "pytest_dozens_plugin", "-p", "conftest", "--reuse-db"]
 testpaths = [
   "applications/API/tests",
   "applications/graphQL/tests",
