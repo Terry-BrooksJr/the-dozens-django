@@ -2,7 +2,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/70f7aef1a778458f8553b024aa0f80fe)](https://app.codacy.com/gh/Terry-BrooksJr/the-dozens-django/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/70f7aef1a778458f8553b024aa0f80fe)](https://app.codacy.com/gh/Terry-BrooksJr/the-dozens-django/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 [![Better Stack Badge](https://uptime.betterstack.com/status-badges/v2/monitor/2hq41.svg)](https://uptime.betterstack.com/?utm_source=status_badge)
-![Docker Image Version](https://img.shields.io/docker/v/terrybrooks/the-dozens?sort=date&style=plastic&logo=docker&logoSize=auto&label=Lastest%20Version&link=https%3A%2F%2Fhub.docker.com%2Frepository%2Fdocker%2Fterrybrooks%2Fthe-dozens%2Ftags)
+[![Docker Image Version](https://img.shields.io/docker/v/terrybrooks/the-dozens?sort=date&style=plastic&logo=docker&logoSize=auto&label=Lastest%20Version)](https://hub.docker.com/repository/docker/terrybrooks/the-dozens/tags)
 
 
 
