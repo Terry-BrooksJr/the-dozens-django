@@ -2,9 +2,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/70f7aef1a778458f8553b024aa0f80fe)](https://app.codacy.com/gh/Terry-BrooksJr/the-dozens-django/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/70f7aef1a778458f8553b024aa0f80fe)](https://app.codacy.com/gh/Terry-BrooksJr/the-dozens-django/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 [![Better Stack Badge](https://uptime.betterstack.com/status-badges/v2/monitor/2hq41.svg)](https://uptime.betterstack.com/?utm_source=status_badge)
-[![Docker Image Version](https://img.shields.io/docker/v/terrybrooks/the-dozens?sort=date&style=plastic&logo=docker&logoSize=auto&label=Lastest%20Version)](https://hub.docker.com/repository/docker/terrybrooks/the-dozens/tags)
-
-
+![Docker Image Version](https://img.shields.io/docker/v/terrybrooks/the-dozens?sort=date&style=plastic&logo=docker&logoSize=auto&label=Lastest%20Version&link=https%3A%2F%2Fhub.docker.com%2Frepository%2Fdocker%2Fterrybrooks%2Fthe-dozens%2Ftags)
 
 # The Dozens — Django/DRF API
 
@@ -23,6 +21,7 @@ A playful, production‑ready REST API for “yo momma” style jokes (aka *Insu
    - [Architecture](#architecture)
    - [Tech Stack](#tech-stack)
    - [Getting Started](#getting-started)
+
       - [Prerequisites](#prerequisites)
       - [Environment](#environment)
       - [Install \& Run](#install--run)
@@ -30,6 +29,7 @@ A playful, production‑ready REST API for “yo momma” style jokes (aka *Insu
    - [Task Runner (Taskfile.yml)](#task-runner-taskfileyml)
    - [Configuration](#configuration)
    - [API Overview](#api-overview)
+
       - [List insults''](#list-insults)
       - [List insults by category](#list-insults-by-category)
       - [Retrieve / Update / Delete](#retrieve--update--delete)
@@ -100,7 +100,7 @@ Key models:
 - [uv](https://docs.astral.sh/uv/) for virtualenv creation and dependency installs
 - Redis/Dragonfly running locally (or a hosted Redis‑compatible service)
 - Postgres 13+ (recommended)
-- [Doppler](https://www.doppler.com/) CLI — **required**. Most `task` commands (`run:dev`, `db_sync`, `run:test`, `run:prod`, `django`, …) shell out through `doppler run -t "${DOPPLER_TOKEN}"` to inject secrets, so a valid `DOPPLER_TOKEN` must be present in your environment before running them.
+- [Doppler](https://www.doppler.com/) CLI — __required__. Most `task` commands (`run:dev`, `db_sync`, `run:test`, `run:prod`, `django`, …) shell out through `doppler run -t "${DOPPLER_TOKEN}"` to inject secrets, so a valid `DOPPLER_TOKEN` must be present in your environment before running them.
 
 ### Environment
 
@@ -108,17 +108,17 @@ Create a `.envrc` (loaded via [direnv](https://direnv.net/)) or export the follo
 
 ```env
 export DOPPLER_TOKEN=....     # required — Doppler service token used by nearly every task
-DJANGO_SETTINGS_MODULE=core.settings
-DATABASE_URL=postgres://user:pass@localhost:5432/dozens
-CACHE_URL=redis://localhost:6379/0         # or dragonfly
-SECRET_KEY=change-me
-DEBUG=1
-ALLOWED_HOSTS=127.0.0.1,localhost
+export DJANGO_SETTINGS_MODULE=core.settings
+export DATABASE_URL=postgres://user:pass@localhost:5432/dozens
+export CACHE_URL=redis://localhost:6379/0         # or dragonfly
+export SECRET_KEY=change-me
+export DEBUG=1
+export ALLOWED_HOSTS=127.0.0.1,localhost
 
 # Optional logging/observability sinks (see Logging & Observability below)
-LOKI_URL=https://loki.example.com/loki/api/v1/push
-LOKI_PASSWORD=....
-LAUNCHDARKLY_SERVICE_VERSION=....
+export LOKI_URL=https://loki.example.com/loki/api/v1/push
+export LOKI_PASSWORD=....
+export LAUNCHDARKLY_SERVICE_VERSION=....
 ```
 
 > **direnv users**: `.envrc` variables must use `export VAR=value`, not bare `VAR=value` — direnv only picks up variables that are actually exported when it diffs the shell environment. A bare assignment is silently invisible to child processes (including `task`/Doppler), which shows up as tests or the dev server failing with missing secrets.
@@ -275,11 +275,11 @@ $ task schema
 
 ## Logging & Observability
 
-Logging is configured per‑environment in `core/settings.py` (`configure_logging`) and built on **loguru**, with the glue code (warnings capture, UTC time patching, sink formatting) in [`common/helpers.py`](common/helpers.py).
+Logging is configured per‑environment in `core/settings.py` (`configure_logging`) and built on __loguru__, with the glue code (warnings capture, UTC time patching, sink formatting) in [`common/helpers.py`](common/helpers.py).
 
 - **Console/stdout**: always on — plain text in dev/offline, structured in production.
-- **Loki** (optional): set `LOKI_URL` and `LOKI_PASSWORD` to stream logs to a Grafana Loki instance via `loki-logger-handler`. Enabled in both `Development` and `Production` configurations; auth is HTTP basic (`lokiadmin` / `LOKI_PASSWORD`). Log records are sanitized (`SanitizingLoguruFormatter`) so non‑JSON‑serializable values don't crash the background shipper.
-- **LaunchDarkly Observability** (optional): when `LAUNCHDARKLY_OBSERVABILITY_ENABLED` is on, logs are also forwarded to LD Observability. Set `LAUNCHDARKLY_SERVICE_VERSION` to tag shipped records with a release version.
+- __Loki__ (optional): set `LOKI_URL` and `LOKI_PASSWORD` to stream logs to a Grafana Loki instance via `loki-logger-handler`. Enabled in both `Development` and `Production` configurations; auth is HTTP basic (`lokiadmin` / `LOKI_PASSWORD`). Log records are sanitized (`SanitizingLoguruFormatter`) so non‑JSON‑serializable values don't crash the background shipper.
+- __LaunchDarkly Observability__ (optional): when `LAUNCHDARKLY_OBSERVABILITY_ENABLED` is on, logs are also forwarded to LD Observability. Set `LAUNCHDARKLY_SERVICE_VERSION` to tag shipped records with a release version.
 
 None of the optional sinks are required for local development — omit `LOKI_URL`/`LOKI_PASSWORD` to skip Loki entirely.
 

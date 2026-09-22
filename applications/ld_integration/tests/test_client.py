@@ -164,7 +164,7 @@ class ConfigureLaunchdarklySuccessTests(ResetConfiguredStateMixin, TestCase):
     @patch.object(ld_client_module, "ld_client")
     @patch.object(ld_client_module, "Config")
     def test_success_with_observability_plugin_attached(
-        self, mock_config_cls, _mock_ld_client, _mock_should_init
+        self, mock_config_cls, mock_ld_client, _mock_should_init
     ):
         mock_obs_plugin_cls = MagicMock()
         mock_obs_config_cls = MagicMock()
@@ -191,6 +191,9 @@ class ConfigureLaunchdarklySuccessTests(ResetConfiguredStateMixin, TestCase):
         mock_config_cls.assert_called_once_with(
             sdk_key="sdk-123", plugins=[mock_obs_plugin_instance]
         )
+        mock_ld_client.set_config.assert_called_once_with(mock_config_cls.return_value)
+        mock_ld_client.get.assert_called_once()
+        self.assertTrue(ld_client_module.is_configured())
 
     @patch.object(ld_client_module, "should_init_in_this_process", return_value=True)
     @patch.object(ld_client_module, "ld_client")

@@ -105,6 +105,28 @@ class ImmediateDbBackendDeliveryTests(TestCase):
         self.assertEqual(sent, 2)
         self.assertEqual(len(mail.outbox), 2)
 
+    def test_unrelated_already_queued_message_is_left_untouched(self):
+        """Sending one email must not also drain other, unrelated queued messages.
+
+        send_all() with no queryset drains the *entire* mailer queue. If
+        ImmediateDbBackend called it that way, delivering this message would
+        also pick up and attempt to send whatever else happens to be sitting
+        in the queue (e.g. a message still waiting out a deferred retry) -
+        inflating this call's latency and retrying something unrelated.
+        """
+        preexisting = Message.objects.create(
+            email=mail.EmailMessage(
+                "Unrelated", "body", "from@example.com", ["someone-else@example.com"]
+            )
+        )
+
+        mail.send_mail("Subject", "Body", "from@example.com", ["to@example.com"])
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, "Subject")
+        self.assertTrue(Message.objects.filter(pk=preexisting.pk).exists())
+        self.assertEqual(MessageLog.objects.filter(result=RESULT_SUCCESS).count(), 1)
+
 
 @override_settings(**_BACKEND_OVERRIDES)
 class ImmediateDbBackendFailureTests(TestCase):
