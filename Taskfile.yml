@@ -50,26 +50,26 @@ tasks:
   freeze:
     desc: Export locked production, development, and test requirements
     cmds:
-      - .venv/bin/poetry lock
-      - .venv/bin/poetry export --only main --without-hashes --without-urls --output ./requirements/base.txt
-      - .venv/bin/poetry export --only dev --without-hashes --without-urls --output ./requirements/dev.txt
-      - .venv/bin/poetry export --only test --without-hashes --without-urls --output ./requirements/test.txt
+      - uv lock
+      - uv export --no-default-groups --no-hashes --output-file ./requirements/base.txt
+      - uv export --only-group dev --no-hashes --output-file ./requirements/dev.txt
+      - uv export --only-group test --no-hashes --output-file ./requirements/test.txt
     generates:
       - ./requirements/base.txt
       - ./requirements/dev.txt
       - ./requirements/test.txt
-      - ./poetry.lock
+      - ./uv.lock
     sources:
       - ./pyproject.toml
-      - ./poetry.lock
+      - ./uv.lock
     silent: false
 
   db_sync:
     desc: Make and run migrations
     dir: .
     cmds:
-      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py makemigrations
-      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py migrate
+      - PYTHONPATH="${PYTHONPATH}" doppler run  -t ${DOPPLER_TOKEN} -- .venv/bin/python3 run/manage.py makemigrations
+      - PYTHONPATH="${PYTHONPATH}" doppler run  -t ${DOPPLER_TOKEN} -- .venv/bin/python3 run/manage.py migrate
     # NOTE: sources/generates removed for migrations — Task's file-fingerprinting
     # is unreliable for Django migration files (auto-generated names change each
     # run). Migrations are always re-run to guarantee idempotency.
@@ -92,7 +92,7 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Production
     cmds:
-      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py collectstatic --no-input
+      - PYTHONPATH="${PYTHONPATH}" doppler run  -t ${DOPPLER_TOKEN} -- .venv/bin/python3 run/manage.py collectstatic --no-input
     # NOTE: `source .envrc` removed (no-op in subshell). PYTHONPATH now uses the
     # globally defined env var instead of a long inline literal.
 
@@ -104,9 +104,9 @@ tasks:
     cmds:
       - PYTHONPATH="${PYTHONPATH}" .venv/bin/coverage erase
       - >-
-        PYTHONPATH="${PYTHONPATH}" .venv/bin/coverage run --rcfile=pyproject.toml -m pytest -v
-      - PYTHONPATH="${PYTHONPATH}" .venv/bin/coverage report -m
-      - PYTHONPATH="${PYTHONPATH}" .venv/bin/coverage xml -o cobertura.xml
+        PYTHONPATH="${PYTHONPATH}" doppler run  -t ${DOPPLER_TOKEN} -- .venv/bin/coverage run --rcfile=pyproject.toml -m pytest -v
+      - PYTHONPATH="${PYTHONPATH}" doppler run  -t ${DOPPLER_TOKEN} -- .venv/bin/coverage report -m
+      - PYTHONPATH="${PYTHONPATH}" doppler run  -t ${DOPPLER_TOKEN} -- .venv/bin/coverage xml -o cobertura.xml
     generates:
       - ".coverage"
       - "cobertura.xml"
@@ -127,13 +127,13 @@ tasks:
       - task: db_sync
 
       - echo 'Starting server...'
-      - DJANGO_CONFIGURATION=Production .venv/bin/python3 -m gunicorn --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}}
+      - DJANGO_CONFIGURATION=Production doppler run  -t ${DOPPLER_TOKEN} -- .venv/bin/python3 -m gunicorn --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}}
 
   schema-check:
     dir: "{{.TASKFILE_DIR}}"
     desc: Check Models and Serializers for schema compliance with OpenAPI 3.0 Standards and fail on warnings
     cmds:
-      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d").yaml --validate
+      - PYTHONPATH="${PYTHONPATH}" doppler run  -t ${DOPPLER_TOKEN} --  .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d").yaml --validate
     internal: true
 
   schema:
@@ -141,7 +141,7 @@ tasks:
     dir: "{{.TASKFILE_DIR}}"
     desc: Generate OpenAPI 3.0 schema.yaml file from models and serializers
     cmds:
-      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
+      - PYTHONPATH="${PYTHONPATH}" doppler run  -t ${DOPPLER_TOKEN} -- .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
 
   build-image:
     desc: Build Docker Image
@@ -236,7 +236,7 @@ tasks:
     env:
       PYTHONPATH: "{{.PYTHONPATH}}"
     cmds:
-      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 run/manage.py {{.CLI_ARGS}}
+      - PYTHONPATH="${PYTHONPATH}" doppler run  -t ${DOPPLER_TOKEN} -- .venv/bin/python3 run/manage.py {{.CLI_ARGS}}
     silent: false
     interactive: true
 
