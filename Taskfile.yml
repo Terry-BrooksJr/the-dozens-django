@@ -153,27 +153,6 @@ tasks:
         - DOPPLER_TOKEN
         - PATH_TO_DB_ROOT_CERT
 
-  build-frontend-image:
-    desc: Build Nginx frontend Docker image
-    dir: "{{.TASKFILE_DIR}}"
-    cmds:
-      - docker build -f .deploy/Dockerfile.nginx -t terrybrooks/thedozens-frontend:latest .
-
-  compose:up:
-    desc: Start all services (API + Nginx frontend) with Docker Compose
-    dir: "{{.TASKFILE_DIR}}"
-    cmds:
-      - docker compose up --build {{.CLI_ARGS}}
-    requires:
-      vars:
-        - DOPPLER_TOKEN
-
-  compose:down:
-    desc: Stop and remove all Docker Compose services
-    dir: "{{.TASKFILE_DIR}}"
-    cmds:
-      - docker compose down {{.CLI_ARGS}}
-
   lint:lint:
     desc: Run all linting and formatting tools
     dir: .
@@ -267,7 +246,7 @@ tasks:
       DJANGO_CONFIGURATION: Staging
     cmds:
       - >-
-        PYTHONPATH="${PYTHONPATH}" .venv/bin/pytest --cov --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml:cobertura.xml --cov-report=html:htmlcov --no-cov-on-fail -v
+        PYTHONPATH="${PYTHONPATH}" doppler run  -t ${DOPPLER_TOKEN} -- .venv/bin/pytest --cov --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml:cobertura.xml --cov-report=html:htmlcov --no-cov-on-fail -v --exitfirst
     # source= and omit= are defined once in [tool.coverage.run] in pyproject.toml;
     # --cov (without an argument) honours that config rather than duplicating it here.
     silent: false
