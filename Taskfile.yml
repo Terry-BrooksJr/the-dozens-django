@@ -11,7 +11,7 @@ silent: true
 vars:
   # Single source-of-truth for lintable code — every lint task references this.
   # Directories are recursed; standalone root-level .py files are listed explicitly.
-  PY_SOURCES: applications common core run .deploy conftest.py pytest_dozens_plugin.py
+  PY_SOURCES: applications common core run .deploy .configs
 tasks:
   default:
     cmds:

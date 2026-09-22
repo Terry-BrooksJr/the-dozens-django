@@ -176,3 +176,4 @@ lint.txt
 .poetry
 .agents
 .envrc
+skills-lock.json

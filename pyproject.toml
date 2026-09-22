@@ -86,7 +86,18 @@ DJANGO_SETTINGS_MODULE = "core.settings"
 # pytest-django's own implementation of that hook accesses Django settings.
 # Plugins loaded via addopts -p are registered before any conftest file is
 # discovered, making this the only reliable injection point.
-addopts = ["-p", "pytest_dozens_plugin"]
+# Both plugin modules live in .configs/ (not repo root), so it needs to be on
+# sys.path for "-p <name>" to resolve them by bare module name - a path like
+# ".configs/pytest_dozens_plugin" is not valid for -p, which imports its
+# argument as a module, not a file path.
+#
+# conftest.py also lives in .configs/ now. Pytest's usual conftest.py
+# auto-discovery only walks up from test file locations to rootdir, so a
+# conftest.py in a sibling directory (not an ancestor of any test path) is
+# never found that way - it's loaded explicitly via -p instead, exactly like
+# pytest_dozens_plugin.
+pythonpath = [".configs"]
+addopts = ["-p", "pytest_dozens_plugin", "-p", "conftest"]
 testpaths = [
   "applications/API/tests",
   "applications/graphQL/tests",
