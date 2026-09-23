@@ -33,7 +33,7 @@ tasks:
       - echo "Completing Pre-Start Environment Check For Development Run..."
       - echo "Django Configuration:${DJANGO_CONFIGURATION}"
       - echo "Doppler dev:${DOPPLER_PROJECT}"
-      - PYTHONPATH="${PYTHONPATH}" doppler run -t "${DOPPLER_TOKEN}" -- .venv/bin/python3 -m gunicorn -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{or .CLI_ARGS 8000}} --reload
+      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 -m gunicorn -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{or .CLI_ARGS 8000}} --reload
     # NOTE: `source .envrc` removed — no-op in a non-interactive subshell.
     # NOTE: `-t 1` (connect timeout) removed — it conflicted with --timeout 120.
     interactive: false
@@ -70,14 +70,11 @@ tasks:
     desc: Make and run migrations
     dir: .
     cmds:
-      - PYTHONPATH="${PYTHONPATH}"  doppler run --preserve-env=DJANGO_CONFIGURATION -t ${DOPPLER_TOKEN} -- .venv/bin/python3 run/manage.py makemigrations
-      - PYTHONPATH="${PYTHONPATH}"  doppler run --preserve-env=DJANGO_CONFIGURATION -t ${DOPPLER_TOKEN} --  .venv/bin/python3 run/manage.py migrate
+      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py makemigrations
+      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py migrate
     # NOTE: sources/generates removed for migrations — Task's file-fingerprinting
     # is unreliable for Django migration files (auto-generated names change each
     # run). Migrations are always re-run to guarantee idempotency.
-    requires:
-      vars:
-        - DOPPLER_TOKEN
 
   send:mail:
     dir: .
@@ -85,7 +82,7 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Production
     cmds:
-      - PYTHONPATH="${PYTHONPATH}"  doppler run --preserve-env=DJANGO_CONFIGURATION -t ${DOPPLER_TOKEN} -- .venv/bin/python3 run/manage.py send_mail
+      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py send_mail
 
   collect:
     dir: .
@@ -103,17 +100,14 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Staging
     cmds:
-      - PYTHONPATH="${PYTHONPATH}"  doppler run --preserve-env=DJANGO_CONFIGURATION -t ${DOPPLER_TOKEN} -- .venv/bin/coverage erase
+      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/coverage erase
       - >-
-        PYTHONPATH="${PYTHONPATH}"  doppler run --preserve-env=DJANGO_CONFIGURATION -t ${DOPPLER_TOKEN} -- .venv/bin/coverage run --rcfile=pyproject.toml -m pytest -v
-      - PYTHONPATH="${PYTHONPATH}"  doppler run --preserve-env=DJANGO_CONFIGURATION -t ${DOPPLER_TOKEN} -- .venv/bin/coverage report -m
-      - PYTHONPATH="${PYTHONPATH}"  doppler run --preserve-env=DJANGO_CONFIGURATION -t ${DOPPLER_TOKEN} --  .venv/bin/coverage xml -o cobertura.xml
+        PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/coverage run --rcfile=pyproject.toml -m pytest -v
+      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/coverage report -m
+      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/coverage xml -o cobertura.xml
     generates:
       - ".coverage"
       - "cobertura.xml"
-    requires:
-      vars:
-        - DOPPLER_TOKEN
   run:prod:
     dir: .
     silent: false
@@ -133,13 +127,13 @@ tasks:
       - task: db_sync
 
       - echo 'Starting server...'
-      -  doppler run --preserve-env=DJANGO_CONFIGURATION -t ${DOPPLER_TOKEN} -- .venv/bin/python3 -m gunicorn -c .deploy/gunicorn.conf.py --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}}
+      - ./scripts/with_doppler.sh .venv/bin/python3 -m gunicorn -c .deploy/gunicorn.conf.py --workers=2 --threads=2 core.wsgi:application --bind 0.0.0.0:{{or .CLI_ARGS 8080}}
 
   schema-check:
     dir: "{{.TASKFILE_DIR}}"
     desc: Check Models and Serializers for schema compliance with OpenAPI 3.0 Standards and fail on warnings
     cmds:
-      - PYTHONPATH="${PYTHONPATH}" doppler run  -t ${DOPPLER_TOKEN} --  .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d").yaml --validate
+      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d").yaml --validate
     internal: true
 
   schema:
@@ -147,7 +141,7 @@ tasks:
     dir: "{{.TASKFILE_DIR}}"
     desc: Generate OpenAPI 3.0 schema.yaml file from models and serializers
     cmds:
-      - PYTHONPATH="${PYTHONPATH}" doppler run  -t ${DOPPLER_TOKEN} -- .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
+      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
 
   build-image:
     desc: Build Docker Image
@@ -241,7 +235,7 @@ tasks:
     env:
       PYTHONPATH: "{{.PYTHONPATH}}"
     cmds:
-      - PYTHONPATH="${PYTHONPATH}"  doppler run --preserve-env=DJANGO_CONFIGURATION -t ${DOPPLER_TOKEN} -- .venv/bin/python3 run/manage.py {{.CLI_ARGS}}
+      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py {{.CLI_ARGS}}
     silent: false
     interactive: true
 
@@ -255,7 +249,7 @@ tasks:
       - echo "Doppler Project:${DOPPLER_PROJECT}"
       - echo "Doppler Env:${DOPPLER_CONFIG}"
       - >-
-        PYTHONPATH="${PYTHONPATH}" doppler run --preserve-env=DJANGO_CONFIGURATION -t ${DOPPLER_TOKEN} -- .venv/bin/pytest --cov --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml:cobertura.xml --cov-report=html:htmlcov --no-cov-on-fail -v --exitfirst
+        PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/pytest --cov --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml:cobertura.xml --cov-report=html:htmlcov --no-cov-on-fail -v --exitfirst
     # source= and omit= are defined once in [tool.coverage.run] in pyproject.toml;
     # --cov (without an argument) honours that config rather than duplicating it here.
     silent: false
@@ -265,9 +259,6 @@ tasks:
       - ".coverage"
       - "cobertura.xml"
       - "htmlcov/index.html"
-    requires:
-      vars:
-        - DOPPLER_TOKEN
 
   coverage:upload:
     desc: Upload coverage report to Codacy (requires CODACY_PROJECT_TOKEN env var)

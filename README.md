@@ -82,7 +82,7 @@ Key models:
 
 ## Tech Stack
 
-- **Python 3.11+**, **Django 5.x**, **Django REST Framework**
+- **Python 3.14**, **Django 5.x**, **Django REST Framework**
 - **drf‑spectacular** for OpenAPI 3
 - **django‑filters**, **django‑extensions** (optional)
 - **loguru** for logging, with optional **Loki** (`loki-logger-handler`) and **LaunchDarkly Observability** sinks
@@ -96,7 +96,7 @@ Key models:
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.14 (the only version CI/Codacy/Docker build and test against — `task venv`/`task install` via `uv` will provision it automatically)
 - [uv](https://docs.astral.sh/uv/) for virtualenv creation and dependency installs
 - Redis/Dragonfly running locally (or a hosted Redis‑compatible service)
 - Postgres 13+ (recommended)
