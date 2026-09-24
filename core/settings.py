@@ -189,7 +189,7 @@ class Base(Configuration):
     ROOT_URLCONF = values.Value("core.urls", environ=False)
     WSGI_APPLICATION = values.Value("core.wsgi.application", environ=False)
 
-    ADMINS = values.ListValue([("Terry Brooks", "Terry@BrooksJr.com")], environ=False)
+    ADMINS = values.ListValue(["Terry@BrooksJr.com"], environ=False)
     LANGUAGE_CODE = values.Value("en-us", environ=False)
     APPEND_SLASH = values.BooleanValue(True, environ=False)
     VIEW_CACHE_TTL = values.PositiveIntegerValue(
