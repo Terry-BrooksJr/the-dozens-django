@@ -46,7 +46,7 @@ class LDIntegrationConfig(AppConfig):
         # InterceptHandler's docstring for how it avoids double-reporting to
         # LaunchDarkly Observability.
         root_logger = logging.getLogger()
-        root_logger.addHandler(InterceptHandler())
+        root_logger.handlers = [InterceptHandler()]
         root_logger.setLevel(logging.INFO)
         configure_launchdarkly(
             sdk_key=getattr(settings, "LAUNCHDARKLY_SDK_KEY", ""),
