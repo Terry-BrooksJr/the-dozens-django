@@ -39,7 +39,6 @@ from rest_framework.generics import (
 from rest_framework.mixins import CreateModelMixin
 from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_extensions.mixins import PaginateByMaxMixin
 
 from applications.API.authentication import FlexibleTokenAuthentication
 from applications.API.errors import (
@@ -140,7 +139,7 @@ User = get_user_model()
         },
     )
 )
-class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIView):
+class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
     """
     # Insults by Category
 
@@ -395,9 +394,7 @@ class InsultByCategoryEndpoint(CachedResponseMixin, PaginateByMaxMixin, ListAPIV
         },
     ),
 )
-class InsultDetailsEndpoint(
-    PaginateByMaxMixin, CreateModelMixin, RetrieveUpdateDestroyAPIView
-):
+class InsultDetailsEndpoint(CreateModelMixin, RetrieveUpdateDestroyAPIView):
     """
     # Insult Details
 

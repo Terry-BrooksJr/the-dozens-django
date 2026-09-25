@@ -35,7 +35,7 @@ User = get_user_model()
 # have a known recipient to assert against.
 _EMAIL_OVERRIDES = {
     "EMAIL_BACKEND": "django.core.mail.backends.locmem.EmailBackend",
-    "ADMINS": [("Test Admin", "testadmin@example.com")],
+    "ADMINS": ["testadmin@example.com"],
     "EMAIL_SUBJECT_PREFIX": "[Django] ",
 }
 

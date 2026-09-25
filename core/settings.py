@@ -189,7 +189,7 @@ class Base(Configuration):
     ROOT_URLCONF = values.Value("core.urls", environ=False)
     WSGI_APPLICATION = values.Value("core.wsgi.application", environ=False)
 
-    ADMINS = values.ListValue([("Terry Brooks", "Terry@BrooksJr.com")], environ=False)
+    ADMINS = values.ListValue(["Terry@BrooksJr.com"], environ=False)
     LANGUAGE_CODE = values.Value("en-us", environ=False)
     APPEND_SLASH = values.BooleanValue(True, environ=False)
     VIEW_CACHE_TTL = values.PositiveIntegerValue(
@@ -1213,12 +1213,12 @@ class Staging(Development):
         {
             "default": {
                 "ENGINE": "django.db.backends.postgresql",
-                "NAME": "dozens_dev",
-                "USER": "dozens_dev_user",
-                "PASSWORD": os.getenv("PG_DEV_DATABASE", "postgres"),
-                "HOST": "127.0.0.1",
+                "NAME": os.getenv("POSTGRES_DB", "test_db"),
+                "USER": os.getenv("PG_DATABASE_USER", "root"),
+                "PASSWORD": os.getenv("PG_DATABASE_PASSWORD", "postgres"),
+                "HOST": os.getenv("PG_DATABASE_HOST", "localhost"),
                 "DISABLE_SERVER_SIDE_CURSORS": True,
-                "PORT": "5432",
+                "PORT": os.getenv("PG_DATABASE_PORT", "5432"),
             }
         },
         environ=False,

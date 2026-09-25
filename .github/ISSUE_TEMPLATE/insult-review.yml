@@ -1,17 +1,17 @@
 name: Report API Insult
 description: Request a content review for an API insult (reclassification, recategorization, or removal).
-title: Report API Insult - [INSULT ID]
+title: Report API Insult - [INSULT REFERENCE ID]
 labels:
   - content review request
 assignees:
   - Terry-BrooksJr
 body:
   - type: input
-    id: insult_id
+    id: insult_reference_id
     attributes:
-      label: Insult ID
-      description: Identifier of the content being reviewed (4-digit ID or UUID shown in API responses).
-      placeholder: "0000 or 550e8400-e29b-41d4-a716-446655440000"
+      label: Insult Reference ID
+      description: Identifier of the content being reviewed (A composite identifier with two parts. The first is a human readable prefix of "GIGGLE", "CHUCKLE", "SNORT", "SNICKER", or "CACKLE" and a base64 suffix).
+      placeholder: "SNICKER_NzYy or  GIGGLE_NzY2"
     validations:
       required: true
   - type: dropdown

@@ -4,8 +4,6 @@
 [![Better Stack Badge](https://uptime.betterstack.com/status-badges/v2/monitor/2hq41.svg)](https://uptime.betterstack.com/?utm_source=status_badge)
 ![Docker Image Version](https://img.shields.io/docker/v/terrybrooks/the-dozens?sort=date&style=plastic&logo=docker&logoSize=auto&label=Lastest%20Version&link=https%3A%2F%2Fhub.docker.com%2Frepository%2Fdocker%2Fterrybrooks%2Fthe-dozens%2Ftags)
 
-
-
 # The Dozens — Django/DRF API
 
 A playful, production‑ready REST API for “yo momma” style jokes (aka *Insults*), built with **Django 5** and **Django REST Framework**. It ships with token auth, robust filtering, schema‑first API docs (OpenAPI 3 via **drf‑spectacular**), caching, pagination, linting/type‑checking, and a container‑friendly runtime.
@@ -23,6 +21,7 @@ A playful, production‑ready REST API for “yo momma” style jokes (aka *Insu
    - [Architecture](#architecture)
    - [Tech Stack](#tech-stack)
    - [Getting Started](#getting-started)
+
       - [Prerequisites](#prerequisites)
       - [Environment](#environment)
       - [Install \& Run](#install--run)
@@ -30,6 +29,7 @@ A playful, production‑ready REST API for “yo momma” style jokes (aka *Insu
    - [Task Runner (Taskfile.yml)](#task-runner-taskfileyml)
    - [Configuration](#configuration)
    - [API Overview](#api-overview)
+
       - [List insults''](#list-insults)
       - [List insults by category](#list-insults-by-category)
       - [Retrieve / Update / Delete](#retrieve--update--delete)
@@ -39,6 +39,7 @@ A playful, production‑ready REST API for “yo momma” style jokes (aka *Insu
 
    - [Schema \& Docs](#schema--docs)
    - [Caching \& Performance](#caching--performance)
+   - [Logging \& Observability](#logging--observability)
    - [Testing \& Linting](#testing--linting)
    - [Deployment](#deployment)
    - [Project Layout](#project-layout)
@@ -81,39 +82,47 @@ Key models:
 
 ## Tech Stack
 
-- **Python 3.11+**, **Django 5.x**, **Django REST Framework**
+- **Python 3.14**, **Django 5.x**, **Django REST Framework**
 - **drf‑spectacular** for OpenAPI 3
-- **django‑filters**, **django‑extensions** (optional), **loguru** for logging
+- **django‑filters**, **django‑extensions** (optional)
+- **loguru** for logging, with optional **Loki** (`loki-logger-handler`) and **LaunchDarkly Observability** sinks
 - **Redis/Dragonfly** for caching (via Django cache backend)
 - **Gunicorn** for WSGI
-- **Poetry** for dependency management
+- **uv** for dependency management (`pyproject.toml` + `uv.lock`)
+- **Doppler** for secrets management — wraps most `task` commands (dev server, migrations, tests, prod)
 - **Taskfile** for repeatable commands
 
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.14 (the only version CI/Codacy/Docker build and test against — `task venv`/`task install` via `uv` will provision it automatically)
+- [uv](https://docs.astral.sh/uv/) for virtualenv creation and dependency installs
 - Redis/Dragonfly running locally (or a hosted Redis‑compatible service)
 - Postgres 13+ (recommended)
-- [Doppler](https://www.doppler.com/) CLI if you use secrets syncing (optional but supported)
+- [Doppler](https://www.doppler.com/) CLI — __required__. Most `task` commands (`run:dev`, `db_sync`, `run:test`, `run:prod`, `django`, …) shell out through `doppler run -t "${DOPPLER_TOKEN}"` to inject secrets, so a valid `DOPPLER_TOKEN` must be present in your environment before running them.
 
 ### Environment
 
-Create a `.envrc` or export the following (the Taskfile expects some of these):
+Create a `.envrc` (loaded via [direnv](https://direnv.net/)) or export the following directly:
 
 ```env
-DOPPLER_TOKEN=....            # Optional if using Doppler
-PATH_TO_DB_ROOT_CERT=/path/to/root.crt
-TEMP_STATIC_DIR=.tmp_static
-DJANGO_SETTINGS_MODULE=core.settings
-DATABASE_URL=postgres://user:pass@localhost:5432/dozens
-CACHE_URL=redis://localhost:6379/0         # or dragonfly
-SECRET_KEY=change-me
-DEBUG=1
-ALLOWED_HOSTS=127.0.0.1,localhost
+export DOPPLER_TOKEN=....     # required — Doppler service token used by nearly every task
+export DJANGO_SETTINGS_MODULE=core.settings
+export DATABASE_URL=postgres://user:pass@localhost:5432/dozens
+export CACHE_URL=redis://localhost:6379/0         # or dragonfly
+export SECRET_KEY=change-me
+export DEBUG=1
+export ALLOWED_HOSTS=127.0.0.1,localhost
+
+# Optional logging/observability sinks (see Logging & Observability below)
+export LOKI_URL=https://loki.example.com/loki/api/v1/push
+export LOKI_PASSWORD=....
+export LAUNCHDARKLY_SERVICE_VERSION=....
 ```
 
+> **direnv users**: `.envrc` variables must use `export VAR=value`, not bare `VAR=value` — direnv only picks up variables that are actually exported when it diffs the shell environment. A bare assignment is silently invisible to child processes (including `task`/Doppler), which shows up as tests or the dev server failing with missing secrets.
+>
 > The Taskfile also sets `PYTHON_PATH` to include the app modules so imports Just Work™ in dev.
 
 ### Install & Run
@@ -140,16 +149,21 @@ Common tasks (see full list with `task`):
 
 [!NOTE] This required the installation of Taskfile, a Go-Based Task Agent. For More Details - [Taskfile](https://taskfile.dev/)
 
-- `task install` — creates venv, installs Poetry deps.
-- `task db_sync` — `makemigrations` + `migrate`.
-- `task run:dev <port>` — gunicorn in reload mode (debug‑friendly).
-- `task run:test` — run API tests for `applications.API`.
+- `task venv` — creates a virtualenv via `uv venv`.
+- `task install` — `uv sync --group test --group dev` into the venv.
+- `task freeze` — `uv lock` + `uv export` the base/dev/test requirement files.
+- `task deps:upgrade` — `uv lock --upgrade` + `uv tree --outdated`.
+- `task db_sync` — `makemigrations` + `migrate` (via `doppler run`).
+- `task run:dev <port>` — gunicorn in reload mode (debug‑friendly), via `doppler run`.
+- `task run:test` — run API tests for `applications.API`, via `doppler run`.
 - `task collect` — collect static for prod packaging.
 - `task schema` — validate & emit OpenAPI schema file under `schema/`.
 - `task lint:lint` — autoflake, isort, black, ruff, pylint, bandit, mypy, djlint.
 - `task lint:fix` — auto‑fix formatting/linting where safe.
 - `task django -- <cmd>` — pass‑through to `manage.py` (e.g., `task django -- createsuperuser`).
 - `task build-image` — Docker Buildx (multi‑arch) with Doppler build arg.
+
+> Nearly every task now wraps its command in `doppler run -t "${DOPPLER_TOKEN}" -- ...`, so `DOPPLER_TOKEN` must be set (see [Environment](#environment)) even for local/dev runs.
 
 ## Configuration
 
@@ -258,6 +272,16 @@ $ task schema
 - Bulk list endpoints leverage a `CachedResponseMixin` for cache keys that include filters and pagination.
 - Cache invalidation patterns cover `Insult:*`, bulk lists, categories, and per‑user lists.
 - Category lookups are normalized so users can pass either a key (`P`) or the human name (`Poor`).
+
+## Logging & Observability
+
+Logging is configured per‑environment in `core/settings.py` (`configure_logging`) and built on __loguru__, with the glue code (warnings capture, UTC time patching, sink formatting) in [`common/helpers.py`](common/helpers.py).
+
+- **Console/stdout**: always on — plain text in dev/offline, structured in production.
+- __Loki__ (optional): set `LOKI_URL` and `LOKI_PASSWORD` to stream logs to a Grafana Loki instance via `loki-logger-handler`. Enabled in both `Development` and `Production` configurations; auth is HTTP basic (`lokiadmin` / `LOKI_PASSWORD`). Log records are sanitized (`SanitizingLoguruFormatter`) so non‑JSON‑serializable values don't crash the background shipper.
+- __LaunchDarkly Observability__ (optional): when `LAUNCHDARKLY_OBSERVABILITY_ENABLED` is on, logs are also forwarded to LD Observability. Set `LAUNCHDARKLY_SERVICE_VERSION` to tag shipped records with a release version.
+
+None of the optional sinks are required for local development — omit `LOKI_URL`/`LOKI_PASSWORD` to skip Loki entirely.
 
 ## Testing & Linting
 

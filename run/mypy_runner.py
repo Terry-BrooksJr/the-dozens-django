@@ -4,7 +4,7 @@ mypy runner for django-configurations projects.
 django-stubs calls django.setup() at plugin load time, which imports
 core.settings.  The Base(Configuration) metaclass requires the
 django-configurations importer to be installed first — identical to
-the pytest bootstrapping problem solved in pytest_dozens_plugin.py.
+the pytest bootstrapping problem solved in .configs/pytest_dozens_plugin.py.
 
 Usage (from Taskfile):
     .venv/bin/python run/mypy_runner.py <mypy args...>

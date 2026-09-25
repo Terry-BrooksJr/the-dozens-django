@@ -84,6 +84,35 @@ class ConfigureLoggingCommonTests(_ResetsLoggingConfigured):
         mock_logger.remove.assert_called_once()
 
 
+class PostSetupTests(_ResetsLoggingConfigured):
+    """Tests for `Base.post_setup`, the django-configurations lifecycle hook.
+
+    django-configurations calls `post_setup()` once Value()s resolve, only
+    on the concrete class DJANGO_CONFIGURATION selects. This guards against
+    a regression where settings finish resolving without ever installing
+    the selected environment's logging sinks - either because the parent
+    hook stopped running, or configure_logging() stopped being called from
+    it (or got called more than once).
+    """
+
+    @patch("core.settings.Base.configure_logging")
+    @patch("configurations.base.Configuration.post_setup")
+    def test_calls_parent_first_then_configures_logging_once(
+        self, mock_parent_post_setup, mock_configure_logging
+    ):
+        call_order = []
+        mock_parent_post_setup.side_effect = lambda: call_order.append("parent")
+        mock_configure_logging.side_effect = lambda: call_order.append(
+            "configure_logging"
+        )
+
+        Base.post_setup()
+
+        self.assertEqual(call_order, ["parent", "configure_logging"])
+        mock_parent_post_setup.assert_called_once()
+        mock_configure_logging.assert_called_once()
+
+
 class OfflineLoggingTests(_ResetsLoggingConfigured):
     """Tests for `Offline.configure_logging`."""
 

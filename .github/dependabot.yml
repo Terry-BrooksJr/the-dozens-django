@@ -10,3 +10,12 @@ updates:
    directory: "/"
    schedule:
      interval: weekly
+ # Bumps the SHA-pinned actions (and their "# vX.Y.Z" comments). "/" covers
+ # .github/workflows; composite actions under .github/actions/ are only
+ # scanned when listed explicitly.
+ - package-ecosystem: "github-actions"
+   directories:
+     - "/"
+     - "/.github/actions/*"
+   schedule:
+     interval: weekly
