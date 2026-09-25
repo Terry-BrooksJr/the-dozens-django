@@ -1,0 +1,8 @@
+{% extends "rest_framework/base.html" %}
+{% load static %}
+
+<!-- Shared by every Browsable API page (api.html, login.html) -->
+{% block styles %}
+{{ block.super }}
+<script type="module" src="{% static 'js/darkly.js' %}"></script>
+{% endblock styles %}
