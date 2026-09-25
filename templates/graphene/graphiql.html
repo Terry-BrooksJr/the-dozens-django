@@ -266,6 +266,7 @@ add "&raw" to the end of the URL within a browser.
                   }
              }
         </style>
+        {{ ld_user|json_script:"ld-user" }}
         <script type="module" src="{% static 'js/darkly.js' %}"></script>
 
     </head>
@@ -499,8 +500,23 @@ add "&raw" to the end of the URL within a browser.
                        headers['X-CSRFToken'] = csrftoken;
                   }
 
+                  // Hand the Authorization header to static/js/darkly.js so LaunchDarkly
+                  // can identify the API-token user (queue survives the module loading late).
+                  window.dozensLDTokenQueue = window.dozensLDTokenQueue || [];
+                  function fetchWithLDIdentify(url, init) {
+                       var requestHeaders = (init && init.headers) || {};
+                       for (var name in requestHeaders) {
+                            if (name.toLowerCase() === 'authorization') {
+                                 window.dozensLDTokenQueue.push(requestHeaders[name]);
+                                 break;
+                            }
+                       }
+                       return window.fetch(url, init);
+                  }
+
                   var graphQLFetcher = GraphiQL.createFetcher({
                        url: fetchURL,
+                       fetch: fetchWithLDIdentify,
                        wsClient: graphqlWs.createClient({
                             url: subscribeURL,
                             shouldRetry: trueLambda,

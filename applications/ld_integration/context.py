@@ -28,3 +28,22 @@ def context_from_request(request, *, anonymous_key_fallback: str = "anon") -> Co
     builder.set("is_superuser", getattr(user, "is_superuser", False))
 
     return builder.build()
+
+
+def browser_context_from_request(request) -> dict | None:
+    """Return the logged-in user's context as a plain dict for the browser SDK.
+
+    Returns ``None`` for anonymous requests so the browser falls back to its
+    own anonymous key. Deliberately a subset of ``context_from_request``: the
+    page source is visible to the user and anything in the context is sent to
+    LaunchDarkly from the browser, so email and superuser status are left out.
+    """
+    ctx = context_from_request(request)
+    if ctx.anonymous:
+        return None
+    return {
+        "kind": "user",
+        "key": ctx.key,
+        "name": ctx.name,
+        "is_staff": bool(ctx.get("is_staff")),
+    }
