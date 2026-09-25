@@ -72,6 +72,14 @@ dev = [
 # No [build-system] table is declared, so uv already treats this project as
 # an unpackaged application (mirrors Poetry's former `package-mode = false`).
 package = false
+# djoser 2.3.4 caps social-auth-app-django <6, which in turn caps
+# social-auth-core <5. Nothing here uses djoser's social login (no
+# djoser.social.urls, no social_django app), so lift both caps to get
+# social-auth-core 5.x. Remove once djoser allows social-auth-app-django 6.
+override-dependencies = [
+    "social-auth-app-django>=6.0.1,<7",
+    "social-auth-core>=5.0.0,<6",
+]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "core.settings"

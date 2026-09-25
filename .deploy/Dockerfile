@@ -12,7 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /src
 
 COPY requirements/base.txt ./requirements.txt
-RUN python -m pip install --no-cache-dir --timeout=300 -r requirements.txt
+# requirements.txt is a full `uv export` of uv.lock (every transitive pin), so
+# skip pip's resolver: it doesn't honor [tool.uv] override-dependencies and
+# would reject the djoser / social-auth-app-django override as a conflict.
+RUN python -m pip install --no-cache-dir --timeout=300 --no-deps -r requirements.txt
 
 # -----------------------------------------------------------
 FROM python:3.14-slim-bookworm

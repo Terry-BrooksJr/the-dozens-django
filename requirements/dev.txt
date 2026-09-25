@@ -52,7 +52,7 @@ editorconfig==0.17.1
     # via
     #   cssbeautifier
     #   jsbeautifier
-filelock==4.0.1
+filelock==4.0.3
     # via
     #   python-discovery
     #   virtualenv
@@ -110,11 +110,11 @@ platformdirs==4.11.12
     #   pylint
     #   virtualenv
 pre-commit==4.6.2
-pyflakes==3.4.0
+pyflakes==4.0.0
     # via autoflake
 pygments==2.21.0
     # via rich
-pylint==4.0.8
+pylint==4.0.9
     # via
     #   pylint-celery
     #   pylint-django
@@ -138,7 +138,7 @@ regex==2026.9.10
     # via djlint
 rich==15.0.0
     # via bandit
-ruff==0.16.8
+ruff==0.16.9
 sqlglot==30.19.0
     # via kolo
 sqlparse==0.6.0
@@ -161,5 +161,5 @@ tzdata==2026.4 ; sys_platform == 'win32'
     # via django
 ulid-py==1.1.0
     # via kolo
-virtualenv==21.10.0
+virtualenv==21.12.1
     # via pre-commit
