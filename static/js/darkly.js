@@ -31,6 +31,8 @@ ldClient.on('error', (error) => {
 });
 
 // createClient returns a stopped client; start() fetches flags and initializes the plugins.
-ldClient.start();
+void ldClient.start().catch((error) => {
+    console.error('LaunchDarkly client startup failed:', error);
+});
 
 window.dozensLD = ldClient;
