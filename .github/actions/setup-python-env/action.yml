@@ -45,7 +45,7 @@ runs:
 
     - name: Fetch environment variables
       if: inputs.doppler-token != ''
-      uses: dopplerhq/secrets-fetch-action@584cb6ce376e50d6a381e369453a6101912c18e8 # v1.1.3
+      uses: dopplerhq/secrets-fetch-action@451892f16195f9ac360e1a5bcbf0b5fd0e957534 # v2.0.0
       with:
         doppler-token: ${{ inputs.doppler-token }}
         inject-env-vars: true
