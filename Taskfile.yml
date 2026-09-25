@@ -90,7 +90,7 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Production
     cmds:
-      - PYTHONPATH="${PYTHONPATH}"  .venv/bin/python3 run/manage.py collectstatic --no-input
+      - PYTHONPATH="${PYTHONPATH}"  ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py collectstatic --no-input
     # NOTE: `source .envrc` removed (no-op in subshell). PYTHONPATH now uses the
     # globally defined env var instead of a long inline literal.
 
