@@ -236,8 +236,9 @@ print(response.json())
 
 **cURL**
 ```bash
+# Set DOZENS_API_TOKEN in your environment first; never paste the token inline.
 curl -X POST "https://yo-momma.io/api/insults/new" \
-  -H "Authorization: Token YOUR_API_TOKEN_HERE" \
+  -H "Authorization: Token ${DOZENS_API_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "content": "Yo momma is so old her birth certificate says expired.",
