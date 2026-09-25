@@ -10,8 +10,36 @@ import SessionReplay from 'https://cdn.jsdelivr.net/npm/@launchdarkly/session-re
 
 const LD_CLIENT_SIDE_ID = '69998d933f61550a0651d1f9';
 
-const anonymousKey = localStorage.getItem('ld-anonymous-key') || crypto.randomUUID();
-localStorage.setItem('ld-anonymous-key', anonymousKey);
+const ANONYMOUS_KEY_STORAGE = 'ld-anonymous-key';
+
+const WINDOW_NAME_PREFIX = `${ANONYMOUS_KEY_STORAGE}:`;
+
+// localStorage throws SecurityError when storage is blocked. window.name isn't
+// covered by storage blocking and survives same-site navigation in the tab, so
+// it keeps page-to-page continuity for the visit.
+function getWindowNameKey() {
+    if (window.name.startsWith(WINDOW_NAME_PREFIX)) {
+        return window.name.slice(WINDOW_NAME_PREFIX.length);
+    }
+    const key = crypto.randomUUID();
+    // Only claim window.name when nothing else is using it.
+    if (!window.name) window.name = WINDOW_NAME_PREFIX + key;
+    return key;
+}
+
+function getAnonymousKey() {
+    try {
+        const stored = localStorage.getItem(ANONYMOUS_KEY_STORAGE);
+        if (stored) return stored;
+        const key = crypto.randomUUID();
+        localStorage.setItem(ANONYMOUS_KEY_STORAGE, key);
+        return key;
+    } catch {
+        return getWindowNameKey();
+    }
+}
+
+const anonymousKey = getAnonymousKey();
 
 const context = {
     kind: 'user',
