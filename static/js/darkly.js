@@ -10,8 +10,12 @@ import SessionReplay from 'https://cdn.jsdelivr.net/npm/@launchdarkly/session-re
 
 const LD_CLIENT_SIDE_ID = '69998d933f61550a0651d1f9';
 
+const anonymousKey = localStorage.getItem('ld-anonymous-key') || crypto.randomUUID();
+localStorage.setItem('ld-anonymous-key', anonymousKey);
+
 const context = {
     kind: 'user',
+    key: anonymousKey,
     anonymous: true,
 };
 
