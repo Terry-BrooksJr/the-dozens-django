@@ -33,7 +33,10 @@ tasks:
       - echo "Completing Pre-Start Environment Check For Development Run..."
       - echo "Django Configuration:${DJANGO_CONFIGURATION}"
       - echo "Doppler dev:${DOPPLER_PROJECT}"
-      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 -m gunicorn -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{or .CLI_ARGS 8000}} --reload
+      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 -m gunicorn -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{or .CLI_ARGS 8000}} --reload --no-control-socket
+    # NOTE: `--no-control-socket` — gunicorn >=25.1's control-socket thread
+    # leaves the master multithreaded at fork(), so on macOS every replacement
+    # worker dies in objc's fork-safety check (see .deploy/gunicorn.conf.py).
     # NOTE: `source .envrc` removed — no-op in a non-interactive subshell.
     # NOTE: `-t 1` (connect timeout) removed — it conflicted with --timeout 120.
     interactive: false
@@ -90,7 +93,7 @@ tasks:
     env:
       DJANGO_CONFIGURATION: Production
     cmds:
-      - PYTHONPATH="${PYTHONPATH}"  .venv/bin/python3 run/manage.py collectstatic --no-input
+      - PYTHONPATH="${PYTHONPATH}"  ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py collectstatic --no-input
     # NOTE: `source .envrc` removed (no-op in subshell). PYTHONPATH now uses the
     # globally defined env var instead of a long inline literal.
 

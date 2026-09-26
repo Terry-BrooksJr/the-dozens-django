@@ -15,6 +15,9 @@
               href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2"
               as="font" type="font/woff2" crossorigin>
         <link rel="stylesheet" href="{% static 'css/status.css' %}">
+        {{ ld_user|json_script:"ld-user" }}
+        <script type="module" src="{% static 'js/darkly.js' %}"></script>
+
     </head>
     <body>
 

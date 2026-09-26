@@ -21,6 +21,12 @@
       background-size: cover;
     }
   </style>
+  {{ ld_user|json_script:"ld-user" }}
+  <script type="module" src="{% static 'js/darkly.js' %}"></script>
+
 </head>
+ {# djlint: off #}
 <body></body>
+{# djlint: on #}
+
 </html>

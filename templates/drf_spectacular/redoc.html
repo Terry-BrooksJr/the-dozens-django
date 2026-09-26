@@ -222,6 +222,9 @@
                   color: var(--color-white);
              }
         </style>
+                <!-- LaunchDarkly: feature flags, observability, and session replay -->
+{{ ld_user|json_script:"ld-user" }}
+<script type="module" src="{% static 'js/darkly.js' %}"></script>
     </head>
     <body>
         <!-- Custom header -->

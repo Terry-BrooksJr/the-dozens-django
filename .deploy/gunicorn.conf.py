@@ -6,6 +6,7 @@
 
 import logging
 import os
+import sys
 import time
 
 from gunicorn.glogging import Logger as GunicornLogger
@@ -49,6 +50,18 @@ graceful_timeout = 30
 max_requests = 1000
 max_requests_jitter = 100
 loglevel = "info"
+
+# gunicorn >=25.1 runs a control-socket server (for `gunicornc`) on a thread
+# in the master, stopped before and restarted after every fork(). On macOS
+# that still leaves the master multithreaded as far as the Objective-C
+# runtime is concerned, so the first +initialize in a fresh worker (e.g.
+# NSNumber, via urllib's _scproxy proxy lookup) aborts it with "may have been
+# in progress in another thread when fork() was called" and the master logs
+# "Worker was sent SIGKILL! Perhaps out of memory?". The first boot usually
+# survives; every *replacement* worker then crashes in an endless loop.
+# Nothing here uses gunicornc, and the Linux container is unaffected, so the
+# socket is only disabled on macOS.
+control_socket_disable = sys.platform == "darwin"
 
 # Gunicorn expects this name in python config.
 wsgi_app = "core.wsgi:application"
