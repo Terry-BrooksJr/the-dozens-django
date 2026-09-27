@@ -26,6 +26,7 @@ from applications.frontend.views import (
 from core.admin_view import grafana_dashboard_view
 
 
+@csrf_exempt
 def metrics_view(request):
     """Serve Prometheus metrics only to requests bearing the correct scrape token.
 
@@ -34,6 +35,7 @@ def metrics_view(request):
 
     The token is compared with hmac.compare_digest to prevent timing attacks.
     Set METRICS_SCRAPE_TOKEN in Doppler; if unset the endpoint is always denied.
+    CSRF-exempt because auth is header-only (no cookies), so CSRF doesn't apply.
     """
     expected = getattr(settings, "METRICS_SCRAPE_TOKEN", "")
     if not expected:
@@ -56,15 +58,13 @@ urlpatterns = [
     path("status/", StatusPageView.as_view(), name="status"),
     re_path(r"^graphql/?", include(GRAPHQL_URL), name="GraphQL"),
     path(
-        "ops-gateway-9c4e/observability/",
+        "ops-gateway/observability/",
         admin.site.admin_view(grafana_dashboard_view),
         name="admin-grafana-dashboard",
     ),
-    path("ops-gateway-9c4e/", admin.site.urls),
+    path("ops-gateway/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),
-    path(
-        "metrics", ExportToDjangoView, name="prometheus-django-metrics"
-    ),  # TODO: Used `metrics_view` in prod
+    path("metrics", metrics_view, name="prometheus-django-metrics"),
     path("api/", include(API_URLS)),
     path("auth/token/logout/", TokenDestroyView.as_view(), name="token_logout"),
     re_path(r"^auth/", include("djoser.urls")),

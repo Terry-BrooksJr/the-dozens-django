@@ -19,7 +19,7 @@ Covers:
 
 from unittest.mock import patch
 
-from django.test import RequestFactory, TestCase, override_settings
+from django.test import Client, RequestFactory, TestCase, override_settings
 
 from core.urls import metrics_view
 
@@ -122,3 +122,29 @@ class MetricsViewUnconfiguredTests(TestCase):
         finally:
             if had_attr and original is not None:
                 django_settings.METRICS_SCRAPE_TOKEN = original
+
+
+@override_settings(METRICS_SCRAPE_TOKEN=VALID_TOKEN)
+class MetricsURLTests(TestCase):
+    """Exercise /metrics through the full URL + middleware stack."""
+
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=True)
+        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {VALID_TOKEN}"}
+
+    def test_get_with_token_returns_metrics(self):
+        response = self.client.get("/metrics", **self.auth)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"# HELP", response.content)
+
+    def test_post_with_token_is_not_blocked_by_csrf(self):
+        response = self.client.post(
+            "/metrics", data="", content_type="application/json", **self.auth
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_post_without_token_is_forbidden(self):
+        response = self.client.post(
+            "/metrics", data="", content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 403)

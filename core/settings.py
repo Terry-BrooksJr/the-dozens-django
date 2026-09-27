@@ -186,6 +186,17 @@ class Base(Configuration):
         g = Github(cls.GITHUB_API_TOKEN)
         return g.get_repo(f"{cls.GITHUB_API_OWNER}/{cls.GITHUB_API_REPO}")
 
+    # Secret token that Prometheus must send as "Authorization: Bearer <token>"
+    # when scraping /metrics.  Set METRICS_SCRAPE_TOKEN in Doppler; when unset,
+    # /metrics denies every request.
+    # IP-based allowlists are no longer used — Docker NAT makes them unreliable.
+    METRICS_SCRAPE_TOKEN = values.Value(
+        "",
+        environ=True,
+        environ_prefix=None,
+        environ_name="METRICS_SCRAPE_TOKEN",
+    )
+
     ROOT_URLCONF = values.Value("core.urls", environ=False)
     WSGI_APPLICATION = values.Value("core.wsgi.application", environ=False)
 
@@ -971,15 +982,6 @@ class Production(Base):
 
     ALLOWED_HOSTS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_HOSTS"
-    )
-    # Secret token that Prometheus must send as "Authorization: Bearer <token>"
-    # when scraping /metrics.  Set METRICS_SCRAPE_TOKEN in Doppler.
-    # IP-based allowlists are no longer used — Docker NAT makes them unreliable.
-    METRICS_SCRAPE_TOKEN = values.Value(
-        "",
-        environ=True,
-        environ_prefix=None,
-        environ_name="METRICS_SCRAPE_TOKEN",
     )
     DEBUG = values.BooleanValue(False, environ=False)
 
