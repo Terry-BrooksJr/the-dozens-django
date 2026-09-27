@@ -13,12 +13,14 @@ from __future__ import annotations
 import contextlib
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, ClassVar, Dict, Optional
+from re import search, IGNORECASE, compile
+from typing import Any, ClassVar, Dict, Optional, Union
 
 import arrow
 from django.conf import settings
 from django.core.cache import cache
 from django.utils.text import capfirst
+from django.db.models import QuerySet
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -479,12 +481,12 @@ class BaseInsultSerializer(CachedBulkSerializer):
                 # in self._errors causes ReturnDict (which calls dict()) to
                 # crash with "dictionary update sequence element #0 has length
                 # N; 2 is required".
-                raise serializers.ValidationError({"category": exc.detail})
+                raise serializers.ValidationError({"category": exc.detail}) from exc
             # Store the resolved key string — not a model instance — so that
             # DRF field-level validation (CharField / SlugRelatedField) receives
             # a type it can process. The model lookup happens later in
             # validate_category() or via SlugRelatedField's queryset.
-            data["category"] = resolved["category_key"]
+            data["category_key"] = resolved["category_key"]
 
         return super().to_internal_value(data)
 
@@ -681,7 +683,9 @@ class CreateInsultSerializer(BaseInsultSerializer):
     nsfw = serializers.BooleanField(
         default=False, help_text="Indicates if the insult is NSFW (Not Safe For Work)."
     )
-    content = serializers.CharField(min_length=45)
+    content = serializers.CharField(
+        allow_blank=False, trim_whitespace=True, allow_null=False
+    )
 
     # Read-only response fields
     reference_id = serializers.CharField(read_only=True)
@@ -709,14 +713,32 @@ class CreateInsultSerializer(BaseInsultSerializer):
         resolved = self.resolve_category(value)
         try:
             return InsultCategory.objects.get(category_key=resolved["category_key"])
-        except InsultCategory.DoesNotExist:
-            raise serializers.ValidationError(f"Category '{value}' not found.")
+        except InsultCategory.DoesNotExist as DNE:
+            raise serializers.ValidationError(f"Category '{value}' not found.") from DNE
+
+    def validate_content(self, value) -> None:
+        """Validate that insult content follows the expected phrase format.
+        This method checks whether the content begins with an acceptable “yo momma” style phrase.
+        It raises a validation error when the content does not meet that requirement."""
+        pattern = compile(
+            r"^(?:yo|your|ya)[ \t]+(?:momma|mama|mom|daddy|dad)"
+            r"(?:['’]s|[ \t]+is)?[ \t]+so\b[ \t]+\S[^\r\n]*$",
+            IGNORECASE,
+        )
+        if search(pattern, value) is None:
+            raise serializers.ValidationError(
+                'Content Should Follow the "Yo Momma is so...<SOMETHING>" format.  Please edit your content value and resubmit.'
+            )
+        else:
+            return value
 
     def create(self, validated_data):
         """Create an Insult, deriving the theme from the resolved category."""
         category = validated_data["category"]
         validated_data["theme"] = category.theme
-        return super().create(validated_data)
+        validated_data["category_id"] = category.category_key
+        del validated_data["category"]
+        return Insult.objects.create(**validated_data)
 
 
 @extend_schema_serializer(
@@ -853,7 +875,6 @@ class InsultReviewSerializer(serializers.ModelSerializer):
                 _("Invalid Insult ID"),
                 code="invalid-insult-id",
             )
-
         # Ensure downstream code receives the reference-id string
         cleaned_data["insult_reference_id"] = ref_id
         cleaned_data["anonymous"] = anonymous

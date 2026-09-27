@@ -760,7 +760,7 @@ class CreateInsultEndpoint(CreateAPIView):
           Token authentication required
 
     ##  Request Body:
-          content (str): Insult content (minimum 45 characters, UTF-8)
+          content (str): Insult content (Must be in a 'Yo Momma So...' format. i.e. Yo Momma So Ugly... or Yo Daddy So Dumb...;  UTF-8)
           nsfw (bool): Explicit content flag
           category (str): Category key or name
     """

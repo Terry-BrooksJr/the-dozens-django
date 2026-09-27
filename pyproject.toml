@@ -66,6 +66,7 @@ dev = [
     "ruff",
     "djlint",
     "pre-commit>=4.6.2,<5.0.0",
+    "debugpy>=1.8.22",
 ]
 
 [tool.uv]
@@ -110,6 +111,16 @@ testpaths = [
 
 
 ]
+
+[tool.kolo]
+# Kolo (dev-only middleware) treats any file outside site-packages as user
+# code. The VS Code debugger lives under ~/.vscode/extensions/.../debugpy, so
+# without this Kolo traces pydevd's own frames and crashes serialising its
+# caches mid-mutation ("dictionary changed size during iteration").
+hide_startup_message = true
+
+[tool.kolo.filters]
+ignore_frames = ["/debugpy/", "/pydevd", "/_pydev"]
 
 [tool.djlint]
 format_css=true

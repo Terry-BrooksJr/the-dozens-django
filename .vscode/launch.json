@@ -2,17 +2,45 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python Debugger: Django",
-      "type": "python",
+      "name": "Django: Run Server with Doppler",
+      "type": "debugpy",
       "request": "launch",
-      "python": "${workspaceFolder}/.venv/bin/python",
+      "python": "${workspaceFolder}/scripts/doppler_python.sh",
+      "debugAdapterPython": "${workspaceFolder}/.venv/bin/python",
+      "debugLauncherPython": "${workspaceFolder}/.venv/bin/python",
       "program": "${workspaceFolder}/run/manage.py",
-      "args": ["runserver", "8000"],
+      "cwd": "${workspaceFolder}",
+      "args": ["runserver", "127.0.0.1:8000", "--noreload"],
       "django": true,
+      "console": "integratedTerminal",
+      "justMyCode": true,
       "env": {
-        "DOPPLER_ENV": "1",
+        "PYTHONPATH": "${workspaceFolder}",
+        "DJANGO_SETTINGS_MODULE": "core.settings",
+        "DJANGO_CONFIGURATION": "Development",
         "DOPPLER_PROJECT": "yo-momma",
-        "DOPPLER_CONFIG": "dev"
+        "DOPPLER_CONFIG": "secrets"
+      }
+    },
+    {
+      "name": "Django: Run Tests with Doppler",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${workspaceFolder}/scripts/doppler_python.sh",
+      "debugAdapterPython": "${workspaceFolder}/.venv/bin/python",
+      "debugLauncherPython": "${workspaceFolder}/.venv/bin/python",
+      "module": "pytest",
+      "cwd": "${workspaceFolder}",
+      "args": ["-v", "--exitfirst", "--no-cov"],
+      "django": true,
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "DJANGO_SETTINGS_MODULE": "core.settings",
+        "DJANGO_CONFIGURATION": "Staging",
+        "DOPPLER_PROJECT": "yo-momma",
+        "DOPPLER_CONFIG": "secrets"
       }
     }
   ]

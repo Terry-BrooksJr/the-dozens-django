@@ -1174,6 +1174,15 @@ class Development(Base):
         if not cls.configure_logging_common():
             return
 
+        # KoloMiddleware fire-and-forgets a `kolo._emit_auto` child after each
+        # request; when its Popen handle is GC'd while the child is still
+        # writing, CPython emits this ResourceWarning. Harmless, dev-only noise.
+        warnings.filterwarnings(
+            "ignore",
+            message=r"subprocess \d+ is still running",
+            category=ResourceWarning,
+        )
+
         # Loki Log Handler - May Replace OTEL in future iterations
         if loki_url := os.getenv("LOKI_URL"):
             if loki_password := os.getenv("LOKI_PASSWORD"):

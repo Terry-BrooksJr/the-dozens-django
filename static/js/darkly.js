@@ -19,11 +19,11 @@ const WINDOW_NAME_PREFIX = `${ANONYMOUS_KEY_STORAGE}:`;
 // it keeps page-to-page continuity for the visit.
 function getWindowNameKey() {
     if (window.name.startsWith(WINDOW_NAME_PREFIX)) {
-        return window.name.slice(WINDOW_NAME_PREFIX.length);
+        return window.name.slice(WINDOW_NAME_PREFIX.length).split(':', 1)[0];
     }
     const key = crypto.randomUUID();
-    // Only claim window.name when nothing else is using it.
-    if (!window.name) window.name = WINDOW_NAME_PREFIX + key;
+    // Prepend rather than overwrite so any existing window.name value is preserved.
+    window.name = `${WINDOW_NAME_PREFIX}${key}:${window.name}`;
     return key;
 }
 
@@ -39,11 +39,21 @@ function getAnonymousKey() {
     }
 }
 
-const anonymousKey = getAnonymousKey();
+// Pages render the logged-in user's context via {{ ld_user|json_script:"ld-user" }};
+// it's null for anonymous visitors. Module scripts are deferred, so the element exists.
+function getServerContext() {
+    const el = document.getElementById('ld-user');
+    if (!el) return null;
+    try {
+        return JSON.parse(el.textContent);
+    } catch {
+        return null;
+    }
+}
 
-const context = {
+const context = getServerContext() ?? {
     kind: 'user',
-    key: anonymousKey,
+    key: getAnonymousKey(),
     anonymous: true,
 };
 

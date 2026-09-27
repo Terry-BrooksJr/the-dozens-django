@@ -2,8 +2,8 @@
 {% load static %}
 
 <!-- Shared by every Browsable API page (api.html, login.html) -->
-{% block style %}
+{% block styles %}
 {{ block.super }}
 {{ ld_user|json_script:"ld-user" }}
 <script type="module" src="{% static 'js/darkly.js' %}"></script>
-{% endblock style %}
+{% endblock styles %}
