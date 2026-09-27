@@ -56,13 +56,15 @@ urlpatterns = [
     path("status/", StatusPageView.as_view(), name="status"),
     re_path(r"^graphql/?", include(GRAPHQL_URL), name="GraphQL"),
     path(
-        "admin/observability/",
+        "ops-gateway-9c4e/observability/",
         admin.site.admin_view(grafana_dashboard_view),
         name="admin-grafana-dashboard",
     ),
-    path("admin/", admin.site.urls),
+    path("ops-gateway-9c4e/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),
-    path("metrics", ExportToDjangoView, name="prometheus-django-metrics"),
+    path(
+        "metrics", ExportToDjangoView, name="prometheus-django-metrics"
+    ),  # TODO: Used `metrics_view` in prod
     path("api/", include(API_URLS)),
     path("auth/token/logout/", TokenDestroyView.as_view(), name="token_logout"),
     re_path(r"^auth/", include("djoser.urls")),
