@@ -136,15 +136,16 @@ tasks:
     dir: "{{.TASKFILE_DIR}}"
     desc: Check Models and Serializers for schema compliance with OpenAPI 3.0 Standards and fail on warnings
     cmds:
-      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d").yaml --validate
+      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py spectacular --file /dev/null --validate
     internal: true
 
   schema:
     deps: [ schema-check ]
     dir: "{{.TASKFILE_DIR}}"
-    desc: Generate OpenAPI 3.0 schema.yaml file from models and serializers
+    desc: Regenerate the canonical OpenAPI 3.0 schema at schema/schema.yaml from models and serializers
+    # schema/schema.yaml is the single checked-in schema; git history holds prior versions.
     cmds:
-      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py spectacular --file schema/schema$(date +"%Y-%m-%d_%H:%M:%S").yaml
+      - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py spectacular --file schema/schema.yaml
 
   build-image:
     desc: Build Docker Image

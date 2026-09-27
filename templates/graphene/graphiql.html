@@ -504,12 +504,10 @@ add "&raw" to the end of the URL within a browser.
                   // can identify the API-token user (queue survives the module loading late).
                   window.dozensLDTokenQueue = window.dozensLDTokenQueue || [];
                   function fetchWithLDIdentify(url, init) {
-                       var requestHeaders = (init && init.headers) || {};
-                       for (var name in requestHeaders) {
-                            if (name.toLowerCase() === 'authorization') {
-                                 window.dozensLDTokenQueue.push(requestHeaders[name]);
-                                 break;
-                            }
+                       // Normalise plain objects, arrays and Headers instances alike.
+                       var authorization = new Headers((init && init.headers) || {}).get('Authorization');
+                       if (authorization) {
+                            window.dozensLDTokenQueue.push(authorization);
                        }
                        return window.fetch(url, init);
                   }

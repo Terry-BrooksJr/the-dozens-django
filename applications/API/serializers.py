@@ -486,7 +486,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
             # DRF field-level validation (CharField / SlugRelatedField) receives
             # a type it can process. The model lookup happens later in
             # validate_category() or via SlugRelatedField's queryset.
-            data["category_key"] = resolved["category_key"]
+            data["category"] = resolved["category_key"]
 
         return super().to_internal_value(data)
 
@@ -716,7 +716,7 @@ class CreateInsultSerializer(BaseInsultSerializer):
         except InsultCategory.DoesNotExist as DNE:
             raise serializers.ValidationError(f"Category '{value}' not found.") from DNE
 
-    def validate_content(self, value) -> None:
+    def validate_content(self, value: str) -> str:
         """Validate that insult content follows the expected phrase format.
         This method checks whether the content begins with an acceptable “yo momma” style phrase.
         It raises a validation error when the content does not meet that requirement."""

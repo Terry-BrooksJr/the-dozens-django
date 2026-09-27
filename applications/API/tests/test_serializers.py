@@ -493,6 +493,14 @@ class TestCreateInsultSerializer(SerializerTestCase):
         self.assertTrue(s.is_valid(), s.errors)
         self.assertEqual(s.validated_data["category"].category_key, "P")
 
+    def test_category_name_input_populates_category_field(self):
+        payload = self._payload()
+        del payload["category"]
+        payload["category_name"] = "Poor"
+        s = CreateInsultSerializer(data=payload)
+        self.assertTrue(s.is_valid(), s.errors)
+        self.assertEqual(s.validated_data["category"].category_key, "P")
+
     def test_validate_category_nonexistent_raises_validation_error(self):
         s = CreateInsultSerializer(data=self._payload(category="NONEXISTENT_99"))
         self.assertFalse(s.is_valid())

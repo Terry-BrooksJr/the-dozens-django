@@ -69,8 +69,44 @@ ldClient.on('error', (error) => {
 });
 
 // createClient returns a stopped client; start() fetches flags and initializes the plugins.
-void ldClient.start().catch((error) => {
+const started = ldClient.start().catch((error) => {
     console.error('LaunchDarkly client startup failed:', error);
 });
 
 window.dozensLD = ldClient;
+
+// The Swagger UI and GraphiQL templates push Authorization values onto
+// window.dozensLDTokenQueue (possibly before this module loads). The raw token
+// is a secret, so only a SHA-256 digest of it is ever sent to LaunchDarkly.
+async function hashToken(value) {
+    const token = String(value).replace(/^\s*(token|bearer)\s+/i, '').trim();
+    if (!token) return null;
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+    return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+let lastTokenKey = null;
+// Chain identify calls so they apply in queue order and never overlap.
+let identifyChain = started;
+
+function identifyToken(value) {
+    identifyChain = identifyChain
+        .then(() => hashToken(value))
+        .then((tokenKey) => {
+            if (!tokenKey || tokenKey === lastTokenKey) return undefined;
+            lastTokenKey = tokenKey;
+            return ldClient.identify({
+                kind: 'multi',
+                user: context,
+                'api-token': { key: tokenKey },
+            });
+        })
+        .catch((error) => {
+            console.error('LaunchDarkly API-token identify failed:', error);
+        });
+}
+
+const pendingTokens = Array.isArray(window.dozensLDTokenQueue) ? window.dozensLDTokenQueue : [];
+// Replace the array with a push-compatible consumer so later tokens are handled immediately.
+window.dozensLDTokenQueue = { push: (...values) => values.forEach(identifyToken) };
+pendingTokens.forEach(identifyToken);
