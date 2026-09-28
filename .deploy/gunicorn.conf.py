@@ -66,7 +66,7 @@ loglevel = "info"
 # survives; every *replacement* worker then crashes in an endless loop.
 # Nothing here uses gunicornc, and the Linux container is unaffected, so the
 # socket is only disabled on macOS.
-control_socket_disable = sys.platform == "darwin"
+CONTROL_SOCKET_DISABLE = sys.platform == "darwin"
 
 # Gunicorn expects this name in python config.
 wsgi_app = "core.wsgi:application"
@@ -85,7 +85,7 @@ wsgi_app = "core.wsgi:application"
 # post-fork, so preloading can't be made safe here. Each worker instead
 # performs its own full app init (including LaunchDarkly/ldobserve) after
 # it's already a separate process, so no live gRPC channel is ever forked.
-preload_app = False
+PRELOAD_APP = False
 
 
 def post_fork(server, worker):
