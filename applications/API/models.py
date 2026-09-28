@@ -21,6 +21,7 @@ from django.db import IntegrityError, models
 from django.db.models import F
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django_prometheus.models import ExportModelOperationsMixin
 from loguru import logger
@@ -59,7 +60,10 @@ def encode_base64(number: int) -> str:
 
 
 class PublicInsultCategoryManager(models.Manager):
+    """Manager that hides internal/test categories (``IGNORED_INSULT_CATEGORIES``)."""
+
     def get_queryset(self):
+        """Return categories excluding those listed in ``IGNORED_INSULT_CATEGORIES``."""
         return (
             super()
             .get_queryset()
@@ -68,6 +72,7 @@ class PublicInsultCategoryManager(models.Manager):
 
 
 class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Model):
+    """A category of insult (e.g. "Poor"), keyed by a short code and grouped by theme."""
 
     category_key = models.CharField(max_length=5, unique=True, primary_key=True)
     name = models.CharField(max_length=255, unique=True)
@@ -77,6 +82,7 @@ class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Mod
     )
 
     def __str__(self):
+        """Return the category key."""
         return f"{self.category_key}"
 
     def lower(self):
@@ -121,11 +127,14 @@ class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Mod
 
 
 class Theme(models.Model):
+    """A top-level grouping of related insult categories."""
+
     theme_key = models.CharField(max_length=5, unique=True, primary_key=True)
     theme_name = models.CharField(max_length=255, unique=True)
     description = models.TextField()
 
     def __str__(self):
+        """Return the theme name followed by its key."""
         return f"{self.theme_name}({self.theme_key})"
 
     def lower(self):
@@ -150,7 +159,10 @@ class Theme(models.Model):
 
 
 class PublicInsultManager(models.Manager):
+    """Manager that returns only active insults outside ignored categories."""
+
     def get_queryset(self):
+        """Return active insults excluding ``IGNORED_INSULT_CATEGORIES``."""
         return (
             super()
             .get_queryset()
@@ -278,7 +290,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
                 f"{self.content}\n\n"
                 f"Admin Review\n"
                 f"------------\n"
-                f"https://api.yo-momma.io/ops-gateway/API/insult/{self.insult_id}/change/\n"
+                f"https://api.yo-momma.io{reverse('admin:API_insult_change', args=[self.insult_id])}\n"
             )
 
             mail_admins(subject, message, fail_silently=False)
@@ -292,6 +304,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             )
 
     def __str__(self) -> str:
+        """Return the reference ID, category, and NSFW flag."""
         return f"{self.reference_id} - ({self.category}) - NSFW: {self.nsfw}"
 
     def clean(self):
@@ -595,6 +608,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
     )
 
     def __str__(self):
+        """Return the reference ID, review type, submission date, and status."""
         return f"Joke: {self.insult_reference_id} - Review Type: {self.review_type} - Submitted: {self.date_submitted}({self.status})"
 
     def set_insult(self) -> None:
@@ -654,6 +668,11 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             )
 
     def mark_review_recategorized(self, reviewer: User):
+        """Mark the review as resolved by moving the insult to a new category.
+
+        Args:
+            reviewer(User): The administrator resolving the review.
+        """
         try:
             self.status = self.STATUS.NEW_CATEGORY
             self.reviewer = reviewer
@@ -766,6 +785,13 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
 
 @receiver(post_save, sender=Insult)
 def generate_reference_id(instance, created, **kwargs):
+    """Assign a reference ID to a newly created Insult.
+
+    Args:
+        instance: The Insult instance that was saved.
+        created: Whether a new record was created.
+        **kwargs: Additional signal arguments (unused).
+    """
     if created:
         ref_id = instance.set_reference_id()
         logger.info(

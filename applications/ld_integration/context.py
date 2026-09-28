@@ -1,3 +1,5 @@
+"""Builds LaunchDarkly evaluation contexts from Django requests."""
+
 from __future__ import annotations
 
 from django.contrib.auth.models import AnonymousUser
@@ -5,6 +7,19 @@ from ldclient import Context
 
 
 def context_from_request(request, *, anonymous_key_fallback: str = "anon") -> Context:
+    """Build a LaunchDarkly context for the request's user.
+
+    Anonymous or unauthenticated requests get an anonymous context keyed by
+    ``anonymous_key_fallback``. Authenticated users are keyed by primary key
+    and carry email and staff/superuser attributes.
+
+    Args:
+        request: The Django request (may be ``None``-like or lack ``user``).
+        anonymous_key_fallback: Key used for anonymous contexts.
+
+    Returns:
+        Context: The LaunchDarkly evaluation context.
+    """
     user = getattr(request, "user", None)
 
     if (

@@ -1,3 +1,5 @@
+"""Template context processors for the LaunchDarkly browser SDK."""
+
 from __future__ import annotations
 
 from .context import browser_context_from_request

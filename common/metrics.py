@@ -1,3 +1,5 @@
+"""Prometheus and LaunchDarkly Observability metrics for caching and hot endpoints."""
+
 from __future__ import annotations
 
 import os
@@ -29,6 +31,7 @@ def _ld_metrics_enabled() -> bool:
 
 
 def _as_cache_reason(reason: str | None) -> str:
+    """Normalize an invalidation reason, defaulting to ``"unspecified"``."""
     return (reason or "unspecified").strip() or "unspecified"
 
 
@@ -323,6 +326,7 @@ class _MetricsFacade:
         stats: dict = {"query_count": 0, "total_ms": 0.0, "slowest_ms": 0.0}
 
         def _wrapper(execute, sql, params, many, context):
+            """Time one SQL statement and add it to ``stats``."""
             t0 = time.perf_counter()
             try:
                 return execute(sql, params, many, context)
@@ -353,6 +357,7 @@ class _MetricsFacade:
         RANDOM_INSULT_DB_QUERIES.inc(db_query_count)
 
     def record_random_insult_empty(self) -> None:
+        """Increment the counter for random-insult requests with no matches."""
         RANDOM_INSULT_QUERYSET_EMPTY.inc()
 
     def increment_endpoint_cache(self, endpoint: str, event: str) -> None:

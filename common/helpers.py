@@ -165,11 +165,13 @@ class StdlibLoguruStyleFormatter(logging.Formatter):
     default_msec_format = "%s.%03d"
 
     def __init__(self) -> None:
+        """Configure the Loguru-style log format."""
         super().__init__(
             fmt="%(asctime)sZ | %(icon)s  %(levelname)-8s | [%(name)s] - %(message)s"
         )
 
     def format(self, record: logging.LogRecord) -> str:
+        """Attach the Loguru level icon to the record, then format it."""
         record.icon = _loguru_icon_for(record.levelname)
         return super().format(record)
 
@@ -240,6 +242,7 @@ class InterceptHandler(logging.Handler):
     """
 
     def emit(self, record: logging.LogRecord) -> None:
+        """Forward ``record`` into Loguru unless it is unbridged or reentrant."""
         if record.name.split(".", 1)[0] in _UNBRIDGED_LOGGER_PREFIXES:
             _fallback_console_handler.emit(record)
             return
@@ -253,6 +256,7 @@ class InterceptHandler(logging.Handler):
 
     @staticmethod
     def _forward(record: logging.LogRecord) -> None:
+        """Log ``record`` through Loguru, attributed to its original caller."""
         try:
             level: int | str = logger.level(record.levelname).name
         except ValueError:
@@ -467,6 +471,7 @@ class SanitizingLoguruFormatter(LoguruFormatter):
     """
 
     def format(self, record):
+        """Format the record, sanitizing every value to be JSON-serializable."""
         formatted, loki_metadata = super().format(record)
         formatted = {k: _otel_safe_value(v) for k, v in formatted.items()}
         if loki_metadata:

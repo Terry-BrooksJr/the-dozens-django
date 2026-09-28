@@ -36,6 +36,14 @@ _configured = False
 
 @dataclass(frozen=True)
 class LDInitResult:
+    """Outcome of a LaunchDarkly client configuration attempt.
+
+    Attributes:
+        enabled: Whether LaunchDarkly is enabled in settings.
+        configured: Whether the client was actually configured.
+        reason: Short explanation of the outcome.
+    """
+
     enabled: bool
     configured: bool
     reason: str

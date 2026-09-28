@@ -22,9 +22,11 @@ class Command(BaseCommand):
     help = "Checks LaunchDarkly client initialization and evaluates a harmless flag"
 
     def add_arguments(self, parser):
+        """Register the ``--flag`` option naming the flag to evaluate."""
         parser.add_argument("--flag", default="ld-healthcheck-flag")
 
     def handle(self, *args, **opts):
+        """Evaluate the flag for a fixed context and print the result."""
         flag_key = opts["flag"]
         client = get_client()
         ctx = Context.builder("healthcheck").build()

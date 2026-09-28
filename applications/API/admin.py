@@ -30,6 +30,11 @@ User = get_user_model()
 
 
 class RecategorizeForm(django_forms.Form):
+    """Intermediate form for the admin "re-categorize" action.
+
+    Presents a single category picker applied to every selected insult.
+    """
+
     new_category = django_forms.ModelChoiceField(
         # objects.none() at class definition avoids evaluating the queryset at
         # import time (before migrations run, during test collection, etc.).
@@ -41,6 +46,7 @@ class RecategorizeForm(django_forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        """Populate the category choices with a fresh queryset per instantiation."""
         super().__init__(*args, **kwargs)
         self.fields["new_category"].queryset = InsultCategory.objects.all()
 
@@ -67,12 +73,17 @@ class HasPendingReviewFilter(admin.SimpleListFilter):
     parameter_name = "has_pending_reviews"
 
     def lookups(self, request, model_admin):
+        """Return the filter options shown in the admin sidebar."""
         return (
             ("yes", "Has Pending Reviews"),
             ("no", "No Pending Reviews"),
         )
 
     def queryset(self, request, queryset):
+        """Filter insults by whether they have any pending reviews.
+
+        The queryset is always annotated with ``pending_review_count``.
+        """
         annotated_queryset = queryset.annotate(
             pending_review_count=Count("reports", filter=Q(reports__status="P"))
         )
@@ -85,6 +96,12 @@ class HasPendingReviewFilter(admin.SimpleListFilter):
 
 
 class InsultAdmin(admin.ModelAdmin):
+    """Admin configuration for Insult moderation.
+
+    Shows every insult regardless of status and exposes bulk actions for
+    approving, removing, flagging, reclassifying, and re-categorizing.
+    """
+
     # inlines: ClassVar = [InsultReviewInline]
     list_display = (
         "insult_id",
@@ -109,6 +126,7 @@ class InsultAdmin(admin.ModelAdmin):
     ]
 
     def get_queryset(self, request):
+        """Return all insults, bypassing the active-only default manager."""
         # The default manager is PublicInsultManager (active-only). Mirror what
         # super().get_queryset() does (ordering, etc.) but through the
         # unfiltered manager so every status is visible in the admin.
@@ -119,6 +137,7 @@ class InsultAdmin(admin.ModelAdmin):
         return qs
 
     def save_model(self, request, obj, form, change):
+        """Save the insult, then invalidate cached insult data."""
         super().save_model(request, obj, form, change)
         invalidate_insult_cache(reason="admin_save")
 
@@ -128,6 +147,7 @@ class InsultAdmin(admin.ModelAdmin):
 
     @admin.action(description="Approve selected insults")
     def approve_insult(self, request, queryset):
+        """Admin action: approve each selected insult."""
         count = queryset.count()
         for insult in queryset:
             insult.approve_insult()
@@ -135,6 +155,7 @@ class InsultAdmin(admin.ModelAdmin):
 
     @admin.action(description="Remove selected insults (soft delete)")
     def remove_insult(self, request, queryset):
+        """Admin action: soft-delete each selected insult."""
         count = queryset.count()
         for insult in queryset:
             insult.remove_insult()
@@ -142,6 +163,7 @@ class InsultAdmin(admin.ModelAdmin):
 
     @admin.action(description="Mark selected insults for review")
     def mark_insult_for_review(self, request, queryset):
+        """Admin action: flag each selected insult for review."""
         count = queryset.count()
         for insult in queryset:
             insult.mark_insult_for_review()
@@ -149,6 +171,7 @@ class InsultAdmin(admin.ModelAdmin):
 
     @admin.action(description="Reclassify selected insults as NSFW")
     def reclassify_as_nsfw(self, request, queryset):
+        """Admin action: mark each selected insult as NSFW."""
         count = queryset.count()
         for insult in queryset:
             insult.reclassify(True)
@@ -156,6 +179,7 @@ class InsultAdmin(admin.ModelAdmin):
 
     @admin.action(description="Reclassify selected insults as SFW")
     def reclassify_as_sfw(self, request, queryset):
+        """Admin action: mark each selected insult as SFW."""
         count = queryset.count()
         for insult in queryset:
             insult.reclassify(False)
@@ -215,16 +239,20 @@ class InsultAdmin(admin.ModelAdmin):
 
 
 class ManyReportsFilter(admin.SimpleListFilter):
+    """Admin list filter for reviews by how many reports their insult has."""
+
     title = "Number of Reports"
     parameter_name = "many_reports"
 
     def lookups(self, request, model_admin):
+        """Return the filter options shown in the admin sidebar."""
         return (
             ("3+", "3 or more reports"),
             ("less", "Fewer than 3 reports"),
         )
 
     def queryset(self, request, queryset):
+        """Filter reviews by their insult's report count (3+ or fewer than 3)."""
         # Note: queryset is for InsultReview
         if self.value() == "3+":
             return queryset.filter(insult__reports_count__gte=3)
@@ -256,10 +284,17 @@ admin.site.register(Insult, InsultAdmin)
 
 
 class UserAdmin(BaseUserAdmin):
+    """User admin extended with an action to resend the welcome email."""
+
     actions = [*BaseUserAdmin.actions, "resend_welcome_email"]
 
     @admin.action(description="Resend welcome email to selected users")
     def resend_welcome_email(self, request, queryset):
+        """Admin action: resend the welcome email to each selected user.
+
+        Failures are logged per user and summarized in the admin message bar
+        rather than aborting the whole batch.
+        """
         sent, failed = 0, 0
         for user in queryset:
             try:

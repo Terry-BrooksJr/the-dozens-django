@@ -3,6 +3,11 @@
 # Equivalent to your [gunicorn] INI config, but with post-fork hooks.
 # This matters for SDKs that run background threads (like LaunchDarkly),
 # because threads do not survive fork.
+"""Gunicorn server configuration for the Django application.
+
+Defines bind/worker settings, UTC millisecond log timestamps, and the
+post-fork hook that re-initializes thread-backed SDKs in each worker.
+"""
 
 import logging
 import os
