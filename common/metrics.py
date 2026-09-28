@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import time
+from collections.abc import Iterable
 from contextlib import contextmanager, suppress
 from functools import lru_cache
 
@@ -129,20 +130,18 @@ _CACHE_INVALIDATION_STATIC_PREFIXES: tuple[str, ...] = (
 )
 
 
-def init_cache_invalidation_metrics() -> None:
+def init_cache_invalidation_metrics(prefixes: Iterable[str] = ()) -> None:
     """Pre-register cache_invalidations_total label combos at startup.
+
+    ``prefixes`` is supplied by the caller (see ``ApiConfig._init_metrics``)
+    rather than read from ``common.cache_managers`` here, since that module
+    already imports this one and doing so would create an import cycle.
 
     Safe to call from AppConfig.ready — failures are suppressed so they
     never block Django startup.
     """
     with suppress(Exception):
-        from common.cache_managers import cache_registry
-
-        registry_prefixes = {
-            manager.cache_prefix
-            for manager in cache_registry.values()
-            if hasattr(manager, "cache_prefix")
-        }
+        registry_prefixes = set(prefixes)
         registry_prefixes.update(_CACHE_INVALIDATION_STATIC_PREFIXES)
         _pre_register_invalidation_labels(tuple(registry_prefixes))
 
