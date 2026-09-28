@@ -89,7 +89,6 @@ jobs:
 
       - name: Run Bandit Report
         run: |
-          .venv/bin/pip install --quiet bandit
           echo "Running static security analysis..."
           .venv/bin/bandit -r . -f json -o bandit-report.json || true
 

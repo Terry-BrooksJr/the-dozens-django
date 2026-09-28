@@ -15,8 +15,8 @@ repos:
     rev: v1.36.4
     hooks:
       - id: djlint-django
-  - repo: https://github.com/python-poetry/poetry
-    rev: 2.3.2
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.12.18
     hooks:
-      - id: poetry-check
-      - id: poetry-lock
+      # Fails the commit if uv.lock is out of date with pyproject.toml
+      - id: uv-lock

@@ -1,41 +1,204 @@
+// Dev container for The Dozens API (Django 5 + DRF + Graphene).
+// Spec: https://containers.dev/implementors/json_reference/
+//
+// Secrets come from Doppler (project "yo-momma", config "dev"), exactly as on the
+// host: .envrc runs `doppler secrets download` through direnv. Export
+// DOPPLER_TOKEN on the host before opening the container, or run `doppler login`
+// inside it. Postgres and Redis are the remote dev instances named in Doppler
+// (PG_DATABASE_HOST, REDIS_CACHE_TOKEN), so no local database services are started.
 {
-	"name": "Python 3",
-	"image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye",
+	"name": "The Dozens API (Django)",
+
+	// Python 3.11 matches .python-version and the production image (.deploy/Dockerfile).
+	"image": "mcr.microsoft.com/devcontainers/python:1-3.11-bookworm",
+
 	"features": {
-		"ghcr.io/devcontainers-extra/features/apt-get-packages:1": {},
-		"ghcr.io/devcontainers-extra/features/black:2": {},
-		"ghcr.io/devcontainers-extra/features/curl-apt-get:1": {},
-		"ghcr.io/devcontainers-extra/features/node-exporter:1": {},
+		// Native libraries needed by the Python dependencies and tooling:
+		//   libpq-dev         psycopg2 / psycopg pool
+		//   libmagic1         python-magic (also installed in the prod image)
+		//   libenchant-2-dev  pylint spelling checks (pyenchant)
+		//   postgresql-client psql / pg_isready against the Doppler-configured DB
+		//   redis-tools       redis-cli against the cache
+		"ghcr.io/devcontainers-extra/features/apt-get-packages:1": {
+			"packages": "libpq-dev,libmagic1,libenchant-2-dev,postgresql-client,redis-tools"
+		},
+		// Secrets injection (.envrc, Taskfile, prod CMD all rely on it)
+		// Package installer / virtualenv manager
+		"ghcr.io/va-h/devcontainers-features/uv:1": {},
 		"ghcr.io/itsmechlark/features/doppler:2": {},
-		"ghcr.io/devcontainers-extra/features/go-task:1"	: {},
-		"ghcr.io/devcontainers-extra/features/direnv:1"	: {},
-		"ghcr.io/dhoeric/features/act:1"	: {}
+		// Taskfile.yml runner
+		"ghcr.io/devcontainers-extra/features/go-task:1": {},
+		// Loads .envrc (Django configuration + Doppler secrets)
+		"ghcr.io/devcontainers-extra/features/direnv:1": {},
+		// `task build-image` / `task compose:up` use the host's Docker daemon
+		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+		// PRs, releases, repo API
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		// Run .github/workflows locally
+		"ghcr.io/dhoeric/features/act:1": {}
 	},
-		"customizations": {
+
+	// Keep the container's Linux virtualenv separate from the host's macOS .venv,
+	// which would otherwise be bind-mounted in and fail to run.
+	"mounts": [
+		"source=dozens-venv-${devcontainerId},target=${containerWorkspaceFolder}/.venv,type=volume",
+		// Persist uv's download cache across container rebuilds
+		"source=dozens-uv-cache,target=/home/vscode/.cache/uv,type=volume"
+	],
+
+	// Non-secret settings, mirroring .envrc and the Taskfile.
+	"containerEnv": {
+		"DJANGO_CONFIGURATION": "Development",
+		"DJANGO_SETTINGS_MODULE": "core.settings",
+		"PYTHONPATH": "${containerWorkspaceFolder}",
+		"PYTHONUNBUFFERED": "1",
+		"API_VERSION": "1.0.1",
+		"DOPPLER_PROJECT": "yo-momma",
+		"DOPPLER_CONFIG": "dev",
+		"DOPPLER_ENVIRONMENT": "dev",
+		"PATH_TO_DB_ROOT_CERT": "/home/vscode/.postgresql/root.crt",
+		// `uv pip install <pkg>` targets the project venv without activating it
+		"VIRTUAL_ENV": "${containerWorkspaceFolder}/.venv",
+		// The cache and .venv are separate volumes, so hardlinks can't cross them
+		"UV_LINK_MODE": "copy",
+		"UV_PYTHON_DOWNLOADS": "never"
+	},
+
+	// Secrets are passed from the host environment and never written into the image.
+	"remoteEnv": {
+		"DOPPLER_TOKEN": "${localEnv:DOPPLER_TOKEN}",
+		"CODACY_PROJECT_TOKEN": "${localEnv:CODACY_PROJECT_TOKEN}",
+		"PATH": "${containerWorkspaceFolder}/.venv/bin:${containerEnv:PATH}"
+	},
+
+	// Install dependencies here rather than in postCreate so Codespaces prebuilds can cache the step.
+	// Same as `task install`: every dependency group, exactly as pinned in uv.lock.
+	"updateContentCommand": "sudo chown -R vscode:vscode .venv /home/vscode/.cache/uv && uv sync --locked --python /usr/local/bin/python",
+
+	"postCreateCommand": {
+		// Root CA for the managed Postgres instance (sslrootcert / PATH_TO_DB_ROOT_CERT)
+		"db-root-cert": "curl -fsSL --create-dirs -o $HOME/.postgresql/root.crt 'https://yo-mama.b-cdn.net/AIVIN_SSL_CERT.crt'",
+		// Load .envrc automatically in interactive shells
+		"direnv-hook": "grep -q 'direnv hook bash' ~/.bashrc || echo 'eval \"$(direnv hook bash)\"' >> ~/.bashrc; grep -q 'direnv hook zsh' ~/.zshrc 2>/dev/null || echo 'eval \"$(direnv hook zsh)\"' >> ~/.zshrc; direnv allow ${containerWorkspaceFolder}",
+		"pre-commit": ".venv/bin/pre-commit install --install-hooks || true"
+	},
+
+	"postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+
+	"forwardPorts": [8000, 9555],
+	"portsAttributes": {
+		"8000": {
+			"label": "Django dev server (runserver / task run:dev)",
+			"onAutoForward": "notify"
+		},
+		"9555": {
+			"label": "Gunicorn (prod config, .deploy/gunicorn.conf.py)",
+			"onAutoForward": "silent"
+		}
+	},
+
+	"hostRequirements": {
+		"cpus": 2,
+		"memory": "4gb"
+	},
+
+	"customizations": {
 		"vscode": {
 			"extensions": [
-				"ms-vscode.makefile-tools",
-				"ms-azuretools.vscode-docker",
-				"GitHub.vscode-pull-request-github",
+				// Python core
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"ms-python.debugpy",
+				// Formatters / linters used by `task lint:lint` and pre-commit
+				"ms-python.black-formatter",
+				"ms-python.isort",
+				"charliermarsh.ruff",
+				"ms-python.pylint",
 				"ms-python.mypy-type-checker",
-				"doppler.doppler-vscode",
-				"DhavalVira.django-import-libraries",
+				"monosans.djlint",
+				"sourcery.sourcery",
+				// Django
+				"junstyle.vscode-django-support",
 				"bibhasdn.django-html",
+				"DhavalVira.django-import-libraries",
 				"jitdev.copy-django-model-fields",
 				"yardensachs.copy-python-path",
-				"junstyle.vscode-django-support",
+				// GraphQL (Graphene schema)
+				"GraphQL.vscode-graphql",
+				"GraphQL.vscode-graphql-syntax",
+				// Environment / tooling
+				"doppler.doppler-vscode",
 				"mkhl.direnv",
-				"github.vscode-github-actions",
-				"MohammedAbidNafi.gitwit",
-				"stpn.vscode-graphql",
-				"anteprimorac.html-end-tag-labels",
-				"franneck94.vscode-python-config",
-				"sourcery.sourcery",
 				"task.vscode-task",
 				"redhat.vscode-yaml",
-				"GraphQL.vscode-graphql"
-			]
-		}
-	}, "postCreateCommand": "curl --create-dirs -o $HOME/.postgresql/root.crt 'https://yo-mama.b-cdn.net/AIVIN_SSL_CERT.crt'"
+				"tamasfe.even-better-toml",
+				"ms-azuretools.vscode-docker",
+				"ms-ossdata.vscode-pgsql",
+				// Testing / coverage (cobertura.xml)
+				"ryanluker.vscode-coverage-gutters",
+				// GitHub
+				"github.vscode-github-actions",
+				"GitHub.vscode-pull-request-github",
+				// Spelling (cSpell word list lives in .vscode/settings.json)
+				"streetsidesoftware.code-spell-checker",
+				"anteprimorac.html-end-tag-labels"
+			],
+			"settings": {
+				"python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
+				"python.terminal.activateEnvironment": true,
+				"python.analysis.autoImportCompletions": true,
+				"python.analysis.extraPaths": ["${containerWorkspaceFolder}"],
 
+				"python.testing.pytestEnabled": true,
+				"python.testing.unittestEnabled": false,
+
+				"[python]": {
+					"editor.defaultFormatter": "ms-python.black-formatter",
+					"editor.formatOnSave": true,
+					"editor.codeActionsOnSave": {
+						"source.organizeImports": "explicit"
+					}
+				},
+				"isort.args": ["--settings-path", "${containerWorkspaceFolder}/pyproject.toml"],
+				"pylint.args": [
+					"--rcfile=${containerWorkspaceFolder}/.configs/.pylintrc",
+					"--load-plugins=pylint_django",
+					"--django-settings-module=core.settings"
+				],
+				"mypy-type-checker.args": ["--config-file=${containerWorkspaceFolder}/pyproject.toml"],
+				"ruff.nativeServer": "on",
+
+				"files.associations": {
+					"**/templates/**/*.html": "django-html",
+					"**/templates/**/*.txt": "django-txt"
+				},
+				"[django-html]": {
+					"editor.defaultFormatter": "monosans.djlint"
+				},
+				"emmet.includeLanguages": {
+					"django-html": "html"
+				},
+
+				"coverage-gutters.coverageFileNames": ["cobertura.xml", "coverage.xml"],
+
+				"doppler.autocomplete.enable": true,
+				"doppler.hover.enable": true,
+
+				"files.exclude": {
+					"**/__pycache__": true,
+					"**/.mypy_cache": true,
+					"**/.ruff_cache": true,
+					"**/.pytest_cache": true
+				},
+				"search.exclude": {
+					"**/.venv": true,
+					"**/htmlcov": true,
+					"**/.kolo": true,
+					"**/staticfiles": true
+				}
+			}
+		}
+	},
+
+	"remoteUser": "vscode"
 }

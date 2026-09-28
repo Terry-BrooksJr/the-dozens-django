@@ -1,10 +1,10 @@
-[![CI Pipeline](https://github.com/Terry-BrooksJr/the-dozens-django/actions/workflows/commit_check.yaml/badge.svg)](https://github.com/Terry-BrooksJr/the-dozens-django/actions/workflows/commit_check.yaml) 
+[![CI Pipeline](https://github.com/Terry-BrooksJr/the-dozens-django/actions/workflows/commit_check.yaml/badge.svg)](https://github.com/Terry-BrooksJr/the-dozens-django/actions/workflows/commit_check.yaml)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/70f7aef1a778458f8553b024aa0f80fe)](https://app.codacy.com/gh/Terry-BrooksJr/the-dozens-django/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/70f7aef1a778458f8553b024aa0f80fe)](https://app.codacy.com/gh/Terry-BrooksJr/the-dozens-django/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 [![Better Stack Badge](https://uptime.betterstack.com/status-badges/v2/monitor/2hq41.svg)](https://uptime.betterstack.com/?utm_source=status_badge)
 # The Dozens — Django/DRF API
 
-A playful, production‑ready REST API for “yo momma” style jokes (aka *Insults*), built with **Django 5** and **Django REST Framework**. It ships with token auth, robust filtering, schema‑first API docs (OpenAPI 3 via **drf‑spectacular**), caching, pagination, linting/type‑checking, and a container‑friendly runtime. 
+A playful, production‑ready REST API for “yo momma” style jokes (aka *Insults*), built with **Django 5** and **Django REST Framework**. It ships with token auth, robust filtering, schema‑first API docs (OpenAPI 3 via **drf‑spectacular**), caching, pagination, linting/type‑checking, and a container‑friendly runtime.
 
 > TL;DR: Run `task install && task db_sync && task run:dev 8888` and hit `http://127.0.0.1:8888/api/insults/`.
 
@@ -79,7 +79,7 @@ Key models:
 - **django‑filters**, **django‑extensions** (optional), **loguru** for logging
 - **Redis/Dragonfly** for caching (via Django cache backend)
 - **Gunicorn** for WSGI
-- **Poetry** for dependency management
+- **uv** for dependency management (`pyproject.toml` + `uv.lock`)
 - **Taskfile** for repeatable commands
 
 ## Getting Started
@@ -87,6 +87,7 @@ Key models:
 ### Prerequisites
 
 - Python 3.11+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - Redis/Dragonfly running locally (or a hosted Redis‑compatible service)
 - Postgres 13+ (recommended)
 - [Doppler](https://www.doppler.com/) CLI if you use secrets syncing (optional but supported)
@@ -132,7 +133,9 @@ Common tasks (see full list with `task`):
 
 [!NOTE] This required the installation of Taskfile, a Go-Based Task Agent. For More Details - [Taskfile](https://taskfile.dev/)
 
-- `task install` — creates venv, installs Poetry deps.
+- `task install` — creates `.venv` and installs every dependency group from `uv.lock` (`uv sync --locked`).
+- `task lock` — re-resolve after editing `pyproject.toml` (or use `uv add <pkg>` / `uv add --group dev <pkg>`).
+- `task upgrade [-- <pkg>]` — upgrade locked versions within the `pyproject.toml` ranges.
 - `task db_sync` — `makemigrations` + `migrate`.
 - `task run:dev <port>` — gunicorn in reload mode (debug‑friendly).
 - `task run:test` — run API tests for `applications.API`.

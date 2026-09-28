@@ -19,48 +19,28 @@ tasks:
     cmds:
       - task -l
 
-  venv:
-    desc: Make a new virtual environment
-    cmds:
-      - python3 -m venv .venv --prompt="ACTIVE_VENV_DJANGO_DOZENS"
-    internal: true
-
-  run:dev:
-    desc: Starts the Django Application and background workers in a debug state
-    dir: .
-    cmds:
-      - echo "Completing Pre-Start Environment Check For Development..."
-      - echo "Django Configuration:${DJANGO_CONFIGURATION}"
-      - PYTHONPATH="${PYTHONPATH}" .venv/bin/python3 -m gunicorn -w 1 --timeout 120 --worker-class=sync core.wsgi:application --bind 127.0.0.1:{{or .CLI_ARGS 8000}} --reload
-    # NOTE: `source .envrc` removed — no-op in a non-interactive subshell.
-    # NOTE: `-t 1` (connect timeout) removed — it conflicted with --timeout 120.
-    interactive: false
-    silent: false
-
   install:
-    desc: Install project dependencies into the virtual environment
-    deps: [ venv ]
+    desc: Create .venv and install all dependency groups exactly as pinned in uv.lock
     cmds:
-      - .venv/bin/pip install --quiet --upgrade pip
-      - .venv/bin/pip install poetry
-      - .venv/bin/poetry lock
-      - .venv/bin/poetry install --no-root
+      - uv sync --locked
     silent: false
 
-  freeze:
-    desc: Pin current dependencies and export requirements files
+  lock:
+    desc: Re-resolve dependencies after editing pyproject.toml, then sync .venv
     cmds:
-      - .venv/bin/poetry sync
-      - .venv/bin/poetry export --without dev,test --without-hashes --without-urls > ./requirements/base.txt
-      - .venv/bin/poetry export  --without-hashes --without-urls > ./requirements/dev.txt
+      - uv lock
+      - uv sync --locked
     generates:
-      - ./requirements/dev.txt
-      - ./requirements/base.txt
-      - ./poetry.lock
+      - ./uv.lock
     sources:
-      - ./poetry.lock
-      - ./requirements/dev.txt
-      - ./requirements/base.txt
+      - ./pyproject.toml
+    silent: false
+
+  upgrade:
+    desc: "Upgrade locked dependencies within pyproject.toml ranges (all, or one package: task upgrade -- django)"
+    cmds:
+      - uv lock {{if .CLI_ARGS}}--upgrade-package {{.CLI_ARGS}}{{else}}--upgrade{{end}}
+      - uv sync --locked
     silent: false
 
   db_sync:
@@ -119,8 +99,8 @@ tasks:
     desc: Start Production Level Services — install requirements, apply migrations, then start production server
     cmds:
       - echo 'Starting Production Level Services...'
-      - echo 'Installing dependencies'
-      - task: install
+      - echo 'Installing runtime dependencies (no dev/test groups)'
+      - uv sync --locked --no-default-groups
 
       - echo 'Applying migrations...'
       - task: db_sync
