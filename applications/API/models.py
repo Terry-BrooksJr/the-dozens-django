@@ -278,7 +278,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
                 f"{self.content}\n\n"
                 f"Admin Review\n"
                 f"------------\n"
-                f"/admin/API/insult/{self.insult_id}/change/\n"
+                f"https://api.yo-momma.io/ops-gateway/API/insult/{self.insult_id}/change/\n"
             )
 
             mail_admins(subject, message, fail_silently=False)
