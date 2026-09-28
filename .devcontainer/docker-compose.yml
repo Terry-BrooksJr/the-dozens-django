@@ -1,0 +1,48 @@
+# Services for the dev container. Postgres and Redis mirror the `test` job's
+# service containers in .github/workflows/commit_check.yaml, and share one
+# network namespace with the app container so they are reachable on localhost,
+# the same as in CI and the Staging settings' defaults.
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/base:bookworm
+    volumes:
+      - ..:/workspaces/the-dozens-django:cached
+      # Linux virtualenv, kept apart from the host's macOS .venv
+      - venv:/workspaces/the-dozens-django/.venv
+      # uv download cache, reused across rebuilds
+      - uv-cache:/home/vscode/.cache/uv
+    command: sleep infinity
+    network_mode: service:db
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d test_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    network_mode: service:db
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  venv:
+  uv-cache:
+  pgdata:
