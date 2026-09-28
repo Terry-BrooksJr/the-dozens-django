@@ -13,14 +13,13 @@ from __future__ import annotations
 import contextlib
 from datetime import datetime
 from functools import lru_cache
-from re import search, IGNORECASE, compile
-from typing import Any, ClassVar, Dict, Optional, Union
+import re
+from typing import Any, ClassVar, Dict, Optional
 
 import arrow
 from django.conf import settings
 from django.core.cache import cache
 from django.utils.text import capfirst
-from django.db.models import QuerySet
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -720,17 +719,16 @@ class CreateInsultSerializer(BaseInsultSerializer):
         """Validate that insult content follows the expected phrase format.
         This method checks whether the content begins with an acceptable “yo momma” style phrase.
         It raises a validation error when the content does not meet that requirement."""
-        pattern = compile(
+        pattern = re.compile(
             r"^(?:yo|your|ya)[ \t]+(?:momma|mama|mom|daddy|dad)"
             r"(?:['’]s|[ \t]+is)?[ \t]+so\b[ \t]+\S[^\r\n]*$",
-            IGNORECASE,
+            re.IGNORECASE,
         )
-        if search(pattern, value) is None:
+        if re.search(pattern, value) is None:
             raise serializers.ValidationError(
                 'Content Should Follow the "Yo Momma is so...<SOMETHING>" format.  Please edit your content value and resubmit.'
             )
-        else:
-            return value
+        return value
 
     def create(self, validated_data):
         """Create an Insult, deriving the theme from the resolved category."""
