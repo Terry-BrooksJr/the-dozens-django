@@ -12,7 +12,12 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <script>
         (function() {
-            var mode = localStorage.getItem('jazzmin-theme-mode') || '{{ jazzmin_ui.default_theme_mode|default:"light" }}';
+            var mode = '{{ jazzmin_ui.default_theme_mode|default:"light" }}';
+            try {
+                mode = localStorage.getItem('jazzmin-theme-mode') || mode;
+            } catch (e) {
+                mode = '{{ jazzmin_ui.default_theme_mode|default:"light" }}';
+            }
             if (mode === 'auto') {
                 mode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
             }
