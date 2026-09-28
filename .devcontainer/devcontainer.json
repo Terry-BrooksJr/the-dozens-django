@@ -83,10 +83,10 @@
 	"postCreateCommand": {
 		// Load .envrc automatically in interactive shells
 		"direnv-hook": "grep -q 'direnv hook bash' ~/.bashrc || echo 'eval \"$(direnv hook bash)\"' >> ~/.bashrc; grep -q 'direnv hook zsh' ~/.zshrc 2>/dev/null || echo 'eval \"$(direnv hook zsh)\"' >> ~/.zshrc; if [ -f .envrc ]; then direnv allow .; fi",
-		// The config lives in .configs/ (see `task install`). Only installed when no hook
-		// exists yet, because .git is shared with the host and the hook records this
-		// container's Python path.
-		"pre-commit": "test -f .git/hooks/pre-commit || .venv/bin/pre-commit install -c .configs/.pre-commit-config.yaml"
+		// The config lives in .configs/ (see `task install`). Install it into a
+		// container-only hooks path, because .git is shared with the host and a
+		// host-created hook can point at a non-container Python path.
+		"pre-commit": "mkdir -p /home/vscode/.git-hooks && git config --global core.hooksPath /home/vscode/.git-hooks && .venv/bin/pre-commit install -f -c .configs/.pre-commit-config.yaml --hook-dir /home/vscode/.git-hooks"
 	},
 
 	"postStartCommand": "git config --global --add safe.directory /workspaces/the-dozens-django",
