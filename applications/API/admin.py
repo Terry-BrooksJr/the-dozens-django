@@ -19,7 +19,7 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from loguru import logger
@@ -53,6 +53,21 @@ class RecategorizeForm(django_forms.Form):
         """Populate the category choices with a fresh queryset per instantiation."""
         super().__init__(*args, **kwargs)
         self.fields["new_category"].queryset = InsultCategory.objects.all()
+
+
+class ModifyInsultForm(django_forms.Form):
+    """Form for the admin "Modify" button: the edited joke plus the moderator's reason."""
+
+    modified_content = django_forms.CharField(
+        label="Modified Text",
+        widget=django_forms.Textarea(attrs={"rows": 4, "cols": 80}),
+        help_text="The joke as it should be published.",
+    )
+    reviewer_notes = django_forms.CharField(
+        label="Reviewer Notes",
+        widget=django_forms.Textarea(attrs={"rows": 4, "cols": 80}),
+        help_text="Why the joke was changed. This is shown to the submitter.",
+    )
 
 
 class InsultReviewInline(admin.TabularInline):  # Or admin.StackedInline for more detail
@@ -117,9 +132,9 @@ class InsultAdmin(admin.ModelAdmin):
         "reports_count",
         "status",
         "view_reports_link",
-        "approve_button",
+        "review_buttons",
     )
-    readonly_fields = ("approve_button",)
+    readonly_fields = ("review_buttons",)
     search_fields = ("reference_id", "added_by__username", "added_by__email")
     list_filter = (HasPendingReviewFilter, "status", "nsfw", "category", "added_on")
     actions = [
@@ -148,68 +163,149 @@ class InsultAdmin(admin.ModelAdmin):
         invalidate_insult_cache(reason="admin_save")
 
     # ------------------------------------------------------------------
-    # Per-insult "Approve" button (Pending - New only)
+    # Per-insult review buttons
+    #   Pending - New:      Approve / Modify / Reject
+    #   Flagged for Review: Reclassify / Recategorize / Remove / Do Nothing
     # ------------------------------------------------------------------
 
+    # Success message shown for each review action; the keys are the
+    # ``action`` values passed to _report_review_result().
+    REVIEW_ACTION_MESSAGES = {
+        "approved": "approved",
+        "modified": "approved with modifications",
+        "rejected": "rejected",
+        "reclassified": "reclassified",
+        "recategorized": "recategorized",
+        "removed": "removed",
+        "kept": "kept as-is and restored to the API",
+    }
+
     def get_urls(self):
-        """Add the single-insult approve endpoint ahead of the default admin URLs."""
+        """Add the single-insult review endpoints ahead of the default admin URLs."""
+
+        def post_only(view):
+            return self.admin_site.admin_view(require_POST(view))
+
         custom_urls = [
+            # Pending - New
             path(
                 "<int:insult_id>/approve/",
-                self.admin_site.admin_view(require_POST(self.approve_view)),
+                post_only(self.approve_view),
                 name="API_insult_approve",
+            ),
+            path(
+                "<int:insult_id>/reject/",
+                post_only(self.reject_view),
+                name="API_insult_reject",
+            ),
+            path(
+                "<int:insult_id>/modify/",
+                self.admin_site.admin_view(self.modify_view),
+                name="API_insult_modify",
+            ),
+            # Flagged for Review
+            path(
+                "<int:insult_id>/flagged/reclassify/",
+                post_only(self.flagged_reclassify_view),
+                name="API_insult_flagged_reclassify",
+            ),
+            path(
+                "<int:insult_id>/flagged/recategorize/",
+                self.admin_site.admin_view(self.flagged_recategorize_view),
+                name="API_insult_flagged_recategorize",
+            ),
+            path(
+                "<int:insult_id>/flagged/remove/",
+                post_only(self.flagged_remove_view),
+                name="API_insult_flagged_remove",
+            ),
+            path(
+                "<int:insult_id>/flagged/keep/",
+                post_only(self.flagged_keep_view),
+                name="API_insult_flagged_keep",
             ),
         ]
         return custom_urls + super().get_urls()
 
-    @admin.display(description="Approve")
-    def approve_button(self, obj):
-        """Render an Approve button for pending insults; blank for every other status.
+    @admin.display(description="Review")
+    def review_buttons(self, obj):
+        """Render the review buttons for pending or flagged insults; blank otherwise.
 
-        The button uses ``formaction`` so it posts the surrounding admin form
+        POST buttons use ``formaction`` so they post the surrounding admin form
         (changelist or change page), which already carries the CSRF token,
-        to the approve endpoint instead of nesting a second ``<form>``.
+        instead of nesting a second ``<form>``. Buttons that need more input
+        (Modify, Recategorize) are plain links to an intermediate form page.
         """
-        if obj is None or obj.pk is None or obj.status != Insult.STATUS.PENDING:
+        if obj is None or obj.pk is None:
             return "-"
-        url = reverse("admin:API_insult_approve", args=[obj.insult_id])
-        return format_html(
-            '<button type="submit" formaction="{}" formnovalidate class="button" '
-            'style="background:#417690;color:#fff;padding:4px 12px;">Approve</button>',
-            url,
-        )
 
-    def approve_view(self, request, insult_id):
-        """Approve a single pending insult, then redirect back to where the click came from."""
+        style = "color:#fff;padding:4px 12px;margin:2px;border:0;display:inline-block;"
+
+        def post_button(url_name, label, color):
+            return format_html(
+                '<button type="submit" formaction="{}" formnovalidate class="button" '
+                'style="{}background:{};">{}</button>',
+                reverse(f"admin:{url_name}", args=[obj.insult_id]),
+                style,
+                color,
+                label,
+            )
+
+        def link_button(url_name, label, color):
+            return format_html(
+                '<a href="{}" class="button" style="{}background:{};">{}</a>',
+                reverse(f"admin:{url_name}", args=[obj.insult_id]),
+                style,
+                color,
+                label,
+            )
+
+        if obj.status == Insult.STATUS.PENDING:
+            buttons = [
+                post_button("API_insult_approve", "Approve", "#2e7d32"),
+                link_button("API_insult_modify", "Modify", "#e69500"),
+                post_button("API_insult_reject", "Reject", "#c62828"),
+            ]
+        elif obj.status == Insult.STATUS.FLAGGED:
+            buttons = [
+                post_button(
+                    "API_insult_flagged_reclassify",
+                    "Reclassify as SFW" if obj.nsfw else "Reclassify as NSFW",
+                    "#6a1b9a",
+                ),
+                link_button(
+                    "API_insult_flagged_recategorize", "Recategorize", "#1565c0"
+                ),
+                post_button("API_insult_flagged_remove", "Remove", "#c62828"),
+                post_button("API_insult_flagged_keep", "Do Nothing", "#757575"),
+            ]
+        else:
+            return "-"
+        return format_html_join("", "{}", ((button,) for button in buttons))
+
+    def _get_insult_in_status_or_redirect(self, request, insult_id, required_status):
+        """Load an insult for review, enforcing change permission and its current status.
+
+        Returns:
+            tuple: ``(insult, None)`` when the insult can be reviewed, or
+            ``(insult, redirect_response)`` when its status has already moved on
+            (e.g. another moderator handled it first).
+        """
         insult = get_object_or_404(Insult.objects.get_queryset(), pk=insult_id)
         if not self.has_change_permission(request, insult):
             raise PermissionDenied
-
-        if insult.status != Insult.STATUS.PENDING:
+        if insult.status != required_status:
             self.message_user(
                 request,
-                f"{insult.reference_id} is not pending, so it was not approved.",
+                f"{insult.reference_id} is no longer "
+                f"{Insult.STATUS(required_status).label}, so nothing was changed.",
                 messages.WARNING,
             )
-        else:
-            insult.approve_insult()
-            insult.refresh_from_db(fields=["status"])
-            if insult.status == Insult.STATUS.ACTIVE:
-                Insult._notify_owner_joke_status_change(
-                    outcome="approved",
-                    is_modified=False,
-                )
-                invalidate_insult_cache(reason="admin_approve")
-                self.message_user(
-                    request, f"{insult.reference_id} approved.", messages.SUCCESS
-                )
-            else:
-                self.message_user(
-                    request,
-                    f"Could not approve {insult.reference_id}. Check the server logs.",
-                    messages.ERROR,
-                )
+            return insult, self._redirect_back(request, insult)
+        return insult, None
 
+    def _redirect_back(self, request, insult):
+        """Redirect to the same-host referer, falling back to the insult's change page."""
         referer = request.META.get("HTTP_REFERER")
         if referer and url_has_allowed_host_and_scheme(
             referer,
@@ -218,6 +314,240 @@ class InsultAdmin(admin.ModelAdmin):
         ):
             return redirect(referer)
         return redirect(reverse("admin:API_insult_change", args=[insult.insult_id]))
+
+    def _report_review_result(self, request, insult, expected_status, action):
+        """Confirm the model method actually changed the status and message the user.
+
+        Every review button (pending and flagged) ends here, so this is the
+        single place to hook result notifications.
+
+        The model methods log failures instead of raising, so the saved status
+        is the only reliable signal of success.
+
+        Args:
+            request: The admin request.
+            insult: The reviewed insult.
+            expected_status: The ``Insult.STATUS`` the action should have produced.
+            action: What the moderator did; one of ``REVIEW_ACTION_MESSAGES``'
+                keys: "approved", "modified", "rejected" (pending) or
+                "reclassified", "recategorized", "removed", "kept" (flagged).
+
+        Returns:
+            bool: ``True`` when the insult reached ``expected_status``.
+        """
+        insult.refresh_from_db()
+        if insult.status != expected_status:
+            self.message_user(
+                request,
+                f"Could not update {insult.reference_id}. Check the server logs.",
+                messages.ERROR,
+            )
+            return False
+
+        invalidate_insult_cache(reason=f"admin_{action}")
+        self.message_user(
+            request,
+            f"{insult.reference_id} {self.REVIEW_ACTION_MESSAGES[action]}.",
+            messages.SUCCESS,
+        )
+        insult._notify_owner_joke_status_change(outcome=action)
+        return True
+
+    def _resolve_pending_reports(self, request, insult, resolve):
+        """Close every pending InsultReview on this insult.
+
+        Args:
+            resolve: Callable taking ``(review, reviewer)`` that applies the
+                matching ``InsultReview.mark_review_*`` method.
+        """
+        for review in insult.reports.filter(status=InsultReview.STATUS.PENDING):
+            resolve(review, request.user)
+
+    # -- Pending - New --------------------------------------------------
+
+    def approve_view(self, request, insult_id):
+        """Approve a single pending insult, then redirect back."""
+        insult, response = self._get_insult_in_status_or_redirect(
+            request, insult_id, Insult.STATUS.PENDING
+        )
+        if response:
+            return response
+        insult.approve_insult()
+        self._report_review_result(request, insult, Insult.STATUS.ACTIVE, "approved")
+        return self._redirect_back(request, insult)
+
+    def reject_view(self, request, insult_id):
+        """Reject a single pending insult, then redirect back."""
+        insult, response = self._get_insult_in_status_or_redirect(
+            request, insult_id, Insult.STATUS.PENDING
+        )
+        if response:
+            return response
+        insult.reject_insult()
+        self._report_review_result(request, insult, Insult.STATUS.REJECTED, "rejected")
+        return self._redirect_back(request, insult)
+
+    def modify_view(self, request, insult_id):
+        """Show the Modify form (GET) or approve the insult with the edits (POST)."""
+        insult, response = self._get_insult_in_status_or_redirect(
+            request, insult_id, Insult.STATUS.PENDING
+        )
+        if response:
+            return response
+
+        if request.method == "POST":
+            form = ModifyInsultForm(request.POST)
+            if form.is_valid():
+                insult.approve_with_modifications(
+                    modified_content=form.cleaned_data["modified_content"],
+                    reviewer_notes=form.cleaned_data["reviewer_notes"],
+                )
+                self._report_review_result(
+                    request, insult, Insult.STATUS.ACTIVE, "modified"
+                )
+                return redirect(reverse("admin:API_insult_changelist"))
+        else:
+            form = ModifyInsultForm(
+                initial={
+                    "modified_content": insult.modified_content or insult.content,
+                    "reviewer_notes": insult.reviewer_notes or "",
+                }
+            )
+
+        return TemplateResponse(
+            request,
+            "admin/insult_modify.html",
+            {
+                **self.admin_site.each_context(request),
+                "title": f"Modify Insult {insult.reference_id}",
+                "insult": insult,
+                "form": form,
+                "opts": self.model._meta,
+            },
+        )
+
+    # -- Flagged for Review ---------------------------------------------
+
+    def flagged_reclassify_view(self, request, insult_id):
+        """Flip the NSFW flag on a flagged insult and restore it to the API."""
+        insult, response = self._get_insult_in_status_or_redirect(
+            request, insult_id, Insult.STATUS.FLAGGED
+        )
+        if response:
+            return response
+
+        new_nsfw = not insult.nsfw
+        insult.reclassify(new_nsfw)
+        insult.refresh_from_db(fields=["nsfw"])
+        if insult.nsfw != new_nsfw:
+            self.message_user(
+                request,
+                f"Could not reclassify {insult.reference_id}. Check the server logs.",
+                messages.ERROR,
+            )
+            return self._redirect_back(request, insult)
+
+        insult.approve_insult()
+        if self._report_review_result(
+            request, insult, Insult.STATUS.ACTIVE, "reclassified"
+        ):
+            self._resolve_pending_reports(
+                request,
+                insult,
+                lambda review, user: review.mark_review_reclassified(user),
+            )
+        return self._redirect_back(request, insult)
+
+    def flagged_recategorize_view(self, request, insult_id):
+        """Show the category picker (GET) or move the flagged insult and restore it (POST)."""
+        insult, response = self._get_insult_in_status_or_redirect(
+            request, insult_id, Insult.STATUS.FLAGGED
+        )
+        if response:
+            return response
+
+        if request.method == "POST":
+            form = RecategorizeForm(request.POST)
+            if form.is_valid():
+                new_category = form.cleaned_data["new_category"]
+                insult.re_categorize(new_category)
+                insult.refresh_from_db(fields=["category"])
+                if insult.category_id != new_category.pk:
+                    self.message_user(
+                        request,
+                        f"Could not recategorize {insult.reference_id}. Check the server logs.",
+                        messages.ERROR,
+                    )
+                    return redirect(reverse("admin:API_insult_changelist"))
+
+                insult.approve_insult()
+                if self._report_review_result(
+                    request, insult, Insult.STATUS.ACTIVE, "recategorized"
+                ):
+                    self._resolve_pending_reports(
+                        request,
+                        insult,
+                        lambda review, user: review.mark_review_recategorized(user),
+                    )
+                return redirect(reverse("admin:API_insult_changelist"))
+        else:
+            form = RecategorizeForm(initial={"new_category": insult.category_id})
+
+        return TemplateResponse(
+            request,
+            "admin/insult_flagged_recategorize.html",
+            {
+                **self.admin_site.each_context(request),
+                "title": f"Recategorize Insult {insult.reference_id}",
+                "insult": insult,
+                "open_reports": insult.reports.filter(
+                    status=InsultReview.STATUS.PENDING
+                ),
+                "form": form,
+                "opts": self.model._meta,
+            },
+        )
+
+    def flagged_remove_view(self, request, insult_id):
+        """Soft-delete a flagged insult."""
+        insult, response = self._get_insult_in_status_or_redirect(
+            request, insult_id, Insult.STATUS.FLAGGED
+        )
+        if response:
+            return response
+        insult.remove_insult()
+        if self._report_review_result(
+            request, insult, Insult.STATUS.REMOVED, "removed"
+        ):
+            self._resolve_pending_reports(
+                request, insult, lambda review, user: review.mark_review_removed(user)
+            )
+        return self._redirect_back(request, insult)
+
+    def flagged_keep_view(self, request, insult_id):
+        """Dismiss the reports and restore a flagged insult to the API unchanged."""
+        insult, response = self._get_insult_in_status_or_redirect(
+            request, insult_id, Insult.STATUS.FLAGGED
+        )
+        if response:
+            return response
+        insult.approve_insult()
+        if self._report_review_result(request, insult, Insult.STATUS.ACTIVE, "kept"):
+            self._resolve_pending_reports(request, insult, self._mark_review_no_change)
+        return self._redirect_back(request, insult)
+
+    @staticmethod
+    def _mark_review_no_change(review, reviewer):
+        """Close a report without acting on it, using the "no change" status that fits its type.
+
+        Reclassification reports close as "same classification"; every other
+        type (recategorization and removal requests) closes as "same category",
+        since InsultReview has no dedicated "kept" status.
+        """
+        if review.review_type == InsultReview.REVIEW_TYPE.RECLASSIFY:
+            review.mark_review_not_reclassified(reviewer)
+        else:
+            review.mark_review_not_recatagoized(reviewer)
 
     # ------------------------------------------------------------------
     # Admin actions — delegate to model methods

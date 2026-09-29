@@ -1,19 +1,15 @@
 {% load static %}
-{% block subject %}{% if outcome == "approved" %}Your joke made the cut, {{ submitter_name }}! 🎉{% elif outcome == "modified" %}Your joke is live, with a little touch-up ✏️{% else %}An update on your joke submission{% endif %}{% endblock subject %}
-{% block text_body %}Hey {{ submitter_name }},
+{% block subject %}{{ o.subject }}{% endblock subject %}
+{% block text_body %}{{ o.headline }}
 
-{% if outcome == "approved" %}Good news: your joke was approved and is now live on the Yo' Momma API.
-
-  "{{ joke_content }}"
-{% elif outcome == "modified" %}Your joke was approved, and our moderators made a small edit before publishing it.
-
-Original:
+{{ o.body }}
+{% if outcome == "modified" %}
+You sent:
   "{{ joke_content }}"
 
 As published:
   "{{ modified_content }}"
-{% else %}Thanks for sending in a joke. After review, we weren't able to add this one to the collection.
-
+{% else %}
   "{{ joke_content }}"
 {% endif %}
 Reference ID: {{ reference_id }}
@@ -23,7 +19,8 @@ Reviewed on: {{ reviewed_on|date:"F j, Y" }}
 Moderator notes:
 {{ reviewer_notes }}
 {% endif %}
-{% if outcome == "rejected" %}Got another one? Submit it here: {{ submit_url }}{% else %}See it live: {{ joke_url }}{% endif %}
+{% if o.is_live %}See it live: {{ joke_url }}{% endif %}
+Got another one? Submit it here: {{ submit_url }}
 
 Questions? developer@yo-momma.io
 
@@ -144,7 +141,7 @@ Questions? developer@yo-momma.io
                         font-size:1px;
                         line-height:1px;
                         color:#D7DF0D">
-                {% if outcome == "approved" %}Your joke is officially in the collection.{% elif outcome == "modified" %}Approved with a quick edit from our moderators.{% else %}Thanks for submitting. Here's what our moderators decided.{% endif %}
+                {{ o.preheader }}
             </div>
             <!-- Outer wrapper -->
             <table role="presentation"
@@ -196,7 +193,7 @@ Questions? developer@yo-momma.io
                                          src="{{ hero_image_url }}"
                                          width="600"
                                          height="300"
-                                         alt="{% if outcome == 'approved' %}Your joke was approved{% elif outcome == 'modified' %}Your joke was approved with edits{% else %}Your joke was not accepted{% endif %}"
+                                         alt="{{ o.ribbon_label }}"
                                          style="display:block;
                                                 width:600px;
                                                 max-width:100%;
@@ -206,16 +203,16 @@ Questions? developer@yo-momma.io
                             </tr>
                             <!-- ── Status ribbon ──────────────────────────────────── -->
                             <tr>
-                                <td style="background:{% if outcome == 'approved' %}#beda00{% elif outcome == 'modified' %}#ffb020{% else %}#e0364a{% endif %};
+                                <td style="background:{{ o.ribbon_color }};
                                            padding:12px 40px;
                                            text-align:center">
                                     <p style="font-family:'YoMamaHeader',Arial,sans-serif;
                                               font-size:15px;
-                                              color:{% if outcome == 'rejected' %}#ffffff{% else %}#3a0038{% endif %};
+                                              color:{{ o.ribbon_text_color }};
                                               margin:0;
                                               letter-spacing:2px;
                                               text-transform:uppercase">
-                                        {% if outcome == "approved" %}✅ Approved{% elif outcome == "modified" %}✏️ Approved with Edits{% else %}🚫 Not Accepted{% endif %}
+                                        {{ o.ribbon_label }}
                                     </p>
                                 </td>
                             </tr>
@@ -227,29 +224,14 @@ Questions? developer@yo-momma.io
                                               font-size:22px;
                                               color:#770071;
                                               margin:0 0 12px">
-                                        {% if outcome == "approved" %}
-                                            Look at you, {{ submitter_name }}! 🔥
-                                        {% elif outcome == "modified" %}
-                                            Nice one, {{ submitter_name }}!
-                                        {% else %}
-                                            Hey {{ submitter_name }},
-                                        {% endif %}
+                                        {{ o.headline }}
                                     </p>
                                     <p style="font-family:'YoMamaBody',Arial,sans-serif;
                                               font-size:15px;
                                               color:#333333;
                                               line-height:1.7;
                                               margin:0 0 28px">
-                                        {% if outcome == "approved" %}
-                                            Your joke passed review and is now live in the Yo' Momma API. Developers everywhere can
-                                            pull it into their apps starting today. Thanks for adding to the collection.
-                                        {% elif outcome == "modified" %}
-                                            Your joke passed review and is now live. Our moderators made a small edit first, usually
-                                            for clarity, spelling, or to fit the collection's guidelines. Here's what changed.
-                                        {% else %}
-                                            Thanks for sending this in. After review, our moderators decided not to add it to the
-                                            collection this time. It happens to the best of us, and we'd still like to see your next one.
-                                        {% endif %}
+                                        {{ o.body }}
                                     </p>
                                     <!-- Section label -->
                                     <p style="font-family:'YoMamaHeader',Arial,sans-serif;
@@ -334,18 +316,18 @@ Questions? developer@yo-momma.io
                                                width="100%"
                                                style="margin:0 0 28px">
                                             <tr>
-                                                <td style="background:{% if outcome == 'approved' %}rgba(190,218,0,0.12){% else %}#f7f7f7{% endif %};
-                                                           border-left:6px solid {% if outcome == 'approved' %}#beda00{% else %}#e0364a{% endif %};
+                                                <td style="background:{% if o.is_live %}rgba(190,218,0,0.12){% else %}#f7f7f7{% endif %};
+                                                           border-left:6px solid {% if o.is_live %}#beda00{% else %}#e0364a{% endif %};
                                                            border-radius:10px;
                                                            padding:20px 24px">
                                                     <p style="font-family:'YoMamaHeader',Arial,sans-serif;
                                                               font-size:40px;
                                                               line-height:0.6;
-                                                              color:{% if outcome == 'approved' %}#770071{% else %}#e0364a{% endif %};
+                                                              color:{% if o.is_live %}#770071{% else %}#e0364a{% endif %};
                                                               margin:8px 0 4px">“</p>
                                                     <p style="font-family:Georgia,'Times New Roman',serif;
                                                               font-size:17px;
-                                                              color:{% if outcome == 'approved' %}#3a0038{% else %}#666666{% endif %};
+                                                              color:{% if o.is_live %}#3a0038{% else %}#666666{% endif %};
                                                               line-height:1.6;
                                                               margin:0;
                                                               font-style:italic">{{ joke_content }}</p>
@@ -395,6 +377,15 @@ Questions? developer@yo-momma.io
                                                                      border-radius:4px;
                                                                      letter-spacing:1px;
                                                                      vertical-align:middle">NSFW</span>
+                                                    {% elif outcome == "reclassified" %}
+                                                        <span style="display:inline-block;
+                                                                     background:#2e7d32;
+                                                                     color:#ffffff;
+                                                                     font-size:9px;
+                                                                     padding:2px 6px;
+                                                                     border-radius:4px;
+                                                                     letter-spacing:1px;
+                                                                     vertical-align:middle">SFW</span>
                                                     {% endif %}
                                                 </p>
                                             </td>
@@ -430,7 +421,7 @@ Questions? developer@yo-momma.io
                                                               margin:0 0 6px;
                                                               text-transform:uppercase;
                                                               letter-spacing:1px">
-                                                        {% if outcome == "rejected" %}
+                                                        {% if not o.is_live %}
                                                             Why It Didn't Make It
                                                         {% else %}
                                                             A Note from the Moderators
@@ -453,7 +444,7 @@ Questions? developer@yo-momma.io
                                            style="margin:0 0 8px">
                                         <tr>
                                             <td align="center">
-                                                {% if outcome == "rejected" %}
+                                                {% if not o.is_live %}
                                                     <a href="{{ submit_url }}"
                                                        class="cta-btn"
                                                        style="display:inline-block;
@@ -481,7 +472,7 @@ Questions? developer@yo-momma.io
                                             </td>
                                         </tr>
                                     </table>
-                                    {% if outcome != "rejected" %}
+                                    {% if o.is_live %}
                                         <p style="font-family:'YoMamaBody',Arial,sans-serif;
                                                   font-size:12px;
                                                   color:#888888;

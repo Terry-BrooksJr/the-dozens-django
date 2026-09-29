@@ -16,15 +16,12 @@ from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.mail import mail_admins, send_mail
+from django.core.mail import mail_admins
 from django.db import IntegrityError, models
 from django.db.models import F
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
-from django.template.loader import render_to_string
-from django.templatetags.static import static
 from django.urls import reverse
-from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from django_prometheus.models import ExportModelOperationsMixin
 from loguru import logger
@@ -212,6 +209,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
     insult_id = models.AutoField(primary_key=True)
     is_admin_modified = models.BooleanField(default=False)
     modified_content = models.CharField(null=True, blank=True)
+    reviewer_notes = models.TextField(null=True, blank=True)
     reference_id = models.CharField(
         max_length=50,
         unique=True,
@@ -307,26 +305,29 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
                 f"{self.reference_id!r}: {e}"
             )
 
-    def _notify_owner_joke_status_change(
-        self,
-        outcome: str,
-        is_modified: bool,
-        modified_text: Optional[str] = None,
-        reviewers_notes: Optional[str] = None,
-    ):
+    def _notify_owner_joke_status_change(self, outcome: str):
         """
-        Emails the submitter when the insult is approved or rejected.
-        - Modified: Accpeted with moldifications
+        Emails the submitter the outcome of a moderator review.
 
+        Called from the admin review buttons (InsultAdmin._report_review_result)
+        after the review has been saved, so every field already holds its
+        post-review value (new category, NSFW rating, modified text, etc.).
 
-        Called exclusively from set_reference_id() so self.reference_id is
-        always populated before the email is composed.
+        Args:
+            outcome: The review result; one of
+                applications.API.emails.REVIEW_OUTCOMES' keys: "approved",
+                "modified", "rejected" (new submissions) or "reclassified",
+                "recategorized", "removed", "kept" (flagged insults).
 
         Logs:
             Info:  Confirmation that the notification was dispatched.
             Error: Any exception raised during send, without re-raising so that
-                   a mail failure never breaks the insult-creation flow.
+                   a mail failure never breaks the review flow.
         """
+        # Imported here: emails.py is a leaf module, but keeping models free of
+        # module-level email imports avoids future import cycles.
+        from .emails import SubmissionReviewEmail
+
         try:
             submitter = self.added_by
             if not submitter.email:
@@ -334,68 +335,46 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
                     f"Unable to notify owner for {self.reference_id}: no email address"
                 )
                 return
-            if is_modified and reviewers_notes is None:
-                logger.warning("Must Submit Notes on Reason For Modification.")
+
+            is_modified = outcome == "modified"
+            if is_modified and not self.reviewer_notes:
+                logger.warning(
+                    f"Not notifying owner for {self.reference_id}: "
+                    f"modified insults require reviewer notes"
+                )
                 return
-            subject = f"Your Insult  Has been {outcome.title()} - [{self.reference_id}]"
-            template_name = "templates/email/submission_review.html"
-            HERO_IMAGES = {
-                "approved": static("assets/approved.png"),
-                "modified": static("assets/modified.png"),
-                "rejected": static("assets/rejected.png"),
-            }
+
+            site_url = "https://api.yo-momma.io"
             context = {
-                # Required: "approved", "modified" or "rejected"
-                "outcome": outcome,
-                # Submitter
-                "submitter_name": (
-                    self.added_by.first_name
-                    if self.added_by.first_name is not None
-                    else submitter
-                ),
-                # Joke details
-                "joke_content": self.content,  # the joke as submitted
-                "modified_content": (
-                    self.modified_content
-                    if self.modified_content is not None
-                    else "N/A"
-                ),  # the edited joke as published (only used when outcome == "modified")
-                "reference_id": self.reference_id,  # Insult.reference_id
-                "category_name": self.category.name,  # InsultCategory.name
-                "nsfw": self.nsfw,  # shows the NSFW badge when True
-                # Review
-                "reviewed_on": self.last_modified,  # a date or datetime, e.g. timezone.now()
-                "reviewer_notes": (
-                    reviewers_notes if is_modified else "N/A"
-                ),  # optional; the notes box is hidden when this is empty
-                # Hero image: full https URL to the image for this outcome
-                "hero_image_url": HERO_IMAGES[outcome],
-                # Links
-                "joke_url": f"https://api.yo-momma.io/insults/{self.reference_id}",
-                "submit_url": "",  # "Submit Another Joke" button (rejected) and the small link otherwise
-                "site_url": "https://api.yo-momma.io",
+                "submitter_name": submitter.first_name or submitter.username,
+                "joke_content": self.content,
+                # Only a "modified" review's edit and notes belong in this email;
+                # an older modification's notes must not leak into later reviews.
+                "modified_content": (self.modified_content or "") if is_modified else "",
+                "reviewer_notes": (self.reviewer_notes or "") if is_modified else "",
+                "reference_id": self.reference_id,
+                "category_name": self.category.name,
+                "nsfw": self.nsfw,
+                "reviewed_on": self.last_modified,
+                "joke_url": f"{site_url}/api/insults/{self.reference_id}/",
+                "submit_url": f"{site_url}/api/swagger/",
+                "site_url": site_url,
                 "site_domain": "api.yo-momma.io",
             }
-            convert_to_html_content = render_to_string(
-                template_name=template_name, context=context
-            )
-            plain_message = strip_tags(convert_to_html_content)
-            if yo_send_it := send_mail(
-                subject="Receiver information from a form",
-                message=plain_message,
-                from_email=settings.EMAIL_HOST_USER,
-                recipient_list=[
-                    submitter.email,
-                ],
-                html_message=convert_to_html_content,
-                fail_silently=True,  # Failures WIll be logged
-            ):
-                logger.info(f"Owner notification sent for insult {self.reference_id}")
-            elif yo_send_it is False:
+
+            sent = SubmissionReviewEmail(
+                outcome=outcome, context=context, to=[submitter.email]
+            ).send()
+            if not sent:
                 logger.error(
                     f"Failed to send owner notification for insult "
-                    f"{self.reference_id!r}: {e}"
+                    f"{self.reference_id!r}: no message was queued"
                 )
+                return
+            logger.success(
+                f"Insult owner {submitter.username} notified of {outcome} "
+                f"outcome for {self.reference_id}"
+            )
         except Exception as e:
             logger.error(
                 f"Failed to send owner notification for insult "
@@ -418,17 +397,16 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             ValidationError: If theme doesn't match category's theme.
         """
         super().clean()
-        if self.category and self.theme:
-            if self.category.theme_id != self.theme_id:
-                from django.core.exceptions import ValidationError
+        if self.category and self.theme and self.category.theme_id != self.theme.pk:
+            from django.core.exceptions import ValidationError
 
-                raise ValidationError(
-                    {
-                        "theme": f"Insult theme must match category theme. "
-                        f'Category "{self.category.name}" belongs to theme "{self.category.theme.theme_name}", '
-                        f'but insult is assigned to theme "{self.theme.theme_name}".'
-                    }
-                )
+            raise ValidationError(
+                {
+                    "theme": f"Insult theme must match category theme. "
+                    f'Category "{self.category.name}" belongs to theme "{self.category.theme.theme_name}", '
+                    f'but insult is assigned to theme "{self.theme.theme_name}".'
+                }
+            )
 
     def save(self, *args, **kwargs):
         """
@@ -530,6 +508,65 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             logger.success(f"Successfully Approved {self.reference_id}")
         except Exception as e:
             logger.error(f"Unable to Approve Insult({self.reference_id}): {e}")
+
+    def reject_insult(self):
+        """Rejects a Pending insult so it never becomes discoverable by the API.
+
+        Logs:
+            Success: Logs the reference ID of the rejected Insult Instance
+            Exception: If the Insult is unable to be rejected.
+
+        Returns:
+            None
+        """
+
+        try:
+            self.status = Insult.STATUS.REJECTED  # Set status to REJECTED
+            self.last_modified = settings.GLOBAL_NOW
+            self.save(update_fields=["status", "last_modified"])
+            logger.success(f"Successfully Rejected {self.reference_id}")
+        except Exception as e:
+            logger.error(f"Unable to Reject Insult({self.reference_id}): {e}")
+
+    def approve_with_modifications(self, modified_content: str, reviewer_notes: str):
+        """Approves a Pending insult after a moderator edit.
+
+        The submitter's original ``content`` is kept as-is; the edited text and
+        the moderator's reasoning are stored in ``modified_content`` and
+        ``reviewer_notes``, and ``is_admin_modified`` is set.
+
+        Args:
+            modified_content: The edited joke text as published.
+            reviewer_notes: The moderator's explanation of the change.
+
+        Logs:
+            Success: Logs the reference ID of the modified Insult Instance
+            Exception: If the Insult is unable to be approved with modifications.
+
+        Returns:
+            None
+        """
+
+        try:
+            self.status = Insult.STATUS.ACTIVE  # Set status to ACTIVE
+            self.is_admin_modified = True
+            self.modified_content = modified_content
+            self.reviewer_notes = reviewer_notes
+            self.last_modified = settings.GLOBAL_NOW
+            self.save(
+                update_fields=[
+                    "status",
+                    "is_admin_modified",
+                    "modified_content",
+                    "reviewer_notes",
+                    "last_modified",
+                ]
+            )
+            logger.success(f"Successfully Approved (Modified) {self.reference_id}")
+        except Exception as e:
+            logger.error(
+                f"Unable to Approve Insult with Modifications({self.reference_id}): {e}"
+            )
 
     def mark_insult_for_review(self):
         """Removes insult visibility from the API.

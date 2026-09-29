@@ -1,0 +1,48 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% trans "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+  &rsaquo; <a href="{% url 'admin:API_insult_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; <a href="{% url 'admin:API_insult_change' insult.insult_id %}">{{ insult.reference_id }}</a>
+  &rsaquo; {% trans "Modify" %}
+</div>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<fieldset class="module aligned">
+  <h2>{% trans "Original submission" %}</h2>
+  <div class="form-row">
+    <p><strong>{% trans "Submitted by" %}:</strong> {{ insult.added_by }}</p>
+    <p><strong>{% trans "Category" %}:</strong> {{ insult.category }}{% if insult.nsfw %} (NSFW){% endif %}</p>
+    <blockquote style="margin:8px 0;padding:8px 12px;border-left:4px solid #e69500;background:var(--darkened-bg);">
+      {{ insult.content|linebreaksbr }}
+    </blockquote>
+  </div>
+</fieldset>
+
+<form method="post">
+  {% csrf_token %}
+  <fieldset class="module aligned">
+    <h2>{% trans "Your edits" %}</h2>
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div class="form-row{% if field.errors %} errors{% endif %}">
+        {{ field.errors }}
+        <div>
+          {{ field.label_tag }}
+          {{ field }}
+          {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </fieldset>
+
+  <div class="submit-row">
+    <input type="submit" class="default" value='{% trans "Approve with modifications" %}'>
+    <a href='{% url "admin:API_insult_changelist" %}' class="closelink">{% trans "Cancel" %}</a>
+  </div>
+</form>
+{% endblock content %}
