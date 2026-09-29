@@ -1,3 +1,5 @@
+"""Transactional email classes for API user accounts."""
+
 from django.core.mail import EmailMultiAlternatives
 from djoser.email import ConfirmationEmail
 from loguru import logger
@@ -5,9 +7,19 @@ from rest_framework.authtoken.models import Token
 
 
 class WelcomeEmail(ConfirmationEmail):
+    """Account confirmation email that doubles as an API onboarding message.
+
+    Adds the user's API token and links to the API docs and GraphQL
+    playground to the template context.
+    """
+
     template_name = "email/welcome.html"
 
     def get_context_data(self):
+        """Extend the Djoser context with the API key and documentation URLs.
+
+        Creates the user's DRF token if one does not already exist.
+        """
         context = super().get_context_data()
         user = context["user"]
 
@@ -36,6 +48,19 @@ class WelcomeEmail(ConfirmationEmail):
         return context
 
     def send(self, to=None, fail_silently=False, **kwargs):
+        """Send the email, logging the attempt and its outcome.
+
+        When ``to`` is omitted the message is assumed to be already rendered
+        (the django-mailer delivery path) and is sent directly.
+
+        Args:
+            to: Recipient addresses; falls back to ``self.to``.
+            fail_silently: Suppress send errors when ``True``.
+            **kwargs: Passed through to Djoser's ``send``.
+
+        Raises:
+            Exception: Re-raises any delivery failure after logging it.
+        """
         recipients = to or getattr(self, "to", None) or []
         logger.info("Welcome email send attempt | to={}", recipients)
 

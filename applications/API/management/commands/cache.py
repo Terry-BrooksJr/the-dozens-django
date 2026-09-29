@@ -20,9 +20,12 @@ from common.cache_managers import cache_registry, get_cache_performance_summary
 
 
 class Command(BaseCommand):
+    """Inspect, warm, clear, and report on registered cache managers."""
+
     help = "Manage application caches using the generalized caching framework"
 
     def add_arguments(self, parser):
+        """Register the command's cache-operation flags."""
         parser.add_argument(
             "--list",
             action="store_true",

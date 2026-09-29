@@ -38,6 +38,12 @@ class BaseCacheManager(ABC):
     """
 
     def __init__(self, model_class: Type[models.Model], cache_prefix: str = None):
+        """Initialize the manager for ``model_class``.
+
+        Args:
+            model_class: Model whose data this manager caches.
+            cache_prefix: Cache key prefix; defaults to the model name.
+        """
         self.model_class = model_class
         self.cache_prefix = cache_prefix or model_class.__name__
         self.cache_timeout = getattr(self, "CACHE_TIMEOUT", 86400)  # 24 hours default
@@ -84,6 +90,14 @@ class GenericDataCacheManager(BaseCacheManager):
         data_builder: Callable = None,
         cache_timeout: int = int(os.environ.get("CACHE_TTL", "86400")),
     ):
+        """Initialize a cache manager backed by a custom data builder.
+
+        Args:
+            model_class: Model whose changes invalidate the cache.
+            cache_prefix: Cache key prefix; defaults to the model name.
+            data_builder: Callable that produces the data to cache.
+            cache_timeout: Cache TTL in seconds.
+        """
         super().__init__(model_class, cache_prefix)
 
         self.data_builder = data_builder or self._default_data_builder
@@ -211,6 +225,7 @@ class GenericDataCacheManager(BaseCacheManager):
         """Register signal handlers for automatic cache invalidation."""
 
         def handle_model_change(instance, **kwargs):
+            """Invalidate the cache when an instance is saved or deleted."""
             if kwargs.get("created"):
                 reason = "post_save_created"
             elif "post_save" in str(kwargs):
@@ -267,6 +282,15 @@ class FormChoicesCacheManager(GenericDataCacheManager):
         filter_kwargs: Dict[str, Any] = None,
         cache_prefix: str = None,
     ):
+        """Initialize a form-choices cache manager.
+
+        Args:
+            model_class: Model the choices are drawn from.
+            choice_field: Field used as the choice value.
+            display_formatter: Callable producing each choice's label.
+            filter_kwargs: Queryset filters applied when building choices.
+            cache_prefix: Cache key prefix.
+        """
 
         self.choice_field = choice_field
         self.display_formatter = display_formatter or self._default_display_formatter
@@ -355,6 +379,13 @@ class CategoryCacheManager(BaseCacheManager):
         key_field: str = "key",
         name_field: str = "name",
     ):
+        """Initialize a category cache manager.
+
+        Args:
+            model_class: Category model.
+            key_field: Field holding the category key.
+            name_field: Field holding the category name.
+        """
         super().__init__(model_class, "categories")
         self.key_field = key_field
         self.name_field = name_field
@@ -475,6 +506,7 @@ class CacheManagerRegistry:
     """
 
     def __init__(self):
+        """Create an empty registry."""
         self._managers: Dict[str, BaseCacheManager] = {}
 
     def names(self) -> List[str]:

@@ -64,6 +64,7 @@ class NeverCacheMixin(TemplateView):
 
     @method_decorator(never_cache)
     def dispatch(self, *args: Any, **kwargs: Any) -> HttpResponse:
+        """Dispatch the request with ``never_cache`` headers applied."""
         return super(NeverCacheMixin, self).dispatch(*args, **kwargs)
 
 
@@ -73,8 +74,19 @@ class NeverCacheMixin(TemplateView):
 
 
 class CachedResponseMixin(GenericAPIView):
+    """API view mixin that caches responses and bulk querysets.
+
+    Integrates with the generalized cache managers and applies configured
+    ``select_related``/``prefetch_related`` optimizations to bulk reads.
+    """
 
     def __init__(self, *args, **kwargs):
+        """Read and validate the view's bulk-optimization settings.
+
+        Raises:
+            AttributeError: If ``bulk_select_related`` or
+                ``bulk_prefetch_related`` is defined but empty.
+        """
         super().__init__(*args, **kwargs)
         # Bulk optimization settings (unchanged)
         self.bulk_select_related: Optional[List[str]] = getattr(
@@ -318,6 +330,7 @@ class CachedResponseMixin(GenericAPIView):
             )
 
             def get_list_queryset():
+                """Return the filtered base queryset for the list view."""
                 return self.filter_queryset(self.get_queryset())
 
             queryset, extra_data = self.get_cached_bulk_data(
@@ -490,6 +503,7 @@ def create_category_cache_manager(model_class, key_field="key", name_field="name
     _original_get_cache_keys = manager.get_cache_keys
 
     def _category_cache_keys():
+        """Return the base cache keys plus the category-specific keys."""
         keys = _original_get_cache_keys()
         keys.update(
             {
@@ -504,14 +518,17 @@ def create_category_cache_manager(model_class, key_field="key", name_field="name
 
     # Add convenience methods
     def get_category_name_by_key(key: str) -> Optional[str]:
+        """Return the cached category name for ``key``, if any."""
         key_to_name = manager.get_cached_data("key_to_name") or {}
         return key_to_name.get(key)
 
     def get_category_key_by_name(name: str) -> Optional[str]:
+        """Return the cached category key for ``name`` (case-insensitive), if any."""
         name_to_key = manager.get_cached_data("name_to_key") or {}
         return name_to_key.get(name.lower())
 
     def get_all_categories() -> Dict[str, str]:
+        """Return the cached mapping of all categories."""
         return manager.get_cached_data("categories") or {}
 
     # Bind methods to manager
@@ -537,6 +554,7 @@ class CachedBulkSerializerMixin:
     cached_fields = []
 
     def __init__(self, *args, **kwargs):
+        """Initialize the serializer with an empty per-instance field cache."""
         super().__init__(*args, **kwargs)
         self._field_cache = {}
 

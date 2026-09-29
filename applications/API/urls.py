@@ -1,3 +1,5 @@
+"""URL routes for the REST API: health probes, schema docs, categories, and insults."""
+
 from django.urls import path
 from drf_spectacular.views import (
     SpectacularAPIView,

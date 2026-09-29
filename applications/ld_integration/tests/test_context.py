@@ -18,7 +18,10 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory, SimpleTestCase, TestCase
 
-from applications.ld_integration.context import context_from_request
+from applications.ld_integration.context import (
+    browser_context_from_request,
+    context_from_request,
+)
 
 User = get_user_model()
 
@@ -153,3 +156,37 @@ class ContextFromRequestAuthenticatedTests(TestCase):
         ctx = context_from_request(request)
 
         self.assertEqual(ctx.key, "fallback-username")
+
+
+class BrowserContextFromRequestTests(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def test_anonymous_request_returns_none(self):
+        request = self.factory.get("/")
+        request.user = AnonymousUser()
+
+        self.assertIsNone(browser_context_from_request(request))
+
+    def test_authenticated_user_returns_browser_safe_subset(self):
+        user = User.objects.create_user(
+            username="browser",
+            email="browser@example.com",
+            password="pw",  # type: ignore
+            is_staff=True,
+            is_superuser=True,
+        )
+        request = self.factory.get("/")
+        request.user = user
+
+        ctx = browser_context_from_request(request)
+
+        self.assertEqual(
+            ctx,
+            {
+                "kind": "user",
+                "key": str(user.pk),
+                "name": "browser",
+                "is_staff": True,
+            },
+        )

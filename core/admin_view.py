@@ -1,3 +1,5 @@
+"""Custom Django admin views."""
+
 import os
 
 from django.contrib import admin
@@ -7,6 +9,10 @@ from django.template.response import TemplateResponse
 
 @staff_member_required
 def grafana_dashboard_view(request):
+    """Render the embedded Grafana observability dashboard for staff.
+
+    The dashboard URL comes from ``GRAFANA_DASHBOARD_URL``.
+    """
     context = {
         **admin.site.each_context(request),
         "title": "Observability Dashboard",

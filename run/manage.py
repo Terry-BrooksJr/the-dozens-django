@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+"""Django command-line entry point; defaults to the Production configuration."""
 
 import os
 import sys

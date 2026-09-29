@@ -29,9 +29,11 @@ class RequestIDMiddleware:
     """
 
     def __init__(self, get_response):
+        """Store the next handler in the middleware chain."""
         self.get_response = get_response
 
     def __call__(self, request):
+        """Process the request inside a Loguru context bound to its request ID."""
         request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
         request.request_id = request_id
         with logger.contextualize(request_id=request_id):

@@ -245,6 +245,12 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
         )
 
     def list(self, request, *args, **kwargs):
+        """List active insults, redirecting legacy ``?category=`` requests.
+
+        A ``category``/``category_name`` query parameter redirects to the
+        path-based category route. Otherwise results are filtered by
+        ``status``/``nsfw``, served from the bulk cache, and paginated.
+        """
         # Check for category query parameter early and reject with 400
         if category := request.GET.get("category_name") or request.GET.get("category"):
             # Build new query params without the category fields
@@ -435,12 +441,14 @@ class InsultDetailsEndpoint(CreateModelMixin, RetrieveUpdateDestroyAPIView):
     filterset_class = InsultFilter
 
     def get_permissions(self):
+        """Allow anyone to read; restrict writes to the insult's owner."""
         if self.request.method in SAFE_METHODS:
             return [AllowAny()]
         else:
             return [IsOwnerOrReadOnly()]
 
     def get_queryset(self):
+        """Return all insults with related data preloaded, newest first."""
         if getattr(self, "swagger_fake_view", False):
             return Insult.objects.none()
         return (
@@ -462,6 +470,8 @@ class InsultDetailsEndpoint(CreateModelMixin, RetrieveUpdateDestroyAPIView):
 
 
 class RandomInsultEndpoint(GenericAPIView):
+    """Serves a single random active insult, instrumented per query phase."""
+
     serializer_class = OptimizedInsultSerializer
     permission_classes = [AllowAny]
     throttle_classes = []
@@ -646,6 +656,8 @@ class RandomInsultEndpoint(GenericAPIView):
     )
 )
 class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
+    """Lists public insult categories grouped under their themes."""
+
     serializer_class = CategorySerializer
     permission_classes = [AllowAny]
 
@@ -760,7 +772,7 @@ class CreateInsultEndpoint(CreateAPIView):
           Token authentication required
 
     ##  Request Body:
-          content (str): Insult content (minimum 45 characters, UTF-8)
+          content (str): Insult content (Must be in a 'Yo Momma So...' format. i.e. Yo Momma So Ugly... or Yo Daddy So Dumb...;  UTF-8)
           nsfw (bool): Explicit content flag
           category (str): Category key or name
     """
@@ -837,6 +849,7 @@ class ListReferenceIdsEndpoint(ListAPIView):
     serializer_class = OptimizedInsultSerializer
 
     def get_queryset(self):
+        """Return reference IDs of all public insults, ordered for stable paging."""
         if getattr(self, "swagger_fake_view", False):
             return Insult.objects.none()
         return Insult.public.values_list("reference_id", flat=True).order_by(
@@ -844,6 +857,7 @@ class ListReferenceIdsEndpoint(ListAPIView):
         )
 
     def list(self, request, *args, **kwargs):
+        """Return reference IDs as plain strings, paginated when requested."""
         qs = self.get_queryset()
         page = self.paginate_queryset(qs)
         if page is not None:
@@ -852,12 +866,15 @@ class ListReferenceIdsEndpoint(ListAPIView):
 
 
 class HealthEndpoint(GenericAPIView):
+    """Deep readiness check covering the database, GraphQL, and LaunchDarkly."""
+
     permission_classes = [AllowAny]
     authentication_classes = []
     throttle_classes = []
     serializer_class = None
 
     def _check_database(self) -> str:
+        """Return ``"ok"`` if a database connection can be established."""
         try:
             connection.ensure_connection()
             return "ok"
@@ -865,6 +882,7 @@ class HealthEndpoint(GenericAPIView):
             return "unavailable"
 
     def _check_graphql(self) -> str:
+        """Return ``"ok"`` if the GraphQL schema can execute a trivial query."""
         try:
             from applications.graphQL.schema import schema
 
@@ -874,6 +892,12 @@ class HealthEndpoint(GenericAPIView):
             return "error"
 
     def _check_launchdarkly(self) -> str:
+        """Report the LaunchDarkly client state.
+
+        Returns:
+            str: ``"ok"``, ``"disabled"``, ``"not_initialized"``, or
+            ``"unavailable"``.
+        """
         from django.conf import settings
 
         if not getattr(settings, "LAUNCHDARKLY_ENABLED", False):
@@ -929,6 +953,7 @@ class HealthEndpoint(GenericAPIView):
         },
     )
     def get(self, request):
+        """Run every health check; respond 503 if any check is degraded."""
         checks = {
             "database": self._check_database(),
             "graphql": self._check_graphql(),
@@ -959,4 +984,5 @@ class PingEndpoint(GenericAPIView):
 
     @extend_schema(exclude=True)
     def get(self, request):
+        """Return a static ``ok`` payload."""
         return Response({"status": "ok"})

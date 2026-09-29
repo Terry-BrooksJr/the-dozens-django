@@ -321,6 +321,9 @@
                   z-index: 9999 !important;
              }
         </style>
+        {{ ld_user|json_script:"ld-user" }}
+        <script type="module" src="{% static 'js/darkly.js' %}"></script>
+
     </head>
     <body>
         <!-- Custom header -->
@@ -374,6 +377,31 @@
 </script>
             {# djlint:on #}
         {% endif %}
+        <!-- LaunchDarkly: identify the API-token user after "Authorize" -->
+        <script>
+             (function() {
+                  if (typeof ui === 'undefined' || !ui.getStore) return;
+
+                  // Queue consumed by static/js/darkly.js (a module, so it may load after this).
+                  window.dozensLDTokenQueue = window.dozensLDTokenQueue || [];
+                  var lastValue = null;
+
+                  function checkAuthorized() {
+                       var authorized = ui.authSelectors.authorized();
+                       var entry = authorized && authorized.find(function(auth) {
+                            return auth.getIn(['schema', 'type']) === 'apiKey';
+                       });
+                       var value = entry ? entry.get('value') : null;
+                       if (value && value !== lastValue) {
+                            lastValue = value;
+                            window.dozensLDTokenQueue.push(value);
+                       }
+                  }
+
+                  ui.getStore().subscribe(checkAuthorized);
+                  checkAuthorized();
+             })();
+        </script>
         <!-- SweetAlert2 JS -->
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
         <!-- Custom initialization script -->
