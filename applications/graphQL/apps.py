@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Django app configuration for the GraphQL API."""
 
 from django.apps import AppConfig

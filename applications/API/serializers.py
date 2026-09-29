@@ -11,10 +11,10 @@ for different use cases.
 from __future__ import annotations
 
 import contextlib
+import re
 from datetime import datetime
 from functools import lru_cache
-import re
-from typing import Any, ClassVar, Dict, Optional
+from typing import Any, ClassVar
 
 import arrow
 from django.conf import settings
@@ -60,7 +60,7 @@ class BulkSerializationMixin:
         kwargs.setdefault("context", self.get_serializer_context())
         return serializer_class(*args, **kwargs)
 
-    def bulk_serialize_response(self, queryset, extra_data: Optional[Dict] = None):
+    def bulk_serialize_response(self, queryset, extra_data: dict | None = None):
         """Serialize bulk data with optional metadata.
 
         Args:
@@ -195,12 +195,11 @@ class BaseInsultSerializer(CachedBulkSerializer):
         v = value.strip()
         # Try common separators first
         for sep in (" - ", "–", "-"):
-            if sep in v:
-                if left := v.split(sep, 1)[0].strip():
-                    return left
+            if sep in v and (left := v.split(sep, 1)[0].strip()):
+                return left
         return v
 
-    def get_category_by_key(self, category_key: str) -> Dict[str, str]:
+    def get_category_by_key(self, category_key: str) -> dict[str, str]:
         """Retrieve category information by key.
 
         Args:
@@ -276,7 +275,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
             else user.first_name
         )
 
-    def get_category_by_name(self, category_name: str) -> Dict[str, str]:
+    def get_category_by_name(self, category_name: str) -> dict[str, str]:
         """
         Retrieve category information by its name.
         Returns a dictionary containing the category key and name, or raises a validation error if not found.
@@ -321,7 +320,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
             ) from e
 
     @classmethod
-    def resolve_category(cls, value: str) -> Dict[str, str]:
+    def resolve_category(cls, value: str) -> dict[str, str]:
         """
         Validate and resolve a category by key or name.
 
@@ -425,7 +424,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         Uses ISO string for hashable cache key.
         """
 
-        date = datetime.fromisoformat(date_iso.replace("Z", "+00:00"))
+        date = datetime.fromisoformat(date_iso)
         return naturaltime(date, future=False, minimum_unit="seconds", months=True)
 
     @staticmethod
@@ -452,7 +451,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
             compute_method_name="compute_added_on_display",
         )
 
-    def to_internal_value(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def to_internal_value(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert input data to native Python objects for validation and deserialization.
 
         This method processes the input data, resolves the insult category, and prepares the data for further validation.
@@ -489,7 +488,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
         return super().to_internal_value(data)
 
-    def to_representation(self, instance) -> Dict[str, Any]:  # type: ignore
+    def to_representation(self, instance) -> dict[str, Any]:  # type: ignore
         """Convert a model instance to its serialized representation.
 
         This method returns a dictionary representation of the instance, replacing the category field with its display name using cached lookup.
@@ -509,7 +508,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         return representation
 
     @extend_schema_field(serializers.CharField())
-    def get_added_by_display(self, obj) -> Optional[str]:
+    def get_added_by_display(self, obj) -> str | None:
         """Return a formatted display string for the user who added the insult.
 
         This method retrieves a cached, human-readable representation of the object's 'added_by' field.
@@ -845,7 +844,7 @@ class InsultReviewSerializer(serializers.ModelSerializer):
         model = InsultReview
         exclude = ["date_submitted", "date_reviewed", "status", "insult", "reviewer"]
 
-    def validate(self, attrs: Dict[str, Any]) -> Dict[str, Any]:
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         """
         Custom validation with improved error handling.
         """

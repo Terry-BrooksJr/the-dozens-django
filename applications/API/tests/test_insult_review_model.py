@@ -70,11 +70,11 @@ class _InsultReviewBase(TestCase):
         )
 
     def _unsaved_review(self, **overrides):
-        defaults = dict(
-            insult_reference_id="",
-            rationale_for_review="Some rationale for review.",
-            review_type=InsultReview.REVIEW_TYPE.REMOVAL,
-        )
+        defaults = {
+            "insult_reference_id": "",
+            "rationale_for_review": "Some rationale for review.",
+            "review_type": InsultReview.REVIEW_TYPE.REMOVAL,
+        }
         defaults.update(overrides)
         return InsultReview(**defaults)
 

@@ -83,14 +83,14 @@ class _InsultAdminBase(TestCase):
 
     def _make_insult(self, **kwargs):
         """Create a fresh Insult, rolled back after each test."""
-        defaults = dict(
-            content="Test insult content.",
-            category=self.cat_a,
-            theme=self.theme,
-            nsfw=False,
-            status=Insult.STATUS.ACTIVE,
-            added_by=self.admin_user,
-        )
+        defaults = {
+            "content": "Test insult content.",
+            "category": self.cat_a,
+            "theme": self.theme,
+            "nsfw": False,
+            "status": Insult.STATUS.ACTIVE,
+            "added_by": self.admin_user,
+        }
         defaults.update(kwargs)
         return Insult.objects.create(**defaults)
 

@@ -9,7 +9,6 @@ API endpoints for managing insults, categories, and themes.
 
 import random
 import time
-from typing import Optional
 from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
@@ -178,7 +177,7 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
         "users:*:insults*",
     ]
 
-    def get_queryset(self) -> Optional[QuerySet]:  # pyrefly: ignore
+    def get_queryset(self) -> QuerySet | None:  # pyrefly: ignore
         """
         Build the base queryset for this view.
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Tests for the Loguru logging configuration lifecycle in core.settings.
 
@@ -188,12 +187,14 @@ class ProductionLoggingTests(_ResetsLoggingConfigured):
         self, mock_logger, mock_loki_handler
     ):
         """With LOKI_URL set and LaunchDarkly Observability enabled, stdout, Loki, and LD all get sinks."""
-        with patch.dict(
-            os.environ,
-            {"LOKI_URL": "http://loki.example.com", "LOKI_PASSWORD": "secret"},
+        with (
+            patch.dict(
+                os.environ,
+                {"LOKI_URL": "http://loki.example.com", "LOKI_PASSWORD": "secret"},
+            ),
+            patch.object(Production, "LAUNCHDARKLY_OBSERVABILITY_ENABLED", True),
         ):
-            with patch.object(Production, "LAUNCHDARKLY_OBSERVABILITY_ENABLED", True):
-                Production.configure_logging()
+            Production.configure_logging()
 
         mock_loki_handler.assert_called_once()
         # stdout + Loki + LaunchDarkly

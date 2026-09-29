@@ -268,7 +268,6 @@ add "&raw" to the end of the URL within a browser.
         </style>
         {{ ld_user|json_script:"ld-user" }}
         <script type="module" src="{% static 'js/darkly.js' %}"></script>
-
     </head>
     <body>
         <!-- ── Branded header ───────────────────────────────────────────────────── -->
@@ -503,6 +502,7 @@ add "&raw" to the end of the URL within a browser.
                   // Hand the Authorization header to static/js/darkly.js so LaunchDarkly
                   // can identify the API-token user (queue survives the module loading late).
                   window.dozensLDTokenQueue = window.dozensLDTokenQueue || [];
+
                   function fetchWithLDIdentify(url, init) {
                        // Normalise plain objects, arrays and Headers instances alike.
                        var authorization = new Headers((init && init.headers) || {}).get('Authorization');

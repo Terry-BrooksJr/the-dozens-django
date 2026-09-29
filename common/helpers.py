@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 module: common.helpers
 
@@ -15,11 +14,11 @@ import contextvars
 import inspect
 import json
 import logging
-from datetime import timezone
+from datetime import UTC
 from typing import TextIO
 
 try:
-    import ldobserve.observe as observe
+    from ldobserve import observe
 except ImportError:
     observe = None
 
@@ -131,7 +130,7 @@ def _insert_after_middleware(base, after_item, *new_items):
 
 def _force_utc_time(record: dict) -> None:
     """Loguru patcher: log timestamps in UTC regardless of TIME_ZONE/server tz."""
-    record["time"] = record["time"].astimezone(timezone.utc)
+    record["time"] = record["time"].astimezone(UTC)
 
 
 def _loguru_icon_for(level_name: str) -> str:

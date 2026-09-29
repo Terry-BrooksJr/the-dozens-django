@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Frontend views for the Dozens application.
 
@@ -12,7 +11,7 @@ This module provides:
 The GitHub integration is accessed via ``settings.BASE.get_github_api()``.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -68,7 +67,7 @@ class ReportJokeView(CreateAPIView):
 
     serializer_class = InsultReviewSerializer
 
-    def format_issue(self, issue_data: Dict[str, Any]) -> Dict[str, str]:
+    def format_issue(self, issue_data: dict[str, Any]) -> dict[str, str]:
         """Build the GitHub issue payload for a joke review.
 
         Takes validated serializer data for an insult review and converts it
@@ -212,7 +211,7 @@ class ReportJokeView(CreateAPIView):
                     error=str(e),
                 ).error(f"Unable to submit {ref_id} for review: {e}")
                 return Response(
-                    data={"status": f"FAILED - {str(e)}", "errors": serializer.errors},
+                    data={"status": f"FAILED - {e!s}", "errors": serializer.errors},
                     status=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )
         logger.bind(

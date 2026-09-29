@@ -12,7 +12,6 @@ from __future__ import annotations
 import base64
 import binascii
 import secrets
-from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -55,7 +54,7 @@ def encode_base64(number: int) -> str:
     try:
         return base64.b64encode(str(number).encode()).decode()
     except Exception as e:
-        logger.exception(f"Unable to Encode Reference ID for Insult {number}: {str(e)}")
+        logger.exception(f"Unable to Encode Reference ID for Insult {number}: {e!s}")
         raise Base64EncoderException(str(e)) from e
 
 
@@ -350,7 +349,9 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
                 "joke_content": self.content,
                 # Only a "modified" review's edit and notes belong in this email;
                 # an older modification's notes must not leak into later reviews.
-                "modified_content": (self.modified_content or "") if is_modified else "",
+                "modified_content": (
+                    (self.modified_content or "") if is_modified else ""
+                ),
                 "reviewer_notes": (self.reviewer_notes or "") if is_modified else "",
                 "reference_id": self.reference_id,
                 "category_name": self.category.name,
@@ -440,7 +441,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         return self.reports.filter(status=InsultReview.STATUS.PENDING).count()
 
     @classmethod
-    def get_by_reference_id(cls: type[Insult], reference_id: str) -> Optional[Insult]:
+    def get_by_reference_id(cls: type[Insult], reference_id: str) -> Insult | None:
         """
         Retrieves an Insult instance by its reference ID.
 
@@ -777,8 +778,8 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
                 f"Reviews Must include a valid insult reference id that conforms to a pre-fixed Base64 format. Either value after the prefix is invalid  for Insult Reference ID: {self.insult_reference_id}"
             ) from base64_error
         except Exception as e:
-            logger.error(f"Generalized Insult Setting Error: {str(e)}")
-            raise IntegrityError(f"Generalized Insult Setting Error: {str(e)}") from e
+            logger.error(f"Generalized Insult Setting Error: {e!s}")
+            raise IntegrityError(f"Generalized Insult Setting Error: {e!s}") from e
 
     def mark_review_not_reclassified(self, reviewer: User):
         """Marks the review as Not reclassified.
@@ -799,9 +800,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             logger.success(f"Marked {self.insult_reference_id} as Not Reclassified")
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
         except Exception as e:
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
+            logger.error(f"ERROR: Unable to Update {self.insult_reference_id}: {e!s}")
 
     def mark_review_recategorized(self, reviewer: User):
         """Mark the review as resolved by moving the insult to a new category.
@@ -816,11 +815,9 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             logger.success(f"Marked {self.insult_reference_id} as Recategorized")
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
         except Exception as e:
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
+            logger.error(f"ERROR: Unable to Update {self.insult_reference_id}: {e!s}")
 
-    def mark_review_not_recatagoized(self, reviewer: Optional[User] = None):
+    def mark_review_not_recatagoized(self, reviewer: User | None = None):
         """Marks the review as not requiring recategorization.
 
         This method sets the status of the review to "SJC" (Same Joke Category) and updates the date_reviewed field to the current date and time. It also logs a success message indicating that the review has been marked as not recategorized.
@@ -840,11 +837,9 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
             logger.success(f"Marked {self.insult_reference_id} as Not Recategorized")
         except Exception as e:
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
+            logger.error(f"ERROR: Unable to Update {self.insult_reference_id}: {e!s}")
 
-    def mark_review_removed(self, reviewer: Optional[User] = None):
+    def mark_review_removed(self, reviewer: User | None = None):
         """Marks the review as removed.
 
         This method sets the status of the review to "REMOVED" and updates the date_reviewed field to the current date and time. It also logs a success message indicating that the review has been marked as removed.
@@ -864,9 +859,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
             logger.success(f"Marked {self.insult_reference_id} as Removed")
         except Exception as e:
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
+            logger.error(f"ERROR: Unable to Update {self.insult_reference_id}: {e!s}")
 
     def mark_review_reclassified(self, reviewer: User):
         """Marks the review as reclassified.
@@ -886,9 +879,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             logger.success(f"Marked {self.insult_reference_id} as Reclassified")
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
         except Exception as e:
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
+            logger.error(f"ERROR: Unable to Update {self.insult_reference_id}: {e!s}")
 
     class Meta:
         db_table = "reported_jokes"

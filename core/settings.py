@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 module: core.settings
 
@@ -12,7 +11,7 @@ import sys
 import threading
 import time
 import warnings
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from configurations import Configuration, values
@@ -30,7 +29,7 @@ from common.helpers import (
     log_warning,
 )
 
-GLOBAL_NOW = datetime.now(tz=timezone.utc)
+GLOBAL_NOW = datetime.now(tz=UTC)
 
 BASE_DIR = values.PathValue(Path(__file__).resolve().parent.parent, environ=False)
 
