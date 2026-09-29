@@ -16,12 +16,15 @@ from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.mail import mail_admins
+from django.core.mail import mail_admins, send_mail
 from django.db import IntegrityError, models
 from django.db.models import F
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django.template.loader import render_to_string
+from django.templatetags.static import static
 from django.urls import reverse
+from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from django_prometheus.models import ExportModelOperationsMixin
 from loguru import logger
@@ -207,7 +210,8 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         error_messages={"required": "Insults must have content"},
     )
     insult_id = models.AutoField(primary_key=True)
-
+    is_admin_modified = models.BooleanField(default=False)
+    modified_content = models.CharField(null=True, blank=True)
     reference_id = models.CharField(
         max_length=50,
         unique=True,
@@ -300,6 +304,101 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         except Exception as e:
             logger.error(
                 f"Failed to send admin notification for pending insult "
+                f"{self.reference_id!r}: {e}"
+            )
+
+    def _notify_owner_joke_status_change(
+        self,
+        outcome: str,
+        is_modified: bool,
+        modified_text: Optional[str] = None,
+        reviewers_notes: Optional[str] = None,
+    ):
+        """
+        Emails the submitter when the insult is approved or rejected.
+        - Modified: Accpeted with moldifications
+
+
+        Called exclusively from set_reference_id() so self.reference_id is
+        always populated before the email is composed.
+
+        Logs:
+            Info:  Confirmation that the notification was dispatched.
+            Error: Any exception raised during send, without re-raising so that
+                   a mail failure never breaks the insult-creation flow.
+        """
+        try:
+            submitter = self.added_by
+            if not submitter.email:
+                logger.warning(
+                    f"Unable to notify owner for {self.reference_id}: no email address"
+                )
+                return
+            if is_modified and reviewers_notes is None:
+                logger.warning("Must Submit Notes on Reason For Modification.")
+                return
+            subject = f"Your Insult  Has been {outcome.title()} - [{self.reference_id}]"
+            template_name = "templates/email/submission_review.html"
+            HERO_IMAGES = {
+                "approved": static("assets/approved.png"),
+                "modified": static("assets/modified.png"),
+                "rejected": static("assets/rejected.png"),
+            }
+            context = {
+                # Required: "approved", "modified" or "rejected"
+                "outcome": outcome,
+                # Submitter
+                "submitter_name": (
+                    self.added_by.first_name
+                    if self.added_by.first_name is not None
+                    else submitter
+                ),
+                # Joke details
+                "joke_content": self.content,  # the joke as submitted
+                "modified_content": (
+                    self.modified_content
+                    if self.modified_content is not None
+                    else "N/A"
+                ),  # the edited joke as published (only used when outcome == "modified")
+                "reference_id": self.reference_id,  # Insult.reference_id
+                "category_name": self.category.name,  # InsultCategory.name
+                "nsfw": self.nsfw,  # shows the NSFW badge when True
+                # Review
+                "reviewed_on": self.last_modified,  # a date or datetime, e.g. timezone.now()
+                "reviewer_notes": (
+                    reviewers_notes if is_modified else "N/A"
+                ),  # optional; the notes box is hidden when this is empty
+                # Hero image: full https URL to the image for this outcome
+                "hero_image_url": HERO_IMAGES[outcome],
+                # Links
+                "joke_url": f"https://api.yo-momma.io/insults/{self.reference_id}",
+                "submit_url": "",  # "Submit Another Joke" button (rejected) and the small link otherwise
+                "site_url": "https://api.yo-momma.io",
+                "site_domain": "api.yo-momma.io",
+            }
+            convert_to_html_content = render_to_string(
+                template_name=template_name, context=context
+            )
+            plain_message = strip_tags(convert_to_html_content)
+            if yo_send_it := send_mail(
+                subject="Receiver information from a form",
+                message=plain_message,
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[
+                    submitter.email,
+                ],
+                html_message=convert_to_html_content,
+                fail_silently=True,  # Failures WIll be logged
+            ):
+                logger.info(f"Owner notification sent for insult {self.reference_id}")
+            elif yo_send_it is False:
+                logger.error(
+                    f"Failed to send owner notification for insult "
+                    f"{self.reference_id!r}: {e}"
+                )
+        except Exception as e:
+            logger.error(
+                f"Failed to send owner notification for insult "
                 f"{self.reference_id!r}: {e}"
             )
 

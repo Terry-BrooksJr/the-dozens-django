@@ -14,10 +14,14 @@ from django.contrib import admin, messages
 from django.contrib.admin import helpers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
-from django.urls import reverse
+from django.urls import path, reverse
 from django.utils.html import format_html
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 from loguru import logger
 
 from .emails import WelcomeEmail
@@ -113,7 +117,9 @@ class InsultAdmin(admin.ModelAdmin):
         "reports_count",
         "status",
         "view_reports_link",
+        "approve_button",
     )
+    readonly_fields = ("approve_button",)
     search_fields = ("reference_id", "added_by__username", "added_by__email")
     list_filter = (HasPendingReviewFilter, "status", "nsfw", "category", "added_on")
     actions = [
@@ -140,6 +146,78 @@ class InsultAdmin(admin.ModelAdmin):
         """Save the insult, then invalidate cached insult data."""
         super().save_model(request, obj, form, change)
         invalidate_insult_cache(reason="admin_save")
+
+    # ------------------------------------------------------------------
+    # Per-insult "Approve" button (Pending - New only)
+    # ------------------------------------------------------------------
+
+    def get_urls(self):
+        """Add the single-insult approve endpoint ahead of the default admin URLs."""
+        custom_urls = [
+            path(
+                "<int:insult_id>/approve/",
+                self.admin_site.admin_view(require_POST(self.approve_view)),
+                name="API_insult_approve",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    @admin.display(description="Approve")
+    def approve_button(self, obj):
+        """Render an Approve button for pending insults; blank for every other status.
+
+        The button uses ``formaction`` so it posts the surrounding admin form
+        (changelist or change page), which already carries the CSRF token,
+        to the approve endpoint instead of nesting a second ``<form>``.
+        """
+        if obj is None or obj.pk is None or obj.status != Insult.STATUS.PENDING:
+            return "-"
+        url = reverse("admin:API_insult_approve", args=[obj.insult_id])
+        return format_html(
+            '<button type="submit" formaction="{}" formnovalidate class="button" '
+            'style="background:#417690;color:#fff;padding:4px 12px;">Approve</button>',
+            url,
+        )
+
+    def approve_view(self, request, insult_id):
+        """Approve a single pending insult, then redirect back to where the click came from."""
+        insult = get_object_or_404(Insult.objects.get_queryset(), pk=insult_id)
+        if not self.has_change_permission(request, insult):
+            raise PermissionDenied
+
+        if insult.status != Insult.STATUS.PENDING:
+            self.message_user(
+                request,
+                f"{insult.reference_id} is not pending, so it was not approved.",
+                messages.WARNING,
+            )
+        else:
+            insult.approve_insult()
+            insult.refresh_from_db(fields=["status"])
+            if insult.status == Insult.STATUS.ACTIVE:
+                Insult._notify_owner_joke_status_change(
+                    outcome="approved",
+                    is_modified=False,
+                )
+                invalidate_insult_cache(reason="admin_approve")
+                self.message_user(
+                    request, f"{insult.reference_id} approved.", messages.SUCCESS
+                )
+            else:
+                self.message_user(
+                    request,
+                    f"Could not approve {insult.reference_id}. Check the server logs.",
+                    messages.ERROR,
+                )
+
+        referer = request.META.get("HTTP_REFERER")
+        if referer and url_has_allowed_host_and_scheme(
+            referer,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            return redirect(referer)
+        return redirect(reverse("admin:API_insult_change", args=[insult.insult_id]))
 
     # ------------------------------------------------------------------
     # Admin actions — delegate to model methods

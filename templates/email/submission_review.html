@@ -1,0 +1,525 @@
+{% load static %}
+{% block subject %}{% if outcome == "approved" %}Your joke made the cut, {{ submitter_name }}! 🎉{% elif outcome == "modified" %}Your joke is live, with a little touch-up ✏️{% else %}An update on your joke submission{% endif %}{% endblock subject %}
+{% block text_body %}Hey {{ submitter_name }},
+
+{% if outcome == "approved" %}Good news: your joke was approved and is now live on the Yo' Momma API.
+
+  "{{ joke_content }}"
+{% elif outcome == "modified" %}Your joke was approved, and our moderators made a small edit before publishing it.
+
+Original:
+  "{{ joke_content }}"
+
+As published:
+  "{{ modified_content }}"
+{% else %}Thanks for sending in a joke. After review, we weren't able to add this one to the collection.
+
+  "{{ joke_content }}"
+{% endif %}
+Reference ID: {{ reference_id }}
+Category: {{ category_name }}{% if nsfw %} (NSFW){% endif %}
+Reviewed on: {{ reviewed_on|date:"F j, Y" }}
+{% if reviewer_notes %}
+Moderator notes:
+{{ reviewer_notes }}
+{% endif %}
+{% if outcome == "rejected" %}Got another one? Submit it here: {{ submit_url }}{% else %}See it live: {{ joke_url }}{% endif %}
+
+Questions? developer@yo-momma.io
+
+— Yo' Momma API, The Dozens Project
+{% endblock text_body %}
+{% block html_body %}
+    <!DOCTYPE html>
+    <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="x-apple-disable-message-reformatting">
+            <title>Your joke submission</title>
+            <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+            <style>
+                 /* Reset */
+                 * {
+                      box-sizing: border-box;
+                 }
+
+                 body,
+                 table,
+                 td,
+                 a {
+                      -webkit-text-size-adjust: 100%;
+                      -ms-text-size-adjust: 100%;
+                 }
+
+                 table,
+                 td {
+                      mso-table-lspace: 0pt;
+                      mso-table-rspace: 0pt;
+                 }
+
+                 img {
+                      -ms-interpolation-mode: bicubic;
+                      border: 0;
+                      outline: none;
+                      text-decoration: none;
+                 }
+
+                 /* Brand fonts — load where supported (most modern email clients) */
+                 @import url('https://fonts.googleapis.com/css2?family=Julius+Sans+One&display=swap');
+
+                 @font-face {
+                      font-family: YoMamaHeader;
+                      src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2') format('woff2');
+                      font-display: swap;
+                 }
+
+                 @font-face {
+                      font-family: YoMamaBody;
+                      src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2') format('woff2');
+                      font-display: swap;
+                 }
+
+                 body {
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      background-color: #D7DF0D;
+                      font-family: 'YoMamaBody', 'Julius Sans One', Arial, sans-serif;
+                 }
+
+                 /* Responsive */
+                 @media only screen and (max-width: 600px) {
+                      .email-wrapper {
+                           width: 100% !important;
+                      }
+
+                      .email-card {
+                           padding: 28px 20px !important;
+                      }
+
+                      .header-title {
+                           font-size: 28px !important;
+                      }
+
+                      .hero-img {
+                           width: 100% !important;
+                           height: auto !important;
+                      }
+
+                      .compare-col {
+                           display: block !important;
+                           width: 100% !important;
+                           padding: 0 0 12px !important;
+                      }
+
+                      .meta-cell {
+                           display: block !important;
+                           width: 100% !important;
+                           padding: 4px 0 !important;
+                      }
+
+                      .cta-btn {
+                           display: block !important;
+                           width: 100% !important;
+                           text-align: center !important;
+                      }
+                 }
+            </style>
+        </head>
+        <body style="margin:0;padding:0;background-color:#D7DF0D;">
+            <!-- Preheader (inbox preview text, hidden in the body) -->
+            <div style="display:none;
+                        max-height:0;
+                        overflow:hidden;
+                        mso-hide:all;
+                        font-size:1px;
+                        line-height:1px;
+                        color:#D7DF0D">
+                {% if outcome == "approved" %}Your joke is officially in the collection.{% elif outcome == "modified" %}Approved with a quick edit from our moderators.{% else %}Thanks for submitting. Here's what our moderators decided.{% endif %}
+            </div>
+            <!-- Outer wrapper -->
+            <table role="presentation"
+                   cellpadding="0"
+                   cellspacing="0"
+                   width="100%"
+                   style="background:linear-gradient(169deg,#D7DF0D 0%,#beda00 50%,#770071 100%);
+                          min-height:100vh">
+                <tr>
+                    <td align="center" style="padding:40px 16px;">
+                        <!-- Email card -->
+                        <table role="presentation"
+                               class="email-wrapper"
+                               cellpadding="0"
+                               cellspacing="0"
+                               width="600"
+                               style="background:#ffffff;
+                                      border-radius:16px;
+                                      box-shadow:0 8px 40px rgba(119,0,113,0.25);
+                                      overflow:hidden">
+                            <!-- ── Header ──────────────────────────────────────────── -->
+                            <tr>
+                                <td style="background:#770071;
+                                           padding:28px 40px 22px;
+                                           text-align:center">
+                                    <h1 class="header-title"
+                                        style="font-family:'YoMamaHeader',Arial,sans-serif;
+                                               font-size:32px;
+                                               color:#ffffff;
+                                               margin:0 0 6px;
+                                               letter-spacing:1px;
+                                               text-shadow:-1px -1px 0 #bd00b4,1px -1px 0 #bd00b4,-1px 1px 0 #bd00b4,1px 1px 0 #bd00b4">
+                                        Yo' Momma API
+                                    </h1>
+                                    <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                              color:#beda00;
+                                              font-size:12px;
+                                              margin:0;
+                                              letter-spacing:0.5px">Submission Review Results</p>
+                                </td>
+                            </tr>
+                            <!-- ── Hero image (one per outcome, 1200×600, shown at 600×300) ── -->
+                            <tr>
+                                <td style="padding:0;
+                                           line-height:0;
+                                           font-size:0;
+                                           background:#770071">
+                                    <img class="hero-img"
+                                         src="{{ hero_image_url }}"
+                                         width="600"
+                                         height="300"
+                                         alt="{% if outcome == 'approved' %}Your joke was approved{% elif outcome == 'modified' %}Your joke was approved with edits{% else %}Your joke was not accepted{% endif %}"
+                                         style="display:block;
+                                                width:600px;
+                                                max-width:100%;
+                                                height:auto;
+                                                border:0">
+                                </td>
+                            </tr>
+                            <!-- ── Status ribbon ──────────────────────────────────── -->
+                            <tr>
+                                <td style="background:{% if outcome == 'approved' %}#beda00{% elif outcome == 'modified' %}#ffb020{% else %}#e0364a{% endif %};
+                                           padding:12px 40px;
+                                           text-align:center">
+                                    <p style="font-family:'YoMamaHeader',Arial,sans-serif;
+                                              font-size:15px;
+                                              color:{% if outcome == 'rejected' %}#ffffff{% else %}#3a0038{% endif %};
+                                              margin:0;
+                                              letter-spacing:2px;
+                                              text-transform:uppercase">
+                                        {% if outcome == "approved" %}✅ Approved{% elif outcome == "modified" %}✏️ Approved with Edits{% else %}🚫 Not Accepted{% endif %}
+                                    </p>
+                                </td>
+                            </tr>
+                            <!-- ── Body ───────────────────────────────────────────── -->
+                            <tr>
+                                <td class="email-card" style="padding:40px;">
+                                    <!-- Greeting -->
+                                    <p style="font-family:'YoMamaHeader',Arial,sans-serif;
+                                              font-size:22px;
+                                              color:#770071;
+                                              margin:0 0 12px">
+                                        {% if outcome == "approved" %}
+                                            Look at you, {{ submitter_name }}! 🔥
+                                        {% elif outcome == "modified" %}
+                                            Nice one, {{ submitter_name }}!
+                                        {% else %}
+                                            Hey {{ submitter_name }},
+                                        {% endif %}
+                                    </p>
+                                    <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                              font-size:15px;
+                                              color:#333333;
+                                              line-height:1.7;
+                                              margin:0 0 28px">
+                                        {% if outcome == "approved" %}
+                                            Your joke passed review and is now live in the Yo' Momma API. Developers everywhere can
+                                            pull it into their apps starting today. Thanks for adding to the collection.
+                                        {% elif outcome == "modified" %}
+                                            Your joke passed review and is now live. Our moderators made a small edit first, usually
+                                            for clarity, spelling, or to fit the collection's guidelines. Here's what changed.
+                                        {% else %}
+                                            Thanks for sending this in. After review, our moderators decided not to add it to the
+                                            collection this time. It happens to the best of us, and we'd still like to see your next one.
+                                        {% endif %}
+                                    </p>
+                                    <!-- Section label -->
+                                    <p style="font-family:'YoMamaHeader',Arial,sans-serif;
+                                              font-size:13px;
+                                              color:#770071;
+                                              margin:0 0 10px;
+                                              text-transform:uppercase;
+                                              letter-spacing:1px">
+                                        {% if outcome == "modified" %}
+                                            What Changed
+                                        {% else %}
+                                            Your Submission
+                                        {% endif %}
+                                    </p>
+                                    {% if outcome == "modified" %}
+                                        <!-- Before / after comparison -->
+                                        <table role="presentation"
+                                               cellpadding="0"
+                                               cellspacing="0"
+                                               width="100%"
+                                               style="margin:0 0 28px">
+                                            <tr>
+                                                <td class="compare-col"
+                                                    width="50%"
+                                                    valign="top"
+                                                    style="padding-right:6px">
+                                                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                                                        <tr>
+                                                            <td style="background:#f7f7f7;
+                                                                       border:2px dashed #cccccc;
+                                                                       border-radius:10px;
+                                                                       padding:16px 18px">
+                                                                <p style="font-family:'YoMamaHeader',Arial,sans-serif;
+                                                                          font-size:11px;
+                                                                          color:#999999;
+                                                                          margin:0 0 8px;
+                                                                          letter-spacing:1px;
+                                                                          text-transform:uppercase">You Sent</p>
+                                                                <p style="font-family:Georgia,'Times New Roman',serif;
+                                                                          font-size:15px;
+                                                                          color:#888888;
+                                                                          line-height:1.6;
+                                                                          margin:0;
+                                                                          font-style:italic">“{{ joke_content }}”</p>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                                <td class="compare-col"
+                                                    width="50%"
+                                                    valign="top"
+                                                    style="padding-left:6px">
+                                                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                                                        <tr>
+                                                            <td style="background:#fff8e6;
+                                                                       border:2px solid #ffb020;
+                                                                       border-radius:10px;
+                                                                       padding:16px 18px">
+                                                                <p style="font-family:'YoMamaHeader',Arial,sans-serif;
+                                                                          font-size:11px;
+                                                                          color:#b87500;
+                                                                          margin:0 0 8px;
+                                                                          letter-spacing:1px;
+                                                                          text-transform:uppercase">As Published</p>
+                                                                <p style="font-family:Georgia,'Times New Roman',serif;
+                                                                          font-size:15px;
+                                                                          color:#3a0038;
+                                                                          line-height:1.6;
+                                                                          margin:0;
+                                                                          font-style:italic">“{{ modified_content }}”</p>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    {% else %}
+                                        <!-- Joke quote card -->
+                                        <table role="presentation"
+                                               cellpadding="0"
+                                               cellspacing="0"
+                                               width="100%"
+                                               style="margin:0 0 28px">
+                                            <tr>
+                                                <td style="background:{% if outcome == 'approved' %}rgba(190,218,0,0.12){% else %}#f7f7f7{% endif %};
+                                                           border-left:6px solid {% if outcome == 'approved' %}#beda00{% else %}#e0364a{% endif %};
+                                                           border-radius:10px;
+                                                           padding:20px 24px">
+                                                    <p style="font-family:'YoMamaHeader',Arial,sans-serif;
+                                                              font-size:40px;
+                                                              line-height:0.6;
+                                                              color:{% if outcome == 'approved' %}#770071{% else %}#e0364a{% endif %};
+                                                              margin:8px 0 4px">“</p>
+                                                    <p style="font-family:Georgia,'Times New Roman',serif;
+                                                              font-size:17px;
+                                                              color:{% if outcome == 'approved' %}#3a0038{% else %}#666666{% endif %};
+                                                              line-height:1.6;
+                                                              margin:0;
+                                                              font-style:italic">{{ joke_content }}</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    {% endif %}
+                                    <!-- Meta row -->
+                                    <table role="presentation"
+                                           cellpadding="0"
+                                           cellspacing="0"
+                                           width="100%"
+                                           style="margin:0 0 28px;
+                                                  border-top:2px solid #f0f0f0;
+                                                  border-bottom:2px solid #f0f0f0">
+                                        <tr>
+                                            <td class="meta-cell" style="padding:14px 0;width:34%">
+                                                <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                                          font-size:10px;
+                                                          color:#999999;
+                                                          margin:0 0 3px;
+                                                          text-transform:uppercase;
+                                                          letter-spacing:1px">Reference ID</p>
+                                                <code style="font-family:'Courier New',Courier,monospace;
+                                                             font-size:13px;
+                                                             color:#770071;
+                                                             font-weight:bold">{{ reference_id }}</code>
+                                            </td>
+                                            <td class="meta-cell" style="padding:14px 0;width:33%">
+                                                <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                                          font-size:10px;
+                                                          color:#999999;
+                                                          margin:0 0 3px;
+                                                          text-transform:uppercase;
+                                                          letter-spacing:1px">Category</p>
+                                                <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                                          font-size:13px;
+                                                          color:#333333;
+                                                          margin:0">
+                                                    {{ category_name }}
+                                                    {% if nsfw %}
+                                                        <span style="display:inline-block;
+                                                                     background:#e0364a;
+                                                                     color:#ffffff;
+                                                                     font-size:9px;
+                                                                     padding:2px 6px;
+                                                                     border-radius:4px;
+                                                                     letter-spacing:1px;
+                                                                     vertical-align:middle">NSFW</span>
+                                                    {% endif %}
+                                                </p>
+                                            </td>
+                                            <td class="meta-cell" style="padding:14px 0;width:33%">
+                                                <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                                          font-size:10px;
+                                                          color:#999999;
+                                                          margin:0 0 3px;
+                                                          text-transform:uppercase;
+                                                          letter-spacing:1px">Reviewed</p>
+                                                <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                                          font-size:13px;
+                                                          color:#333333;
+                                                          margin:0">{{ reviewed_on|date:"M j, Y" }}</p>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    {% if reviewer_notes %}
+                                        <!-- Moderator notes -->
+                                        <table role="presentation"
+                                               cellpadding="0"
+                                               cellspacing="0"
+                                               width="100%"
+                                               style="margin:0 0 32px">
+                                            <tr>
+                                                <td style="background:rgba(119,0,113,0.06);
+                                                           border-radius:10px;
+                                                           border-left:4px solid #770071;
+                                                           padding:16px 20px">
+                                                    <p style="font-family:'YoMamaHeader',Arial,sans-serif;
+                                                              font-size:12px;
+                                                              color:#770071;
+                                                              margin:0 0 6px;
+                                                              text-transform:uppercase;
+                                                              letter-spacing:1px">
+                                                        {% if outcome == "rejected" %}
+                                                            Why It Didn't Make It
+                                                        {% else %}
+                                                            A Note from the Moderators
+                                                        {% endif %}
+                                                    </p>
+                                                    <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                                              font-size:14px;
+                                                              color:#444444;
+                                                              line-height:1.6;
+                                                              margin:0">{{ reviewer_notes|linebreaksbr }}</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    {% endif %}
+                                    <!-- CTA -->
+                                    <table role="presentation"
+                                           cellpadding="0"
+                                           cellspacing="0"
+                                           width="100%"
+                                           style="margin:0 0 8px">
+                                        <tr>
+                                            <td align="center">
+                                                {% if outcome == "rejected" %}
+                                                    <a href="{{ submit_url }}"
+                                                       class="cta-btn"
+                                                       style="display:inline-block;
+                                                              background:#770071;
+                                                              color:#ffffff;
+                                                              font-family:'YoMamaHeader',Arial,sans-serif;
+                                                              font-size:14px;
+                                                              text-decoration:none;
+                                                              padding:14px 28px;
+                                                              border-radius:8px;
+                                                              border-bottom:3px solid #bd00b4">🎤 Submit Another Joke</a>
+                                                {% else %}
+                                                    <a href="{{ joke_url }}"
+                                                       class="cta-btn"
+                                                       style="display:inline-block;
+                                                              background:#770071;
+                                                              color:#ffffff;
+                                                              font-family:'YoMamaHeader',Arial,sans-serif;
+                                                              font-size:14px;
+                                                              text-decoration:none;
+                                                              padding:14px 28px;
+                                                              border-radius:8px;
+                                                              border-bottom:3px solid #bd00b4">🔗 See It Live</a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    {% if outcome != "rejected" %}
+                                        <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                                  font-size:12px;
+                                                  color:#888888;
+                                                  text-align:center;
+                                                  margin:12px 0 0">
+                                            Got more where that came from?
+                                            <a href="{{ submit_url }}" style="color:#770071;text-decoration:underline">Submit another</a>.
+                                        </p>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <!-- ── Footer ─────────────────────────────────────────── -->
+                            <tr>
+                                <td style="background:#770071;
+                                           padding:24px 40px;
+                                           text-align:center;
+                                           border-top:4px solid #beda00">
+                                    <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                              font-size:12px;
+                                              color:rgba(255,255,255,0.7);
+                                              margin:0 0 6px">
+                                        You're receiving this because you submitted a joke at
+                                        <a href="{{ site_url }}" style="color:#beda00;text-decoration:none;">{{ site_domain }}</a>.
+                                        Questions? <a href="mailto:developer@yo-momma.io"
+    style="color:#beda00;
+           text-decoration:none">developer@yo-momma.io</a>
+                                    </p>
+                                    <p style="font-family:'YoMamaBody',Arial,sans-serif;
+                                              font-size:11px;
+                                              color:rgba(255,255,255,0.45);
+                                              margin:0">© {% now "Y" %} Yo' Momma API — The Dozens Project</p>
+                                </td>
+                            </tr>
+                        </table>
+                        <!-- /Email card -->
+                    </td>
+                </tr>
+            </table>
+        </body>
+    </html>
+{% endblock html_body %}
