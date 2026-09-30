@@ -11,6 +11,33 @@ from loguru import logger
 from rest_framework.authtoken.models import Token
 
 
+def email_asset_url(path, site_url):
+    """Public URL for a static asset referenced from an email.
+
+    Mail clients load images and fonts from their own servers, so the URL
+    must not depend on which environment sent the email. Prefers
+    ``EMAIL_ASSET_BASE_URL``; otherwise falls back to ``static()``, prefixing
+    relative URLs (local storage) with ``site_url``.
+    """
+    base = getattr(settings, "EMAIL_ASSET_BASE_URL", "")
+    if base:
+        return f"{base.rstrip('/')}/{path.lstrip('/')}"
+    url = static(path)
+    if url.startswith(("http://", "https://")):
+        return url
+    return f"{site_url.rstrip('/')}/{url.lstrip('/')}"
+
+
+def email_font_urls(site_url):
+    """Template context entries for the brand fonts used by the email templates."""
+    return {
+        "header_font_url": email_asset_url("fonts/caloriesuit.woff2", site_url),
+        "body_font_url": email_asset_url(
+            "fonts/JuliusSansOne-Regular.woff2", site_url
+        ),
+    }
+
+
 class WelcomeEmail(ConfirmationEmail):
     """Account confirmation email that doubles as an API onboarding message.
 
@@ -48,6 +75,7 @@ class WelcomeEmail(ConfirmationEmail):
                 "docs_url": f"{base}/api/redoc",
                 "swagger_url": f"{base}/api/swagger/",
                 "graphql_url": f"{base}/graphql/playground",
+                **email_font_urls(base),
             }
         )
         return context
@@ -214,8 +242,10 @@ class SubmissionReviewEmail(EmailMultiAlternatives):
         }
         context.setdefault(
             "hero_image_url",
-            self._asset_url(f"assets/{outcome}.png", context["site_url"]),
+            email_asset_url(f"assets/{outcome}.png", context["site_url"]),
         )
+        for key, url in email_font_urls(context["site_url"]).items():
+            context.setdefault(key, url)
 
         blocks = self._render_blocks(context)
         super().__init__(
@@ -235,22 +265,3 @@ class SubmissionReviewEmail(EmailMultiAlternatives):
                 node.name: node.render(ctx).strip()
                 for node in template.nodelist.get_nodes_by_type(BlockNode)
             }
-
-    @classmethod
-    def _asset_url(cls, path, site_url):
-        """Public URL for a static asset, preferring ``EMAIL_ASSET_BASE_URL``.
-
-        Mail clients load images from their own servers, so the URL must not
-        depend on which environment sent the email.
-        """
-        base = getattr(settings, "EMAIL_ASSET_BASE_URL", "")
-        if base:
-            return f"{base.rstrip('/')}/{path.lstrip('/')}"
-        return cls._absolute_url(static(path), site_url)
-
-    @staticmethod
-    def _absolute_url(url, site_url):
-        """Prefix relative static URLs (dev) with the site URL; S3 URLs (prod) are already absolute."""
-        if url.startswith(("http://", "https://")):
-            return url
-        return f"{site_url.rstrip('/')}/{url.lstrip('/')}"

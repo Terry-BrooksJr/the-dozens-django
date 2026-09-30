@@ -23,12 +23,12 @@ add "&raw" to the end of the URL within a browser.
         <link rel="preconnect" href="https://cdn.jsdelivr.net">
         <!-- Preload brand fonts -->
         <link rel="preload"
-              href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2"
+              href="{% static 'fonts/caloriesuit.woff2' %}"
               as="font"
               type="font/woff2"
               crossorigin>
         <link rel="preload"
-              href="https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2"
+              href="{% static 'fonts/JuliusSansOne-Regular.woff2' %}"
               as="font"
               type="font/woff2"
               crossorigin>
@@ -45,13 +45,13 @@ add "&raw" to the end of the URL within a browser.
              /* ── Brand fonts ──────────────────────────────────────────────────────── */
              @font-face {
                   font-family: YoMamaHeader;
-                  src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2') format('woff2');
+                  src: url('{% static 'fonts/caloriesuit.woff2' %}') format('woff2');
                   font-display: swap;
              }
 
              @font-face {
                   font-family: YoMamaBody;
-                  src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2') format('woff2');
+                  src: url('{% static 'fonts/JuliusSansOne-Regular.woff2' %}') format('woff2');
                   font-display: swap;
              }
 
