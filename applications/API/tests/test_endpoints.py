@@ -190,6 +190,26 @@ class EndpointTests(APITestCase):
         self.assertEqual(resp.data["reference_id"], self.i1.reference_id)
         self.assertEqual(resp.data["content"], self.i1.content)
 
+    def test_retrieve_non_active_insult_is_hidden_from_anonymous_users(self):
+        """Non-active insults are not publicly retrievable by reference ID."""
+        view = open_view(InsultDetailsEndpoint).as_view()
+        req = self.factory.get(f"/api/insults/{self.i4.reference_id}")
+
+        resp = view(req, reference_id=self.i4.reference_id)
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_retrieve_non_active_insult_is_visible_to_owner(self):
+        """Owners can retrieve their own non-active submissions."""
+        view = open_view(InsultDetailsEndpoint).as_view()
+        req = self.factory.get(f"/api/insults/{self.i4.reference_id}")
+        force_authenticate(req, user=self.owner)
+
+        resp = view(req, reference_id=self.i4.reference_id)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data["reference_id"], self.i4.reference_id)
+
     def test_update_insult_requires_owner(self):
         """PUT /api/insults/<reference_id> → only owner can update."""
         view = open_view(InsultDetailsEndpoint).as_view()

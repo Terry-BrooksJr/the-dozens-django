@@ -14,8 +14,8 @@ from urllib.parse import urlencode
 from django.contrib.auth import get_user_model
 from django.core.exceptions import EmptyResultSet
 from django.db import connection
-from django.db.models import QuerySet
-from django.shortcuts import redirect
+from django.db.models import Q, QuerySet
+from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
@@ -447,23 +447,25 @@ class InsultDetailsEndpoint(CreateModelMixin, RetrieveUpdateDestroyAPIView):
             return [IsOwnerOrReadOnly()]
 
     def get_queryset(self):
-        """Return all insults with related data preloaded, newest first."""
+        """Return public insults and the authenticated user's submissions."""
         if getattr(self, "swagger_fake_view", False):
             return Insult.objects.none()
+        visibility = Q(status=Insult.STATUS.ACTIVE)
+        if self.request.user.is_authenticated:
+            visibility |= Q(added_by=self.request.user)
         return (
             Insult.objects.select_related("added_by", "category")
             .prefetch_related("reports")
+            .filter(visibility)
             .order_by("-added_on")
-            .all()
         )
 
     def get(self, request, reference_id, *args, **kwargs):
         """Retrieve a specific insult by reference_id."""
-        # if not (ref_id := kwargs.get("reference_id")):
-        #     return Response(
-        #         {"detail": "Reference ID is required."}, status=400
-        #     )
-        insult = Insult.get_by_reference_id(reference_id)
+        insult = get_object_or_404(
+            self.get_queryset(),
+            reference_id=reference_id,
+        )
         serializer = self.get_serializer(insult)
         return Response(serializer.data)
 
