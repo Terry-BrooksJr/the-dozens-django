@@ -41,7 +41,7 @@ runs:
 
     - name: Install Doppler CLI
       if: inputs.doppler-token != ''
-      uses: dopplerhq/cli-action@41106dbef2e821dcf2250b0c936a616a438a278a # v2
+      uses: dopplerhq/cli-action@4819d808ab99e5cde19a0637a16536a4038fad73 # v4.0.1
 
     - name: Fetch environment variables
       if: inputs.doppler-token != ''
