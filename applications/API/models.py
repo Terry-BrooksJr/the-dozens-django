@@ -476,7 +476,10 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
                     logger.warning(f"Invalid base64 part: {base64_part} ({e})")
                     return None
                 try:
-                    return cls.objects.get(pk=pk)
+                    # Detail lookups must enforce the same visibility boundary as
+                    # the public manager; otherwise a reference ID exposes
+                    # rejected, pending, flagged, or removed submissions.
+                    return cls.objects.get(pk=pk, status=cls.STATUS.ACTIVE)
                 except cls.DoesNotExist:
                     logger.warning(f"Insult with PK {pk} does not exist.")
                     return None

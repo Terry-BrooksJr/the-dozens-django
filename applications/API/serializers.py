@@ -649,7 +649,6 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
     by = serializers.SerializerMethodField(method_name="get_added_by_display")
     added = serializers.SerializerMethodField(method_name="get_added_on_display")
     # category = serializers.CharField()
-    content = serializers.SerializerMethodField(method_name="resolve_content")
 
     class Meta:
         list_serializer_class = BulkInsultSerializer
@@ -665,11 +664,31 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
         ]
         read_only_fields = ["reference_id", "status", "added_by", "added_on"]
 
-    def resolve_content(self, obj):
-        """Return the appropriate content for an insult.
+    def to_representation(self, instance) -> dict[str, Any]:  # type: ignore
+        """Publish the moderator's edit in place of the original text when one exists.
 
-        This method provides the administrator-modified content when available.
-        Otherwise, it returns the insult's original content.
+        ``content`` stays a regular model field so PUT/PATCH can still write
+        it; only the outgoing value is swapped. Swapping per instance here
+        (rather than changing ``Meta.fields``) keeps the output shape identical
+        for every insult and is safe across requests.
+
+        Args:
+            instance: The insult being serialized.
+
+        Returns:
+            Dict[str, Any]: The serialized insult with ``content`` resolved.
+        """
+        representation = super().to_representation(instance)
+        if "content" in representation:
+            representation["content"] = self.resolve_content(instance)
+        return representation
+
+    @staticmethod
+    def resolve_content(obj) -> str:
+        """Return the administrator-modified content when set, else the original.
+
+        Falls back to ``content`` if ``is_admin_modified`` is set but no edit was
+        saved, so the API never publishes ``null``.
 
         Args:
             obj: The insult object whose content should be returned.
@@ -677,7 +696,9 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
         Returns:
             str: The administrator-modified or original insult content.
         """
-        return obj.modified_content if obj.is_admin_modified else obj.content
+        if obj.is_admin_modified and obj.modified_content:
+            return obj.modified_content
+        return obj.content
 
 
 class CreateInsultSerializer(BaseInsultSerializer):

@@ -1,6 +1,6 @@
 {% load static %}
-{% block subject %}{{ o.subject }}{% endblock subject %}
-{% block text_body %}{{ o.headline }}
+{% block subject %}{% autoescape off %}{{ o.subject }}{% endautoescape %}{% endblock subject %}
+{% block text_body %}{% autoescape off %}{{ o.headline }}
     {{ o.body }}
     {% if outcome == "modified" %}
         You sent:
@@ -21,7 +21,7 @@
     Got another one? Submit it here: {{ submit_url }}
     Questions? developer@yo-momma.io
     — Yo' Momma API, The Dozens Project
-{% endblock text_body %}
+{% endautoescape %}{% endblock text_body %}
 {% block html_body %}
     <!DOCTYPE html>
     <html lang="en" xmlns="http://www.w3.org/1999/xhtml">

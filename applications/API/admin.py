@@ -373,9 +373,7 @@ class InsultAdmin(SimpleHistoryAdmin):
         # Deferred until the review (status change and report resolution)
         # commits, so a rolled-back review never emails the owner or clears
         # the cache ahead of the data it reflects.
-        transaction.on_commit(
-            lambda: invalidate_insult_cache(reason=f"admin_{action}")
-        )
+        transaction.on_commit(lambda: invalidate_insult_cache(reason=f"admin_{action}"))
         transaction.on_commit(
             lambda: insult._notify_owner_joke_status_change(outcome=action)
         )

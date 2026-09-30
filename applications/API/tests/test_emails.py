@@ -234,3 +234,34 @@ class SubmissionReviewEmailHeroImageTests(TestCase):
             html,
         )
         self.assertNotIn("cdn.jsdelivr.net", html)
+
+
+@override_settings(
+    EMAIL_ASSET_BASE_URL="https://cdn.example.com/static", **_EMAIL_OVERRIDES
+)
+class SubmissionReviewEmailEscapingTests(TestCase):
+    """Subject and plain-text body are not HTML, so they must not be HTML-escaped."""
+
+    def _email(self, outcome="reclassified", **context):
+        return SubmissionReviewEmail(
+            outcome=outcome,
+            context={**_REVIEW_CONTEXT, **context},
+            to=["pat@example.com"],
+        )
+
+    def test_subject_is_not_html_escaped(self):
+        self.assertEqual(self._email().subject, "Your joke's rating was updated")
+
+    def test_text_body_is_not_html_escaped(self):
+        body = self._email(joke_content='Yo momma\'s "cooking" & more <3').body
+
+        self.assertIn('Yo momma\'s "cooking" & more <3', body)
+        self.assertNotIn("&#x27;", body)
+        self.assertNotIn("&amp;", body)
+
+    def test_html_body_is_still_escaped(self):
+        email = self._email(joke_content="<script>alert(1)</script>")
+        html = email.alternatives[0][0]
+
+        self.assertNotIn("<script>alert(1)</script>", html)
+        self.assertIn("&lt;script&gt;", html)

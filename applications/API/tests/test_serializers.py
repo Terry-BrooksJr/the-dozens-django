@@ -427,6 +427,72 @@ class TestOptimizedInsultSerializer(SerializerTestCase):
         s.is_valid()
         self.assertNotIn("reference_id", s.validated_data)
 
+    # -- Admin-modified content ----------------------------------------
+
+    def _modified_insult(self, **overrides):
+        fields = {
+            "content": "Original joke.",
+            "category": self.category,
+            "nsfw": False,
+            "theme": self.theme,
+            "status": Insult.STATUS.ACTIVE,
+            "added_by": self.user,
+            "is_admin_modified": True,
+            "modified_content": "Edited joke.",
+        }
+        fields.update(overrides)
+        return Insult.objects.create(**fields)
+
+    def test_content_is_original_when_not_admin_modified(self):
+        data = OptimizedInsultSerializer(self.insult).data
+        self.assertEqual(data["content"], self.insult.content)
+
+    def test_content_is_modified_content_when_admin_modified(self):
+        data = OptimizedInsultSerializer(self._modified_insult()).data
+        self.assertEqual(data["content"], "Edited joke.")
+
+    def test_modified_content_field_is_not_exposed(self):
+        data = OptimizedInsultSerializer(self._modified_insult()).data
+        self.assertNotIn("modified_content", data)
+
+    def test_falls_back_to_content_when_modified_content_missing(self):
+        insult = self._modified_insult(modified_content=None)
+        data = OptimizedInsultSerializer(insult).data
+        self.assertEqual(data["content"], "Original joke.")
+
+    def test_modified_content_ignored_when_flag_not_set(self):
+        insult = self._modified_insult(is_admin_modified=False)
+        data = OptimizedInsultSerializer(insult).data
+        self.assertEqual(data["content"], "Original joke.")
+
+    def test_many_resolves_content_per_instance(self):
+        modified = self._modified_insult()
+        data = OptimizedInsultSerializer(
+            Insult.objects.filter(pk__in=[self.insult.pk, modified.pk]).order_by(
+                "pk"
+            ),
+            many=True,
+        ).data
+        self.assertEqual(
+            [row["content"] for row in data],
+            [self.insult.content, "Edited joke."],
+        )
+
+    def test_output_fields_stable_across_calls(self):
+        """Serializing must not mutate Meta.fields (shared by every request)."""
+        before = list(OptimizedInsultSerializer.Meta.fields)
+        for _ in range(3):
+            OptimizedInsultSerializer(self._modified_insult()).data
+            OptimizedInsultSerializer(self.insult).data
+        self.assertEqual(OptimizedInsultSerializer.Meta.fields, before)
+
+    def test_content_is_still_writable(self):
+        s = OptimizedInsultSerializer(
+            self.insult, data={"content": "Updated by owner."}, partial=True
+        )
+        self.assertTrue(s.is_valid(), s.errors)
+        self.assertEqual(s.validated_data["content"], "Updated by owner.")
+
 
 # ===========================================================================
 # BulkInsultSerializer
