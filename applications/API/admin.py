@@ -16,13 +16,16 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
+from django.http import HttpRequest
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
+from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from loguru import logger
+from simple_history.admin import SimpleHistoryAdmin
 
 from .emails import WelcomeEmail
 from .forms import invalidate_insult_cache
@@ -114,7 +117,7 @@ class HasPendingReviewFilter(admin.SimpleListFilter):
         return annotated_queryset
 
 
-class InsultAdmin(admin.ModelAdmin):
+class InsultAdmin(SimpleHistoryAdmin):
     """Admin configuration for Insult moderation.
 
     Shows every insult regardless of status and exposes bulk actions for
@@ -136,8 +139,16 @@ class InsultAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("review_buttons",)
     search_fields = ("reference_id", "added_by__username", "added_by__email")
+    history_list_display = (
+        "status",
+        "category",
+        "nsfw",
+        "content",
+        "modified_content",
+        "is_admin_modified",
+    )
     list_filter = (HasPendingReviewFilter, "status", "nsfw", "category", "added_on")
-    actions = [
+    actions = [  # noqa: RUF012
         "approve_insult",
         "remove_insult",
         "mark_insult_for_review",
@@ -170,7 +181,7 @@ class InsultAdmin(admin.ModelAdmin):
 
     # Success message shown for each review action; the keys are the
     # ``action`` values passed to _report_review_result().
-    REVIEW_ACTION_MESSAGES = {
+    REVIEW_ACTION_MESSAGES = {  # noqa: RUF012
         "approved": "approved",
         "modified": "approved with modifications",
         "rejected": "rejected",
@@ -362,6 +373,8 @@ class InsultAdmin(admin.ModelAdmin):
         """
         for review in insult.reports.filter(status=InsultReview.STATUS.PENDING):
             resolve(review, request.user)
+            review.date_reviewed = timezone.localdate()
+            review.save(update_fields=["date_reviewed"])
 
     # -- Pending - New --------------------------------------------------
 
@@ -454,7 +467,7 @@ class InsultAdmin(admin.ModelAdmin):
             self._resolve_pending_reports(
                 request,
                 insult,
-                lambda review, user: review.mark_review_reclassified(user),
+                self._mark_review_reclassified,
             )
         return self._redirect_back(request, insult)
 
@@ -469,27 +482,7 @@ class InsultAdmin(admin.ModelAdmin):
         if request.method == "POST":
             form = RecategorizeForm(request.POST)
             if form.is_valid():
-                new_category = form.cleaned_data["new_category"]
-                insult.re_categorize(new_category)
-                insult.refresh_from_db(fields=["category"])
-                if insult.category_id != new_category.pk:
-                    self.message_user(
-                        request,
-                        f"Could not recategorize {insult.reference_id}. Check the server logs.",
-                        messages.ERROR,
-                    )
-                    return redirect(reverse("admin:API_insult_changelist"))
-
-                insult.approve_insult()
-                if self._report_review_result(
-                    request, insult, Insult.STATUS.ACTIVE, "recategorized"
-                ):
-                    self._resolve_pending_reports(
-                        request,
-                        insult,
-                        lambda review, user: review.mark_review_recategorized(user),
-                    )
-                return redirect(reverse("admin:API_insult_changelist"))
+                return self._apply_flagged_recategorization(form, insult, request)
         else:
             form = RecategorizeForm(initial={"new_category": insult.category_id})
 
@@ -507,6 +500,41 @@ class InsultAdmin(admin.ModelAdmin):
                 "opts": self.model._meta,
             },
         )
+
+    def _apply_flagged_recategorization(
+        self, form, insult: Insult, request: HttpRequest
+    ):
+        """Apply a new category to a flagged insult and restore it to the API.
+
+        Args:
+            form: The validated category selection form.
+            insult: The flagged insult to recategorize.
+            request: The current admin request.
+
+        Returns:
+            HttpResponse: A redirect to the insult admin changelist.
+        """
+        new_category = form.cleaned_data["new_category"]
+        insult.re_categorize(new_category)
+        insult.refresh_from_db(fields=["category"])
+        if insult.category_id != new_category.pk:
+            self.message_user(
+                request,
+                f"Could not recategorize {insult.reference_id}. Check the server logs.",
+                messages.ERROR,
+            )
+            return redirect(reverse("admin:API_insult_changelist"))
+
+        insult.approve_insult()
+        if self._report_review_result(
+            request, insult, Insult.STATUS.ACTIVE, "recategorized"
+        ):
+            self._resolve_pending_reports(
+                request,
+                insult,
+                self._mark_review_recategorized,
+            )
+        return redirect(reverse("admin:API_insult_changelist"))
 
     def flagged_remove_view(self, request, insult_id):
         """Soft-delete a flagged insult."""
@@ -537,6 +565,26 @@ class InsultAdmin(admin.ModelAdmin):
         return self._redirect_back(request, insult)
 
     @staticmethod
+    def _mark_review_reclassified(review, reviewer):
+        """Resolve each pending report according to its own request type."""
+        if review.review_type == InsultReview.REVIEW_TYPE.RECLASSIFY:
+            review.mark_review_reclassified(reviewer)
+        elif review.review_type == InsultReview.REVIEW_TYPE.RECATEGORIZE:
+            review.mark_review_not_recatagoized(reviewer)
+        else:
+            review.mark_review_not_removed(reviewer)
+
+    @staticmethod
+    def _mark_review_recategorized(review, reviewer):
+        """Resolve each pending report according to its own request type."""
+        if review.review_type == InsultReview.REVIEW_TYPE.RECATEGORIZE:
+            review.mark_review_recategorized(reviewer)
+        elif review.review_type == InsultReview.REVIEW_TYPE.RECLASSIFY:
+            review.mark_review_not_reclassified(reviewer)
+        else:
+            review.mark_review_not_removed(reviewer)
+
+    @staticmethod
     def _mark_review_no_change(review, reviewer):
         """Close a report without acting on it, using the "no change" status that fits its type.
 
@@ -546,8 +594,10 @@ class InsultAdmin(admin.ModelAdmin):
         """
         if review.review_type == InsultReview.REVIEW_TYPE.RECLASSIFY:
             review.mark_review_not_reclassified(reviewer)
-        else:
+        elif review.review_type == InsultReview.REVIEW_TYPE.RECATEGORIZE:
             review.mark_review_not_recatagoized(reviewer)
+        else:
+            review.mark_review_not_removed(reviewer)
 
     # ------------------------------------------------------------------
     # Admin actions — delegate to model methods
@@ -694,7 +744,7 @@ admin.site.register(Insult, InsultAdmin)
 class UserAdmin(BaseUserAdmin):
     """User admin extended with an action to resend the welcome email."""
 
-    actions = [*BaseUserAdmin.actions, "resend_welcome_email"]
+    actions = [*BaseUserAdmin.actions, "resend_welcome_email"]  # noqa: RUF012
 
     @admin.action(description="Resend welcome email to selected users")
     def resend_welcome_email(self, request, queryset):

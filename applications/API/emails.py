@@ -190,7 +190,8 @@ class SubmissionReviewEmail(EmailMultiAlternatives):
         outcome: One of ``REVIEW_OUTCOMES``' keys.
         context: Template context (see the template for the keys it reads).
             ``site_url`` is required; ``hero_image_url`` defaults to the
-            outcome's image under ``static/assets/``.
+            outcome's image under ``assets/``, served from
+            ``EMAIL_ASSET_BASE_URL`` when set.
         to: Recipient addresses.
 
     Raises:
@@ -213,7 +214,7 @@ class SubmissionReviewEmail(EmailMultiAlternatives):
         }
         context.setdefault(
             "hero_image_url",
-            self._absolute_url(static(f"assets/{outcome}.png"), context["site_url"]),
+            self._asset_url(f"assets/{outcome}.png", context["site_url"]),
         )
 
         blocks = self._render_blocks(context)
@@ -234,6 +235,18 @@ class SubmissionReviewEmail(EmailMultiAlternatives):
                 node.name: node.render(ctx).strip()
                 for node in template.nodelist.get_nodes_by_type(BlockNode)
             }
+
+    @classmethod
+    def _asset_url(cls, path, site_url):
+        """Public URL for a static asset, preferring ``EMAIL_ASSET_BASE_URL``.
+
+        Mail clients load images from their own servers, so the URL must not
+        depend on which environment sent the email.
+        """
+        base = getattr(settings, "EMAIL_ASSET_BASE_URL", "")
+        if base:
+            return f"{base.rstrip('/')}/{path.lstrip('/')}"
+        return cls._absolute_url(static(path), site_url)
 
     @staticmethod
     def _absolute_url(url, site_url):

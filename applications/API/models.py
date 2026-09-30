@@ -24,6 +24,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django_prometheus.models import ExportModelOperationsMixin
 from loguru import logger
+from simple_history.models import HistoricalRecords
 
 
 class Base64DecoderException(Exception):
@@ -113,13 +114,13 @@ class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Mod
         verbose_name = _("Insult Category")
         verbose_name_plural = _("Insult Categories")
         managed = True
-        ordering = ["name"]
-        constraints = [
+        ordering = ["name"]  # noqa: RUF012
+        constraints = [  # noqa: RUF012
             models.UniqueConstraint(
                 fields=["category_key", "name"], name="unique_category_key_name"
             ),
         ]
-        indexes = [
+        indexes = [  # noqa: RUF012
             models.Index(fields=["category_key"], name="idx_category_key"),
             models.Index(fields=["name"], name="idx_name"),
         ]
@@ -146,7 +147,7 @@ class Theme(models.Model):
         verbose_name_plural = _("Themes")
         managed = True
         ordering = ["theme_name"]
-        constraints = [
+        constraints = [  # noqa: RUF012
             models.UniqueConstraint(
                 fields=["theme_key", "theme_name"], name="unique_theme_key_name"
             ),
@@ -206,9 +207,10 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         error_messages={"required": "Insults must have content"},
     )
     insult_id = models.AutoField(primary_key=True)
-    is_admin_modified = models.BooleanField(default=False)
-    modified_content = models.CharField(null=True, blank=True)
+    is_admin_modified = models.BooleanField(default=False, null=True, blank=True)
+    modified_content = models.TextField(null=True, blank=True)
     reviewer_notes = models.TextField(null=True, blank=True)
+    history = HistoricalRecords()
     reference_id = models.CharField(
         max_length=50,
         unique=True,
@@ -346,7 +348,13 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             site_url = "https://api.yo-momma.io"
             context = {
                 "submitter_name": submitter.first_name or submitter.username,
-                "joke_content": self.content,
+                # Keep the original as the before-value for a modification;
+                # later flagged reviews should quote the published edit.
+                "joke_content": (
+                    self.content
+                    if is_modified or not self.is_admin_modified
+                    else self.modified_content
+                ),
                 # Only a "modified" review's edit and notes belong in this email;
                 # an older modification's notes must not leak into later reviews.
                 "modified_content": (
@@ -646,7 +654,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         verbose_name = "Insult/Joke"
         verbose_name_plural = "Insults/Jokes"
         managed = True
-        indexes = [
+        indexes = [  # noqa: RUF012
             models.Index(fields=["category"], name="idx_category"),
             models.Index(fields=["category", "nsfw"], name="idx_nsfw_category"),
             models.Index(fields=["nsfw"], name="idx_nsfw"),
@@ -726,6 +734,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
     reporter_first_name = models.CharField(max_length=80, null=True, blank=True)
     reporter_last_name = models.CharField(max_length=80, null=True, blank=True)
     post_review_contact_desired = models.BooleanField(default=False)
+    history = HistoricalRecords()
     reporter_email = models.EmailField(null=True, blank=True)
     date_submitted = models.DateField(auto_now=True)
     date_reviewed = models.DateField(null=True, blank=True)
@@ -756,13 +765,14 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
                 raise IntegrityError(
                     "Insult Reference ID must be provided to set the related Insult."
                 )
-            if not self.insult:
-                if found_insult := Insult.get_by_reference_id(self.insult_reference_id):
-                    logger.info(
-                        f"Setting Insult for Review {self.insult_reference_id} - {found_insult.insult_id}"
-                    )
-                    self.insult = found_insult
-                    self.save(update_fields=["insult"])
+            if not self.insult and (
+                found_insult := Insult.get_by_reference_id(self.insult_reference_id)
+            ):
+                logger.info(
+                    f"Setting Insult for Review {self.insult_reference_id} - {found_insult.insult_id}"
+                )
+                self.insult = found_insult
+                self.save(update_fields=["insult"])
         except Insult.DoesNotExist as e:
             logger.error(
                 f"Insult with reference ID {self.insult_reference_id} does not exist."

@@ -72,6 +72,7 @@ _INSTALLED_APPS_CORE = [
     # 4) Third-party apps
     "corsheaders",
     "storages",
+    "simple_history",
     "mailer",
     "djoser",
     "graphene_django",
@@ -97,6 +98,7 @@ _MIDDLEWARE_CORE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "simple_history.middleware.HistoryRequestMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.cache.FetchFromCacheMiddleware",
@@ -806,6 +808,16 @@ class Base(Configuration):
     # DB row locking (select_for_update) already prevents double-sends;
     # the file lock exists for long-running send_mail loops, which we don't use.
     MAILER_USE_FILE_LOCK = False
+    # Public base URL for images in outgoing emails, e.g. the S3 bucket's
+    # "static/" URL. Mail clients fetch images from their own servers, so this
+    # must be reachable from the internet in every environment. When unset,
+    # emails fall back to static() (only absolute under S3 storage).
+    EMAIL_ASSET_BASE_URL = values.Value(
+        "https://s3.us-east-005.backblazeb2.com/dozens/static",
+        environ=True,
+        environ_prefix=None,
+        environ_name="EMAIL_ASSET_BASE_URL",
+    )
     USE_REDIS_CACHE = os.getenv("USE_REDIS_CACHE", "true").lower() == "true"
 
     if USE_REDIS_CACHE:

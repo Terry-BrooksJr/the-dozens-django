@@ -91,8 +91,8 @@ class CachedBulkSerializer(serializers.ModelSerializer):
 
     # Define these in your concrete serializer
     select_related_fields = []  # e.g., ['added_by', 'category']
-    prefetch_related_fields = []  # e.g., ['reviews']
-    cached_fields = []  # Fields to cache individually
+    prefetch_related_fields = []  # e.g., ['reviews']  # noqa: RUF012
+    cached_fields = []  # Fields to cache individually  # noqa: RUF012
 
     def get_cache_key(self, obj, field_name: str) -> str:
         """
@@ -649,7 +649,7 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
     by = serializers.SerializerMethodField(method_name="get_added_by_display")
     added = serializers.SerializerMethodField(method_name="get_added_on_display")
     # category = serializers.CharField()
-    # content = serializers.CharField()
+    content = serializers.SerializerMethodField(method_name="resolve_content")
 
     class Meta:
         list_serializer_class = BulkInsultSerializer
@@ -664,6 +664,20 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
             "by",
         ]
         read_only_fields = ["reference_id", "status", "added_by", "added_on"]
+
+        def resolve_content(self, obj):
+            """Return the appropriate content for an insult.
+            1
+                        This method provides the administrator-modified content when available.
+                        Otherwise, it returns the insult's original content.
+
+                        Args:
+                            obj: The insult object whose content should be returned.
+
+                        Returns:
+                            str: The administrator-modified or original insult content.
+            """
+            return obj.modified_content if obj.is_admin_modified else obj.content
 
 
 class CreateInsultSerializer(BaseInsultSerializer):
@@ -681,10 +695,7 @@ class CreateInsultSerializer(BaseInsultSerializer):
     nsfw = serializers.BooleanField(
         default=False, help_text="Indicates if the insult is NSFW (Not Safe For Work)."
     )
-    content = serializers.CharField(
-        allow_blank=False, trim_whitespace=True, allow_null=False
-    )
-
+    content = serializers.CharField()
     # Read-only response fields
     reference_id = serializers.CharField(read_only=True)
     status = serializers.CharField(source="get_status_display", read_only=True)
@@ -693,7 +704,7 @@ class CreateInsultSerializer(BaseInsultSerializer):
 
     class Meta:
         model = Insult
-        fields = [
+        fields = (
             "reference_id",
             "category",
             "content",
@@ -701,7 +712,7 @@ class CreateInsultSerializer(BaseInsultSerializer):
             "status",
             "added_by",
             "added_on",
-        ]
+        )
         extra_kwargs = {
             "content": {"required": True, "allow_blank": False},
         }
@@ -863,6 +874,7 @@ class InsultReviewSerializer(serializers.ModelSerializer):
         review_basis = (cleaned_data.get("rationale_for_review") or "").strip()
         # Support both ModelChoiceField (object) and pre-populated string values
         if hasattr(insult_obj_or_value, "reference_id"):
+            assert insult_obj_or_value is not None
             ref_id = insult_obj_or_value.reference_id
         else:
             ref_id = str(insult_obj_or_value or "").strip()
