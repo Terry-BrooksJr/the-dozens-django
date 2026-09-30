@@ -211,7 +211,7 @@ class ReportJokeView(CreateAPIView):
                     error=str(e),
                 ).error(f"Unable to submit {ref_id} for review: {e}")
                 return Response(
-                    data={"status": f"FAILED - {e!s}", "errors": serializer.errors},
+                    data={"status": "FAILED", "errors": serializer.errors},
                     status=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )
         logger.bind(
