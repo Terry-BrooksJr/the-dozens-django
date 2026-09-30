@@ -15,6 +15,7 @@ from django.contrib.admin import helpers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404, redirect
@@ -295,14 +296,21 @@ class InsultAdmin(SimpleHistoryAdmin):
         return format_html_join("", "{}", ((button,) for button in buttons))
 
     def _get_insult_in_status_or_redirect(self, request, insult_id, required_status):
-        """Load an insult for review, enforcing change permission and its current status.
+        """Lock an insult for review, enforcing change permission and its current status.
+
+        The row is loaded with ``select_for_update()``, so callers must be inside
+        ``transaction.atomic()`` (every review view is). A second moderator acting
+        on the same insult blocks here until the first commits, then sees the
+        new status and is turned away instead of applying a conflicting review.
 
         Returns:
             tuple: ``(insult, None)`` when the insult can be reviewed, or
             ``(insult, redirect_response)`` when its status has already moved on
             (e.g. another moderator handled it first).
         """
-        insult = get_object_or_404(Insult.objects.get_queryset(), pk=insult_id)
+        insult = get_object_or_404(
+            Insult.objects.get_queryset().select_for_update(), pk=insult_id
+        )
         if not self.has_change_permission(request, insult):
             raise PermissionDenied
         if insult.status != required_status:
@@ -330,7 +338,9 @@ class InsultAdmin(SimpleHistoryAdmin):
         """Confirm the model method actually changed the status and message the user.
 
         Every review button (pending and flagged) ends here, so this is the
-        single place to hook result notifications.
+        single place to hook result notifications. Must run inside the view's
+        ``transaction.atomic()`` block: the owner email and cache invalidation
+        are queued with ``transaction.on_commit()``.
 
         The model methods log failures instead of raising, so the saved status
         is the only reliable signal of success.
@@ -355,13 +365,20 @@ class InsultAdmin(SimpleHistoryAdmin):
             )
             return False
 
-        invalidate_insult_cache(reason=f"admin_{action}")
         self.message_user(
             request,
             f"{insult.reference_id} {self.REVIEW_ACTION_MESSAGES[action]}.",
             messages.SUCCESS,
         )
-        insult._notify_owner_joke_status_change(outcome=action)
+        # Deferred until the review (status change and report resolution)
+        # commits, so a rolled-back review never emails the owner or clears
+        # the cache ahead of the data it reflects.
+        transaction.on_commit(
+            lambda: invalidate_insult_cache(reason=f"admin_{action}")
+        )
+        transaction.on_commit(
+            lambda: insult._notify_owner_joke_status_change(outcome=action)
+        )
         return True
 
     def _resolve_pending_reports(self, request, insult, resolve):
@@ -378,6 +395,7 @@ class InsultAdmin(SimpleHistoryAdmin):
 
     # -- Pending - New --------------------------------------------------
 
+    @transaction.atomic
     def approve_view(self, request, insult_id):
         """Approve a single pending insult, then redirect back."""
         insult, response = self._get_insult_in_status_or_redirect(
@@ -389,6 +407,7 @@ class InsultAdmin(SimpleHistoryAdmin):
         self._report_review_result(request, insult, Insult.STATUS.ACTIVE, "approved")
         return self._redirect_back(request, insult)
 
+    @transaction.atomic
     def reject_view(self, request, insult_id):
         """Reject a single pending insult, then redirect back."""
         insult, response = self._get_insult_in_status_or_redirect(
@@ -400,6 +419,7 @@ class InsultAdmin(SimpleHistoryAdmin):
         self._report_review_result(request, insult, Insult.STATUS.REJECTED, "rejected")
         return self._redirect_back(request, insult)
 
+    @transaction.atomic
     def modify_view(self, request, insult_id):
         """Show the Modify form (GET) or approve the insult with the edits (POST)."""
         insult, response = self._get_insult_in_status_or_redirect(
@@ -441,6 +461,7 @@ class InsultAdmin(SimpleHistoryAdmin):
 
     # -- Flagged for Review ---------------------------------------------
 
+    @transaction.atomic
     def flagged_reclassify_view(self, request, insult_id):
         """Flip the NSFW flag on a flagged insult and restore it to the API."""
         insult, response = self._get_insult_in_status_or_redirect(
@@ -471,6 +492,7 @@ class InsultAdmin(SimpleHistoryAdmin):
             )
         return self._redirect_back(request, insult)
 
+    @transaction.atomic
     def flagged_recategorize_view(self, request, insult_id):
         """Show the category picker (GET) or move the flagged insult and restore it (POST)."""
         insult, response = self._get_insult_in_status_or_redirect(
@@ -536,6 +558,7 @@ class InsultAdmin(SimpleHistoryAdmin):
             )
         return redirect(reverse("admin:API_insult_changelist"))
 
+    @transaction.atomic
     def flagged_remove_view(self, request, insult_id):
         """Soft-delete a flagged insult."""
         insult, response = self._get_insult_in_status_or_redirect(
@@ -552,6 +575,7 @@ class InsultAdmin(SimpleHistoryAdmin):
             )
         return self._redirect_back(request, insult)
 
+    @transaction.atomic
     def flagged_keep_view(self, request, insult_id):
         """Dismiss the reports and restore a flagged insult to the API unchanged."""
         insult, response = self._get_insult_in_status_or_redirect(

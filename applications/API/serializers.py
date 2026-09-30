@@ -665,19 +665,19 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
         ]
         read_only_fields = ["reference_id", "status", "added_by", "added_on"]
 
-        def resolve_content(self, obj):
-            """Return the appropriate content for an insult.
-            1
-                        This method provides the administrator-modified content when available.
-                        Otherwise, it returns the insult's original content.
+    def resolve_content(self, obj):
+        """Return the appropriate content for an insult.
 
-                        Args:
-                            obj: The insult object whose content should be returned.
+        This method provides the administrator-modified content when available.
+        Otherwise, it returns the insult's original content.
 
-                        Returns:
-                            str: The administrator-modified or original insult content.
-            """
-            return obj.modified_content if obj.is_admin_modified else obj.content
+        Args:
+            obj: The insult object whose content should be returned.
+
+        Returns:
+            str: The administrator-modified or original insult content.
+        """
+        return obj.modified_content if obj.is_admin_modified else obj.content
 
 
 class CreateInsultSerializer(BaseInsultSerializer):

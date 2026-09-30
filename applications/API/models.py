@@ -871,6 +871,30 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         except Exception as e:
             logger.error(f"ERROR: Unable to Update {self.insult_reference_id}: {e!s}")
 
+    def mark_review_not_removed(self, reviewer: User | None = None):
+        """Close a removal request without removing the joke.
+
+        InsultReview has no dedicated "not removed" status, so the report closes
+        as "same category" (no change made), matching how the admin resolves
+        other declined reports.
+
+        Args:
+            reviewer (User, optional): The administrator resolving the review.
+
+        Logs:
+            Exception: If there is an error updating the review.
+        """
+
+        try:
+            self.status = self.STATUS.SAME_CATEGORY
+            if reviewer:
+                self.reviewer = reviewer
+            self.date_reviewed = settings.GLOBAL_NOW
+            self.save(update_fields=["status", "reviewer", "date_reviewed"])
+            logger.success(f"Marked {self.insult_reference_id} as Not Removed")
+        except Exception as e:
+            logger.error(f"ERROR: Unable to Update {self.insult_reference_id}: {e!s}")
+
     def mark_review_reclassified(self, reviewer: User):
         """Marks the review as reclassified.
 

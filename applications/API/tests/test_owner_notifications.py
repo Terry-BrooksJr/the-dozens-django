@@ -19,6 +19,8 @@ InsultAdmin review views
   * Every review button notifies the owner with the matching outcome.
   * No notification when the insult is no longer in the required status.
   * No notification when the model method fails to change the status.
+  * The notification is deferred until the review transaction commits, and
+    only the first of two conflicting reviews sends one.
 """
 
 from unittest.mock import patch
@@ -232,6 +234,11 @@ class ReviewViewsNotifyOwnerTests(_OwnerNotificationBase):
         request._messages = FallbackStorage(request)
         return request
 
+    def _run(self, view, *args):
+        """Call a review view and run its on_commit callbacks, as a real commit would."""
+        with self.captureOnCommitCallbacks(execute=True):
+            return view(*args)
+
     def _assert_notified(self, mock_notify, outcome):
         mock_notify.assert_called_once_with(outcome=outcome)
 
@@ -239,17 +246,18 @@ class ReviewViewsNotifyOwnerTests(_OwnerNotificationBase):
 
     def test_approve_notifies_approved(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.PENDING)
-        self.ma.approve_view(self._request(), insult.insult_id)
+        self._run(self.ma.approve_view, self._request(), insult.insult_id)
         self._assert_notified(mock_notify, "approved")
 
     def test_reject_notifies_rejected(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.PENDING)
-        self.ma.reject_view(self._request(), insult.insult_id)
+        self._run(self.ma.reject_view, self._request(), insult.insult_id)
         self._assert_notified(mock_notify, "rejected")
 
     def test_modify_post_notifies_modified(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.PENDING)
-        self.ma.modify_view(
+        self._run(
+            self.ma.modify_view,
             self._request(
                 data={"modified_content": "Edited.", "reviewer_notes": "Why."}
             ),
@@ -259,12 +267,15 @@ class ReviewViewsNotifyOwnerTests(_OwnerNotificationBase):
 
     def test_modify_get_does_not_notify(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.PENDING)
-        self.ma.modify_view(self._request(method="get"), insult.insult_id)
+        self._run(
+            self.ma.modify_view, self._request(method="get"), insult.insult_id
+        )
         mock_notify.assert_not_called()
 
     def test_modify_invalid_form_does_not_notify(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.PENDING)
-        self.ma.modify_view(
+        self._run(
+            self.ma.modify_view,
             self._request(data={"modified_content": "Edited."}), insult.insult_id
         )
         mock_notify.assert_not_called()
@@ -273,45 +284,67 @@ class ReviewViewsNotifyOwnerTests(_OwnerNotificationBase):
 
     def test_flagged_reclassify_notifies_reclassified(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.FLAGGED)
-        self.ma.flagged_reclassify_view(self._request(), insult.insult_id)
+        self._run(
+            self.ma.flagged_reclassify_view, self._request(), insult.insult_id
+        )
         self._assert_notified(mock_notify, "reclassified")
 
     def test_flagged_recategorize_post_notifies_recategorized(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.FLAGGED)
-        self.ma.flagged_recategorize_view(
+        self._run(
+            self.ma.flagged_recategorize_view,
             self._request(data={"new_category": self.cat_b.pk}), insult.insult_id
         )
         self._assert_notified(mock_notify, "recategorized")
 
     def test_flagged_remove_notifies_removed(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.FLAGGED)
-        self.ma.flagged_remove_view(self._request(), insult.insult_id)
+        self._run(self.ma.flagged_remove_view, self._request(), insult.insult_id)
         self._assert_notified(mock_notify, "removed")
 
     def test_flagged_keep_notifies_kept(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.FLAGGED)
-        self.ma.flagged_keep_view(self._request(), insult.insult_id)
+        self._run(self.ma.flagged_keep_view, self._request(), insult.insult_id)
         self._assert_notified(mock_notify, "kept")
 
     # -- No notification paths ------------------------------------------
 
     def test_wrong_status_does_not_notify(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.ACTIVE)
-        self.ma.approve_view(self._request(), insult.insult_id)
-        self.ma.flagged_keep_view(self._request(), insult.insult_id)
+        self._run(self.ma.approve_view, self._request(), insult.insult_id)
+        self._run(self.ma.flagged_keep_view, self._request(), insult.insult_id)
         mock_notify.assert_not_called()
 
     def test_failed_status_change_does_not_notify(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.PENDING)
         with patch.object(Insult, "approve_insult", autospec=True):  # no-op
-            self.ma.approve_view(self._request(), insult.insult_id)
+            self._run(self.ma.approve_view, self._request(), insult.insult_id)
         mock_notify.assert_not_called()
 
     def test_failed_recategorize_does_not_notify(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.FLAGGED)
         with patch.object(Insult, "re_categorize", autospec=True):  # no-op
-            self.ma.flagged_recategorize_view(
+            self._run(
+                self.ma.flagged_recategorize_view,
                 self._request(data={"new_category": self.cat_b.pk}),
                 insult.insult_id,
             )
         mock_notify.assert_not_called()
+
+    def test_notification_waits_for_commit(self, mock_notify):
+        insult = self._make_insult(status=Insult.STATUS.PENDING)
+        with self.captureOnCommitCallbacks() as callbacks:
+            self.ma.approve_view(self._request(), insult.insult_id)
+            mock_notify.assert_not_called()
+        for callback in callbacks:
+            callback()
+        self._assert_notified(mock_notify, "approved")
+
+    def test_second_review_of_same_insult_does_not_notify(self, mock_notify):
+        """The moderator who loses the race is turned away without an email."""
+        insult = self._make_insult(status=Insult.STATUS.PENDING)
+        self._run(self.ma.approve_view, self._request(), insult.insult_id)
+        self._run(self.ma.reject_view, self._request(), insult.insult_id)
+        self._assert_notified(mock_notify, "approved")
+        insult.refresh_from_db()
+        self.assertEqual(insult.status, Insult.STATUS.ACTIVE)
