@@ -618,6 +618,81 @@ class TestCreateInsultSerializer(SerializerTestCase):
                 self.assertIn("content", s.errors)
                 self.assertIn(self._FORMAT_ERROR_FRAGMENT, str(s.errors["content"][0]))
 
+    def _assert_content_valid(self, contents):
+        for content in contents:
+            with self.subTest(content=content):
+                s = CreateInsultSerializer(data=self._payload(content=content))
+                self.assertTrue(s.is_valid(), s.errors)
+
+    def _assert_content_invalid(self, contents):
+        for content in contents:
+            with self.subTest(content=content):
+                s = CreateInsultSerializer(data=self._payload(content=content))
+                self.assertFalse(s.is_valid())
+                self.assertIn(self._FORMAT_ERROR_FRAGMENT, str(s.errors["content"][0]))
+
+    def test_content_accepts_every_is_joiner_variant(self):
+        """ "is", 's, ’s, a bare s, or nothing at all may join the subject to "so"."""
+        self._assert_content_valid(
+            (
+                "Yo momma is so poor ducks throw bread at her.",
+                "Yo momma's so poor ducks throw bread at her.",
+                "Yo momma’s so poor ducks throw bread at her.",
+                "Yo mommas so poor ducks throw bread at her.",
+                "Yo momma so poor ducks throw bread at her.",
+                "Yo momma's is so poor ducks throw bread at her.",
+                "Yo dad's so lazy he hired someone to nap for him.",
+                "Yo daddys so lazy he hired someone to nap for him.",
+            )
+        )
+
+    def test_content_accepts_subject_spelling_variants(self):
+        self._assert_content_valid(
+            (
+                "Yo' momma is so old she knew Burger King as a prince.",
+                "Yo’ mama so old she knew Burger King as a prince.",
+                "Yo mamma is so old she knew Burger King as a prince.",
+                "Yo moma's so old she knew Burger King as a prince.",
+            )
+        )
+
+    def test_content_accepts_ellipsis_after_so(self):
+        self._assert_content_valid(
+            (
+                "Yo momma is so... poor ducks throw bread at her.",
+                "Yo momma's so...poor ducks throw bread at her.",
+                "Yo momma so… poor ducks throw bread at her.",
+                "Yo momma is so poor... ducks throw bread at her.",
+            )
+        )
+
+    def test_content_accepts_extra_internal_spacing(self):
+        self._assert_content_valid(
+            ("Yo   momma   is   so   poor ducks throw bread at her.",)
+        )
+
+    def test_content_rejects_malformed_joiners_and_subjects(self):
+        self._assert_content_invalid(
+            (
+                "Yo momma iss so poor ducks throw bread at her.",
+                "Yo momma is is so poor ducks throw bread at her.",
+                "Yo momma's fat.",  # joiner but no "so"
+                "Yo momma 's so poor ducks throw bread at her.",  # detached 's
+                "Yomomma is so poor ducks throw bread at her.",  # no space
+                "Yo mommy is so poor ducks throw bread at her.",  # unsupported subject
+                "Yo grandma is so old she knew Burger King as a prince.",
+            )
+        )
+
+    def test_content_rejects_so_with_only_punctuation_after(self):
+        self._assert_content_invalid(
+            (
+                "Yo momma is so...",
+                "Yo momma's so …",
+                "Yo momma is so .",
+            )
+        )
+
     def test_content_surrounding_whitespace_is_trimmed_before_format_check(self):
         s = CreateInsultSerializer(
             data=self._payload(content=f"  {self._VALID_CONTENT}\n")

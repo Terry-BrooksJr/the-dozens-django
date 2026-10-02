@@ -34,6 +34,18 @@ from rest_framework.response import Response
 from applications.API.models import Insult, InsultCategory, InsultReview
 from common.cache_managers import CategoryCacheManager, create_category_manager
 
+# Accepted opening for submitted jokes: "<yo> <momma>[ 's | s ][ is] so <punchline>".
+#   yo:     yo, yo', your, ya             momma: mom, moma, momma, mama, mamma, dad, daddy
+#   joiner: optional possessive/contraction ('s, ’s or bare s) and/or "is", so
+#           "momma is so", "momma's so", "mommas so" and "momma so" all match
+#   so:     followed by spaces and/or an ellipsis, then at least one more character
+# Single line only, case-insensitive, leading/trailing spaces allowed.
+YO_MOMMA_PATTERN = re.compile(
+    r"^[ \t]*(?:yo['’]?|your|ya)[ \t]+(?:momm?a|mamm?a|mom|daddy|dad)"
+    r"(?:['’]?s)?(?:[ \t]+is)?[ \t]+so\b[ \t.…]*[^\s.…][^\r\n]*$",
+    re.IGNORECASE,
+)
+
 
 class BulkSerializationMixin:
     """Mixin for handling bulk serialization operations.
@@ -747,15 +759,14 @@ class CreateInsultSerializer(BaseInsultSerializer):
             raise serializers.ValidationError(f"Category '{value}' not found.") from DNE
 
     def validate_content(self, value: str) -> str:
-        """Validate that insult content follows the expected phrase format.
-        This method checks whether the content begins with an acceptable “yo momma” style phrase.
-        It raises a validation error when the content does not meet that requirement."""
-        pattern = re.compile(
-            r"^(?:yo|your|ya)[ \t]+(?:momma|mama|mom|daddy|dad)"
-            r"(?:['’]s|[ \t]+is)?[ \t]+so\b[ \t]+\S[^\r\n]*$",
-            re.IGNORECASE,
-        )
-        if re.search(pattern, value) is None:
+        """Validate that insult content follows the "Yo momma (is) so..." format.
+
+        See ``YO_MOMMA_PATTERN`` for the accepted variations.
+
+        Raises:
+            serializers.ValidationError: If the content does not match.
+        """
+        if YO_MOMMA_PATTERN.match(value) is None:
             raise serializers.ValidationError(
                 'Content Should Follow the "Yo Momma is so...<SOMETHING>" format.  Please edit your content value and resubmit.'
             )
