@@ -685,7 +685,7 @@ class Base(Configuration):
                                 },
                                 "category_not_found": {
                                     "summary": "Category with specified key/name does not exist",
-                                    "description": "The category with the provided key or name was not found. Check available categories using the /api/categories endpoint.",
+                                    "description": "The category with the provided key or name was not found. Check available categories using the /api/v1/categories/ endpoint.",
                                     "value": {
                                         "detail": "Category not found.",
                                         "code": "not_found",

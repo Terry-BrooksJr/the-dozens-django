@@ -19,6 +19,6 @@ def _dummy(request):
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # Stub required by InsultReviewForm.__init__ → reverse("report-joke")
-    path("report/", _dummy, name="report-joke"),
+    # Stub required by InsultReviewForm.__init__ → reverse("report-list")
+    path("api/v1/reports/", _dummy, name="report-list"),
 ]

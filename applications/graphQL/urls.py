@@ -28,9 +28,12 @@ from django.urls import path
 from applications.graphQL.schema import schema
 from applications.graphQL.views import DozenGraphQLView
 
+# Machine-facing API endpoint — CSRF-exempt, JSON headers enforced. Exposed
+# at module level so core.urls can also mount it at "/graphql" (no slash).
+graphql_api_view = DozenGraphQLView.as_api_view(schema=schema)
+
 urlpatterns = [
-    # Machine-facing API endpoint — CSRF-exempt, JSON headers enforced
-    path("", DozenGraphQLView.as_api_view(schema=schema)),
+    path("", graphql_api_view),
     # Interactive GraphiQL playground — pre-loaded with example headers/variables
     path(
         "playground/",

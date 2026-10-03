@@ -20,6 +20,7 @@ from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from loguru import logger
 from rest_framework import status
 from rest_framework.generics import CreateAPIView
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -66,6 +67,9 @@ class ReportJokeView(CreateAPIView):
     """API view to handle joke reporting."""
 
     serializer_class = InsultReviewSerializer
+    # Anonymous reporting is supported. Set explicitly: the Base default
+    # (DjangoModelPermissionsOrAnonReadOnly) needs a queryset this view lacks.
+    permission_classes = [AllowAny]
 
     def format_issue(self, issue_data: dict[str, Any]) -> dict[str, str]:
         """Build the GitHub issue payload for a joke review.
