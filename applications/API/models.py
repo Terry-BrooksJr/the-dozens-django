@@ -449,7 +449,9 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         return self.reports.filter(status=InsultReview.STATUS.PENDING).count()
 
     @classmethod
-    def get_by_reference_id(cls: type[Insult], reference_id: str) -> Insult | None:
+    def get_by_reference_id(
+        cls: type[Insult], reference_id: str, *, active_only: bool = True
+    ) -> Insult | None:
         """
         Retrieves an Insult instance by its reference ID.
 
@@ -457,6 +459,10 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
 
         Args:
             reference_id (str): The unique reference ID of the insult.
+            active_only (bool): Restrict the lookup to Active insults (the
+                public visibility boundary). Internal callers that must
+                resolve an insult regardless of moderation status, such as
+                linking a review to an already-flagged insult, pass False.
 
         Returns:
             Optional[Insult]: The Insult instance if found, otherwise None.
@@ -479,7 +485,10 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
                     # Detail lookups must enforce the same visibility boundary as
                     # the public manager; otherwise a reference ID exposes
                     # rejected, pending, flagged, or removed submissions.
-                    return cls.objects.get(pk=pk, status=cls.STATUS.ACTIVE)
+                    filters = {"pk": pk}
+                    if active_only:
+                        filters["status"] = cls.STATUS.ACTIVE
+                    return cls.objects.get(**filters)
                 except cls.DoesNotExist:
                     logger.warning(f"Insult with PK {pk} does not exist.")
                     return None
@@ -769,7 +778,9 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
                     "Insult Reference ID must be provided to set the related Insult."
                 )
             if not self.insult and (
-                found_insult := Insult.get_by_reference_id(self.insult_reference_id)
+                found_insult := Insult.get_by_reference_id(
+                    self.insult_reference_id, active_only=False
+                )
             ):
                 logger.info(
                     f"Setting Insult for Review {self.insult_reference_id} - {found_insult.insult_id}"

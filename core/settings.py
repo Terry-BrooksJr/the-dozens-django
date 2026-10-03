@@ -163,8 +163,12 @@ class Base(Configuration):
     SECRET_KEY = values.SecretValue(
         environ=True, environ_prefix=None, environ_name="SECRET_KEY"
     )
+    # Default to 1, the Site row django.contrib.sites creates on migrate.
+    # Without a default an unset SITE_ID becomes None, and get_current_site()
+    # (used by djoser's emails) falls back to a request-host lookup that
+    # raises Site.DoesNotExist for any host not in the sites table.
     SITE_ID = values.PositiveIntegerValue(
-        environ=True, environ_prefix=None, environ_name="SITE_ID"
+        1, environ=True, environ_prefix=None, environ_name="SITE_ID"
     )
     GITHUB_API_OWNER = values.Value("terry-brooks-lrn", environ=False)
     GITHUB_API_REPO = values.Value("the-dozens-django", environ=False)

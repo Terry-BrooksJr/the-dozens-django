@@ -5,7 +5,7 @@ Covers:
 - InsultType.resolve_is_active for every moderation status code.
 - InsultConnection field declarations and instantiation.
 - Integration: the isActive field resolves correctly through the full
-  GraphQL execution path.
+  GraphQL execution path, and insultById hides non-Active insults.
 """
 
 import json
@@ -153,11 +153,29 @@ class TestInsultTypeIsActiveIntegration(GraphQLTestCase):
         """isActive is True for a status='A' insult."""
         self.assertTrue(self._query_is_active(self.active.reference_id))
 
-    def test_non_active_insults_are_not_active(self):
-        """isActive is False for every non-Active status code."""
+    def test_non_active_insults_are_not_resolvable_by_reference_id(self):
+        """insultById hides every non-Active status code.
+
+        Since v2.0.0, reference-ID lookups enforce the public visibility
+        boundary, so a non-Active insult never reaches the isActive resolver
+        through this query. isActive=False for these codes is covered by
+        TestInsultTypeResolveIsActive.
+        """
         for status_code in ("X", "P", "R", "F"):
             insult = Insult.objects.get(
                 content=f"Type test insult [{status_code}]", theme=self.theme
             )
             with self.subTest(status=status_code):
-                self.assertFalse(self._query_is_active(insult.reference_id))
+                response = self.query(f"""
+                    query {{
+                        insultById(referenceId: "{insult.reference_id}") {{
+                            isActive
+                        }}
+                    }}
+                    """)
+                self.assertResponseHasErrors(response)
+                errors = json.loads(response.content)["errors"]
+                self.assertIn(
+                    f"Insult with ID {insult.reference_id} not found",
+                    errors[0]["message"],
+                )
