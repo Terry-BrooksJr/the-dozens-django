@@ -1,0 +1,71 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% trans "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+  &rsaquo; <a href="{% url 'admin:API_insult_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; <a href="{% url 'admin:API_insult_change' insult.insult_id %}">{{ insult.reference_id }}</a>
+  &rsaquo; {% trans "Recategorize" %}
+</div>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<fieldset class="module aligned">
+  <h2>{% trans "Flagged insult" %}</h2>
+  <div class="form-row">
+    <p><strong>{% trans "Current category" %}:</strong> {{ insult.category }}{% if insult.nsfw %} (NSFW){% endif %}</p>
+    <blockquote style="margin:8px 0;padding:8px 12px;border-left:4px solid #1565c0;background:var(--darkened-bg);">
+      {{ insult.content|linebreaksbr }}
+    </blockquote>
+  </div>
+</fieldset>
+
+{% if open_reports %}
+<fieldset class="module">
+  <h2>{% trans "Open reports" %}</h2>
+  <table style="width:100%">
+    <thead>
+      <tr>
+        <th>{% trans "Type" %}</th>
+        <th>{% trans "Rationale" %}</th>
+        <th>{% trans "Submitted" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for report in open_reports %}
+        <tr>
+          <td>{{ report.get_review_type_display }}</td>
+          <td>{{ report.rationale_for_review|linebreaksbr }}</td>
+          <td>{{ report.date_submitted }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</fieldset>
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+  <fieldset class="module aligned">
+    <h2>{% trans "New category" %}</h2>
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div class="form-row{% if field.errors %} errors{% endif %}">
+        {{ field.errors }}
+        <div>
+          {{ field.label_tag }}
+          {{ field }}
+          {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </fieldset>
+
+  <div class="submit-row">
+    <input type="submit" class="default" value='{% trans "Recategorize and restore" %}'>
+    <a href='{% url "admin:API_insult_changelist" %}' class="closelink">{% trans "Cancel" %}</a>
+  </div>
+</form>
+{% endblock content %}

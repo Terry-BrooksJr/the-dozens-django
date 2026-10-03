@@ -268,7 +268,7 @@ def test_get_cache_key_includes_expected_components(api_rf, insults):
     key = view.get_cache_key("list", page=2, page_size=20)
 
     expected_hash = hashlib.md5(
-        "page=2&search=fire".encode("utf-8"),
+        b"page=2&search=fire",
         usedforsecurity=False,
     ).hexdigest()
 

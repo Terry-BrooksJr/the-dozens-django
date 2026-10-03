@@ -53,13 +53,13 @@ class _InsultLifecycleBase(TestCase):
         )
 
     def _create_insult(self, **overrides):
-        defaults = dict(
-            content="Yo momma is so lifecycle-tested she has 100% coverage.",
-            category=self.cat_a,
-            nsfw=False,
-            added_by=self.user,
-            status=Insult.STATUS.ACTIVE,
-        )
+        defaults = {
+            "content": "Yo momma is so lifecycle-tested she has 100% coverage.",
+            "category": self.cat_a,
+            "nsfw": False,
+            "added_by": self.user,
+            "status": Insult.STATUS.ACTIVE,
+        }
         defaults.update(overrides)
         return Insult.objects.create(**defaults)
 

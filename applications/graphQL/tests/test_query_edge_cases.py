@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Edge-case and supplemental tests for applications.graphQL.query
 

@@ -23,7 +23,7 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase, override_settings
 from rest_framework.authtoken.models import Token
 
-from applications.API.emails import WelcomeEmail
+from applications.API.emails import SubmissionReviewEmail, WelcomeEmail
 
 User = get_user_model()
 
@@ -103,6 +103,19 @@ class WelcomeEmailContextTests(TestCase):
         self.assertEqual(ctx["swagger_url"], f"{base}/api/swagger/")
         self.assertEqual(ctx["graphql_url"], f"{base}/graphql/playground")
 
+    @override_settings(EMAIL_ASSET_BASE_URL="https://cdn.example.com/static")
+    def test_font_urls_served_from_email_asset_base_url(self):
+        ctx = self._email().get_context_data()
+
+        self.assertEqual(
+            ctx["header_font_url"],
+            "https://cdn.example.com/static/fonts/caloriesuit.woff2",
+        )
+        self.assertEqual(
+            ctx["body_font_url"],
+            "https://cdn.example.com/static/fonts/JuliusSansOne-Regular.woff2",
+        )
+
 
 @override_settings(**_EMAIL_OVERRIDES)
 class WelcomeEmailSendTests(TestCase):
@@ -151,3 +164,104 @@ class WelcomeEmailSendTests(TestCase):
     def test_exception_not_swallowed(self, _mock_send):
         with self.assertRaises(RuntimeError):
             self._email().send(to=[self.user.email])
+
+
+_REVIEW_CONTEXT = {
+    "submitter_name": "Pat",
+    "joke_content": "Yo momma so old...",
+    "reference_id": "ABC123",
+    "category_name": "Old",
+    "site_url": "https://api.example.com",
+    "site_domain": "api.example.com",
+}
+
+
+@override_settings(**_EMAIL_OVERRIDES)
+class SubmissionReviewEmailHeroImageTests(TestCase):
+    def _html_body(self):
+        email = SubmissionReviewEmail(
+            outcome="approved", context=dict(_REVIEW_CONTEXT), to=["pat@example.com"]
+        )
+        return email.alternatives[0][0]
+
+    @override_settings(EMAIL_ASSET_BASE_URL="https://cdn.example.com/static/")
+    def test_uses_email_asset_base_url_when_set(self):
+        self.assertIn(
+            'src="https://cdn.example.com/static/assets/approved.png"', self._html_body()
+        )
+
+    # static() is mocked so the result doesn't depend on the environment's
+    # static storage backend (local in dev, S3 under Doppler in CI).
+    @override_settings(EMAIL_ASSET_BASE_URL="")
+    @patch(
+        "applications.API.emails.static",
+        side_effect=lambda path: f"/static/{path}",
+    )
+    def test_falls_back_to_site_url_plus_static_when_unset(self, _mock_static):
+        self.assertIn(
+            'src="https://api.example.com/static/assets/approved.png"', self._html_body()
+        )
+
+    @override_settings(EMAIL_ASSET_BASE_URL="")
+    @patch(
+        "applications.API.emails.static",
+        side_effect=lambda path: f"https://s3.example.com/bucket/static/{path}",
+    )
+    def test_falls_back_to_absolute_static_url_unchanged(self, _mock_static):
+        self.assertIn(
+            'src="https://s3.example.com/bucket/static/assets/approved.png"',
+            self._html_body(),
+        )
+
+    @override_settings(EMAIL_ASSET_BASE_URL="https://cdn.example.com/static/")
+    def test_explicit_hero_image_url_in_context_wins(self):
+        email = SubmissionReviewEmail(
+            outcome="approved",
+            context={**_REVIEW_CONTEXT, "hero_image_url": "https://x.test/h.png"},
+            to=["pat@example.com"],
+        )
+        self.assertIn('src="https://x.test/h.png"', email.alternatives[0][0])
+
+    @override_settings(EMAIL_ASSET_BASE_URL="https://cdn.example.com/static/")
+    def test_fonts_load_from_email_asset_base_url(self):
+        html = self._html_body()
+
+        self.assertIn(
+            "url('https://cdn.example.com/static/fonts/caloriesuit.woff2')", html
+        )
+        self.assertIn(
+            "url('https://cdn.example.com/static/fonts/JuliusSansOne-Regular.woff2')",
+            html,
+        )
+        self.assertNotIn("cdn.jsdelivr.net", html)
+
+
+@override_settings(
+    EMAIL_ASSET_BASE_URL="https://cdn.example.com/static", **_EMAIL_OVERRIDES
+)
+class SubmissionReviewEmailEscapingTests(TestCase):
+    """Subject and plain-text body are not HTML, so they must not be HTML-escaped."""
+
+    def _email(self, outcome="reclassified", **context):
+        return SubmissionReviewEmail(
+            outcome=outcome,
+            context={**_REVIEW_CONTEXT, **context},
+            to=["pat@example.com"],
+        )
+
+    def test_subject_is_not_html_escaped(self):
+        self.assertEqual(self._email().subject, "Your joke's rating was updated")
+
+    def test_text_body_is_not_html_escaped(self):
+        body = self._email(joke_content='Yo momma\'s "cooking" & more <3').body
+
+        self.assertIn('Yo momma\'s "cooking" & more <3', body)
+        self.assertNotIn("&#x27;", body)
+        self.assertNotIn("&amp;", body)
+
+    def test_html_body_is_still_escaped(self):
+        email = self._email(joke_content="<script>alert(1)</script>")
+        html = email.alternatives[0][0]
+
+        self.assertNotIn("<script>alert(1)</script>", html)
+        self.assertIn("&lt;script&gt;", html)

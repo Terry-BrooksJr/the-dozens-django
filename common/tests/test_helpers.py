@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Tests for common.helpers.
 
@@ -19,7 +18,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -286,19 +285,19 @@ class ForceUtcTimeTests(TestCase):
 
         _force_utc_time(record)
 
-        self.assertEqual(record["time"].tzinfo, timezone.utc)
+        self.assertEqual(record["time"].tzinfo, UTC)
         self.assertEqual(record["time"], local_time)  # same instant
         self.assertEqual(record["time"].hour, 21)
 
     def test_already_utc_time_is_unchanged_in_value(self):
         """A timestamp already in UTC is left with the same value and tzinfo."""
-        utc_time = datetime(2026, 9, 17, 21, 21, 27, tzinfo=timezone.utc)
+        utc_time = datetime(2026, 9, 17, 21, 21, 27, tzinfo=UTC)
         record = {"time": utc_time}
 
         _force_utc_time(record)
 
         self.assertEqual(record["time"], utc_time)
-        self.assertEqual(record["time"].tzinfo, timezone.utc)
+        self.assertEqual(record["time"].tzinfo, UTC)
 
 
 class OtelSafeValueTests(TestCase):
@@ -597,9 +596,7 @@ class LdLoguruSinkTests(TestCase):
 
         with (
             patch("common.helpers.observe", None),
-            patch(
-                "common.helpers._launchdarkly_observability_ready"
-            ) as mock_ready,
+            patch("common.helpers._launchdarkly_observability_ready") as mock_ready,
         ):
             ld_loguru_sink(message)  # must not raise
 
@@ -612,12 +609,14 @@ class LaunchdarklyObservabilityReadyTests(TestCase):
     def test_reflects_client_is_configured_result(self):
         """Returns whatever `applications.ld_integration.client.is_configured()` reports."""
         for expected in (True, False):
-            with self.subTest(expected=expected):
-                with patch(
+            with (
+                self.subTest(expected=expected),
+                patch(
                     "applications.ld_integration.client.is_configured",
                     return_value=expected,
-                ):
-                    self.assertIs(_launchdarkly_observability_ready(), expected)
+                ),
+            ):
+                self.assertIs(_launchdarkly_observability_ready(), expected)
 
     def test_returns_false_without_raising_when_client_import_fails(self):
         """An import/attribute error while checking readiness is swallowed, not raised."""
@@ -631,7 +630,7 @@ def _make_loki_record(**overrides):
     plain dict rather than a `Message` wrapper.
     """
     record = {
-        "time": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        "time": datetime(2024, 1, 1, tzinfo=UTC),
         "message": "hello world",
         "process": SimpleNamespace(id=123),
         "thread": SimpleNamespace(id=456),

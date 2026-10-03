@@ -11,10 +11,10 @@ for different use cases.
 from __future__ import annotations
 
 import contextlib
+import re
 from datetime import datetime
 from functools import lru_cache
-import re
-from typing import Any, ClassVar, Dict, Optional
+from typing import Any, ClassVar
 
 import arrow
 from django.conf import settings
@@ -33,6 +33,18 @@ from rest_framework.response import Response
 
 from applications.API.models import Insult, InsultCategory, InsultReview
 from common.cache_managers import CategoryCacheManager, create_category_manager
+
+# Accepted opening for submitted jokes: "<yo> <momma>[ 's | s ][ is] so <punchline>".
+#   yo:     yo, yo', your, ya             momma: mom, moma, momma, mama, mamma, dad, daddy
+#   joiner: optional possessive/contraction ('s, ’s or bare s) and/or "is", so
+#           "momma is so", "momma's so", "mommas so" and "momma so" all match
+#   so:     followed by spaces and/or an ellipsis, then at least one more character
+# Single line only, case-insensitive, leading/trailing spaces allowed.
+YO_MOMMA_PATTERN = re.compile(
+    r"^[ \t]*(?:yo['’]?|your|ya)[ \t]+(?:momm?a|mamm?a|mom|daddy|dad)"
+    r"(?:['’]?s)?(?:[ \t]+is)?[ \t]+so\b[ \t.…]*[^\s.…][^\r\n]*$",
+    re.IGNORECASE,
+)
 
 
 class BulkSerializationMixin:
@@ -60,7 +72,7 @@ class BulkSerializationMixin:
         kwargs.setdefault("context", self.get_serializer_context())
         return serializer_class(*args, **kwargs)
 
-    def bulk_serialize_response(self, queryset, extra_data: Optional[Dict] = None):
+    def bulk_serialize_response(self, queryset, extra_data: dict | None = None):
         """Serialize bulk data with optional metadata.
 
         Args:
@@ -91,8 +103,8 @@ class CachedBulkSerializer(serializers.ModelSerializer):
 
     # Define these in your concrete serializer
     select_related_fields = []  # e.g., ['added_by', 'category']
-    prefetch_related_fields = []  # e.g., ['reviews']
-    cached_fields = []  # Fields to cache individually
+    prefetch_related_fields = []  # e.g., ['reviews']  # noqa: RUF012
+    cached_fields = []  # Fields to cache individually  # noqa: RUF012
 
     def get_cache_key(self, obj, field_name: str) -> str:
         """
@@ -195,12 +207,11 @@ class BaseInsultSerializer(CachedBulkSerializer):
         v = value.strip()
         # Try common separators first
         for sep in (" - ", "–", "-"):
-            if sep in v:
-                if left := v.split(sep, 1)[0].strip():
-                    return left
+            if sep in v and (left := v.split(sep, 1)[0].strip()):
+                return left
         return v
 
-    def get_category_by_key(self, category_key: str) -> Dict[str, str]:
+    def get_category_by_key(self, category_key: str) -> dict[str, str]:
         """Retrieve category information by key.
 
         Args:
@@ -276,7 +287,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
             else user.first_name
         )
 
-    def get_category_by_name(self, category_name: str) -> Dict[str, str]:
+    def get_category_by_name(self, category_name: str) -> dict[str, str]:
         """
         Retrieve category information by its name.
         Returns a dictionary containing the category key and name, or raises a validation error if not found.
@@ -321,7 +332,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
             ) from e
 
     @classmethod
-    def resolve_category(cls, value: str) -> Dict[str, str]:
+    def resolve_category(cls, value: str) -> dict[str, str]:
         """
         Validate and resolve a category by key or name.
 
@@ -425,7 +436,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         Uses ISO string for hashable cache key.
         """
 
-        date = datetime.fromisoformat(date_iso.replace("Z", "+00:00"))
+        date = datetime.fromisoformat(date_iso)
         return naturaltime(date, future=False, minimum_unit="seconds", months=True)
 
     @staticmethod
@@ -452,7 +463,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
             compute_method_name="compute_added_on_display",
         )
 
-    def to_internal_value(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def to_internal_value(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert input data to native Python objects for validation and deserialization.
 
         This method processes the input data, resolves the insult category, and prepares the data for further validation.
@@ -489,7 +500,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
 
         return super().to_internal_value(data)
 
-    def to_representation(self, instance) -> Dict[str, Any]:  # type: ignore
+    def to_representation(self, instance) -> dict[str, Any]:  # type: ignore
         """Convert a model instance to its serialized representation.
 
         This method returns a dictionary representation of the instance, replacing the category field with its display name using cached lookup.
@@ -509,7 +520,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         return representation
 
     @extend_schema_field(serializers.CharField())
-    def get_added_by_display(self, obj) -> Optional[str]:
+    def get_added_by_display(self, obj) -> str | None:
         """Return a formatted display string for the user who added the insult.
 
         This method retrieves a cached, human-readable representation of the object's 'added_by' field.
@@ -650,7 +661,6 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
     by = serializers.SerializerMethodField(method_name="get_added_by_display")
     added = serializers.SerializerMethodField(method_name="get_added_on_display")
     # category = serializers.CharField()
-    # content = serializers.CharField()
 
     class Meta:
         list_serializer_class = BulkInsultSerializer
@@ -665,6 +675,42 @@ class OptimizedInsultSerializer(BaseInsultSerializer):
             "by",
         ]
         read_only_fields = ["reference_id", "status", "added_by", "added_on"]
+
+    def to_representation(self, instance) -> dict[str, Any]:  # type: ignore
+        """Publish the moderator's edit in place of the original text when one exists.
+
+        ``content`` stays a regular model field so PUT/PATCH can still write
+        it; only the outgoing value is swapped. Swapping per instance here
+        (rather than changing ``Meta.fields``) keeps the output shape identical
+        for every insult and is safe across requests.
+
+        Args:
+            instance: The insult being serialized.
+
+        Returns:
+            Dict[str, Any]: The serialized insult with ``content`` resolved.
+        """
+        representation = super().to_representation(instance)
+        if "content" in representation:
+            representation["content"] = self.resolve_content(instance)
+        return representation
+
+    @staticmethod
+    def resolve_content(obj) -> str:
+        """Return the administrator-modified content when set, else the original.
+
+        Falls back to ``content`` if ``is_admin_modified`` is set but no edit was
+        saved, so the API never publishes ``null``.
+
+        Args:
+            obj: The insult object whose content should be returned.
+
+        Returns:
+            str: The administrator-modified or original insult content.
+        """
+        if obj.is_admin_modified and obj.modified_content:
+            return obj.modified_content
+        return obj.content
 
 
 class CreateInsultSerializer(BaseInsultSerializer):
@@ -682,10 +728,7 @@ class CreateInsultSerializer(BaseInsultSerializer):
     nsfw = serializers.BooleanField(
         default=False, help_text="Indicates if the insult is NSFW (Not Safe For Work)."
     )
-    content = serializers.CharField(
-        allow_blank=False, trim_whitespace=True, allow_null=False
-    )
-
+    content = serializers.CharField()
     # Read-only response fields
     reference_id = serializers.CharField(read_only=True)
     status = serializers.CharField(source="get_status_display", read_only=True)
@@ -694,7 +737,7 @@ class CreateInsultSerializer(BaseInsultSerializer):
 
     class Meta:
         model = Insult
-        fields = [
+        fields = (
             "reference_id",
             "category",
             "content",
@@ -702,7 +745,7 @@ class CreateInsultSerializer(BaseInsultSerializer):
             "status",
             "added_by",
             "added_on",
-        ]
+        )
         extra_kwargs = {
             "content": {"required": True, "allow_blank": False},
         }
@@ -716,15 +759,14 @@ class CreateInsultSerializer(BaseInsultSerializer):
             raise serializers.ValidationError(f"Category '{value}' not found.") from DNE
 
     def validate_content(self, value: str) -> str:
-        """Validate that insult content follows the expected phrase format.
-        This method checks whether the content begins with an acceptable “yo momma” style phrase.
-        It raises a validation error when the content does not meet that requirement."""
-        pattern = re.compile(
-            r"^(?:yo|your|ya)[ \t]+(?:momma|mama|mom|daddy|dad)"
-            r"(?:['’]s|[ \t]+is)?[ \t]+so\b[ \t]+\S[^\r\n]*$",
-            re.IGNORECASE,
-        )
-        if re.search(pattern, value) is None:
+        """Validate that insult content follows the "Yo momma (is) so..." format.
+
+        See ``YO_MOMMA_PATTERN`` for the accepted variations.
+
+        Raises:
+            serializers.ValidationError: If the content does not match.
+        """
+        if YO_MOMMA_PATTERN.match(value) is None:
             raise serializers.ValidationError(
                 'Content Should Follow the "Yo Momma is so...<SOMETHING>" format.  Please edit your content value and resubmit.'
             )
@@ -845,7 +887,7 @@ class InsultReviewSerializer(serializers.ModelSerializer):
         model = InsultReview
         exclude = ["date_submitted", "date_reviewed", "status", "insult", "reviewer"]
 
-    def validate(self, attrs: Dict[str, Any]) -> Dict[str, Any]:
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         """
         Custom validation with improved error handling.
         """
@@ -864,6 +906,7 @@ class InsultReviewSerializer(serializers.ModelSerializer):
         review_basis = (cleaned_data.get("rationale_for_review") or "").strip()
         # Support both ModelChoiceField (object) and pre-populated string values
         if hasattr(insult_obj_or_value, "reference_id"):
+            assert insult_obj_or_value is not None
             ref_id = insult_obj_or_value.reference_id
         else:
             ref_id = str(insult_obj_or_value or "").strip()

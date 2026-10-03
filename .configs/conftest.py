@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Project-wide pytest configuration for the-dozens-django.
 

@@ -8,7 +8,7 @@ This module:
 """
 
 import contextlib
-from typing import Any, Dict
+from typing import Any
 
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse
 from loguru import logger
@@ -21,7 +21,7 @@ from rest_framework.views import exception_handler as drf_exception_handler
 # Core templates: single source of truth for error payloads
 # ---------------------------------------------------------------------------
 
-ERROR_TEMPLATES: Dict[int, Dict[str, str]] = {
+ERROR_TEMPLATES: dict[int, dict[str, str]] = {
     status.HTTP_401_UNAUTHORIZED: {
         "detail": "Yo momma so unknown, the server said 'New phone, who this?'",
         "code": "authentication_failed",
@@ -62,12 +62,12 @@ def _build_payload(
     status_code: int,
     detail: str,
     code: str = "error",
-    extra: Dict[str, Any] | None = None,
-) -> Dict[str, Any]:
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Build a standardized error payload matching The Dozens API format.
     """
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "detail": detail,
         "code": code,
         "status_code": status_code,
@@ -200,7 +200,7 @@ class StandardErrorResponses:
                 summary="Category with specified key/name does not exist",
                 description=(
                     "The category with the provided key or name was not found. "
-                    "Check available categories using the /api/categories endpoint."
+                    "Check available categories using the /api/v1/categories/ endpoint."
                 ),
                 value={
                     **ERROR_TEMPLATES[status.HTTP_404_NOT_FOUND],
@@ -337,7 +337,7 @@ class StandardErrorResponses:
     # ---- Common sets -----------------------------------------------------
 
     @classmethod
-    def get_common_error_responses(cls) -> Dict[int, OpenApiResponse]:
+    def get_common_error_responses(cls) -> dict[int, OpenApiResponse]:
         """
         Get commonly used error responses for most endpoints.
         """
@@ -347,7 +347,7 @@ class StandardErrorResponses:
         }
 
     @classmethod
-    def get_authenticated_endpoint_responses(cls) -> Dict[int, OpenApiResponse]:
+    def get_authenticated_endpoint_responses(cls) -> dict[int, OpenApiResponse]:
         """
         Get error responses for endpoints requiring authentication.
         """
@@ -358,7 +358,7 @@ class StandardErrorResponses:
         }
 
     @classmethod
-    def get_crud_endpoint_responses(cls) -> Dict[int, OpenApiResponse]:
+    def get_crud_endpoint_responses(cls) -> dict[int, OpenApiResponse]:
         """
         Get error responses for CRUD endpoints with resource ownership.
         """
@@ -372,7 +372,7 @@ class StandardErrorResponses:
         }
 
     @classmethod
-    def get_list_endpoint_responses(cls) -> Dict[int, OpenApiResponse]:
+    def get_list_endpoint_responses(cls) -> dict[int, OpenApiResponse]:
         """
         Get error responses for list/search endpoints.
         """
@@ -385,7 +385,7 @@ class StandardErrorResponses:
 
 
 # Convenience functions for specific endpoint types used in @extend_schema
-def get_insult_crud_responses() -> Dict[int, OpenApiResponse]:
+def get_insult_crud_responses() -> dict[int, OpenApiResponse]:
     """Get standardized error responses for insult CRUD operations."""
     return {
         status.HTTP_401_UNAUTHORIZED: StandardErrorResponses.UNAUTHORIZED,
@@ -397,7 +397,7 @@ def get_insult_crud_responses() -> Dict[int, OpenApiResponse]:
     }
 
 
-def get_category_list_responses() -> Dict[int, OpenApiResponse]:
+def get_category_list_responses() -> dict[int, OpenApiResponse]:
     """Get standardized error responses for category listing operations."""
     return {
         status.HTTP_404_NOT_FOUND: StandardErrorResponses.CATEGORY_NOT_FOUND,
@@ -406,7 +406,7 @@ def get_category_list_responses() -> Dict[int, OpenApiResponse]:
     }
 
 
-def get_public_list_responses() -> Dict[int, OpenApiResponse]:
+def get_public_list_responses() -> dict[int, OpenApiResponse]:
     """Get standardized error responses for public list endpoints."""
     return {
         status.HTTP_404_NOT_FOUND: StandardErrorResponses.NO_RESULTS_FOUND,
@@ -420,7 +420,7 @@ def get_public_list_responses() -> Dict[int, OpenApiResponse]:
 # ---------------------------------------------------------------------------
 
 # Which statuses get the yo momma overlay instead of raw DRF messages
-YO_MOMMA_OVERRIDES: Dict[int, Dict[str, str]] = {
+YO_MOMMA_OVERRIDES: dict[int, dict[str, str]] = {
     status.HTTP_401_UNAUTHORIZED: ERROR_TEMPLATES[status.HTTP_401_UNAUTHORIZED],
     status.HTTP_403_FORBIDDEN: ERROR_TEMPLATES[status.HTTP_403_FORBIDDEN],
     status.HTTP_404_NOT_FOUND: ERROR_TEMPLATES[status.HTTP_404_NOT_FOUND],
@@ -431,7 +431,7 @@ YO_MOMMA_OVERRIDES: Dict[int, Dict[str, str]] = {
 }
 
 
-def yo_momma_exception_handler(exc: Exception, context: Dict[str, Any]) -> Response:
+def yo_momma_exception_handler(exc: Exception, context: dict[str, Any]) -> Response:
     """
     Reusable exception handler for The Dozens API.
 
@@ -499,9 +499,11 @@ def yo_momma_exception_handler(exc: Exception, context: Dict[str, Any]) -> Respo
         # Preserve original validation errors alongside the themed message
         original_detail = data.get("detail", data)
         extra = None
-        if isinstance(original_detail, (dict, list)):
-            extra = {"errors": original_detail}
-        elif isinstance(original_detail, str) and original_detail != base["detail"]:
+        if (
+            isinstance(original_detail, (dict, list))
+            or isinstance(original_detail, str)
+            and original_detail != base["detail"]
+        ):
             extra = {"errors": original_detail}
         payload = _build_payload(
             status_code=status_code,

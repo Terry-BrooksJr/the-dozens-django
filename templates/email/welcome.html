@@ -50,13 +50,13 @@
 
                  @font-face {
                       font-family: YoMamaHeader;
-                      src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@c39984f366fe21d0e62d3c38bac514535e5b89a7/static/fonts/caloriesuit.woff2') format('woff2');
+                      src: url('{{ header_font_url }}') format('woff2');
                       font-display: swap;
                  }
 
                  @font-face {
                       font-family: YoMamaBody;
-                      src: url('https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-django@cfed15844ea94edfc7e4f61a1fb60f92570aeb68/static/fonts/JuliusSansOne-Regular.woff2') format('woff2');
+                      src: url('{{ body_font_url }}') format('woff2');
                       font-display: swap;
                  }
 
@@ -222,7 +222,7 @@
                                                              color:#beda00;
                                                              line-height:1.8;
                                                              white-space:pre-wrap;
-                                                             display:block">GET https://api.yo-momma.io/api/insults/random/
+                                                             display:block">GET https://api.yo-momma.io/api/v1/insults/random/
                                                 Authorization: Token {{ api_key }}</code>
                                             </td>
                                         </tr>
@@ -311,7 +311,9 @@
                                               color:rgba(255,255,255,0.7);
                                               margin:0 0 6px">
                                         You're receiving this because you registered at
-                                        <a href="{{ site_url }}" style="color:#beda00;text-decoration:none;">{{ site_domain }}</a>.
+                                        <a href="{{ site_url }}"
+                                           style="color:#beda00;
+                                                  text-decoration:none">{{ site_domain }}</a>.
                                     </p>
                                     <p style="font-family:'YoMamaBody',Arial,sans-serif;
                                               font-size:11px;

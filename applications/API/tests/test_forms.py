@@ -62,7 +62,7 @@ class InsultReviewFormTests(TestCase):
         data = self._base_payload(
             anonymous="", reporter_first_name="", reporter_last_name=""
         )
-        self.assert_form_invalid_and_error_present(  # noqa
+        self.assert_form_invalid_and_error_present(
             data, "First name is required when not submitting anonymously"
         )
 

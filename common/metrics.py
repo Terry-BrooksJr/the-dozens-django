@@ -11,7 +11,7 @@ from functools import lru_cache
 from prometheus_client import Counter, Histogram
 
 try:
-    import ldobserve.observe as observe
+    from ldobserve import observe
 except Exception:  # LaunchDarkly observability plugin is optional
     observe = None
 
@@ -333,8 +333,7 @@ class _MetricsFacade:
                 dur_ms = (time.perf_counter() - t0) * 1000.0
                 stats["query_count"] += 1
                 stats["total_ms"] += dur_ms
-                if dur_ms > stats["slowest_ms"]:
-                    stats["slowest_ms"] = dur_ms
+                stats["slowest_ms"] = max(stats["slowest_ms"], dur_ms)
 
         with connection.execute_wrapper(_wrapper):
             yield stats

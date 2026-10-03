@@ -14,7 +14,8 @@ Features:
 
 import hashlib
 import os
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Tuple, Union
+from collections.abc import Callable
+from typing import Any, ClassVar
 
 from django.conf import settings
 from django.core.cache import cache
@@ -55,7 +56,7 @@ class CachedTemplateView(TemplateView):
         Returns a view function for the template view with caching enabled.
         """
         return cache_page(int(os.environ.get("CACHE_TTL", "86400")))(
-            super(CachedTemplateView, cls).as_view(**initkwargs)
+            super().as_view(**initkwargs)
         )
 
 
@@ -65,7 +66,7 @@ class NeverCacheMixin(TemplateView):
     @method_decorator(never_cache)
     def dispatch(self, *args: Any, **kwargs: Any) -> HttpResponse:
         """Dispatch the request with ``never_cache`` headers applied."""
-        return super(NeverCacheMixin, self).dispatch(*args, **kwargs)
+        return super().dispatch(*args, **kwargs)
 
 
 # ===================================================================
@@ -89,10 +90,10 @@ class CachedResponseMixin(GenericAPIView):
         """
         super().__init__(*args, **kwargs)
         # Bulk optimization settings (unchanged)
-        self.bulk_select_related: Optional[List[str]] = getattr(
+        self.bulk_select_related: list[str] | None = getattr(
             self, "bulk_select_related", None
         )
-        self.bulk_prefetch_related: Optional[List[str]] = getattr(
+        self.bulk_prefetch_related: list[str] | None = getattr(
             self, "bulk_prefetch_related", None
         )
         self.bulk_cache_timeout: int = int(getattr(self, "bulk_cache_timeout", 1800))
@@ -157,7 +158,7 @@ class CachedResponseMixin(GenericAPIView):
 
     def get_cache_key(self, action_name: str = "default", **kwargs: Any) -> str:
         """Generate a unique cache key based on the request and model information."""
-        user_id: Union[int, str] = (
+        user_id: int | str = (
             self.request.user.pk if self.request.user.is_authenticated else "anon"
         )
         query_params: str = self.request.GET.urlencode()
@@ -165,18 +166,18 @@ class CachedResponseMixin(GenericAPIView):
             query_params.encode("utf-8"), usedforsecurity=False
         ).hexdigest()
 
-        model_names: List[str] = []
-        primary_model: Optional[Model] = getattr(self, "primary_model", None)
+        model_names: list[str] = []
+        primary_model: Model | None = getattr(self, "primary_model", None)
         if primary_model:
             model_names.append(primary_model.__name__)
         else:
             raise AttributeError("View must have a 'primary_model' attribute.")
 
-        cache_models: List[Model] = getattr(self, "cache_models", [])
+        cache_models: list[Model] = getattr(self, "cache_models", [])
         model_names.extend(model.__name__ for model in cache_models)
         model_names_str: str = "_".join(model_names)
 
-        key_parts: List[str] = [
+        key_parts: list[str] = [
             primary_model.__name__,
             self.__class__.__name__,
             action_name,
@@ -193,7 +194,7 @@ class CachedResponseMixin(GenericAPIView):
 
         return ":".join(key_parts) + "_cache_key"
 
-    def get_cached_response(self, cache_key: str) -> Optional[Response]:
+    def get_cached_response(self, cache_key: str) -> Response | None:
         """
         Retrieve cached data using the provided cache key.
         Now integrates with the generalized caching metrics.
@@ -213,7 +214,7 @@ class CachedResponseMixin(GenericAPIView):
             return None
 
     def cache_response(
-        self, cache_key: str, data: Any, timeout: Optional[int] = None
+        self, cache_key: str, data: Any, timeout: int | None = None
     ) -> None:
         """Store data in the cache with the specified cache key."""
         if isinstance(data, TemplateResponse):
@@ -225,9 +226,7 @@ class CachedResponseMixin(GenericAPIView):
         logger.debug(f"New Cache Set {cache_key}: {data}")
         cache.set(cache_key, data, timeout=cache_timeout)
 
-    def get_optimized_queryset(
-        self, base_queryset: Optional[QuerySet] = None
-    ) -> QuerySet:
+    def get_optimized_queryset(self, base_queryset: QuerySet | None = None) -> QuerySet:
         """Get queryset optimized for bulk operations."""
         queryset: QuerySet = (
             self.get_queryset() if base_queryset is None else base_queryset
@@ -245,8 +244,8 @@ class CachedResponseMixin(GenericAPIView):
         self,
         cache_key: str,
         queryset_func: Callable[[], QuerySet],
-        timeout: Optional[int] = None,
-    ) -> Tuple[QuerySet, Dict[str, Any]]:
+        timeout: int | None = None,
+    ) -> tuple[QuerySet, dict[str, Any]]:
         """
         Cache bulk data using the cache manager if available.
         Falls back to original implementation if no manager is set up.
@@ -281,7 +280,7 @@ class CachedResponseMixin(GenericAPIView):
                 logger.warning(f"Error using cache manager, falling back: {e}")
 
         # Fallback to original implementation
-        cached_data: Optional[Tuple[List[Any], Dict[str, Any]]] = cache.get(cache_key)
+        cached_data: tuple[list[Any], dict[str, Any]] | None = cache.get(cache_key)
         if cached_data is not None:
             object_ids, extra_data = cached_data
             logger.debug(f"Bulk Cache Hit - Cache Key: {cache_key}")
@@ -300,17 +299,17 @@ class CachedResponseMixin(GenericAPIView):
         optimized_queryset: QuerySet = self.get_optimized_queryset(queryset)
 
         pk_field: str = self.primary_model._meta.pk.name
-        object_ids: List[Any] = list(
+        object_ids: list[Any] = list(
             optimized_queryset.values_list(pk_field, flat=True)
         )
-        extra_data: Dict[str, Any] = self._extract_bulk_metadata(optimized_queryset)
+        extra_data: dict[str, Any] = self._extract_bulk_metadata(optimized_queryset)
 
         cache_timeout: int = timeout or self.bulk_cache_timeout
         cache.set(cache_key, (object_ids, extra_data), cache_timeout)
 
         return optimized_queryset, extra_data
 
-    def _extract_bulk_metadata(self, queryset: QuerySet) -> Dict[str, Any]:
+    def _extract_bulk_metadata(self, queryset: QuerySet) -> dict[str, Any]:
         """Extract metadata that should be cached alongside object IDs."""
         return {
             "total_count": queryset.count(),
@@ -333,12 +332,12 @@ class CachedResponseMixin(GenericAPIView):
                 """Return the filtered base queryset for the list view."""
                 return self.filter_queryset(self.get_queryset())
 
-            queryset, extra_data = self.get_cached_bulk_data(
+            queryset, _extra_data = self.get_cached_bulk_data(
                 cache_key, get_list_queryset
             )
 
             # Apply pagination
-            page: Optional[List[Any]] = self.paginate_queryset(queryset)
+            page: list[Any] | None = self.paginate_queryset(queryset)
             if page is not None:
                 serializer: serializers.BaseSerializer = self.get_serializer(
                     page, many=True
@@ -356,7 +355,7 @@ class CachedResponseMixin(GenericAPIView):
             return cached_response
 
         queryset: QuerySet = self.filter_queryset(self.get_queryset())
-        page: Optional[List[Any]] = self.paginate_queryset(queryset)
+        page: list[Any] | None = self.paginate_queryset(queryset)
         if page is not None:
             serializer: serializers.BaseSerializer = self.get_serializer(
                 page, many=True
@@ -395,12 +394,12 @@ class CacheInvalidationMixin:
     Enhanced mixin to handle cache invalidation using the generalized cache framework.
     """
 
-    cache_invalidation_patterns: ClassVar[List[str]] = []
-    cache_manager_names: ClassVar[List[str]] = (
+    cache_invalidation_patterns: ClassVar[list[str]] = []
+    cache_manager_names: ClassVar[list[str]] = (
         []
     )  # Names of cache managers to invalidate
 
-    def invalidate_bulk_caches(self, patterns: Optional[List[str]] = None) -> None:
+    def invalidate_bulk_caches(self, patterns: list[str] | None = None) -> None:
         """
         Invalidate cached data after mutations using both patterns and managers.
         """
@@ -416,7 +415,7 @@ class CacheInvalidationMixin:
 
         # Fallback to pattern-based invalidation
         if hasattr(cache, "delete_pattern"):
-            patterns_to_clear: List[str] = patterns or self.cache_invalidation_patterns
+            patterns_to_clear: list[str] = patterns or self.cache_invalidation_patterns
             for pattern in patterns_to_clear:
                 try:
                     cache.delete_pattern(pattern)
@@ -517,17 +516,17 @@ def create_category_cache_manager(model_class, key_field="key", name_field="name
     manager.get_cache_keys = _category_cache_keys
 
     # Add convenience methods
-    def get_category_name_by_key(key: str) -> Optional[str]:
+    def get_category_name_by_key(key: str) -> str | None:
         """Return the cached category name for ``key``, if any."""
         key_to_name = manager.get_cached_data("key_to_name") or {}
         return key_to_name.get(key)
 
-    def get_category_key_by_name(name: str) -> Optional[str]:
+    def get_category_key_by_name(name: str) -> str | None:
         """Return the cached category key for ``name`` (case-insensitive), if any."""
         name_to_key = manager.get_cached_data("name_to_key") or {}
         return name_to_key.get(name.lower())
 
-    def get_all_categories() -> Dict[str, str]:
+    def get_all_categories() -> dict[str, str]:
         """Return the cached mapping of all categories."""
         return manager.get_cached_data("categories") or {}
 
@@ -689,7 +688,7 @@ def clear_all_cache() -> None:
         logger.error(f"Failed to clear cache: {e}")
 
 
-def get_cache_stats() -> Dict[str, Any]:
+def get_cache_stats() -> dict[str, Any]:
     """Get comprehensive cache statistics."""
     try:
         # Get stats from the generalized framework
@@ -710,7 +709,7 @@ def get_cache_stats() -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-def warm_critical_caches() -> Dict[str, Any]:
+def warm_critical_caches() -> dict[str, Any]:
     """Warm up critical cache managers on application startup."""
     results = {}
     critical_managers = []  # Define which managers are critical
@@ -730,7 +729,7 @@ def warm_critical_caches() -> Dict[str, Any]:
                 logger.info(f"Warmed critical cache: {manager_name}")
 
             except Exception as e:
-                results[manager_name] = f"error: {str(e)}"
+                results[manager_name] = f"error: {e!s}"
                 logger.error(f"Error warming critical cache {manager_name}: {e}")
         else:
             results[manager_name] = "manager_not_found"
@@ -758,7 +757,7 @@ def register_common_cache_managers():
     #         cache_prefix="Insult"
     #     )
 
-    pass  # Replace with actual registrations
+    # Replace with actual registrations
 
 
 # ===================================================================

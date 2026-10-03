@@ -72,13 +72,13 @@ class NotifyAdminsPendingInsultSignalTests(TestCase):
 
     def _create_insult(self, status=Insult.STATUS.PENDING, nsfw=False, **kwargs):
         """Create and return an Insult; the signal fires automatically."""
-        defaults = dict(
-            content="Yo momma is so lazy she got a remote control to change TV channels on her TV.",
-            category=self.cat,
-            theme=self.theme,
-            nsfw=nsfw,
-            added_by=self.submitter,
-        )
+        defaults = {
+            "content": "Yo momma is so lazy she got a remote control to change TV channels on her TV.",
+            "category": self.cat,
+            "theme": self.theme,
+            "nsfw": nsfw,
+            "added_by": self.submitter,
+        }
         defaults.update(kwargs)
         return Insult.objects.create(status=status, **defaults)
 

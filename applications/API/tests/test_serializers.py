@@ -427,6 +427,72 @@ class TestOptimizedInsultSerializer(SerializerTestCase):
         s.is_valid()
         self.assertNotIn("reference_id", s.validated_data)
 
+    # -- Admin-modified content ----------------------------------------
+
+    def _modified_insult(self, **overrides):
+        fields = {
+            "content": "Original joke.",
+            "category": self.category,
+            "nsfw": False,
+            "theme": self.theme,
+            "status": Insult.STATUS.ACTIVE,
+            "added_by": self.user,
+            "is_admin_modified": True,
+            "modified_content": "Edited joke.",
+        }
+        fields.update(overrides)
+        return Insult.objects.create(**fields)
+
+    def test_content_is_original_when_not_admin_modified(self):
+        data = OptimizedInsultSerializer(self.insult).data
+        self.assertEqual(data["content"], self.insult.content)
+
+    def test_content_is_modified_content_when_admin_modified(self):
+        data = OptimizedInsultSerializer(self._modified_insult()).data
+        self.assertEqual(data["content"], "Edited joke.")
+
+    def test_modified_content_field_is_not_exposed(self):
+        data = OptimizedInsultSerializer(self._modified_insult()).data
+        self.assertNotIn("modified_content", data)
+
+    def test_falls_back_to_content_when_modified_content_missing(self):
+        insult = self._modified_insult(modified_content=None)
+        data = OptimizedInsultSerializer(insult).data
+        self.assertEqual(data["content"], "Original joke.")
+
+    def test_modified_content_ignored_when_flag_not_set(self):
+        insult = self._modified_insult(is_admin_modified=False)
+        data = OptimizedInsultSerializer(insult).data
+        self.assertEqual(data["content"], "Original joke.")
+
+    def test_many_resolves_content_per_instance(self):
+        modified = self._modified_insult()
+        data = OptimizedInsultSerializer(
+            Insult.objects.filter(pk__in=[self.insult.pk, modified.pk]).order_by(
+                "pk"
+            ),
+            many=True,
+        ).data
+        self.assertEqual(
+            [row["content"] for row in data],
+            [self.insult.content, "Edited joke."],
+        )
+
+    def test_output_fields_stable_across_calls(self):
+        """Serializing must not mutate Meta.fields (shared by every request)."""
+        before = list(OptimizedInsultSerializer.Meta.fields)
+        for _ in range(3):
+            OptimizedInsultSerializer(self._modified_insult()).data
+            OptimizedInsultSerializer(self.insult).data
+        self.assertEqual(OptimizedInsultSerializer.Meta.fields, before)
+
+    def test_content_is_still_writable(self):
+        s = OptimizedInsultSerializer(
+            self.insult, data={"content": "Updated by owner."}, partial=True
+        )
+        self.assertTrue(s.is_valid(), s.errors)
+        self.assertEqual(s.validated_data["content"], "Updated by owner.")
+
 
 # ===========================================================================
 # BulkInsultSerializer
@@ -551,6 +617,81 @@ class TestCreateInsultSerializer(SerializerTestCase):
                 self.assertFalse(s.is_valid())
                 self.assertIn("content", s.errors)
                 self.assertIn(self._FORMAT_ERROR_FRAGMENT, str(s.errors["content"][0]))
+
+    def _assert_content_valid(self, contents):
+        for content in contents:
+            with self.subTest(content=content):
+                s = CreateInsultSerializer(data=self._payload(content=content))
+                self.assertTrue(s.is_valid(), s.errors)
+
+    def _assert_content_invalid(self, contents):
+        for content in contents:
+            with self.subTest(content=content):
+                s = CreateInsultSerializer(data=self._payload(content=content))
+                self.assertFalse(s.is_valid())
+                self.assertIn(self._FORMAT_ERROR_FRAGMENT, str(s.errors["content"][0]))
+
+    def test_content_accepts_every_is_joiner_variant(self):
+        """ "is", 's, ’s, a bare s, or nothing at all may join the subject to "so"."""
+        self._assert_content_valid(
+            (
+                "Yo momma is so poor ducks throw bread at her.",
+                "Yo momma's so poor ducks throw bread at her.",
+                "Yo momma’s so poor ducks throw bread at her.",
+                "Yo mommas so poor ducks throw bread at her.",
+                "Yo momma so poor ducks throw bread at her.",
+                "Yo momma's is so poor ducks throw bread at her.",
+                "Yo dad's so lazy he hired someone to nap for him.",
+                "Yo daddys so lazy he hired someone to nap for him.",
+            )
+        )
+
+    def test_content_accepts_subject_spelling_variants(self):
+        self._assert_content_valid(
+            (
+                "Yo' momma is so old she knew Burger King as a prince.",
+                "Yo’ mama so old she knew Burger King as a prince.",
+                "Yo mamma is so old she knew Burger King as a prince.",
+                "Yo moma's so old she knew Burger King as a prince.",
+            )
+        )
+
+    def test_content_accepts_ellipsis_after_so(self):
+        self._assert_content_valid(
+            (
+                "Yo momma is so... poor ducks throw bread at her.",
+                "Yo momma's so...poor ducks throw bread at her.",
+                "Yo momma so… poor ducks throw bread at her.",
+                "Yo momma is so poor... ducks throw bread at her.",
+            )
+        )
+
+    def test_content_accepts_extra_internal_spacing(self):
+        self._assert_content_valid(
+            ("Yo   momma   is   so   poor ducks throw bread at her.",)
+        )
+
+    def test_content_rejects_malformed_joiners_and_subjects(self):
+        self._assert_content_invalid(
+            (
+                "Yo momma iss so poor ducks throw bread at her.",
+                "Yo momma is is so poor ducks throw bread at her.",
+                "Yo momma's fat.",  # joiner but no "so"
+                "Yo momma 's so poor ducks throw bread at her.",  # detached 's
+                "Yomomma is so poor ducks throw bread at her.",  # no space
+                "Yo mommy is so poor ducks throw bread at her.",  # unsupported subject
+                "Yo grandma is so old she knew Burger King as a prince.",
+            )
+        )
+
+    def test_content_rejects_so_with_only_punctuation_after(self):
+        self._assert_content_invalid(
+            (
+                "Yo momma is so...",
+                "Yo momma's so …",
+                "Yo momma is so .",
+            )
+        )
 
     def test_content_surrounding_whitespace_is_trimmed_before_format_check(self):
         s = CreateInsultSerializer(

@@ -182,7 +182,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(" [OK]"))
 
             except Exception as e:
-                results[name] = f"error: {str(e)}"
+                results[name] = f"error: {e!s}"
                 self.stdout.write(self.style.ERROR(f" [FAILED: {e}]"))
                 logger.error(f"Error warming cache {name}: {e}")
 
@@ -309,7 +309,7 @@ class Command(BaseCommand):
                     json.dumps(
                         {
                             "status": "error",
-                            "message": f"Error clearing cache '{cache_name}': {str(e)}",
+                            "message": f"Error clearing cache '{cache_name}': {e!s}",
                             "timestamp": timezone.now().isoformat(),
                         },
                         indent=2,
@@ -332,7 +332,7 @@ class Command(BaseCommand):
             }
 
             # Collect manager type statistics
-            for name, manager in cache_registry.items():
+            for manager in cache_registry.values():
                 manager_type = type(manager).__name__
                 if manager_type not in report_data["system_info"]["manager_types"]:
                     report_data["system_info"]["manager_types"][manager_type] = 0

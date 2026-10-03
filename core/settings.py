@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 module: core.settings
 
@@ -12,7 +11,7 @@ import sys
 import threading
 import time
 import warnings
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from configurations import Configuration, values
@@ -30,7 +29,7 @@ from common.helpers import (
     log_warning,
 )
 
-GLOBAL_NOW = datetime.now(tz=timezone.utc)
+GLOBAL_NOW = datetime.now(tz=UTC)
 
 BASE_DIR = values.PathValue(Path(__file__).resolve().parent.parent, environ=False)
 
@@ -73,6 +72,7 @@ _INSTALLED_APPS_CORE = [
     # 4) Third-party apps
     "corsheaders",
     "storages",
+    "simple_history",
     "mailer",
     "djoser",
     "graphene_django",
@@ -98,6 +98,7 @@ _MIDDLEWARE_CORE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "simple_history.middleware.HistoryRequestMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.cache.FetchFromCacheMiddleware",
@@ -684,7 +685,7 @@ class Base(Configuration):
                                 },
                                 "category_not_found": {
                                     "summary": "Category with specified key/name does not exist",
-                                    "description": "The category with the provided key or name was not found. Check available categories using the /api/categories endpoint.",
+                                    "description": "The category with the provided key or name was not found. Check available categories using the /api/v1/categories/ endpoint.",
                                     "value": {
                                         "detail": "Category not found.",
                                         "code": "not_found",
@@ -807,6 +808,16 @@ class Base(Configuration):
     # DB row locking (select_for_update) already prevents double-sends;
     # the file lock exists for long-running send_mail loops, which we don't use.
     MAILER_USE_FILE_LOCK = False
+    # Public base URL for images in outgoing emails, e.g. the S3 bucket's
+    # "static/" URL. Mail clients fetch images from their own servers, so this
+    # must be reachable from the internet in every environment. When unset,
+    # emails fall back to static() (only absolute under S3 storage).
+    EMAIL_ASSET_BASE_URL = values.Value(
+        "https://s3.us-east-005.backblazeb2.com/dozens/static",
+        environ=True,
+        environ_prefix=None,
+        environ_name="EMAIL_ASSET_BASE_URL",
+    )
     USE_REDIS_CACHE = os.getenv("USE_REDIS_CACHE", "true").lower() == "true"
 
     if USE_REDIS_CACHE:
