@@ -169,7 +169,8 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
     filter_backends = [DjangoFilterBackend]  # pyrefly: ignore
     cache_models = [InsultCategory]
     bulk_select_related = ["added_by", "category"]
-    bulk_prefetch_related = ["reports"]
+    # The serializer never reads ``reports``; prefetching it cost a query per request.
+    bulk_prefetch_related = None
     bulk_cache_timeout = 1800
     cache_invalidation_patterns = [
         "Insult:*",
@@ -203,6 +204,20 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
             else Insult.public.all().prefetch_related("reports").order_by("?")
         )
 
+    def _requested_category(self) -> str | None:
+        """Return the category from the URL path or the ``category`` query param.
+
+        The path form serves ``/api/v1/categories/{category_name}/insults/``
+        (and the deprecated ``/api/insults/category/{category_name}/``); the
+        query-param form serves the ``/api/v1/insults/?category=`` collection.
+        ``category_name`` is still accepted as a query-param alias.
+        """
+        return (
+            self.kwargs.get("category_name")
+            or self.request.query_params.get("category")
+            or self.request.query_params.get("category_name")
+        )
+
     def _get_categorized_queryset(self, category):
         """
         Helper to build the category‑filtered queryset.
@@ -225,23 +240,18 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
             Insult.objects.filter(
                 category=normalized_category["category_key"], added_by=self.request.user
             )
-            .prefetch_related("reports")
             .order_by("?")
             .exclude(category__category_key__in=["TEST", "X"])
             .union(
                 # Joins User Submission with All other Matching Insults that are active
                 Insult.public.filter(
                     category=normalized_category["category_key"],
-                )
-                .prefetch_related("reports")
-                .order_by("?")
+                ).order_by("?")
             )
             if self.request.user.is_authenticated
             else Insult.public.filter(
                 category=normalized_category["category_key"],
-            )
-            .prefetch_related("reports")
-            .order_by("?")
+            ).order_by("?")
         )
 
     def list(self, request, *args, **kwargs):
@@ -428,7 +438,8 @@ class InsultDetailsEndpoint(CreateModelMixin, RetrieveUpdateDestroyAPIView):
     authentication_classes = [FlexibleTokenAuthentication]
     cache_models = [InsultCategory, InsultReview]
     bulk_select_related = ["added_by", "category"]
-    bulk_prefetch_related = ["reports"]
+    # The serializer never reads ``reports``; prefetching it cost a query per request.
+    bulk_prefetch_related = None
 
     bulk_cache_timeout = 1800
     cache_invalidation_patterns = [
@@ -456,7 +467,6 @@ class InsultDetailsEndpoint(CreateModelMixin, RetrieveUpdateDestroyAPIView):
             visibility |= Q(added_by=self.request.user)
         return (
             Insult.objects.select_related("added_by", "category")
-            .prefetch_related("reports")
             .filter(visibility)
             .order_by("-added_on")
         )
@@ -542,11 +552,7 @@ class RandomInsultEndpoint(GenericAPIView):
         with metrics.sql_instrumentation() as sql_stats:
             # Phase 1: base queryset build
             with metrics.time_random_insult_stage("queryset_build"):
-                queryset = (
-                    Insult.public.select_related("added_by", "category")
-                    .prefetch_related("reports")
-                    .all()
-                )
+                queryset = Insult.public.select_related("added_by", "category").all()
 
             # Phase 2: NSFW filter
             with metrics.time_random_insult_stage("nsfw_filter"):
@@ -671,7 +677,11 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 
         - `QuerySet`: Categories excluding test and internal categories
         """
-        return InsultCategory.public.all().prefetch_related("theme")
+        return InsultCategory.public.annotate(
+            active_insult_count=Count(
+                "insult", filter=Q(insult__status=Insult.STATUS.ACTIVE)
+            )
+        )
 
     def get(self, request):
         """
