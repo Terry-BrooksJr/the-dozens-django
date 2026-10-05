@@ -119,9 +119,11 @@ class TimeCacheOperationTests(TestCase):
 
     def test_exception_propagates(self):
         """Exceptions inside the block must not be swallowed."""
-        with self.assertRaises(RuntimeError):
-            with metrics.time_cache_operation("op_prefix", "write"):
-                raise RuntimeError("boom")
+        with (
+            self.assertRaises(RuntimeError),
+            metrics.time_cache_operation("op_prefix", "write"),
+        ):
+            raise RuntimeError("boom")
 
 
 # ---------------------------------------------------------------------------
@@ -145,9 +147,11 @@ class TimeDatabaseQueryTests(TestCase):
         from common.metrics import DB_QUERY_SECONDS
 
         before = DB_QUERY_SECONDS.labels("db_prefix_err", "error")._sum.get()
-        with self.assertRaises(ValueError):
-            with metrics.time_database_query("db_prefix_err"):
-                raise ValueError("db exploded")
+        with (
+            self.assertRaises(ValueError),
+            metrics.time_database_query("db_prefix_err"),
+        ):
+            raise ValueError("db exploded")
         self.assertGreaterEqual(
             DB_QUERY_SECONDS.labels("db_prefix_err", "error")._sum.get(), before
         )
@@ -211,9 +215,11 @@ class TimeRandomInsultStageTests(TestCase):
         )
 
     def test_exception_propagates(self):
-        with self.assertRaises(KeyError):
-            with metrics.time_random_insult_stage("serialization"):
-                raise KeyError("missing")
+        with (
+            self.assertRaises(KeyError),
+            metrics.time_random_insult_stage("serialization"),
+        ):
+            raise KeyError("missing")
 
 
 # ---------------------------------------------------------------------------

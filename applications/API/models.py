@@ -12,7 +12,6 @@ from __future__ import annotations
 import base64
 import binascii
 import secrets
-from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -25,6 +24,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django_prometheus.models import ExportModelOperationsMixin
 from loguru import logger
+from simple_history.models import HistoricalRecords
 
 
 class Base64DecoderException(Exception):
@@ -55,7 +55,7 @@ def encode_base64(number: int) -> str:
     try:
         return base64.b64encode(str(number).encode()).decode()
     except Exception as e:
-        logger.exception(f"Unable to Encode Reference ID for Insult {number}: {str(e)}")
+        logger.exception(f"Unable to Encode Reference ID for Insult {number}: {e!s}")
         raise Base64EncoderException(str(e)) from e
 
 
@@ -94,16 +94,20 @@ class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Mod
         """
         Returns the count of active insults in this category.
 
-        NOTE: This property can cause N+1 queries when serializing multiple categories.
-        Consider using QuerySet annotation instead:
+        Uses the ``active_insult_count`` annotation when the queryset provides
+        one, so serializing many categories doesn't issue a COUNT per row:
 
         Example:
             from django.db.models import Count, Q
             categories = InsultCategory.objects.annotate(
                 active_insult_count=Count('insult', filter=Q(insult__status=Insult.STATUS.ACTIVE))
             )
-            # Then access: category.active_insult_count instead of category.count
+
+        Without the annotation it falls back to one COUNT query.
         """
+        annotated = getattr(self, "active_insult_count", None)
+        if annotated is not None:
+            return annotated
         return Insult.objects.filter(category=self, status=Insult.STATUS.ACTIVE).count()
 
     public = PublicInsultCategoryManager()
@@ -207,7 +211,10 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         error_messages={"required": "Insults must have content"},
     )
     insult_id = models.AutoField(primary_key=True)
-
+    is_admin_modified = models.BooleanField(default=False, null=True, blank=True)
+    modified_content = models.TextField(null=True, blank=True)
+    reviewer_notes = models.TextField(null=True, blank=True)
+    history = HistoricalRecords()
     reference_id = models.CharField(
         max_length=50,
         unique=True,
@@ -303,6 +310,90 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
                 f"{self.reference_id!r}: {e}"
             )
 
+    def _notify_owner_joke_status_change(self, outcome: str):
+        """
+        Emails the submitter the outcome of a moderator review.
+
+        Called from the admin review buttons (InsultAdmin._report_review_result)
+        after the review has been saved, so every field already holds its
+        post-review value (new category, NSFW rating, modified text, etc.).
+
+        Args:
+            outcome: The review result; one of
+                applications.API.emails.REVIEW_OUTCOMES' keys: "approved",
+                "modified", "rejected" (new submissions) or "reclassified",
+                "recategorized", "removed", "kept" (flagged insults).
+
+        Logs:
+            Info:  Confirmation that the notification was dispatched.
+            Error: Any exception raised during send, without re-raising so that
+                   a mail failure never breaks the review flow.
+        """
+        # Imported here: emails.py is a leaf module, but keeping models free of
+        # module-level email imports avoids future import cycles.
+        from .emails import SubmissionReviewEmail
+
+        try:
+            submitter = self.added_by
+            if not submitter.email:
+                logger.warning(
+                    f"Unable to notify owner for {self.reference_id}: no email address"
+                )
+                return
+
+            is_modified = outcome == "modified"
+            if is_modified and not self.reviewer_notes:
+                logger.warning(
+                    f"Not notifying owner for {self.reference_id}: "
+                    f"modified insults require reviewer notes"
+                )
+                return
+
+            site_url = "https://api.yo-momma.io"
+            context = {
+                "submitter_name": submitter.first_name or submitter.username,
+                # Keep the original as the before-value for a modification;
+                # later flagged reviews should quote the published edit.
+                "joke_content": (
+                    self.content
+                    if is_modified or not self.is_admin_modified
+                    else self.modified_content
+                ),
+                # Only a "modified" review's edit and notes belong in this email;
+                # an older modification's notes must not leak into later reviews.
+                "modified_content": (
+                    (self.modified_content or "") if is_modified else ""
+                ),
+                "reviewer_notes": (self.reviewer_notes or "") if is_modified else "",
+                "reference_id": self.reference_id,
+                "category_name": self.category.name,
+                "nsfw": self.nsfw,
+                "reviewed_on": self.last_modified,
+                "joke_url": f"{site_url}/api/insults/{self.reference_id}/",
+                "submit_url": f"{site_url}/api/swagger/",
+                "site_url": site_url,
+                "site_domain": "api.yo-momma.io",
+            }
+
+            sent = SubmissionReviewEmail(
+                outcome=outcome, context=context, to=[submitter.email]
+            ).send()
+            if not sent:
+                logger.error(
+                    f"Failed to send owner notification for insult "
+                    f"{self.reference_id!r}: no message was queued"
+                )
+                return
+            logger.success(
+                f"Insult owner {submitter.username} notified of {outcome} "
+                f"outcome for {self.reference_id}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to send owner notification for insult "
+                f"{self.reference_id!r}: {e}"
+            )
+
     def __str__(self) -> str:
         """Return the reference ID, category, and NSFW flag."""
         return f"{self.reference_id} - ({self.category}) - NSFW: {self.nsfw}"
@@ -319,17 +410,16 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             ValidationError: If theme doesn't match category's theme.
         """
         super().clean()
-        if self.category and self.theme:
-            if self.category.theme_id != self.theme_id:
-                from django.core.exceptions import ValidationError
+        if self.category and self.theme and self.category.theme_id != self.theme.pk:
+            from django.core.exceptions import ValidationError
 
-                raise ValidationError(
-                    {
-                        "theme": f"Insult theme must match category theme. "
-                        f'Category "{self.category.name}" belongs to theme "{self.category.theme.theme_name}", '
-                        f'but insult is assigned to theme "{self.theme.theme_name}".'
-                    }
-                )
+            raise ValidationError(
+                {
+                    "theme": f"Insult theme must match category theme. "
+                    f'Category "{self.category.name}" belongs to theme "{self.category.theme.theme_name}", '
+                    f'but insult is assigned to theme "{self.theme.theme_name}".'
+                }
+            )
 
     def save(self, *args, **kwargs):
         """
@@ -346,14 +436,17 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         # Automatically set theme from category to ensure consistency
         if self.category_id and not self.theme_id:
             self.theme = self.category.theme
-        elif self.category_id and self.theme_id:
+        elif (
             # If both are set, ensure they match
-            if self.category.theme_id != self.theme_id:
-                logger.warning(
-                    f"Insult theme mismatch detected for {self.reference_id or 'new insult'}. "
-                    f"Automatically updating theme to match category's theme."
-                )
-                self.theme = self.category.theme
+            self.category_id
+            and self.theme_id
+            and self.category.theme_id != self.theme_id
+        ):
+            logger.warning(
+                f"Insult theme mismatch detected for {self.reference_id or 'new insult'}. "
+                f"Automatically updating theme to match category's theme."
+            )
+            self.theme = self.category.theme
 
         super().save(*args, **kwargs)
 
@@ -363,7 +456,9 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         return self.reports.filter(status=InsultReview.STATUS.PENDING).count()
 
     @classmethod
-    def get_by_reference_id(cls: type[Insult], reference_id: str) -> Optional[Insult]:
+    def get_by_reference_id(
+        cls: type[Insult], reference_id: str, active_only: bool = True
+    ) -> Insult | None:
         """
         Retrieves an Insult instance by its reference ID.
 
@@ -371,6 +466,9 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
 
         Args:
             reference_id (str): The unique reference ID of the insult.
+            active_only (bool): Restrict the lookup to ACTIVE insults. Internal
+                callers that must resolve non-public insults (e.g. linking a
+                review to an already-flagged insult) pass False.
 
         Returns:
             Optional[Insult]: The Insult instance if found, otherwise None.
@@ -390,7 +488,13 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
                     logger.warning(f"Invalid base64 part: {base64_part} ({e})")
                     return None
                 try:
-                    return cls.objects.get(pk=pk)
+                    # Detail lookups must enforce the same visibility boundary as
+                    # the public manager; otherwise a reference ID exposes
+                    # rejected, pending, flagged, or removed submissions.
+                    filters = {"pk": pk}
+                    if active_only:
+                        filters["status"] = cls.STATUS.ACTIVE
+                    return cls.objects.get(**filters)
                 except cls.DoesNotExist:
                     logger.warning(f"Insult with PK {pk} does not exist.")
                     return None
@@ -431,6 +535,65 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             logger.success(f"Successfully Approved {self.reference_id}")
         except Exception as e:
             logger.error(f"Unable to Approve Insult({self.reference_id}): {e}")
+
+    def reject_insult(self):
+        """Rejects a Pending insult so it never becomes discoverable by the API.
+
+        Logs:
+            Success: Logs the reference ID of the rejected Insult Instance
+            Exception: If the Insult is unable to be rejected.
+
+        Returns:
+            None
+        """
+
+        try:
+            self.status = Insult.STATUS.REJECTED  # Set status to REJECTED
+            self.last_modified = settings.GLOBAL_NOW
+            self.save(update_fields=["status", "last_modified"])
+            logger.success(f"Successfully Rejected {self.reference_id}")
+        except Exception as e:
+            logger.error(f"Unable to Reject Insult({self.reference_id}): {e}")
+
+    def approve_with_modifications(self, modified_content: str, reviewer_notes: str):
+        """Approves a Pending insult after a moderator edit.
+
+        The submitter's original ``content`` is kept as-is; the edited text and
+        the moderator's reasoning are stored in ``modified_content`` and
+        ``reviewer_notes``, and ``is_admin_modified`` is set.
+
+        Args:
+            modified_content: The edited joke text as published.
+            reviewer_notes: The moderator's explanation of the change.
+
+        Logs:
+            Success: Logs the reference ID of the modified Insult Instance
+            Exception: If the Insult is unable to be approved with modifications.
+
+        Returns:
+            None
+        """
+
+        try:
+            self.status = Insult.STATUS.ACTIVE  # Set status to ACTIVE
+            self.is_admin_modified = True
+            self.modified_content = modified_content
+            self.reviewer_notes = reviewer_notes
+            self.last_modified = settings.GLOBAL_NOW
+            self.save(
+                update_fields=[
+                    "status",
+                    "is_admin_modified",
+                    "modified_content",
+                    "reviewer_notes",
+                    "last_modified",
+                ]
+            )
+            logger.success(f"Successfully Approved (Modified) {self.reference_id}")
+        except Exception as e:
+            logger.error(
+                f"Unable to Approve Insult with Modifications({self.reference_id}): {e}"
+            )
 
     def mark_insult_for_review(self):
         """Removes insult visibility from the API.
@@ -589,6 +752,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
     reporter_first_name = models.CharField(max_length=80, null=True, blank=True)
     reporter_last_name = models.CharField(max_length=80, null=True, blank=True)
     post_review_contact_desired = models.BooleanField(default=False)
+    history = HistoricalRecords()
     reporter_email = models.EmailField(null=True, blank=True)
     date_submitted = models.DateField(auto_now=True)
     date_reviewed = models.DateField(null=True, blank=True)
@@ -619,13 +783,16 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
                 raise IntegrityError(
                     "Insult Reference ID must be provided to set the related Insult."
                 )
-            if not self.insult:
-                if found_insult := Insult.get_by_reference_id(self.insult_reference_id):
-                    logger.info(
-                        f"Setting Insult for Review {self.insult_reference_id} - {found_insult.insult_id}"
-                    )
-                    self.insult = found_insult
-                    self.save(update_fields=["insult"])
+            if not self.insult and (
+                found_insult := Insult.get_by_reference_id(
+                    self.insult_reference_id, active_only=False
+                )
+            ):
+                logger.info(
+                    f"Setting Insult for Review {self.insult_reference_id} - {found_insult.insult_id}"
+                )
+                self.insult = found_insult
+                self.save(update_fields=["insult"])
         except Insult.DoesNotExist as e:
             logger.error(
                 f"Insult with reference ID {self.insult_reference_id} does not exist."
@@ -641,8 +808,8 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
                 f"Reviews Must include a valid insult reference id that conforms to a pre-fixed Base64 format. Either value after the prefix is invalid  for Insult Reference ID: {self.insult_reference_id}"
             ) from base64_error
         except Exception as e:
-            logger.error(f"Generalized Insult Setting Error: {str(e)}")
-            raise IntegrityError(f"Generalized Insult Setting Error: {str(e)}") from e
+            logger.error(f"Generalized Insult Setting Error: {e!s}")
+            raise IntegrityError(f"Generalized Insult Setting Error: {e!s}") from e
 
     def mark_review_not_reclassified(self, reviewer: User):
         """Marks the review as Not reclassified.
@@ -663,9 +830,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             logger.success(f"Marked {self.insult_reference_id} as Not Reclassified")
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
         except Exception as e:
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
+            logger.error(f"ERROR: Unable to Update {self.insult_reference_id}: {e!s}")
 
     def mark_review_recategorized(self, reviewer: User):
         """Mark the review as resolved by moving the insult to a new category.
@@ -680,11 +845,9 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             logger.success(f"Marked {self.insult_reference_id} as Recategorized")
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
         except Exception as e:
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
+            logger.error(f"ERROR: Unable to Update {self.insult_reference_id}: {e!s}")
 
-    def mark_review_not_recatagoized(self, reviewer: Optional[User] = None):
+    def mark_review_not_recatagoized(self, reviewer: User | None = None):
         """Marks the review as not requiring recategorization.
 
         This method sets the status of the review to "SJC" (Same Joke Category) and updates the date_reviewed field to the current date and time. It also logs a success message indicating that the review has been marked as not recategorized.
@@ -704,11 +867,9 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
             logger.success(f"Marked {self.insult_reference_id} as Not Recategorized")
         except Exception as e:
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
+            logger.error(f"ERROR: Unable to Update {self.insult_reference_id}: {e!s}")
 
-    def mark_review_removed(self, reviewer: Optional[User] = None):
+    def mark_review_removed(self, reviewer: User | None = None):
         """Marks the review as removed.
 
         This method sets the status of the review to "REMOVED" and updates the date_reviewed field to the current date and time. It also logs a success message indicating that the review has been marked as removed.
@@ -728,9 +889,31 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
             logger.success(f"Marked {self.insult_reference_id} as Removed")
         except Exception as e:
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
+            logger.error(f"ERROR: Unable to Update {self.insult_reference_id}: {e!s}")
+
+    def mark_review_not_removed(self, reviewer: User | None = None):
+        """Close a removal request without removing the joke.
+
+        InsultReview has no dedicated "not removed" status, so the report closes
+        as "same category" (no change made), matching how the admin resolves
+        other declined reports.
+
+        Args:
+            reviewer (User, optional): The administrator resolving the review.
+
+        Logs:
+            Exception: If there is an error updating the review.
+        """
+
+        try:
+            self.status = self.STATUS.SAME_CATEGORY
+            if reviewer:
+                self.reviewer = reviewer
+            self.date_reviewed = settings.GLOBAL_NOW
+            self.save(update_fields=["status", "reviewer", "date_reviewed"])
+            logger.success(f"Marked {self.insult_reference_id} as Not Removed")
+        except Exception as e:
+            logger.error(f"ERROR: Unable to Update {self.insult_reference_id}: {e!s}")
 
     def mark_review_reclassified(self, reviewer: User):
         """Marks the review as reclassified.
@@ -750,9 +933,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             logger.success(f"Marked {self.insult_reference_id} as Reclassified")
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
         except Exception as e:
-            logger.error(
-                f"ERROR: Unable to Update {self.insult_reference_id}: {str(e)}"
-            )
+            logger.error(f"ERROR: Unable to Update {self.insult_reference_id}: {e!s}")
 
     class Meta:
         db_table = "reported_jokes"

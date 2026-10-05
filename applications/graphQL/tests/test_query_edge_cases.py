@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Edge-case and supplemental tests for applications.graphQL.query
 
@@ -32,7 +31,7 @@ class GraphQLInsultQueryEdgeCaseTests(GraphQLTestCase):
         cls.user = User.objects.create_user(
             username="edge_user",
             email="edge@example.com",
-            password="pass1234",
+            password="pass1234",  # nosec B106
         )
         cls.theme = Theme.objects.create(theme_key="EC", theme_name="Edge Case Theme")
         cls.cat_a = InsultCategory.objects.create(

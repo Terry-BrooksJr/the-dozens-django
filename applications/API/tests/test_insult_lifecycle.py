@@ -41,7 +41,7 @@ class _InsultLifecycleBase(TestCase):
         cls.user = User.objects.create_user(
             username="lifecycle_user",
             email="lifecycle@example.com",
-            password="pw12345",
+            password="pw12345",  # nosec B106
         )
         cls.theme_a = Theme.objects.create(theme_key="LFA", theme_name="Lifecycle A")
         cls.theme_b = Theme.objects.create(theme_key="LFB", theme_name="Lifecycle B")
@@ -53,13 +53,13 @@ class _InsultLifecycleBase(TestCase):
         )
 
     def _create_insult(self, **overrides):
-        defaults = dict(
-            content="Yo momma is so lifecycle-tested she has 100% coverage.",
-            category=self.cat_a,
-            nsfw=False,
-            added_by=self.user,
-            status=Insult.STATUS.ACTIVE,
-        )
+        defaults = {
+            "content": "Yo momma is so lifecycle-tested she has 100% coverage.",
+            "category": self.cat_a,
+            "nsfw": False,
+            "added_by": self.user,
+            "status": Insult.STATUS.ACTIVE,
+        }
         defaults.update(overrides)
         return Insult.objects.create(**defaults)
 

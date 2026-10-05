@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 Tests for common.helpers.
 
 Covers:
-- add_token_auth_scheme: mutates/returns the OpenAPI schema dict, never raises
 - _normalize_append_components: coerces APPEND_COMPONENTS to a dict
 - log_warning: formats warnings.showwarning args and routes them to loguru
 - _insert_after_middleware: inserts items after a marker without mutating input
@@ -19,7 +17,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -35,73 +33,9 @@ from common.helpers import (
     _normalize_append_components,
     _otel_safe_value,
     _safe_get_host,
-    add_token_auth_scheme,
     ld_loguru_sink,
     log_warning,
 )
-
-
-class AddTokenAuthSchemeTests(TestCase):
-    """Tests for `add_token_auth_scheme`, the drf-spectacular postprocessing hook."""
-
-    def test_adds_token_auth_scheme_to_empty_result(self):
-        """A TokenAuth apiKey scheme is injected into an empty schema result."""
-        result = add_token_auth_scheme({}, generator=None, request=None, public=True)
-
-        scheme = result["components"]["securitySchemes"]["TokenAuth"]
-        self.assertEqual(scheme["type"], "apiKey")
-        self.assertEqual(scheme["in"], "header")
-        self.assertEqual(scheme["name"], "Authorization")
-
-    def test_preserves_existing_components_and_schemes(self):
-        """Existing security schemes survive alongside the injected TokenAuth scheme."""
-        result = {
-            "components": {
-                "securitySchemes": {"Basic": {"type": "http", "scheme": "basic"}}
-            }
-        }
-
-        add_token_auth_scheme(result, generator=None, request=None, public=True)
-
-        self.assertIn("Basic", result["components"]["securitySchemes"])
-        self.assertIn("TokenAuth", result["components"]["securitySchemes"])
-
-    def test_mutates_and_returns_same_object(self):
-        """The function mutates the input dict in place and returns that same object."""
-        result = {}
-
-        returned = add_token_auth_scheme(
-            result, generator=None, request=None, public=True
-        )
-
-        self.assertIs(returned, result)
-
-    def test_idempotent_on_repeated_calls(self):
-        """Calling the hook twice produces an identical TokenAuth scheme, not duplicates."""
-        result = {}
-        add_token_auth_scheme(result, generator=None, request=None, public=True)
-        first = result["components"]["securitySchemes"]["TokenAuth"]
-
-        add_token_auth_scheme(result, generator=None, request=None, public=True)
-        second = result["components"]["securitySchemes"]["TokenAuth"]
-
-        self.assertEqual(first, second)
-
-    def test_non_dict_input_is_returned_unchanged_without_raising(self):
-        """A non-dict `result` (e.g. None) is returned unchanged instead of raising."""
-        # None has no .setdefault(); the function must swallow the error and
-        # still return the original value rather than raising.
-        result = add_token_auth_scheme(None, generator=None, request=None, public=True)
-
-        self.assertIsNone(result)
-
-    def test_non_mutable_input_type_is_returned_unchanged(self):
-        """A string `result` is returned unchanged since it can't be mutated like a dict."""
-        result = add_token_auth_scheme(
-            "not-a-dict", generator=None, request=None, public=False
-        )
-
-        self.assertEqual(result, "not-a-dict")
 
 
 class NormalizeAppendComponentsTests(TestCase):
@@ -286,19 +220,19 @@ class ForceUtcTimeTests(TestCase):
 
         _force_utc_time(record)
 
-        self.assertEqual(record["time"].tzinfo, timezone.utc)
+        self.assertEqual(record["time"].tzinfo, UTC)
         self.assertEqual(record["time"], local_time)  # same instant
         self.assertEqual(record["time"].hour, 21)
 
     def test_already_utc_time_is_unchanged_in_value(self):
         """A timestamp already in UTC is left with the same value and tzinfo."""
-        utc_time = datetime(2026, 9, 17, 21, 21, 27, tzinfo=timezone.utc)
+        utc_time = datetime(2026, 9, 17, 21, 21, 27, tzinfo=UTC)
         record = {"time": utc_time}
 
         _force_utc_time(record)
 
         self.assertEqual(record["time"], utc_time)
-        self.assertEqual(record["time"].tzinfo, timezone.utc)
+        self.assertEqual(record["time"].tzinfo, UTC)
 
 
 class OtelSafeValueTests(TestCase):
@@ -597,9 +531,7 @@ class LdLoguruSinkTests(TestCase):
 
         with (
             patch("common.helpers.observe", None),
-            patch(
-                "common.helpers._launchdarkly_observability_ready"
-            ) as mock_ready,
+            patch("common.helpers._launchdarkly_observability_ready") as mock_ready,
         ):
             ld_loguru_sink(message)  # must not raise
 
@@ -612,12 +544,14 @@ class LaunchdarklyObservabilityReadyTests(TestCase):
     def test_reflects_client_is_configured_result(self):
         """Returns whatever `applications.ld_integration.client.is_configured()` reports."""
         for expected in (True, False):
-            with self.subTest(expected=expected):
-                with patch(
+            with (
+                self.subTest(expected=expected),
+                patch(
                     "applications.ld_integration.client.is_configured",
                     return_value=expected,
-                ):
-                    self.assertIs(_launchdarkly_observability_ready(), expected)
+                ),
+            ):
+                self.assertIs(_launchdarkly_observability_ready(), expected)
 
     def test_returns_false_without_raising_when_client_import_fails(self):
         """An import/attribute error while checking readiness is swallowed, not raised."""
@@ -631,7 +565,7 @@ def _make_loki_record(**overrides):
     plain dict rather than a `Message` wrapper.
     """
     record = {
-        "time": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        "time": datetime(2024, 1, 1, tzinfo=UTC),
         "message": "hello world",
         "process": SimpleNamespace(id=123),
         "thread": SimpleNamespace(id=456),

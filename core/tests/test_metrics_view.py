@@ -24,7 +24,7 @@ from django.test import Client, RequestFactory, TestCase, override_settings
 from core.urls import metrics_view
 
 PROMETHEUS_200_PATCH = "core.urls.ExportToDjangoView"
-VALID_TOKEN = "super-secret-scrape-token-abc123"
+VALID_TOKEN = "super-secret-scrape-token-abc123"  # nosec B105
 
 
 def _request(auth_header: str | None = None):
@@ -102,7 +102,7 @@ class MetricsViewTokenRejectedTests(TestCase):
 
 class MetricsViewUnconfiguredTests(TestCase):
 
-    @override_settings(METRICS_SCRAPE_TOKEN="")
+    @override_settings(METRICS_SCRAPE_TOKEN="")  # nosec B106
     def test_empty_setting_forbids_all_requests(self):
         """Empty token in settings means endpoint is locked down entirely."""
         response = metrics_view(_request(f"Bearer {VALID_TOKEN}"))

@@ -98,7 +98,7 @@ class ReportJokeViewTests(TestCase):
         cls.owner = User.objects.create_user(
             username="joke_owner",
             email="owner@example.com",
-            password="pass1234",
+            password="pass1234",  # nosec B106
         )
         cls.theme = Theme.objects.create(theme_key="TST", theme_name="Test Theme")
         cls.category = InsultCategory.objects.create(

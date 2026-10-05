@@ -11,8 +11,10 @@ class ApiConfig(AppConfig):
     name = "applications.API"
 
     def ready(self):
-        """Django lifecycle hook: initialize cache-invalidation metrics."""
+        """Django lifecycle hook: register schema extensions, init cache metrics."""
         # pylint: disable=all
+        import applications.API.schema  # noqa: F401  (registers drf-spectacular extensions)
+
         self._init_metrics()
 
     @staticmethod

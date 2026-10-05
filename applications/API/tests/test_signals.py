@@ -53,7 +53,7 @@ class NotifyAdminsPendingInsultSignalTests(TestCase):
         cls.submitter = User.objects.create_user(
             username="contributor",
             email="contributor@example.com",
-            password="pass1234",
+            password="pass1234",  # nosec B106
             first_name="Terry",
             last_name="Brooks",
         )
@@ -72,13 +72,13 @@ class NotifyAdminsPendingInsultSignalTests(TestCase):
 
     def _create_insult(self, status=Insult.STATUS.PENDING, nsfw=False, **kwargs):
         """Create and return an Insult; the signal fires automatically."""
-        defaults = dict(
-            content="Yo momma is so lazy she got a remote control to change TV channels on her TV.",
-            category=self.cat,
-            theme=self.theme,
-            nsfw=nsfw,
-            added_by=self.submitter,
-        )
+        defaults = {
+            "content": "Yo momma is so lazy she got a remote control to change TV channels on her TV.",
+            "category": self.cat,
+            "theme": self.theme,
+            "nsfw": nsfw,
+            "added_by": self.submitter,
+        }
         defaults.update(kwargs)
         return Insult.objects.create(status=status, **defaults)
 
@@ -196,7 +196,9 @@ class NotifyAdminsPendingInsultSignalTests(TestCase):
     def test_body_falls_back_to_username_when_no_full_name(self):
         """When first/last name are absent, the username appears in the body."""
         anon = User.objects.create_user(
-            username="anon_contrib", email="anon@example.com", password="x"
+            username="anon_contrib",
+            email="anon@example.com",
+            password="x",  # nosec B106
         )
         self._create_insult(added_by=anon)
         self.assertIn(anon.username, mail.outbox[0].body)

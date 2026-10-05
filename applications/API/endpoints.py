@@ -9,14 +9,12 @@ API endpoints for managing insults, categories, and themes.
 
 import random
 import time
-from typing import Optional
-from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import EmptyResultSet
 from django.db import connection
-from django.db.models import QuerySet
-from django.shortcuts import redirect
+from django.db.models import Count, Q, QuerySet
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
@@ -54,6 +52,7 @@ from applications.API.serializers import (
     BaseInsultSerializer,
     CategorySerializer,
     CreateInsultSerializer,
+    MyInsultSerializer,
     OptimizedInsultSerializer,
 )
 from common.metrics import metrics
@@ -169,7 +168,8 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
     filter_backends = [DjangoFilterBackend]  # pyrefly: ignore
     cache_models = [InsultCategory]
     bulk_select_related = ["added_by", "category"]
-    bulk_prefetch_related = ["reports"]
+    # The serializer never reads ``reports``; prefetching it cost a query per request.
+    bulk_prefetch_related = None
     bulk_cache_timeout = 1800
     cache_invalidation_patterns = [
         "Insult:*",
@@ -178,7 +178,7 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
         "users:*:insults*",
     ]
 
-    def get_queryset(self) -> Optional[QuerySet]:  # pyrefly: ignore
+    def get_queryset(self) -> QuerySet | None:  # pyrefly: ignore
         """
         Build the base queryset for this view.
 
@@ -195,12 +195,26 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
             return Insult.objects.none()
         if self.kwargs:
             logger.debug(f"kwargs seen by view: {self.kwargs}")
-            if category := self.kwargs["category_name"]:
-                return self._get_categorized_queryset(category)
+        if category := self._requested_category():
+            return self._get_categorized_queryset(category)
         return (
             Insult.objects.filter(added_by=self.request.user).union(Insult.public.all())
             if self.request.user.is_authenticated
             else Insult.public.all().prefetch_related("reports").order_by("?")
+        )
+
+    def _requested_category(self) -> str | None:
+        """Return the category from the URL path or the ``category`` query param.
+
+        The path form serves ``/api/v2.0.0/categories/{category_name}/insults/``
+        (and the deprecated ``/api/insults/category/{category_name}/``); the
+        query-param form serves the ``/api/v2.0.0/insults/?category=`` collection.
+        ``category_name`` is still accepted as a query-param alias.
+        """
+        return (
+            self.kwargs.get("category_name")
+            or self.request.query_params.get("category")
+            or self.request.query_params.get("category_name")
         )
 
     def _get_categorized_queryset(self, category):
@@ -225,45 +239,31 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
             Insult.objects.filter(
                 category=normalized_category["category_key"], added_by=self.request.user
             )
-            .prefetch_related("reports")
             .order_by("?")
             .exclude(category__category_key__in=["TEST", "X"])
             .union(
                 # Joins User Submission with All other Matching Insults that are active
                 Insult.public.filter(
                     category=normalized_category["category_key"],
-                )
-                .prefetch_related("reports")
-                .order_by("?")
+                ).order_by("?")
             )
             if self.request.user.is_authenticated
             else Insult.public.filter(
                 category=normalized_category["category_key"],
-            )
-            .prefetch_related("reports")
-            .order_by("?")
+            ).order_by("?")
         )
 
     def list(self, request, *args, **kwargs):
-        """List active insults, redirecting legacy ``?category=`` requests.
+        """List active insults, optionally narrowed to a category.
 
-        A ``category``/``category_name`` query parameter redirects to the
-        path-based category route. Otherwise results are filtered by
-        ``status``/``nsfw``, served from the bulk cache, and paginated.
+        The category comes from the URL path or the ``category`` query
+        parameter. Results are filtered by ``status``/``nsfw``, served from
+        the bulk cache, and paginated.
         """
-        # Check for category query parameter early and reject with 400
-        if category := request.GET.get("category_name") or request.GET.get("category"):
-            # Build new query params without the category fields
-            params = request.GET.copy()
-            params.pop("category", None)
-            params.pop("category_name", None)
-            querystring = f"?{urlencode(params)}" if params else ""
-
-            return redirect(f"/api/insults/{category}{querystring}")
-
         filters = {
             "status": request.GET.get("status"),
             "nsfw": request.GET.get("nsfw"),
+            "category": self._requested_category(),
         }
 
         cache_key = self.get_cache_key("bulk_list", **filters)
@@ -303,6 +303,60 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
         return Response(
             {"count": queryset.count(), "results": serializer.data, **extra_data}
         )
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Insults"],
+        operation_id="list_insults",
+        auth=[],
+        summary="List insults",
+        description="Retrieve paginated active insults, optionally filtered by `category` (key or name) and `nsfw`.",
+        parameters=[
+            OpenApiParameter(
+                name="category",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Category key or name to filter by.",
+                required=False,
+            ),
+        ],
+    ),
+    post=extend_schema(
+        tags=["Insults"],
+        operation_id="create_insult",
+        summary="Create an insult",
+        description="Create a new insult owned by the authenticated user. New insults default to `Pending` status.",
+        request=CreateInsultSerializer,
+        responses={201: CreateInsultSerializer},
+    ),
+)
+class InsultCollectionEndpoint(CreateModelMixin, InsultByCategoryEndpoint):
+    """
+    # Insult Collection
+
+    - `GET /api/v2.0.0/insults/`: list active insults (supports `?category=`)
+    - `POST /api/v2.0.0/insults/`: create an insult (token authentication required)
+    """
+
+    authentication_classes = [FlexibleTokenAuthentication]
+
+    def get_permissions(self):
+        if self.request.method in SAFE_METHODS:
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return CreateInsultSerializer
+        return super().get_serializer_class()
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        """Set the authenticated user as the insult owner."""
+        serializer.save(added_by=self.request.user)
 
 
 @extend_schema_view(
@@ -428,7 +482,8 @@ class InsultDetailsEndpoint(CreateModelMixin, RetrieveUpdateDestroyAPIView):
     authentication_classes = [FlexibleTokenAuthentication]
     cache_models = [InsultCategory, InsultReview]
     bulk_select_related = ["added_by", "category"]
-    bulk_prefetch_related = ["reports"]
+    # The serializer never reads ``reports``; prefetching it cost a query per request.
+    bulk_prefetch_related = None
 
     bulk_cache_timeout = 1800
     cache_invalidation_patterns = [
@@ -448,23 +503,24 @@ class InsultDetailsEndpoint(CreateModelMixin, RetrieveUpdateDestroyAPIView):
             return [IsOwnerOrReadOnly()]
 
     def get_queryset(self):
-        """Return all insults with related data preloaded, newest first."""
+        """Return public insults and the authenticated user's submissions."""
         if getattr(self, "swagger_fake_view", False):
             return Insult.objects.none()
+        visibility = Q(status=Insult.STATUS.ACTIVE)
+        if self.request.user.is_authenticated:
+            visibility |= Q(added_by=self.request.user)
         return (
             Insult.objects.select_related("added_by", "category")
-            .prefetch_related("reports")
+            .filter(visibility)
             .order_by("-added_on")
-            .all()
         )
 
     def get(self, request, reference_id, *args, **kwargs):
         """Retrieve a specific insult by reference_id."""
-        # if not (ref_id := kwargs.get("reference_id")):
-        #     return Response(
-        #         {"detail": "Reference ID is required."}, status=400
-        #     )
-        insult = Insult.get_by_reference_id(reference_id)
+        insult = get_object_or_404(
+            self.get_queryset(),
+            reference_id=reference_id,
+        )
         serializer = self.get_serializer(insult)
         return Response(serializer.data)
 
@@ -540,11 +596,7 @@ class RandomInsultEndpoint(GenericAPIView):
         with metrics.sql_instrumentation() as sql_stats:
             # Phase 1: base queryset build
             with metrics.time_random_insult_stage("queryset_build"):
-                queryset = (
-                    Insult.public.select_related("added_by", "category")
-                    .prefetch_related("reports")
-                    .all()
-                )
+                queryset = Insult.public.select_related("added_by", "category").all()
 
             # Phase 2: NSFW filter
             with metrics.time_random_insult_stage("nsfw_filter"):
@@ -669,7 +721,11 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 
         - `QuerySet`: Categories excluding test and internal categories
         """
-        return InsultCategory.public.all().prefetch_related("theme")
+        return InsultCategory.public.annotate(
+            active_insult_count=Count(
+                "insult", filter=Q(insult__status=Insult.STATUS.ACTIVE)
+            )
+        )
 
     def get(self, request):
         """
@@ -728,7 +784,9 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 @extend_schema_view(
     post=extend_schema(
         tags=["Insults"],
-        auth=[{"TokenAuth": []}],
+        auth=[
+            {"FlexibleTokenAuthentication": []}
+        ],  # pyright: ignore[reportArgumentType]
         operation_id="create-insult",
         request=CreateInsultSerializer,
         summary="Create New Insult",
@@ -786,38 +844,40 @@ class CreateInsultEndpoint(CreateAPIView):
         serializer.save(added_by=self.request.user)
 
 
-@extend_schema(
-    tags=["Insults"],
-    auth=[],
-    operation_id="list_reference_ids",
-    summary="List all active insult reference IDs",
-    description=(
-        "Returns a paginated list of reference IDs for every active insult in the "
-        "public collection. Useful for bulk look-ups, pre-fetching, or building a "
-        "client-side cache of available identifiers. Pass each ID to "
-        "`GET /api/insults/{reference_id}/` to retrieve the full insult."
-    ),
-    responses={
-        200: OpenApiResponse(
-            description="Paginated list of active insult reference IDs",
-            examples=[
-                OpenApiExample(
-                    "Success Response",
-                    value={
-                        "count": 500,
-                        "next": "/api/insults/reference-ids/?page=2",
-                        "previous": None,
-                        "results": [
-                            "CACKLE_NDQ5",
-                            "CHUCKLE_NDUz",
-                            "GIGGLE_ABC123",
-                        ],
-                    },
-                )
-            ],
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Insults"],
+        auth=[],
+        operation_id="list_reference_ids",
+        summary="List all active insult reference IDs",
+        description=(
+            "Returns a paginated list of reference IDs for every active insult in the "
+            "public collection. Useful for bulk look-ups, pre-fetching, or building a "
+            "client-side cache of available identifiers. Pass each ID to "
+            "`GET /api/v2.0.0/insults/{reference_id}/` to retrieve the full insult."
         ),
-        **get_public_list_responses(),
-    },
+        responses={
+            200: OpenApiResponse(
+                description="Paginated list of active insult reference IDs",
+                examples=[
+                    OpenApiExample(
+                        "Success Response",
+                        value={
+                            "count": 500,
+                            "next": "/api/v2.0.0/insults/reference-ids/?page=2",
+                            "previous": None,
+                            "results": [
+                                "CACKLE_NDQ5",
+                                "CHUCKLE_NDUz",
+                                "GIGGLE_ABC123",
+                            ],
+                        },
+                    )
+                ],
+            ),
+            **get_public_list_responses(),
+        },
+    )
 )
 class ListReferenceIdsEndpoint(ListAPIView):
     """
@@ -827,7 +887,7 @@ class ListReferenceIdsEndpoint(ListAPIView):
 
     ## Endpoint
 
-    - ``GET /api/insults/reference-ids/``
+    - ``GET /api/v2.0.0/insults/reference-ids/``
 
     ## Query Parameters
 
@@ -837,7 +897,7 @@ class ListReferenceIdsEndpoint(ListAPIView):
     ## Notes
 
     - No authentication required
-    - Only active, public insults are included (same visibility as ``/api/insults/random/``)
+    - Only active, public insults are included (same visibility as ``/api/v2.0.0/insults/random/``)
     - Results are ordered alphabetically by reference ID for stable pagination
     """
 
@@ -863,6 +923,12 @@ class ListReferenceIdsEndpoint(ListAPIView):
         if page is not None:
             return self.get_paginated_response(list(page))
         return Response({"count": qs.count(), "results": list(qs)})
+
+
+class UserContentManagementEndpoint(ListAPIView):
+    permission_classes = []
+    authentication_classes = []
+    serializer_class = MyInsultSerializer
 
 
 class HealthEndpoint(GenericAPIView):

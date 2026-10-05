@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Frontend views for the Dozens application.
 
@@ -12,7 +11,7 @@ This module provides:
 The GitHub integration is accessed via ``settings.BASE.get_github_api()``.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -21,6 +20,7 @@ from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from loguru import logger
 from rest_framework import status
 from rest_framework.generics import CreateAPIView
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -67,8 +67,11 @@ class ReportJokeView(CreateAPIView):
     """API view to handle joke reporting."""
 
     serializer_class = InsultReviewSerializer
+    # Anonymous reporting is supported. Set explicitly: the Base default
+    # (DjangoModelPermissionsOrAnonReadOnly) needs a queryset this view lacks.
+    permission_classes = [AllowAny]
 
-    def format_issue(self, issue_data: Dict[str, Any]) -> Dict[str, str]:
+    def format_issue(self, issue_data: dict[str, Any]) -> dict[str, str]:
         """Build the GitHub issue payload for a joke review.
 
         Takes validated serializer data for an insult review and converts it
@@ -90,7 +93,7 @@ class ReportJokeView(CreateAPIView):
             ValueError: If ``issue_data`` is not a dictionary.
         """
         if not isinstance(issue_data, dict):
-            raise ValueError("issue_data must be an instance of InsultReviewForm.")
+            raise TypeError("issue_data must be an instance of InsultReviewForm.")
         issue_body = issue_data["rationale_for_review"]
         issue_title = f"New Joke Review (Joke Id: {issue_data['insult_reference_id']}) - {issue_data['review_type']}"
 
@@ -212,7 +215,7 @@ class ReportJokeView(CreateAPIView):
                     error=str(e),
                 ).error(f"Unable to submit {ref_id} for review: {e}")
                 return Response(
-                    data={"status": f"FAILED - {str(e)}", "errors": serializer.errors},
+                    data={"status": "FAILED", "errors": serializer.errors},
                     status=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )
         logger.bind(

@@ -190,7 +190,7 @@ def user():
     return get_user_model().objects.create_user(
         username="terry",
         email="terry@example.com",
-        password="not-a-good-password-but-here-we-are",
+        password="not-a-good-password-but-here-we-are",  # nosec B106
     )
 
 
@@ -268,7 +268,7 @@ def test_get_cache_key_includes_expected_components(api_rf, insults):
     key = view.get_cache_key("list", page=2, page_size=20)
 
     expected_hash = hashlib.md5(
-        "page=2&search=fire".encode("utf-8"),
+        b"page=2&search=fire",
         usedforsecurity=False,
     ).hexdigest()
 

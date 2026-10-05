@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Root URL configuration for thedozens project.
 """
@@ -9,7 +8,7 @@ import hmac
 from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponseForbidden
-from django.urls import include, path, re_path
+from django.urls import include, path
 from django.views.decorators.csrf import csrf_exempt
 from django_prometheus.exports import ExportToDjangoView
 
@@ -23,6 +22,7 @@ from applications.frontend.views import (
     get_reference_ids,
     page_not_found_view,
 )
+from common.deprecation import deprecated_route
 from core.admin_view import grafana_dashboard_view
 
 
@@ -56,7 +56,9 @@ def metrics_view(request):
 urlpatterns = [
     path("", LandingPageView.as_view(), name="landing"),
     path("status/", StatusPageView.as_view(), name="status"),
-    re_path(r"^graphql/?", include(GRAPHQL_URL), name="GraphQL"),
+    path("graphql/", include(GRAPHQL_URL)),
+    # Exact "/graphql" too: APPEND_SLASH can't redirect a POST without losing its body.
+    path("graphql", GRAPHQL_URL.graphql_api_view),
     path(
         "ops-gateway/observability/",
         admin.site.admin_view(grafana_dashboard_view),
@@ -67,12 +69,19 @@ urlpatterns = [
     path("metrics", metrics_view, name="prometheus-django-metrics"),
     path("api/", include(API_URLS)),
     path("auth/token/logout/", TokenDestroyView.as_view(), name="token_logout"),
-    re_path(r"^auth/", include("djoser.urls")),
-    re_path(r"^auth/", include("djoser.urls.authtoken")),
-    path("report/", csrf_exempt(ReportJokeView.as_view()), name="report-joke"),
+    path("auth/", include("djoser.urls")),
+    path("auth/", include("djoser.urls.authtoken")),
+    # Deprecated aliases for routes that now live under /api/v2.0.0/.
+    path(
+        "report/",
+        deprecated_route(ReportJokeView.as_view(), "/api/v2.0.0/reports/"),
+        name="report-joke",
+    ),
     path(
         "insults/reference-ids/",
-        csrf_exempt(get_reference_ids),
+        deprecated_route(
+            csrf_exempt(get_reference_ids), "/api/v2.0.0/insults/reference-ids/"
+        ),
         name="insult-reference-ids",
     ),
 ]

@@ -21,11 +21,11 @@ os.environ.setdefault("PG_DATABASE_PASSWORD", "mypy")
 os.environ.setdefault("PG_DATABASE_HOST", "localhost")
 os.environ.setdefault("PG_DATABASE_PORT", "5432")
 
-from configurations import importer  # noqa: E402
+from configurations import importer
 
 importer.install()
 
-from mypy import api  # noqa: E402
+from mypy import api
 
 stdout, stderr, exit_code = api.run(sys.argv[1:])
 if stdout:

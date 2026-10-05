@@ -22,7 +22,9 @@ class InsultThemeConsistencyTests(TestCase):
         """Set up test data for theme consistency tests."""
         # Create users
         cls.user = User.objects.create_user(
-            username="testuser", email="test@example.com", password="testpass123"
+            username="testuser",
+            email="test@example.com",
+            password="testpass123",  # nosec B106
         )
 
         # Create themes
