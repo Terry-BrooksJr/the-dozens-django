@@ -844,38 +844,40 @@ class CreateInsultEndpoint(CreateAPIView):
         serializer.save(added_by=self.request.user)
 
 
-@extend_schema(
-    tags=["Insults"],
-    auth=[],
-    operation_id="list_reference_ids",
-    summary="List all active insult reference IDs",
-    description=(
-        "Returns a paginated list of reference IDs for every active insult in the "
-        "public collection. Useful for bulk look-ups, pre-fetching, or building a "
-        "client-side cache of available identifiers. Pass each ID to "
-        "`GET /api/insults/{reference_id}/` to retrieve the full insult."
-    ),
-    responses={
-        200: OpenApiResponse(
-            description="Paginated list of active insult reference IDs",
-            examples=[
-                OpenApiExample(
-                    "Success Response",
-                    value={
-                        "count": 500,
-                        "next": "/api/insults/reference-ids/?page=2",
-                        "previous": None,
-                        "results": [
-                            "CACKLE_NDQ5",
-                            "CHUCKLE_NDUz",
-                            "GIGGLE_ABC123",
-                        ],
-                    },
-                )
-            ],
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Insults"],
+        auth=[],
+        operation_id="list_reference_ids",
+        summary="List all active insult reference IDs",
+        description=(
+            "Returns a paginated list of reference IDs for every active insult in the "
+            "public collection. Useful for bulk look-ups, pre-fetching, or building a "
+            "client-side cache of available identifiers. Pass each ID to "
+            "`GET /api/v2.0.0/insults/{reference_id}/` to retrieve the full insult."
         ),
-        **get_public_list_responses(),
-    },
+        responses={
+            200: OpenApiResponse(
+                description="Paginated list of active insult reference IDs",
+                examples=[
+                    OpenApiExample(
+                        "Success Response",
+                        value={
+                            "count": 500,
+                            "next": "/api/v2.0.0/insults/reference-ids/?page=2",
+                            "previous": None,
+                            "results": [
+                                "CACKLE_NDQ5",
+                                "CHUCKLE_NDUz",
+                                "GIGGLE_ABC123",
+                            ],
+                        },
+                    )
+                ],
+            ),
+            **get_public_list_responses(),
+        },
+    )
 )
 class ListReferenceIdsEndpoint(ListAPIView):
     """
@@ -885,7 +887,7 @@ class ListReferenceIdsEndpoint(ListAPIView):
 
     ## Endpoint
 
-    - ``GET /api/insults/reference-ids/``
+    - ``GET /api/v2.0.0/insults/reference-ids/``
 
     ## Query Parameters
 
@@ -895,7 +897,7 @@ class ListReferenceIdsEndpoint(ListAPIView):
     ## Notes
 
     - No authentication required
-    - Only active, public insults are included (same visibility as ``/api/insults/random/``)
+    - Only active, public insults are included (same visibility as ``/api/v2.0.0/insults/random/``)
     - Results are ordered alphabetically by reference ID for stable pagination
     """
 

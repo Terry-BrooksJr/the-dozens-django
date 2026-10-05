@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Yo' Momma - The Joke API
-  version: 1.0.0
+  version: 2.0.0
   contact:
     name: Terry A. Brooks, Jr.
     url: https://brooksjr.com
@@ -180,7 +180,7 @@ paths:
 
         ## Endpoint
 
-        - `GET /api/v2.0.0/categories/`
+        - `GET /api/categories`
 
         ## Features
 
@@ -318,17 +318,15 @@ paths:
   /api/v2.0.0/insults/:
     get:
       operationId: list_insults
-      description: Retrieve paginated insults, optionally filtered by category. Authenticated
-        users see their own insults plus all active insults; unauthenticated users
-        see only active insults.
+      description: Retrieve paginated active insults, optionally filtered by `category`
+        (key or name) and `nsfw`.
       summary: List insults
       parameters:
       - in: query
         name: category
         schema:
           type: string
-        description: Category key (e.g. `P`) or name (e.g. `Poor`), case-insensitive.
-          See `GET /api/v2.0.0/categories/`.
+        description: Category key or name to filter by.
       - in: query
         name: nsfw
         schema:
@@ -433,13 +431,20 @@ paths:
           description: Internal server error occurred
     post:
       operationId: create_insult
-      description: Create a new insult owned by the requesting user.
-      summary: Create New Insult
+      description: Create a new insult owned by the authenticated user. New insults
+        default to `Pending` status.
+      summary: Create an insult
       tags:
       - Insults
       requestBody:
         content:
           application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInsultRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateInsultRequest'
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/CreateInsultRequest'
         required: true
@@ -451,31 +456,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateInsult'
-              examples:
-                SuccessfulCreation:
-                  value:
-                    reference_id: GIGGLE_ABC123
-                    category: Poor
-                    content: Your code is so poor, it makes welfare look like a luxury
-                      lifestyle.
-                    nsfw: false
-                    status: Pending
-                    added_by: DevJoker
-                    added_on: 2 minutes ago
-                  summary: New insult created successfully
-                  description: Example response when a new insult is successfully
-                    created
-          description: Insult created successfully
-        '400':
-          description: Invalid input data provided
-        '401':
-          description: Authentication credentials required
-        '403':
-          description: Insufficient permissions to access this resource
-        '500':
-          description: Internal server error occurred
-        '503':
-          description: Service temporarily unavailable
+          description: ''
   /api/v2.0.0/insults/{reference_id}/:
     get:
       operationId: retrieve_insult
@@ -541,10 +522,10 @@ paths:
 
         ## Endpoints
 
-        - `GET /api/v2.0.0/insults/<reference_id>/`: Retrieve insult
-        - `PUT /api/v2.0.0/insults/<reference_id>/`: Update insult *(owner only)*
-        - `PATCH /api/v2.0.0/insults/<reference_id>/`: Partially update insult *(owner only)*
-        - `DELETE /api/v2.0.0/insults/<reference_id>/`: Delete insult *(owner only)*
+        - `GET /api/insult/<reference_id>`: Retrieve insult
+        - `PUT /api/insult/<reference_id>`: Update insult *(owner only)*
+        - `PATCH /api/insult/<reference_id>`: Partially update insult *(owner only)*
+        - `DELETE /api/insult/<reference_id>`: Delete insult *(owner only)*
 
         ## Authentication
 
@@ -573,6 +554,12 @@ paths:
                   nsfw: false
                 summary: Create New Insult
                 description: Example request for creating a new insult
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OptimizedInsultRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OptimizedInsultRequest'
         required: true
       security:
       - TokenAuth: []
@@ -605,10 +592,10 @@ paths:
 
         ## Endpoints
 
-        - `GET /api/v2.0.0/insults/<reference_id>/`: Retrieve insult
-        - `PUT /api/v2.0.0/insults/<reference_id>/`: Update insult *(owner only)*
-        - `PATCH /api/v2.0.0/insults/<reference_id>/`: Partially update insult *(owner only)*
-        - `DELETE /api/v2.0.0/insults/<reference_id>/`: Delete insult *(owner only)*
+        - `GET /api/insult/<reference_id>`: Retrieve insult
+        - `PUT /api/insult/<reference_id>`: Update insult *(owner only)*
+        - `PATCH /api/insult/<reference_id>`: Partially update insult *(owner only)*
+        - `DELETE /api/insult/<reference_id>`: Delete insult *(owner only)*
 
         ## Authentication
 
@@ -638,6 +625,12 @@ paths:
                   nsfw: false
                 summary: Create New Insult
                 description: Example request for creating a new insult
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOptimizedInsultRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOptimizedInsultRequest'
       security:
       - TokenAuth: []
       responses:
@@ -669,10 +662,10 @@ paths:
 
         ## Endpoints
 
-        - `GET /api/v2.0.0/insults/<reference_id>/`: Retrieve insult
-        - `PUT /api/v2.0.0/insults/<reference_id>/`: Update insult *(owner only)*
-        - `PATCH /api/v2.0.0/insults/<reference_id>/`: Partially update insult *(owner only)*
-        - `DELETE /api/v2.0.0/insults/<reference_id>/`: Delete insult *(owner only)*
+        - `GET /api/insult/<reference_id>`: Retrieve insult
+        - `PUT /api/insult/<reference_id>`: Update insult *(owner only)*
+        - `PATCH /api/insult/<reference_id>`: Partially update insult *(owner only)*
+        - `DELETE /api/insult/<reference_id>`: Delete insult *(owner only)*
 
         ## Authentication
 
@@ -828,6 +821,12 @@ paths:
                   to be contacted about their report. When 'anonymous' is false, first
                   and last name are required. If 'post_review_contact_desired' is
                   true, an email address must also be supplied.
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InsultReviewRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InsultReviewRequest'
         required: true
       responses:
         '201':
@@ -849,6 +848,12 @@ paths:
       requestBody:
         content:
           application/json:
+            schema:
+              $ref: '#/components/schemas/TokenCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenCreateRequest'
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/TokenCreateRequest'
       security:
@@ -904,6 +909,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UserCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
         required: true
       security:
       - TokenAuth: []
@@ -952,6 +963,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
       security:
       - TokenAuth: []
       responses:
@@ -975,6 +992,12 @@ paths:
       requestBody:
         content:
           application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/PatchedUserRequest'
       security:
@@ -1012,6 +1035,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ActivationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ActivationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ActivationRequest'
         required: true
       security:
       - TokenAuth: []
@@ -1046,6 +1075,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
       security:
       - TokenAuth: []
       responses:
@@ -1062,6 +1097,12 @@ paths:
       requestBody:
         content:
           application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/PatchedUserRequest'
       security:
@@ -1092,6 +1133,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SendEmailResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
         required: true
       security:
       - TokenAuth: []
@@ -1111,6 +1158,12 @@ paths:
       requestBody:
         content:
           application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/SendEmailResetRequest'
         required: true
@@ -1134,6 +1187,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
         required: true
       security:
       - TokenAuth: []
@@ -1153,6 +1212,12 @@ paths:
       requestBody:
         content:
           application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailResetRequest'
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/SendEmailResetRequest'
         required: true
@@ -1176,6 +1241,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UsernameResetConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirmRequest'
         required: true
       security:
       - TokenAuth: []
@@ -1197,6 +1268,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SetPasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRequest'
         required: true
       security:
       - TokenAuth: []
@@ -1215,6 +1292,12 @@ paths:
       requestBody:
         content:
           application/json:
+            schema:
+              $ref: '#/components/schemas/SetUsernameRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetUsernameRequest'
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/SetUsernameRequest'
         required: true
@@ -1881,15 +1964,6 @@ components:
       - code
       - status_code
       - errors
-  securitySchemes:
-    TokenAuth:
-      type: apiKey
-      in: header
-      name: Authorization
-      description: |-
-        Token-based authentication. Supply your token like so:
-
-        `Authorization: Token <your_token>`
 externalDocs:
   url: https://github.com/Terry-BrooksJr/the-dozens-django
   description: GitHub Repository and full API documentation Hub
