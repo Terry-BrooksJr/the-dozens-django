@@ -18,7 +18,9 @@ class InsultReviewFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create(
-            username="owner", email="owner@example.com", password="pass1234"
+            username="owner",
+            email="owner@example.com",
+            password="pass1234",  # nosec B106
         )
         cls.theme = Theme.objects.create(theme_name="Test Theme", theme_key="TEST")
         cls.cat = InsultCategory.objects.create(

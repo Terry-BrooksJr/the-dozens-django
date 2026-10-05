@@ -52,10 +52,14 @@ class _InsultReviewBase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(
-            username="review_user", email="review@example.com", password="pw12345"
+            username="review_user",
+            email="review@example.com",
+            password="pw12345",  # nosec B106
         )
         cls.reviewer = User.objects.create_user(
-            username="reviewer", email="reviewer@example.com", password="pw12345"
+            username="reviewer",
+            email="reviewer@example.com",
+            password="pw12345",  # nosec B106
         )
         cls.theme = Theme.objects.create(theme_key="RVT", theme_name="Review Theme")
         cls.cat = InsultCategory.objects.create(

@@ -154,7 +154,10 @@ class DevelopmentLoggingTests(_ResetsLoggingConfigured):
         """With LOKI_URL and LOKI_PASSWORD set, a Loki handler sink is added alongside the console sink."""
         with patch.dict(
             os.environ,
-            {"LOKI_URL": "http://loki.example.com", "LOKI_PASSWORD": "secret"},
+            {
+                "LOKI_URL": "http://loki.example.com",
+                "LOKI_PASSWORD": "secret",
+            },  # nosec B105
         ):
             Development.configure_logging()
 
@@ -190,7 +193,10 @@ class ProductionLoggingTests(_ResetsLoggingConfigured):
         with (
             patch.dict(
                 os.environ,
-                {"LOKI_URL": "http://loki.example.com", "LOKI_PASSWORD": "secret"},
+                {
+                    "LOKI_URL": "http://loki.example.com",
+                    "LOKI_PASSWORD": "secret",
+                },  # nosec B105
             ),
             patch.object(Production, "LAUNCHDARKLY_OBSERVABILITY_ENABLED", True),
         ):
@@ -212,7 +218,10 @@ class StagingLoggingTests(_ResetsLoggingConfigured):
         """Staging never adds a Loki sink even if LOKI_URL is set, and adds one WARNING-level console sink."""
         with patch.dict(
             os.environ,
-            {"LOKI_URL": "http://loki.example.com", "LOKI_PASSWORD": "secret"},
+            {
+                "LOKI_URL": "http://loki.example.com",
+                "LOKI_PASSWORD": "secret",
+            },  # nosec B105
         ):
             Staging.configure_logging()
 

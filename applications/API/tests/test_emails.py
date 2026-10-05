@@ -51,7 +51,7 @@ class WelcomeEmailContextTests(TestCase):
         cls.user = User.objects.create_user(
             username="ctxuser",
             email="ctxuser@example.com",
-            password="securepass123",
+            password="securepass123",  # nosec B106
         )
 
     def _email(self, user=None):
@@ -77,7 +77,7 @@ class WelcomeEmailContextTests(TestCase):
         user = User.objects.create_user(
             username="notokenuser",
             email="notoken@example.com",
-            password="securepass123",
+            password="securepass123",  # nosec B106
         )
         Token.objects.filter(user=user).delete()
 
@@ -124,7 +124,7 @@ class WelcomeEmailSendTests(TestCase):
         self.user = User.objects.create_user(
             username="senduser",
             email="senduser@example.com",
-            password="securepass123",
+            password="securepass123",  # nosec B106
         )
         Token.objects.get_or_create(user=self.user)
 
@@ -152,9 +152,11 @@ class WelcomeEmailSendTests(TestCase):
 
     @patch(_PARENT_SEND, side_effect=RuntimeError("SMTP refused"))
     def test_logs_error_and_reraises_on_failure(self, _mock_send):
-        with patch("applications.API.emails.logger") as mock_logger:
-            with self.assertRaises(RuntimeError, msg="SMTP refused"):
-                self._email().send(to=[self.user.email])
+        with (
+            patch("applications.API.emails.logger") as mock_logger,
+            self.assertRaises(RuntimeError, msg="SMTP refused"),
+        ):
+            self._email().send(to=[self.user.email])
 
         mock_logger.error.assert_called_once()
         error_args = str(mock_logger.error.call_args_list[0])
@@ -187,7 +189,8 @@ class SubmissionReviewEmailHeroImageTests(TestCase):
     @override_settings(EMAIL_ASSET_BASE_URL="https://cdn.example.com/static/")
     def test_uses_email_asset_base_url_when_set(self):
         self.assertIn(
-            'src="https://cdn.example.com/static/assets/approved.png"', self._html_body()
+            'src="https://cdn.example.com/static/assets/approved.png"',
+            self._html_body(),
         )
 
     # static() is mocked so the result doesn't depend on the environment's
@@ -199,7 +202,8 @@ class SubmissionReviewEmailHeroImageTests(TestCase):
     )
     def test_falls_back_to_site_url_plus_static_when_unset(self, _mock_static):
         self.assertIn(
-            'src="https://api.example.com/static/assets/approved.png"', self._html_body()
+            'src="https://api.example.com/static/assets/approved.png"',
+            self._html_body(),
         )
 
     @override_settings(EMAIL_ASSET_BASE_URL="")

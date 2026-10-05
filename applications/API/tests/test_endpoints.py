@@ -42,10 +42,14 @@ class EndpointTests(APITestCase):
     def setUpTestData(cls):
         # Users
         cls.owner = User.objects.create_user(
-            username="owner", email="owner@example.com", password="pass1234"
+            username="owner",
+            email="owner@example.com",
+            password="pass1234",  # nosec B106
         )
         cls.other = User.objects.create_user(
-            username="other", email="other@example.com", password="pass1234"
+            username="other",
+            email="other@example.com",
+            password="pass1234",  # nosec B106
         )
 
         # Categories

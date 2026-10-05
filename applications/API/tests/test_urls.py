@@ -2,11 +2,11 @@
 Routing tests for the REST API URL layout.
 
 Covers:
-- Canonical /api/v1/ routes reverse to the expected paths and resolve to the
+- Canonical /api/v2.0.0/ routes reverse to the expected paths and resolve to the
   expected views.
 - Fixed insult sub-paths (random, reference-ids) win over the
   ``{reference_id}`` catch-all.
-- Deprecated pre-v1 aliases still resolve, respond, and carry the
+- Deprecated pre-v2.0.0 aliases still resolve, respond, and carry the
   ``Deprecation`` and ``Link: rel="successor-version"`` headers.
 - ``/graphql`` matching is anchored.
 - Deprecated aliases are left out of the OpenAPI schema.
@@ -38,31 +38,31 @@ User = get_user_model()
 
 
 class CanonicalRouteTests(TestCase):
-    """Canonical /api/v1/ names map to RESTful paths and the right views."""
+    """Canonical /api/v2.0.0/ names map to RESTful paths and the right views."""
 
     ROUTES = [
-        ("category-list", {}, "/api/v1/categories/", ListThemesAndCategoryEndpoint),
+        ("category-list", {}, "/api/v2.0.0/categories/", ListThemesAndCategoryEndpoint),
         (
             "category-insult-list",
             {"category_name": "poor"},
-            "/api/v1/categories/poor/insults/",
+            "/api/v2.0.0/categories/poor/insults/",
             InsultByCategoryEndpoint,
         ),
-        ("insult-list", {}, "/api/v1/insults/", InsultCollectionEndpoint),
-        ("insult-random", {}, "/api/v1/insults/random/", RandomInsultEndpoint),
+        ("insult-list", {}, "/api/v2.0.0/insults/", InsultCollectionEndpoint),
+        ("insult-random", {}, "/api/v2.0.0/insults/random/", RandomInsultEndpoint),
         (
             "insult-reference-id-list",
             {},
-            "/api/v1/insults/reference-ids/",
+            "/api/v2.0.0/insults/reference-ids/",
             ListReferenceIdsEndpoint,
         ),
         (
             "insult-detail",
             {"reference_id": "GIGGLE_ABC123"},
-            "/api/v1/insults/GIGGLE_ABC123/",
+            "/api/v2.0.0/insults/GIGGLE_ABC123/",
             InsultDetailsEndpoint,
         ),
-        ("report-list", {}, "/api/v1/reports/", ReportJokeView),
+        ("report-list", {}, "/api/v2.0.0/reports/", ReportJokeView),
     ]
 
     def test_reverse_and_resolve(self):
@@ -72,25 +72,27 @@ class CanonicalRouteTests(TestCase):
                 self.assertIs(resolve(expected_path).func.cls, view_cls)
 
     def test_fixed_sub_paths_are_not_captured_as_reference_ids(self):
-        self.assertEqual(resolve("/api/v1/insults/random/").url_name, "insult-random")
+        self.assertEqual(resolve("/api/v2.0.0/insults/random/").url_name, "insult-random")
         self.assertEqual(
-            resolve("/api/v1/insults/reference-ids/").url_name,
+            resolve("/api/v2.0.0/insults/reference-ids/").url_name,
             "insult-reference-id-list",
         )
 
     def test_no_verbs_in_canonical_paths(self):
         with self.assertRaises(Resolver404):
-            resolve("/api/v1/insults/new")
+            resolve("/api/v2.0.0/insults/new")
 
 
 class InsultCollectionTests(TestCase):
-    """GET lists and POST creates on the same /api/v1/insults/ collection."""
+    """GET lists and POST creates on the same /api/v2.0.0/insults/ collection."""
 
     def setUp(self):
         cache.clear()
         self.client = APIClient()
         self.user = User.objects.create_user(
-            username="collection_user", email="collection@example.com", password="pw"
+            username="collection_user",
+            email="collection@example.com",
+            password="pw",  # nosec B106
         )
         self.token = Token.objects.create(user=self.user)
         theme = Theme.objects.create(theme_key="COL", theme_name="Collection Theme")
@@ -107,7 +109,7 @@ class InsultCollectionTests(TestCase):
         )
 
     def test_get_lists_insults(self):
-        response = self.client.get("/api/v1/insults/?category=CL")
+        response = self.client.get("/api/v2.0.0/insults/?category=CL")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 1)
@@ -115,7 +117,7 @@ class InsultCollectionTests(TestCase):
 
     def test_post_requires_authentication(self):
         response = self.client.post(
-            "/api/v1/insults/",
+            "/api/v2.0.0/insults/",
             {"content": "Yo momma so anonymous...", "category": "CL", "nsfw": False},
             format="json",
         )
@@ -129,7 +131,7 @@ class InsultCollectionTests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
 
         response = self.client.post(
-            "/api/v1/insults/",
+            "/api/v2.0.0/insults/",
             {
                 "content": "Yo momma so restful she only responds to POST.",
                 "category": "CL",
@@ -147,13 +149,15 @@ class InsultCollectionTests(TestCase):
 
 
 class DeprecatedAliasTests(TestCase):
-    """Pre-v1 routes keep working but advertise their successors."""
+    """Pre-v2.0.0 routes keep working but advertise their successors."""
 
     def setUp(self):
         cache.clear()
         self.client = APIClient()
         user = User.objects.create_user(
-            username="legacy_user", email="legacy@example.com", password="pw"
+            username="legacy_user",
+            email="legacy@example.com",
+            password="pw",  # nosec B106
         )
         theme = Theme.objects.create(theme_key="LEG", theme_name="Legacy Theme")
         category = InsultCategory.objects.create(
@@ -177,11 +181,11 @@ class DeprecatedAliasTests(TestCase):
     def test_legacy_get_routes_still_respond_with_deprecation_headers(self):
         ref = self.insult.reference_id
         cases = [
-            ("/api/categories/", "/api/v1/categories/"),
-            ("/api/insults/random/", "/api/v1/insults/random/"),
-            ("/api/insults/category/LG/", "/api/v1/categories/LG/insults/"),
-            (f"/api/insults/{ref}/", f"/api/v1/insults/{ref}/"),
-            ("/insults/reference-ids/", "/api/v1/insults/reference-ids/"),
+            ("/api/categories/", "/api/v2.0.0/categories/"),
+            ("/api/insults/random/", "/api/v2.0.0/insults/random/"),
+            ("/api/insults/category/LG/", "/api/v2.0.0/categories/LG/insults/"),
+            (f"/api/insults/{ref}/", f"/api/v2.0.0/insults/{ref}/"),
+            ("/insults/reference-ids/", "/api/v2.0.0/insults/reference-ids/"),
         ]
         for legacy, successor in cases:
             with self.subTest(path=legacy):
@@ -192,12 +196,12 @@ class DeprecatedAliasTests(TestCase):
     def test_legacy_create_route_is_deprecated(self):
         response = self.client.post("/api/insults/new", {}, format="json")
 
-        self.assertDeprecated(response, "/api/v1/insults/")
+        self.assertDeprecated(response, "/api/v2.0.0/insults/")
 
     def test_legacy_report_route_is_deprecated(self):
         response = self.client.post("/report/", {}, format="json")
 
-        self.assertDeprecated(response, "/api/v1/reports/")
+        self.assertDeprecated(response, "/api/v2.0.0/reports/")
 
     def test_legacy_url_names_still_reverse(self):
         self.assertEqual(reverse("random_insult"), "/api/insults/random/")
@@ -215,14 +219,14 @@ class GraphQLRouteTests(TestCase):
 
 
 class SchemaTests(TestCase):
-    def test_schema_documents_v1_and_omits_deprecated_aliases(self):
+    def test_schema_documents_v2_0_0_and_omits_deprecated_aliases(self):
         response = self.client.get("/api/schema/?format=json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         paths = response.json()["paths"]
-        self.assertIn("/api/v1/insults/", paths)
-        self.assertEqual(set(paths["/api/v1/insults/"]), {"get", "post"})
-        self.assertIn("/api/v1/reports/", paths)
+        self.assertIn("/api/v2.0.0/insults/", paths)
+        self.assertEqual(set(paths["/api/v2.0.0/insults/"]), {"get", "post"})
+        self.assertIn("/api/v2.0.0/reports/", paths)
         for legacy in (
             "/api/insults/new",
             "/api/insults/random/",

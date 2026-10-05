@@ -48,8 +48,8 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.messages import get_messages
 from django.contrib.messages import constants as message_levels
+from django.contrib.messages import get_messages
 from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -80,12 +80,14 @@ class _ReviewEndpointBase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.admin_user = User.objects.create_superuser(
-            username="review_admin", email="admin@example.com", password="adminpass"
+            username="review_admin",
+            email="admin@example.com",
+            password="adminpass",  # nosec B106
         )
         cls.owner = User.objects.create_user(
             username="joke_owner",
             email=_OWNER_EMAIL,
-            password="pass1234",
+            password="pass1234",  # nosec B106
             first_name="Pat",
         )
         cls.theme_a = Theme.objects.create(theme_key="RVA", theme_name="Review A")
@@ -164,7 +166,10 @@ class _ReviewEndpointBase(TestCase):
 
     def _assert_message(self, response, level, fragment):
         self.assertTrue(
-            any(lvl == level and fragment in text for lvl, text in self._messages(response)),
+            any(
+                lvl == level and fragment in text
+                for lvl, text in self._messages(response)
+            ),
             f"no level-{level} message containing {fragment!r}: "
             f"{self._messages(response)}",
         )
@@ -259,7 +264,7 @@ class ReviewEndpointPermissionTests(_ReviewEndpointBase):
 
     def test_staff_without_change_permission_forbidden(self):
         staff = User.objects.create_user(
-            username="view_only_staff", password="pw", is_staff=True
+            username="view_only_staff", password="pw", is_staff=True  # nosec B106
         )
         self.client.force_login(staff)
         pending = self._pending_insult()
@@ -282,7 +287,7 @@ class ReviewEndpointPermissionTests(_ReviewEndpointBase):
 
     def test_staff_with_change_permission_can_review(self):
         staff = User.objects.create_user(
-            username="moderator_staff", password="pw", is_staff=True
+            username="moderator_staff", password="pw", is_staff=True  # nosec B106
         )
         staff.user_permissions.add(
             Permission.objects.get(
@@ -563,9 +568,7 @@ class FlaggedReviewTransitionTests(_ReviewEndpointBase):
 
 @patch(_INVALIDATE)
 class ReviewFailureAndDuplicateTests(_ReviewEndpointBase):
-    def test_failed_approve_reports_error_and_skips_side_effects(
-        self, mock_invalidate
-    ):
+    def test_failed_approve_reports_error_and_skips_side_effects(self, mock_invalidate):
         insult = self._pending_insult()
 
         with patch.object(Insult, "approve_insult", autospec=True):  # no-op

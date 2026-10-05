@@ -94,16 +94,20 @@ class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Mod
         """
         Returns the count of active insults in this category.
 
-        NOTE: This property can cause N+1 queries when serializing multiple categories.
-        Consider using QuerySet annotation instead:
+        Uses the ``active_insult_count`` annotation when the queryset provides
+        one, so serializing many categories doesn't issue a COUNT per row:
 
         Example:
             from django.db.models import Count, Q
             categories = InsultCategory.objects.annotate(
                 active_insult_count=Count('insult', filter=Q(insult__status=Insult.STATUS.ACTIVE))
             )
-            # Then access: category.active_insult_count instead of category.count
+
+        Without the annotation it falls back to one COUNT query.
         """
+        annotated = getattr(self, "active_insult_count", None)
+        if annotated is not None:
+            return annotated
         return Insult.objects.filter(category=self, status=Insult.STATUS.ACTIVE).count()
 
     public = PublicInsultCategoryManager()
@@ -114,13 +118,13 @@ class InsultCategory(ExportModelOperationsMixin("insult_categories"), models.Mod
         verbose_name = _("Insult Category")
         verbose_name_plural = _("Insult Categories")
         managed = True
-        ordering = ["name"]  # noqa: RUF012
-        constraints = [  # noqa: RUF012
+        ordering = ["name"]
+        constraints = [
             models.UniqueConstraint(
                 fields=["category_key", "name"], name="unique_category_key_name"
             ),
         ]
-        indexes = [  # noqa: RUF012
+        indexes = [
             models.Index(fields=["category_key"], name="idx_category_key"),
             models.Index(fields=["name"], name="idx_name"),
         ]
@@ -147,7 +151,7 @@ class Theme(models.Model):
         verbose_name_plural = _("Themes")
         managed = True
         ordering = ["theme_name"]
-        constraints = [  # noqa: RUF012
+        constraints = [
             models.UniqueConstraint(
                 fields=["theme_key", "theme_name"], name="unique_theme_key_name"
             ),
@@ -432,14 +436,17 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         # Automatically set theme from category to ensure consistency
         if self.category_id and not self.theme_id:
             self.theme = self.category.theme
-        elif self.category_id and self.theme_id:
+        elif (
             # If both are set, ensure they match
-            if self.category.theme_id != self.theme_id:
-                logger.warning(
-                    f"Insult theme mismatch detected for {self.reference_id or 'new insult'}. "
-                    f"Automatically updating theme to match category's theme."
-                )
-                self.theme = self.category.theme
+            self.category_id
+            and self.theme_id
+            and self.category.theme_id != self.theme_id
+        ):
+            logger.warning(
+                f"Insult theme mismatch detected for {self.reference_id or 'new insult'}. "
+                f"Automatically updating theme to match category's theme."
+            )
+            self.theme = self.category.theme
 
         super().save(*args, **kwargs)
 
@@ -449,7 +456,9 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         return self.reports.filter(status=InsultReview.STATUS.PENDING).count()
 
     @classmethod
-    def get_by_reference_id(cls: type[Insult], reference_id: str) -> Insult | None:
+    def get_by_reference_id(
+        cls: type[Insult], reference_id: str, active_only: bool = True
+    ) -> Insult | None:
         """
         Retrieves an Insult instance by its reference ID.
 
@@ -457,6 +466,9 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
 
         Args:
             reference_id (str): The unique reference ID of the insult.
+            active_only (bool): Restrict the lookup to ACTIVE insults. Internal
+                callers that must resolve non-public insults (e.g. linking a
+                review to an already-flagged insult) pass False.
 
         Returns:
             Optional[Insult]: The Insult instance if found, otherwise None.
@@ -479,7 +491,10 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
                     # Detail lookups must enforce the same visibility boundary as
                     # the public manager; otherwise a reference ID exposes
                     # rejected, pending, flagged, or removed submissions.
-                    return cls.objects.get(pk=pk, status=cls.STATUS.ACTIVE)
+                    filters = {"pk": pk}
+                    if active_only:
+                        filters["status"] = cls.STATUS.ACTIVE
+                    return cls.objects.get(**filters)
                 except cls.DoesNotExist:
                     logger.warning(f"Insult with PK {pk} does not exist.")
                     return None
@@ -657,7 +672,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         verbose_name = "Insult/Joke"
         verbose_name_plural = "Insults/Jokes"
         managed = True
-        indexes = [  # noqa: RUF012
+        indexes = [
             models.Index(fields=["category"], name="idx_category"),
             models.Index(fields=["category", "nsfw"], name="idx_nsfw_category"),
             models.Index(fields=["nsfw"], name="idx_nsfw"),
@@ -769,7 +784,9 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
                     "Insult Reference ID must be provided to set the related Insult."
                 )
             if not self.insult and (
-                found_insult := Insult.get_by_reference_id(self.insult_reference_id)
+                found_insult := Insult.get_by_reference_id(
+                    self.insult_reference_id, active_only=False
+                )
             ):
                 logger.info(
                     f"Setting Insult for Review {self.insult_reference_id} - {found_insult.insult_id}"

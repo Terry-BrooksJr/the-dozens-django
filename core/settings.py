@@ -685,7 +685,7 @@ class Base(Configuration):
                                 },
                                 "category_not_found": {
                                     "summary": "Category with specified key/name does not exist",
-                                    "description": "The category with the provided key or name was not found. Check available categories using the /api/v1/categories/ endpoint.",
+                                    "description": "The category with the provided key or name was not found. Check available categories using the /api/v2.0.0/categories/ endpoint.",
                                     "value": {
                                         "detail": "Category not found.",
                                         "code": "not_found",
@@ -745,7 +745,10 @@ class Base(Configuration):
                 },
             },
         },
-        "POSTPROCESSING_HOOKS": ["common.helpers.add_token_auth_scheme"],
+        # TokenAuth is documented by applications.API.schema.FlexibleTokenScheme.
+        # Empty (not omitted) so drf-spectacular's default enum postprocessing
+        # hook stays off and the schema's component layout is unchanged.
+        "POSTPROCESSING_HOOKS": [],
         "SWAGGER_UI_SETTINGS": {
             "deepLinking": True,
             "persistAuthorization": True,
@@ -1089,17 +1092,18 @@ class Production(Base):
             return
 
         # Loki Log Handler - May Replace OTEL in future iterations
-        if loki_url := os.getenv("LOKI_URL"):
-            if loki_password := os.getenv("LOKI_PASSWORD"):
-                loki_handler = LokiLoggerHandler(
-                    url=loki_url,
-                    auth=("lokiadmin", loki_password),
-                    labels={"application": "dozen_api", "environment": "Production"},
-                    label_keys={},
-                    timeout=10,
-                    default_formatter=SanitizingLoguruFormatter(),
-                )
-                logger.add(loki_handler, serialize=True)
+        if (loki_url := os.getenv("LOKI_URL")) and (
+            loki_password := os.getenv("LOKI_PASSWORD")
+        ):
+            loki_handler = LokiLoggerHandler(
+                url=loki_url,
+                auth=("lokiadmin", loki_password),
+                labels={"application": "dozen_api", "environment": "Production"},
+                label_keys={},
+                timeout=10,
+                default_formatter=SanitizingLoguruFormatter(),
+            )
+            logger.add(loki_handler, serialize=True)
 
         # serialize=False: plain text to stdout for local `docker logs`
         # readability; Loki gets its own serialized sink above.
@@ -1201,17 +1205,18 @@ class Development(Base):
         )
 
         # Loki Log Handler - May Replace OTEL in future iterations
-        if loki_url := os.getenv("LOKI_URL"):
-            if loki_password := os.getenv("LOKI_PASSWORD"):
-                loki_handler = LokiLoggerHandler(
-                    url=loki_url,
-                    auth=("lokiadmin", loki_password),
-                    labels={"application": "dozen_api", "environment": "Development"},
-                    label_keys={},
-                    timeout=10,
-                    default_formatter=SanitizingLoguruFormatter(),
-                )
-                logger.add(loki_handler, serialize=True)
+        if (loki_url := os.getenv("LOKI_URL")) and (
+            loki_password := os.getenv("LOKI_PASSWORD")
+        ):
+            loki_handler = LokiLoggerHandler(
+                url=loki_url,
+                auth=("lokiadmin", loki_password),
+                labels={"application": "dozen_api", "environment": "Development"},
+                label_keys={},
+                timeout=10,
+                default_formatter=SanitizingLoguruFormatter(),
+            )
+            logger.add(loki_handler, serialize=True)
 
         logger.add(
             cls.DEFAULT_HANDLER,

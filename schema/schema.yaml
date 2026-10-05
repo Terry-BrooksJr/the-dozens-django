@@ -167,7 +167,7 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
-  /api/v1/categories/:
+  /api/v2.0.0/categories/:
     get:
       operationId: list_categories
       description: |2-
@@ -180,7 +180,7 @@ paths:
 
         ## Endpoint
 
-        - `GET /api/v1/categories/`
+        - `GET /api/v2.0.0/categories/`
 
         ## Features
 
@@ -199,7 +199,7 @@ paths:
           description: API rate limit exceeded
         '500':
           description: Internal server error occurred
-  /api/v1/categories/{category_name}/insults/:
+  /api/v2.0.0/categories/{category_name}/insults/:
     get:
       operationId: list_insults_by_category
       description: Retrieve paginated insults filtered by category. Authenticated
@@ -315,7 +315,7 @@ paths:
           description: API rate limit exceeded
         '500':
           description: Internal server error occurred
-  /api/v1/insults/:
+  /api/v2.0.0/insults/:
     get:
       operationId: list_insults
       description: Retrieve paginated insults, optionally filtered by category. Authenticated
@@ -328,7 +328,7 @@ paths:
         schema:
           type: string
         description: Category key (e.g. `P`) or name (e.g. `Poor`), case-insensitive.
-          See `GET /api/v1/categories/`.
+          See `GET /api/v2.0.0/categories/`.
       - in: query
         name: nsfw
         schema:
@@ -476,7 +476,7 @@ paths:
           description: Internal server error occurred
         '503':
           description: Service temporarily unavailable
-  /api/v1/insults/{reference_id}/:
+  /api/v2.0.0/insults/{reference_id}/:
     get:
       operationId: retrieve_insult
       description: Retrieve a specific insult by reference_id.
@@ -541,10 +541,10 @@ paths:
 
         ## Endpoints
 
-        - `GET /api/v1/insults/<reference_id>/`: Retrieve insult
-        - `PUT /api/v1/insults/<reference_id>/`: Update insult *(owner only)*
-        - `PATCH /api/v1/insults/<reference_id>/`: Partially update insult *(owner only)*
-        - `DELETE /api/v1/insults/<reference_id>/`: Delete insult *(owner only)*
+        - `GET /api/v2.0.0/insults/<reference_id>/`: Retrieve insult
+        - `PUT /api/v2.0.0/insults/<reference_id>/`: Update insult *(owner only)*
+        - `PATCH /api/v2.0.0/insults/<reference_id>/`: Partially update insult *(owner only)*
+        - `DELETE /api/v2.0.0/insults/<reference_id>/`: Delete insult *(owner only)*
 
         ## Authentication
 
@@ -605,10 +605,10 @@ paths:
 
         ## Endpoints
 
-        - `GET /api/v1/insults/<reference_id>/`: Retrieve insult
-        - `PUT /api/v1/insults/<reference_id>/`: Update insult *(owner only)*
-        - `PATCH /api/v1/insults/<reference_id>/`: Partially update insult *(owner only)*
-        - `DELETE /api/v1/insults/<reference_id>/`: Delete insult *(owner only)*
+        - `GET /api/v2.0.0/insults/<reference_id>/`: Retrieve insult
+        - `PUT /api/v2.0.0/insults/<reference_id>/`: Update insult *(owner only)*
+        - `PATCH /api/v2.0.0/insults/<reference_id>/`: Partially update insult *(owner only)*
+        - `DELETE /api/v2.0.0/insults/<reference_id>/`: Delete insult *(owner only)*
 
         ## Authentication
 
@@ -669,10 +669,10 @@ paths:
 
         ## Endpoints
 
-        - `GET /api/v1/insults/<reference_id>/`: Retrieve insult
-        - `PUT /api/v1/insults/<reference_id>/`: Update insult *(owner only)*
-        - `PATCH /api/v1/insults/<reference_id>/`: Partially update insult *(owner only)*
-        - `DELETE /api/v1/insults/<reference_id>/`: Delete insult *(owner only)*
+        - `GET /api/v2.0.0/insults/<reference_id>/`: Retrieve insult
+        - `PUT /api/v2.0.0/insults/<reference_id>/`: Update insult *(owner only)*
+        - `PATCH /api/v2.0.0/insults/<reference_id>/`: Partially update insult *(owner only)*
+        - `DELETE /api/v2.0.0/insults/<reference_id>/`: Delete insult *(owner only)*
 
         ## Authentication
 
@@ -705,7 +705,7 @@ paths:
           description: API rate limit exceeded
         '500':
           description: Internal server error occurred
-  /api/v1/insults/random/:
+  /api/v2.0.0/insults/random/:
     get:
       operationId: get_random_insult
       description: Returns a single random insult from the active collection. Supports
@@ -753,12 +753,12 @@ paths:
           description: Internal server error occurred
         '503':
           description: Service temporarily unavailable
-  /api/v1/insults/reference-ids/:
+  /api/v2.0.0/insults/reference-ids/:
     get:
       operationId: list_reference_ids
       description: Returns a paginated list of reference IDs for every active insult
         in the public collection. Useful for bulk look-ups, pre-fetching, or building
-        a client-side cache of available identifiers. Pass each ID to `GET /api/v1/insults/{reference_id}/`
+        a client-side cache of available identifiers. Pass each ID to `GET /api/v2.0.0/insults/{reference_id}/`
         to retrieve the full insult.
       summary: List all active insult reference IDs
       parameters:
@@ -779,7 +779,7 @@ paths:
           description: API rate limit exceeded
         '500':
           description: Internal server error occurred
-  /api/v1/reports/:
+  /api/v2.0.0/reports/:
     post:
       operationId: report_joke
       description: Submit a report for a joke that may violate community guidelines.
@@ -1294,7 +1294,7 @@ components:
             category_not_found:
               summary: Category with specified key/name does not exist
               description: The category with the provided key or name was not found.
-                Check available categories using the /api/v1/categories/ endpoint.
+                Check available categories using the /api/v2.0.0/categories/ endpoint.
               value:
                 detail: Category not found.
                 code: not_found

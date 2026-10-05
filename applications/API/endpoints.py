@@ -9,12 +9,13 @@ API endpoints for managing insults, categories, and themes.
 
 import random
 import time
+from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import EmptyResultSet
 from django.db import connection
 from django.db.models import Q, QuerySet
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
@@ -52,6 +53,7 @@ from applications.API.serializers import (
     BaseInsultSerializer,
     CategorySerializer,
     CreateInsultSerializer,
+    MyInsultSerializer,
     OptimizedInsultSerializer,
 )
 from common.metrics import metrics
@@ -149,8 +151,7 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
 
     ## Endpoint
 
-    - `GET /api/v1/insults/?category=<category>`
-    - `GET /api/v1/categories/<category_name>/insults/`
+    - `GET /api/insults/<category_name>`
 
     ## Query Parameters
 
@@ -192,26 +193,14 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
         # Prevent schema generation from evaluating real queries
         if getattr(self, "swagger_fake_view", False):
             return Insult.objects.none()
-        if category := self._requested_category():
-            return self._get_categorized_queryset(category)
+        if self.kwargs:
+            logger.debug(f"kwargs seen by view: {self.kwargs}")
+            if category := self.kwargs.get("category_name"):
+                return self._get_categorized_queryset(category)
         return (
             Insult.objects.filter(added_by=self.request.user).union(Insult.public.all())
             if self.request.user.is_authenticated
             else Insult.public.all().prefetch_related("reports").order_by("?")
-        )
-
-    def _requested_category(self) -> str | None:
-        """Return the category from the URL path or the ``category`` query param.
-
-        The path form serves ``/api/v1/categories/{category_name}/insults/``
-        (and the deprecated ``/api/insults/category/{category_name}/``); the
-        query-param form serves the ``/api/v1/insults/?category=`` collection.
-        ``category_name`` is still accepted as a query-param alias.
-        """
-        return (
-            self.kwargs.get("category_name")
-            or self.request.query_params.get("category")
-            or self.request.query_params.get("category_name")
         )
 
     def _get_categorized_queryset(self, category):
@@ -256,22 +245,28 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
         )
 
     def list(self, request, *args, **kwargs):
-        """List active insults, optionally filtered by category.
+        """List active insults, redirecting legacy ``?category=`` requests.
 
-        The category comes from the URL path or the ``category`` query param
-        (see ``_requested_category``). Results are further filtered by
+        A ``category``/``category_name`` query parameter redirects to the
+        path-based category route. Otherwise results are filtered by
         ``status``/``nsfw``, served from the bulk cache, and paginated.
         """
+        # Check for category query parameter early and reject with 400
+        if category := request.GET.get("category_name") or request.GET.get("category"):
+            # Build new query params without the category fields
+            params = request.GET.copy()
+            params.pop("category", None)
+            params.pop("category_name", None)
+            querystring = f"?{urlencode(params)}" if params else ""
+
+            return redirect(f"/api/insults/{category}{querystring}")
+
         filters = {
             "status": request.GET.get("status"),
             "nsfw": request.GET.get("nsfw"),
         }
 
-        # The path category isn't part of the query string, so it must be in
-        # the key explicitly or every category would share one cache entry.
-        cache_key = self.get_cache_key(
-            "bulk_list", category=self._requested_category(), **filters
-        )
+        cache_key = self.get_cache_key("bulk_list", **filters)
 
         def get_filtered_queryset():
             """Build the filtered queryset."""
@@ -405,7 +400,7 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
         },
     ),
 )
-class InsultDetailsEndpoint(RetrieveUpdateDestroyAPIView):
+class InsultDetailsEndpoint(CreateModelMixin, RetrieveUpdateDestroyAPIView):
     """
     # Insult Details
 
@@ -416,10 +411,10 @@ class InsultDetailsEndpoint(RetrieveUpdateDestroyAPIView):
 
     ## Endpoints
 
-    - `GET /api/v1/insults/<reference_id>/`: Retrieve insult
-    - `PUT /api/v1/insults/<reference_id>/`: Update insult *(owner only)*
-    - `PATCH /api/v1/insults/<reference_id>/`: Partially update insult *(owner only)*
-    - `DELETE /api/v1/insults/<reference_id>/`: Delete insult *(owner only)*
+    - `GET /api/insult/<reference_id>`: Retrieve insult
+    - `PUT /api/insult/<reference_id>`: Update insult *(owner only)*
+    - `PATCH /api/insult/<reference_id>`: Partially update insult *(owner only)*
+    - `DELETE /api/insult/<reference_id>`: Delete insult *(owner only)*
 
     ## Authentication
 
@@ -528,7 +523,7 @@ class RandomInsultEndpoint(GenericAPIView):
 
         ## Endpoint
 
-        - `GET /api/v1/insults/random/`
+        - `GET /api/insults/random`
 
         ## Query Parameters
 
@@ -690,7 +685,7 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 
         ## Endpoint
 
-        - `GET /api/v1/categories/`
+        - `GET /api/categories`
 
         ## Features
 
@@ -726,46 +721,47 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 
         return Response(
             {
-                "help_text": "Here is a list of all available Insult Categories. The API will accept either values and is case insensitive. Ex: `/api/v1/insults/?category=p` and `/api/v1/insults/?category=POOR` will yield the same result",
+                "help_text": "Here is a list of all available Insult Categories. The API will accept either values and is case insensitive. Ex: `/api/insults/p` and `api/insults/POOR` will yield the same result",
                 "results": output,
             }
         )
 
 
-CREATE_INSULT_SCHEMA = extend_schema(
-    tags=["Insults"],
-    auth=[{"TokenAuth": []}],
-    operation_id="create_insult",
-    request=CreateInsultSerializer,
-    summary="Create New Insult",
-    responses={
-        201: OpenApiResponse(
-            description="Insult created successfully",
-            response=CreateInsultSerializer,
-            examples=[
-                OpenApiExample(
-                    "Successful Creation",
-                    summary="New insult created successfully",
-                    description="Example response when a new insult is successfully created",
-                    value={
-                        "reference_id": "GIGGLE_ABC123",
-                        "category": "Poor",
-                        "content": "Your code is so poor, it makes welfare look like a luxury lifestyle.",
-                        "nsfw": False,
-                        "status": "Pending",
-                        "added_by": "DevJoker",
-                        "added_on": "2 minutes ago",
-                    },
-                )
-            ],
-        ),
-        400: OpenApiResponse(description="Invalid input data provided"),
-        **StandardErrorResponses.get_authenticated_endpoint_responses(),
-    },
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Insults"],
+        auth=[
+            {"FlexibleTokenAuthentication": []}
+        ],  # pyright: ignore[reportArgumentType]
+        operation_id="create-insult",
+        request=CreateInsultSerializer,
+        summary="Create New Insult",
+        responses={
+            201: OpenApiResponse(
+                description="Insult created successfully",
+                response=CreateInsultSerializer,
+                examples=[
+                    OpenApiExample(
+                        "Successful Creation",
+                        summary="New insult created successfully",
+                        description="Example response when a new insult is successfully created",
+                        value={
+                            "reference_id": "GIGGLE_ABC123",
+                            "category": "Poor",
+                            "content": "Your code is so poor, it makes welfare look like a luxury lifestyle.",
+                            "nsfw": False,
+                            "status": "Pending",
+                            "added_by": "DevJoker",
+                            "added_on": "2 minutes ago",
+                        },
+                    )
+                ],
+            ),
+            400: OpenApiResponse(description="Invalid input data provided"),
+            **StandardErrorResponses.get_authenticated_endpoint_responses(),
+        },
+    )
 )
-
-
-@extend_schema_view(post=CREATE_INSULT_SCHEMA)
 class CreateInsultEndpoint(CreateAPIView):
     """
       # Create New Insult (Must Be Registered User)
@@ -774,8 +770,7 @@ class CreateInsultEndpoint(CreateAPIView):
       default to 'Pending' status pending approval.
 
      ## Endpoints:
-          POST /api/v1/insults/  (preferred)
-          POST /api/insults/new  (deprecated alias)
+          POST /api/insults/new
 
      ## Authentication:
           Token authentication required
@@ -795,92 +790,38 @@ class CreateInsultEndpoint(CreateAPIView):
         serializer.save(added_by=self.request.user)
 
 
-@extend_schema_view(
-    get=extend_schema(
-        operation_id="list_insults",
-        summary="List insults",
-        description=(
-            "Retrieve paginated insults, optionally filtered by category. "
-            "Authenticated users see their own insults plus all active insults; "
-            "unauthenticated users see only active insults."
-        ),
-        parameters=[
-            OpenApiParameter(
-                name="category",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
-                description="Category key (e.g. `P`) or name (e.g. `Poor`), case-insensitive. See `GET /api/v1/categories/`.",
-                required=False,
-            ),
-        ],
+@extend_schema(
+    tags=["Insults"],
+    auth=[],
+    operation_id="list_reference_ids",
+    summary="List all active insult reference IDs",
+    description=(
+        "Returns a paginated list of reference IDs for every active insult in the "
+        "public collection. Useful for bulk look-ups, pre-fetching, or building a "
+        "client-side cache of available identifiers. Pass each ID to "
+        "`GET /api/insults/{reference_id}/` to retrieve the full insult."
     ),
-    post=CREATE_INSULT_SCHEMA,
-)
-class InsultCollectionEndpoint(CreateModelMixin, InsultByCategoryEndpoint):
-    """
-    # Insults Collection
-
-    - `GET /api/v1/insults/`: List insults (`?category=`, `?nsfw=`, `?page=`, `?page_size=`)
-    - `POST /api/v1/insults/`: Create an insult *(token auth required)*; it starts as Pending
-    """
-
-    authentication_classes = [FlexibleTokenAuthentication]
-
-    def get_permissions(self):
-        """Allow anyone to list; require authentication to create."""
-        if self.request.method in SAFE_METHODS:
-            return [AllowAny()]
-        return [IsAuthenticated()]
-
-    def get_serializer_class(self):
-        """Use the create serializer for writes, the list serializer for reads."""
-        if self.request.method == "POST":
-            return CreateInsultSerializer
-        return super().get_serializer_class()
-
-    def post(self, request, *args, **kwargs):
-        """Create a new insult owned by the requesting user."""
-        return self.create(request, *args, **kwargs)
-
-    def perform_create(self, serializer):
-        """Set the authenticated user as the insult owner."""
-        serializer.save(added_by=self.request.user)
-
-
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Insults"],
-        auth=[],
-        operation_id="list_reference_ids",
-        summary="List all active insult reference IDs",
-        description=(
-            "Returns a paginated list of reference IDs for every active insult in the "
-            "public collection. Useful for bulk look-ups, pre-fetching, or building a "
-            "client-side cache of available identifiers. Pass each ID to "
-            "`GET /api/v1/insults/{reference_id}/` to retrieve the full insult."
+    responses={
+        200: OpenApiResponse(
+            description="Paginated list of active insult reference IDs",
+            examples=[
+                OpenApiExample(
+                    "Success Response",
+                    value={
+                        "count": 500,
+                        "next": "/api/insults/reference-ids/?page=2",
+                        "previous": None,
+                        "results": [
+                            "CACKLE_NDQ5",
+                            "CHUCKLE_NDUz",
+                            "GIGGLE_ABC123",
+                        ],
+                    },
+                )
+            ],
         ),
-        responses={
-            200: OpenApiResponse(
-                description="Paginated list of active insult reference IDs",
-                examples=[
-                    OpenApiExample(
-                        "Success Response",
-                        value={
-                            "count": 500,
-                            "next": "/api/v1/insults/reference-ids/?page=2",
-                            "previous": None,
-                            "results": [
-                                "CACKLE_NDQ5",
-                                "CHUCKLE_NDUz",
-                                "GIGGLE_ABC123",
-                            ],
-                        },
-                    )
-                ],
-            ),
-            **get_public_list_responses(),
-        },
-    )
+        **get_public_list_responses(),
+    },
 )
 class ListReferenceIdsEndpoint(ListAPIView):
     """
@@ -890,7 +831,7 @@ class ListReferenceIdsEndpoint(ListAPIView):
 
     ## Endpoint
 
-    - ``GET /api/v1/insults/reference-ids/``
+    - ``GET /api/insults/reference-ids/``
 
     ## Query Parameters
 
@@ -900,7 +841,7 @@ class ListReferenceIdsEndpoint(ListAPIView):
     ## Notes
 
     - No authentication required
-    - Only active, public insults are included (same visibility as ``/api/v1/insults/random/``)
+    - Only active, public insults are included (same visibility as ``/api/insults/random/``)
     - Results are ordered alphabetically by reference ID for stable pagination
     """
 
@@ -926,6 +867,12 @@ class ListReferenceIdsEndpoint(ListAPIView):
         if page is not None:
             return self.get_paginated_response(list(page))
         return Response({"count": qs.count(), "results": list(qs)})
+
+
+class UserContentManagementEndpoint(ListAPIView):
+    permission_classes = []
+    authentication_classes = []
+    serializer_class = MyInsultSerializer
 
 
 class HealthEndpoint(GenericAPIView):

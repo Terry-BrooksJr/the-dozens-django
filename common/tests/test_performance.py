@@ -190,7 +190,7 @@ def user():
     return get_user_model().objects.create_user(
         username="terry",
         email="terry@example.com",
-        password="not-a-good-password-but-here-we-are",
+        password="not-a-good-password-but-here-we-are",  # nosec B106
     )
 
 

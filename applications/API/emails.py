@@ -32,9 +32,7 @@ def email_font_urls(site_url):
     """Template context entries for the brand fonts used by the email templates."""
     return {
         "header_font_url": email_asset_url("fonts/caloriesuit.woff2", site_url),
-        "body_font_url": email_asset_url(
-            "fonts/JuliusSansOne-Regular.woff2", site_url
-        ),
+        "body_font_url": email_asset_url("fonts/JuliusSansOne-Regular.woff2", site_url),
     }
 
 

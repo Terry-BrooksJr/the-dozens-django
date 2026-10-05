@@ -71,16 +71,16 @@ urlpatterns = [
     path("auth/token/logout/", TokenDestroyView.as_view(), name="token_logout"),
     path("auth/", include("djoser.urls")),
     path("auth/", include("djoser.urls.authtoken")),
-    # Deprecated aliases for routes that now live under /api/v1/.
+    # Deprecated aliases for routes that now live under /api/v2.0.0/.
     path(
         "report/",
-        deprecated_route(ReportJokeView.as_view(), "/api/v1/reports/"),
+        deprecated_route(ReportJokeView.as_view(), "/api/v2.0.0/reports/"),
         name="report-joke",
     ),
     path(
         "insults/reference-ids/",
         deprecated_route(
-            csrf_exempt(get_reference_ids), "/api/v1/insults/reference-ids/"
+            csrf_exempt(get_reference_ids), "/api/v2.0.0/insults/reference-ids/"
         ),
         name="insult-reference-ids",
     ),

@@ -49,12 +49,12 @@ class SerializerTestCase(TestCase):
             email="tester@example.com",
             first_name="Terry",
             last_name="Brooks",
-            password="pass1234",
+            password="pass1234",  # nosec B106
         )
         cls.anon_user = User.objects.create_user(
             username="anon",
             email="anon@example.com",
-            password="pass1234",
+            password="pass1234",  # nosec B106
         )
         cls.insult = Insult.objects.create(
             content="Yo momma is so poor she runs after the garbage truck with a shopping list.",
@@ -289,7 +289,7 @@ class TestBaseInsultSerializerComputeMethods(SerializerTestCase):
             email="fo@example.com",
             first_name="Jordan",
             last_name="",
-            password="pass",
+            password="pass",  # nosec B106
         )
 
         class FakeObj:
@@ -468,9 +468,7 @@ class TestOptimizedInsultSerializer(SerializerTestCase):
     def test_many_resolves_content_per_instance(self):
         modified = self._modified_insult()
         data = OptimizedInsultSerializer(
-            Insult.objects.filter(pk__in=[self.insult.pk, modified.pk]).order_by(
-                "pk"
-            ),
+            Insult.objects.filter(pk__in=[self.insult.pk, modified.pk]).order_by("pk"),
             many=True,
         ).data
         self.assertEqual(

@@ -44,7 +44,7 @@ class _InsultAdminBase(TestCase):
         cls.admin_user = User.objects.create_superuser(
             username="admin_test",
             email="admin@example.com",
-            password="adminpass",
+            password="adminpass",  # nosec B106
             first_name="Admin",
             last_name="User",
         )
@@ -410,7 +410,7 @@ class InsultAdminSearchTests(_InsultAdminBase):
         cls.other_user = User.objects.create_user(
             username="searchable_user",
             email="searchable@example.com",
-            password="pass1234",
+            password="pass1234",  # nosec B106
         )
 
     def test_search_fields_includes_reference_id(self):
@@ -550,13 +550,15 @@ class ResendWelcomeEmailActionTests(TestCase):
         cls.admin_user = User.objects.create_superuser(
             username="superadmin",
             email="super@example.com",
-            password="adminpass",
+            password="adminpass",  # nosec B106
         )
         cls.user_a = User.objects.create_user(
-            username="alpha", email="alpha@example.com", password="pass1234"
+            username="alpha",
+            email="alpha@example.com",
+            password="pass1234",  # nosec B106
         )
         cls.user_b = User.objects.create_user(
-            username="beta", email="beta@example.com", password="pass1234"
+            username="beta", email="beta@example.com", password="pass1234"  # nosec B106
         )
 
     def setUp(self):

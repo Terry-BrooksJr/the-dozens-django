@@ -22,10 +22,10 @@ paginated API to work with.
 ## Base URL
 
 ```
-https://yo-momma.io/api/v1/
+https://yo-momma.io/api/v2.0.0/
 ```
 
-Resource endpoints are versioned under `/api/v1/`. Health checks and docs
+Resource endpoints are versioned under `/api/v2.0.0/`. Health checks and docs
 (`/api/health/`, `/api/swagger/`, `/api/redoc/`, `/api/schema/`) stay unversioned.
 
 ---
@@ -50,17 +50,17 @@ and token management.
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `GET` | `/api/v1/insults/` | No | List insults (filter with `?category=`, `?nsfw=`) |
-| `POST` | `/api/v1/insults/` | **Yes** | Submit a new insult |
-| `GET` | `/api/v1/insults/random/` | No | Fetch one random insult |
-| `GET` | `/api/v1/insults/reference-ids/` | No | List all active reference IDs |
-| `GET` | `/api/v1/insults/{reference_id}/` | No | Look up a specific insult |
-| `PUT` | `/api/v1/insults/{reference_id}/` | **Yes** (owner) | Replace an insult |
-| `PATCH` | `/api/v1/insults/{reference_id}/` | **Yes** (owner) | Partially update an insult |
-| `DELETE` | `/api/v1/insults/{reference_id}/` | **Yes** (owner) | Delete an insult |
-| `GET` | `/api/v1/categories/` | No | List all categories and themes |
-| `GET` | `/api/v1/categories/{category}/insults/` | No | Browse insults in one category |
-| `POST` | `/api/v1/reports/` | No | Flag a joke for review |
+| `GET` | `/api/v2.0.0/insults/` | No | List insults (filter with `?category=`, `?nsfw=`) |
+| `POST` | `/api/v2.0.0/insults/` | **Yes** | Submit a new insult |
+| `GET` | `/api/v2.0.0/insults/random/` | No | Fetch one random insult |
+| `GET` | `/api/v2.0.0/insults/reference-ids/` | No | List all active reference IDs |
+| `GET` | `/api/v2.0.0/insults/{reference_id}/` | No | Look up a specific insult |
+| `PUT` | `/api/v2.0.0/insults/{reference_id}/` | **Yes** (owner) | Replace an insult |
+| `PATCH` | `/api/v2.0.0/insults/{reference_id}/` | **Yes** (owner) | Partially update an insult |
+| `DELETE` | `/api/v2.0.0/insults/{reference_id}/` | **Yes** (owner) | Delete an insult |
+| `GET` | `/api/v2.0.0/categories/` | No | List all categories and themes |
+| `GET` | `/api/v2.0.0/categories/{category}/insults/` | No | Browse insults in one category |
+| `POST` | `/api/v2.0.0/reports/` | No | Flag a joke for review |
 | `GET` | `/api/health/` | No | Service health check |
 
 > A **GraphQL** endpoint is also available at `/graphql/` for flexible querying.
@@ -74,18 +74,18 @@ from them carries two headers so clients can detect this automatically:
 
 ```
 Deprecation: true
-Link: </api/v1/insults/random/>; rel="successor-version"
+Link: </api/v2.0.0/insults/random/>; rel="successor-version"
 ```
 
 | Deprecated | Use instead |
 |------------|-------------|
-| `GET /api/insults/random/` | `GET /api/v1/insults/random/` |
-| `GET /api/insults/category/{category}/` | `GET /api/v1/insults/?category={category}` or `GET /api/v1/categories/{category}/insults/` |
-| `GET\|PUT\|PATCH\|DELETE /api/insults/{reference_id}/` | same methods on `/api/v1/insults/{reference_id}/` |
-| `POST /api/insults/new` | `POST /api/v1/insults/` |
-| `GET /api/categories/` | `GET /api/v1/categories/` |
-| `POST /report/` | `POST /api/v1/reports/` |
-| `GET /insults/reference-ids/` | `GET /api/v1/insults/reference-ids/` (paginated `{"count", "results"}` shape) |
+| `GET /api/insults/random/` | `GET /api/v2.0.0/insults/random/` |
+| `GET /api/insults/category/{category}/` | `GET /api/v2.0.0/insults/?category={category}` or `GET /api/v2.0.0/categories/{category}/insults/` |
+| `GET\|PUT\|PATCH\|DELETE /api/insults/{reference_id}/` | same methods on `/api/v2.0.0/insults/{reference_id}/` |
+| `POST /api/insults/new` | `POST /api/v2.0.0/insults/` |
+| `GET /api/categories/` | `GET /api/v2.0.0/categories/` |
+| `POST /report/` | `POST /api/v2.0.0/reports/` |
+| `GET /insults/reference-ids/` | `GET /api/v2.0.0/insults/reference-ids/` (paginated `{"count", "results"}` shape) |
 
 Request and response bodies are unchanged except where noted.
 
@@ -93,18 +93,18 @@ Request and response bodies are unchanged except where noted.
 
 ## Query Parameters
 
-### `GET /api/v1/insults/random/`
+### `GET /api/v2.0.0/insults/random/`
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `nsfw` | boolean | No | `true` = explicit only · `false` = clean only · omit = both |
 | `category` | string | No | Filter by category key (e.g., `fat`) or full name (e.g., `Fat`) |
 
-### `GET /api/v1/insults/` and `GET /api/v1/categories/{category}/insults/`
+### `GET /api/v2.0.0/insults/` and `GET /api/v2.0.0/categories/{category}/insults/`
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `category` | string | No | `/api/v1/insults/` only: category key or name, case-insensitive |
+| `category` | string | No | `/api/v2.0.0/insults/` only: category key or name, case-insensitive |
 | `nsfw` | boolean | No | Same as above |
 | `page` | integer | No | Page number (default: 1) |
 | `page_size` | integer | No | Results per page (default: 20) |
@@ -146,7 +146,7 @@ recommendation flows without exposing internal database keys.
 ```json
 {
   "count": 312,
-  "next": "https://yo-momma.io/api/v1/insults/?category=fat&page=2",
+  "next": "https://yo-momma.io/api/v2.0.0/insults/?category=fat&page=2",
   "previous": null,
   "results": [ ... ]
 }
@@ -188,7 +188,7 @@ All errors follow a consistent shape:
 
 **cURL**
 ```bash
-curl -X GET "https://yo-momma.io/api/v1/insults/random/?nsfw=false"
+curl -X GET "https://yo-momma.io/api/v2.0.0/insults/random/?nsfw=false"
 ```
 
 **Python**
@@ -196,7 +196,7 @@ curl -X GET "https://yo-momma.io/api/v1/insults/random/?nsfw=false"
 import requests
 
 response = requests.get(
-    "https://yo-momma.io/api/v1/insults/random/",
+    "https://yo-momma.io/api/v2.0.0/insults/random/",
     params={"nsfw": "false"}
 )
 joke = response.json()
@@ -206,7 +206,7 @@ print(joke["content"])
 **JavaScript (fetch)**
 ```javascript
 const response = await fetch(
-  "https://yo-momma.io/api/v1/insults/random/?nsfw=false"
+  "https://yo-momma.io/api/v2.0.0/insults/random/?nsfw=false"
 );
 const joke = await response.json();
 console.log(joke.content);
@@ -218,7 +218,7 @@ console.log(joke.content);
 
 **cURL**
 ```bash
-curl -X GET "https://yo-momma.io/api/v1/insults/?category=poor&nsfw=false&page=1"
+curl -X GET "https://yo-momma.io/api/v2.0.0/insults/?category=poor&nsfw=false&page=1"
 ```
 
 **Python**
@@ -226,7 +226,7 @@ curl -X GET "https://yo-momma.io/api/v1/insults/?category=poor&nsfw=false&page=1
 import requests
 
 response = requests.get(
-    "https://yo-momma.io/api/v1/insults/",
+    "https://yo-momma.io/api/v2.0.0/insults/",
     params={"category": "poor", "nsfw": "false", "page": 1}
 )
 data = response.json()
@@ -237,7 +237,7 @@ for joke in data["results"]:
 **JavaScript (fetch)**
 ```javascript
 const res = await fetch(
-  "https://yo-momma.io/api/v1/insults/?category=poor&nsfw=false&page=1"
+  "https://yo-momma.io/api/v2.0.0/insults/?category=poor&nsfw=false&page=1"
 );
 const { results } = await res.json();
 results.forEach(j => console.log(j.reference_id, "—", j.content));
@@ -249,14 +249,14 @@ results.forEach(j => console.log(j.reference_id, "—", j.content));
 
 **cURL**
 ```bash
-curl -X GET "https://yo-momma.io/api/v1/insults/GIGGLE-00042/"
+curl -X GET "https://yo-momma.io/api/v2.0.0/insults/GIGGLE-00042/"
 ```
 
 **Python**
 ```python
 import requests
 
-response = requests.get("https://yo-momma.io/api/v1/insults/GIGGLE-00042/")
+response = requests.get("https://yo-momma.io/api/v2.0.0/insults/GIGGLE-00042/")
 print(response.json())
 ```
 
@@ -267,7 +267,7 @@ print(response.json())
 **cURL**
 ```bash
 # Set DOZENS_API_TOKEN in your environment first; never paste the token inline.
-curl -X POST "https://yo-momma.io/api/v1/insults/" \
+curl -X POST "https://yo-momma.io/api/v2.0.0/insults/" \
   -H "Authorization: Token ${DOZENS_API_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -288,7 +288,7 @@ payload = {
     "nsfw": False,
 }
 response = requests.post(
-    "https://yo-momma.io/api/v1/insults/",
+    "https://yo-momma.io/api/v2.0.0/insults/",
     json=payload,
     headers=headers
 )
@@ -297,7 +297,7 @@ print(response.status_code, response.json())
 
 **JavaScript (fetch)**
 ```javascript
-const response = await fetch("https://yo-momma.io/api/v1/insults/", {
+const response = await fetch("https://yo-momma.io/api/v2.0.0/insults/", {
   method: "POST",
   headers: {
     "Authorization": "Token YOUR_API_TOKEN_HERE",
@@ -340,7 +340,7 @@ Jokes are organized into **categories** grouped under broader **themes**. Fetch 
 full taxonomy at any time:
 
 ```bash
-curl -X GET "https://yo-momma.io/api/v1/categories/"
+curl -X GET "https://yo-momma.io/api/v2.0.0/categories/"
 ```
 
 Use either the category **key** (e.g., `F`) or the full **name** (e.g., `Fat`) in any
@@ -361,7 +361,7 @@ The moderation pipeline uses the following status flags:
 | `Flagged` | Reported by community, under review |
 | `Removed` | Soft-deleted, no longer visible |
 
-Community members can flag any joke through the `POST /api/v1/reports/` endpoint without
+Community members can flag any joke through the `POST /api/v2.0.0/reports/` endpoint without
 requiring an account.
 
 ---

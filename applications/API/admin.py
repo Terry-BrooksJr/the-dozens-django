@@ -149,7 +149,7 @@ class InsultAdmin(SimpleHistoryAdmin):
         "is_admin_modified",
     )
     list_filter = (HasPendingReviewFilter, "status", "nsfw", "category", "added_on")
-    actions = [  # noqa: RUF012
+    actions = [
         "approve_insult",
         "remove_insult",
         "mark_insult_for_review",
@@ -182,7 +182,7 @@ class InsultAdmin(SimpleHistoryAdmin):
 
     # Success message shown for each review action; the keys are the
     # ``action`` values passed to _report_review_result().
-    REVIEW_ACTION_MESSAGES = {  # noqa: RUF012
+    REVIEW_ACTION_MESSAGES = {
         "approved": "approved",
         "modified": "approved with modifications",
         "rejected": "rejected",
@@ -766,7 +766,7 @@ admin.site.register(Insult, InsultAdmin)
 class UserAdmin(BaseUserAdmin):
     """User admin extended with an action to resend the welcome email."""
 
-    actions = [*BaseUserAdmin.actions, "resend_welcome_email"]  # noqa: RUF012
+    actions = [*BaseUserAdmin.actions, "resend_welcome_email"]
 
     @admin.action(description="Resend welcome email to selected users")
     def resend_welcome_email(self, request, queryset):

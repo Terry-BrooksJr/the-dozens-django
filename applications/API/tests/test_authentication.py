@@ -29,7 +29,9 @@ class FlexibleTokenAuthenticationTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(
-            username="tokenuser", email="tokenuser@example.com", password="pw12345"
+            username="tokenuser",
+            email="tokenuser@example.com",
+            password="pw12345",  # nosec B106
         )
         cls.token = Token.objects.create(user=cls.user)
 
@@ -65,7 +67,9 @@ class FlexibleTokenAuthenticationTests(TestCase):
 
     def test_bare_token_for_inactive_user_raises_authentication_failed(self):
         inactive_user = User.objects.create_user(
-            username="inactive", email="inactive@example.com", password="pw"
+            username="inactive",
+            email="inactive@example.com",
+            password="pw",  # nosec B106
         )
         inactive_user.is_active = False
         inactive_user.save(update_fields=["is_active"])

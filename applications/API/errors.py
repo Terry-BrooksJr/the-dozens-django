@@ -200,7 +200,7 @@ class StandardErrorResponses:
                 summary="Category with specified key/name does not exist",
                 description=(
                     "The category with the provided key or name was not found. "
-                    "Check available categories using the /api/v1/categories/ endpoint."
+                    "Check available categories using the /api/v2.0.0/categories/ endpoint."
                 ),
                 value={
                     **ERROR_TEMPLATES[status.HTTP_404_NOT_FOUND],

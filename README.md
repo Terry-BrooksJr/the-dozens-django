@@ -8,7 +8,7 @@
 
 A playful, production‑ready REST API for “yo momma” style jokes (aka *Insults*), built with **Django 5** and **Django REST Framework**. It ships with token auth, robust filtering, schema‑first API docs (OpenAPI 3 via **drf‑spectacular**), caching, pagination, linting/type‑checking, and a container‑friendly runtime.
 
-> TL;DR: Run `task install && task db_sync && task run:dev 8888` and hit `http://127.0.0.1:8888/api/v1/insults/`.
+> TL;DR: Run `task install && task db_sync && task run:dev 8888` and hit `http://127.0.0.1:8888/api/v2.0.0/insults/`.
 
 ---
 
@@ -174,24 +174,24 @@ Common tasks (see full list with `task`):
 ## API Overview
 
 Base path examples use `http://127.0.0.1:8888`. Resource routes are versioned
-under `/api/v1/`; health probes and docs (`/api/ping/`, `/api/health/`,
+under `/api/v2.0.0/`; health probes and docs (`/api/ping/`, `/api/health/`,
 `/api/schema/`, `/api/swagger/`, `/api/redoc/`) are unversioned.
 
 | Method | Path | Auth |
 |--------|------|------|
-| `GET` | `/api/v1/insults/` | public |
-| `POST` | `/api/v1/insults/` | token |
-| `GET` | `/api/v1/insults/random/` | public |
-| `GET` | `/api/v1/insults/reference-ids/` | public |
-| `GET` | `/api/v1/insults/<reference_id>/` | public |
-| `PUT` / `PATCH` / `DELETE` | `/api/v1/insults/<reference_id>/` | token + owner |
-| `GET` | `/api/v1/categories/` | public |
-| `GET` | `/api/v1/categories/<category_name>/insults/` | public |
-| `POST` | `/api/v1/reports/` | public |
+| `GET` | `/api/v2.0.0/insults/` | public |
+| `POST` | `/api/v2.0.0/insults/` | token |
+| `GET` | `/api/v2.0.0/insults/random/` | public |
+| `GET` | `/api/v2.0.0/insults/reference-ids/` | public |
+| `GET` | `/api/v2.0.0/insults/<reference_id>/` | public |
+| `PUT` / `PATCH` / `DELETE` | `/api/v2.0.0/insults/<reference_id>/` | token + owner |
+| `GET` | `/api/v2.0.0/categories/` | public |
+| `GET` | `/api/v2.0.0/categories/<category_name>/insults/` | public |
+| `POST` | `/api/v2.0.0/reports/` | public |
 
 ### List insults
 
-**GET** `/api/v1/insults/`
+**GET** `/api/v2.0.0/insults/`
 
 Query params:
 
@@ -202,34 +202,34 @@ Query params:
 Example:
 
 ```bash
-curl -s 'http://127.0.0.1:8888/api/v1/insults/?category=Poor&nsfw=false' | jq
+curl -s 'http://127.0.0.1:8888/api/v2.0.0/insults/?category=Poor&nsfw=false' | jq
 ```
 
 The same list is available as a sub-resource of a category:
-`GET /api/v1/categories/<category_name>/insults/`.
+`GET /api/v2.0.0/categories/<category_name>/insults/`.
 
 ### Create an insult
 
-**POST** `/api/v1/insults/` (token required; new insults start as Pending)
+**POST** `/api/v2.0.0/insults/` (token required; new insults start as Pending)
 
 ```bash
 curl -X POST \
   -H 'Authorization: Token <YOUR_TOKEN>' \
   -H 'Content-Type: application/json' \
   -d '{"content":"Yo momma is so RESTful…","category":"P","nsfw":false}' \
-  'http://127.0.0.1:8888/api/v1/insults/'
+  'http://127.0.0.1:8888/api/v2.0.0/insults/'
 ```
 
 ### Retrieve / Update / Delete
 
-__GET/PUT/PATCH/DELETE__ `/api/v1/insults/<reference_id>/`
+__GET/PUT/PATCH/DELETE__ `/api/v2.0.0/insults/<reference_id>/`
 
 - Read is public; write requires token and ownership.
 
 Example (retrieve):
 
 ```bash
-curl -s 'http://127.0.0.1:8888/api/v1/insults/SNICKER_NDc4/' | jq
+curl -s 'http://127.0.0.1:8888/api/v2.0.0/insults/SNICKER_NDc4/' | jq
 ```
 
 Example (update):
@@ -239,12 +239,12 @@ curl -X PATCH \
   -H 'Authorization: Token <YOUR_TOKEN>' \
   -H 'Content-Type: application/json' \
   -d '{"content":"Yo momma is so cloud‑native…"}' \
-  'http://127.0.0.1:8888/api/v1/insults/SNICKER_NDc4/'
+  'http://127.0.0.1:8888/api/v2.0.0/insults/SNICKER_NDc4/'
 ```
 
 ### Random insult
 
-**GET** `/api/v1/insults/random/`
+**GET** `/api/v2.0.0/insults/random/`
 
 Query params:
 
@@ -254,22 +254,22 @@ Query params:
 Example:
 
 ```bash
-curl -s 'http://127.0.0.1:8888/api/v1/insults/random/?nsfw=false' | jq
+curl -s 'http://127.0.0.1:8888/api/v2.0.0/insults/random/?nsfw=false' | jq
 ```
 
 ### List categories
 
-**GET** `/api/v1/categories/`
+**GET** `/api/v2.0.0/categories/`
 
 Returns a mapping of available categories (key → name) for client UIs.
 
 ### Report an insult
 
-**POST** `/api/v1/reports/` — flags an insult for moderator review (opens a GitHub issue).
+**POST** `/api/v2.0.0/reports/` — flags an insult for moderator review (opens a GitHub issue).
 
 ### Deprecated routes
 
-The pre-v1 routes (`/api/insults/new`, `/api/insults/random/`,
+The pre-v2.0.0 routes (`/api/insults/new`, `/api/insults/random/`,
 `/api/insults/category/<name>/`, `/api/insults/<reference_id>/`,
 `/api/categories/`, `/report/`, `/insults/reference-ids/`) still work. Their
 responses carry `Deprecation: true` and a `Link: <…>; rel="successor-version"`

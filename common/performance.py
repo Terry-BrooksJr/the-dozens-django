@@ -302,17 +302,24 @@ class CachedResponseMixin(GenericAPIView):
         object_ids: list[Any] = list(
             optimized_queryset.values_list(pk_field, flat=True)
         )
-        extra_data: dict[str, Any] = self._extract_bulk_metadata(optimized_queryset)
+        extra_data: dict[str, Any] = self._extract_bulk_metadata(
+            optimized_queryset, total_count=len(object_ids)
+        )
 
         cache_timeout: int = timeout or self.bulk_cache_timeout
         cache.set(cache_key, (object_ids, extra_data), cache_timeout)
 
         return optimized_queryset, extra_data
 
-    def _extract_bulk_metadata(self, queryset: QuerySet) -> dict[str, Any]:
-        """Extract metadata that should be cached alongside object IDs."""
+    def _extract_bulk_metadata(
+        self, queryset: QuerySet, total_count: int | None = None
+    ) -> dict[str, Any]:
+        """Extract metadata that should be cached alongside object IDs.
+
+        Pass ``total_count`` when the IDs are already in hand to skip a COUNT query.
+        """
         return {
-            "total_count": queryset.count(),
+            "total_count": queryset.count() if total_count is None else total_count,
             "timestamp": timezone.now().isoformat(),
         }
 

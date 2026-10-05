@@ -26,7 +26,7 @@ def deprecated_route(view: Callable, successor: str) -> Callable:
         view: The view callable (e.g. ``SomeView.as_view()``).
         successor: Path of the replacement route. May contain ``str.format``
             fields named after the URL kwargs, e.g.
-            ``"/api/v1/insults/{reference_id}/"``.
+            ``"/api/v2.0.0/insults/{reference_id}/"``.
 
     Returns:
         A view callable with the same behaviour plus the deprecation headers.

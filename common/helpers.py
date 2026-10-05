@@ -1,11 +1,10 @@
 """
 module: common.helpers
 
-Free-standing helper functions used by core.settings: a drf-spectacular
-schema postprocessing hook, a settings-dict normalizer, and the
-Loguru/LaunchDarkly logging glue (a stdlib `warnings` hook, a UTC time
-patcher, and the sink that forwards log records to LaunchDarkly
-Observability). Kept out of core/settings.py so that module stays focused on
+Free-standing helper functions used by core.settings: a settings-dict
+normalizer and the Loguru/LaunchDarkly logging glue (a stdlib `warnings`
+hook, a UTC time patcher, and the sink that forwards log records to
+LaunchDarkly Observability). Kept out of core/settings.py so that module stays focused on
 declarative Django configuration.
 """
 
@@ -24,38 +23,6 @@ except ImportError:
 
 from loguru import logger
 from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
-
-
-# --- drf-spectacular postprocessing hook to inject TokenAuth without using APPEND_COMPONENTS ---
-def add_token_auth_scheme(result, **kwargs):
-    """
-    Add a TokenAuth security scheme to the generated OpenAPI schema. This hook ensures that token-based authentication is documented without requiring direct settings overrides.
-
-    The function safely mutates the schema result to include an apiKey-based authorization header definition. It is designed to be resilient to schema generation errors and will silently fail if modifications cannot be applied.
-
-    Args:
-        result: The current OpenAPI schema representation being built or post-processed.
-        **kwargs: drf-spectacular's other postprocessing hook arguments
-            (`generator`, `request`, `public`), unused here - accepted only
-            because drf-spectacular always calls hooks with all four as
-            keyword arguments.
-
-    Returns:
-        The OpenAPI schema result with the TokenAuth security scheme injected when possible.
-    """
-    with contextlib.suppress(Exception):
-        components = result.setdefault("components", {})
-        security_schemes = components.setdefault("securitySchemes", {})
-        security_schemes["TokenAuth"] = {
-            "type": "apiKey",
-            "in": "header",
-            "name": "Authorization",
-            "description": (
-                "Token-based authentication. Supply your token like so:\n\n"
-                "`Authorization: Token <your_token>`"
-            ),
-        }
-    return result
 
 
 def _normalize_append_components(settings_dict: dict) -> dict:

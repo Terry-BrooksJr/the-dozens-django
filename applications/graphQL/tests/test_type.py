@@ -117,7 +117,7 @@ class TestInsultTypeIsActiveIntegration(GraphQLTestCase):
         cls.user = User.objects.create_user(
             username="type_test_user",
             email="typetestuser@example.com",
-            password="pass1234",
+            password="pass1234",  # nosec B106
         )
         cls.theme = Theme.objects.create(theme_key="TT", theme_name="Type Test Theme")
         cls.cat = InsultCategory.objects.create(
@@ -153,11 +153,27 @@ class TestInsultTypeIsActiveIntegration(GraphQLTestCase):
         """isActive is True for a status='A' insult."""
         self.assertTrue(self._query_is_active(self.active.reference_id))
 
-    def test_non_active_insults_are_not_active(self):
-        """isActive is False for every non-Active status code."""
+    def test_non_active_insults_are_not_exposed(self):
+        """insultById hides every non-Active insult behind a not-found error.
+
+        ``Insult.get_by_reference_id`` enforces the public visibility boundary,
+        so non-Active insults never reach the ``isActive`` resolver over the
+        API; ``isActive=False`` for those statuses is covered by the unit tests
+        above.
+        """
         for status_code in ("X", "P", "R", "F"):
             insult = Insult.objects.get(
                 content=f"Type test insult [{status_code}]", theme=self.theme
             )
             with self.subTest(status=status_code):
-                self.assertFalse(self._query_is_active(insult.reference_id))
+                response = self.query(f"""
+                    query {{
+                        insultById(referenceId: "{insult.reference_id}") {{
+                            isActive
+                        }}
+                    }}
+                    """)
+                self.assertResponseHasErrors(response)
+                content = json.loads(response.content)
+                self.assertIsNone(content["data"]["insultById"])
+                self.assertIn("not found", content["errors"][0]["message"])

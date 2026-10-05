@@ -52,7 +52,7 @@ class _OwnerNotificationBase(TestCase):
         cls.submitter = User.objects.create_user(
             username="joke_owner",
             email="owner@example.com",
-            password="pass1234",
+            password="pass1234",  # nosec B106
             first_name="Pat",
         )
         cls.theme = Theme.objects.create(theme_key="ONT", theme_name="Owner Theme")
@@ -109,7 +109,9 @@ class NotifyOwnerJokeStatusChangeTests(_OwnerNotificationBase):
         self.assertIn(insult.reference_id, html)
 
     def test_no_email_when_submitter_has_no_address(self):
-        no_email = User.objects.create_user(username="ghost", password="pass1234")
+        no_email = User.objects.create_user(
+            username="ghost", password="pass1234"
+        )  # nosec B106
         insult = self._make_insult(added_by=no_email)
 
         insult._notify_owner_joke_status_change(outcome="approved")
@@ -164,7 +166,9 @@ class NotifyOwnerJokeStatusChangeTests(_OwnerNotificationBase):
 
     def test_greets_by_username_without_first_name(self):
         nameless = User.objects.create_user(
-            username="nameless_owner", email="nameless@example.com", password="pw"
+            username="nameless_owner",
+            email="nameless@example.com",
+            password="pw",  # nosec B106
         )
         insult = self._make_insult(added_by=nameless)
 
@@ -220,7 +224,9 @@ class ReviewViewsNotifyOwnerTests(_OwnerNotificationBase):
     def setUpTestData(cls):
         super().setUpTestData()
         cls.admin_user = User.objects.create_superuser(
-            username="notify_admin", email="admin@example.com", password="adminpass"
+            username="notify_admin",
+            email="admin@example.com",
+            password="adminpass",  # nosec B106
         )
 
     def setUp(self):
@@ -267,16 +273,15 @@ class ReviewViewsNotifyOwnerTests(_OwnerNotificationBase):
 
     def test_modify_get_does_not_notify(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.PENDING)
-        self._run(
-            self.ma.modify_view, self._request(method="get"), insult.insult_id
-        )
+        self._run(self.ma.modify_view, self._request(method="get"), insult.insult_id)
         mock_notify.assert_not_called()
 
     def test_modify_invalid_form_does_not_notify(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.PENDING)
         self._run(
             self.ma.modify_view,
-            self._request(data={"modified_content": "Edited."}), insult.insult_id
+            self._request(data={"modified_content": "Edited."}),
+            insult.insult_id,
         )
         mock_notify.assert_not_called()
 
@@ -284,16 +289,15 @@ class ReviewViewsNotifyOwnerTests(_OwnerNotificationBase):
 
     def test_flagged_reclassify_notifies_reclassified(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.FLAGGED)
-        self._run(
-            self.ma.flagged_reclassify_view, self._request(), insult.insult_id
-        )
+        self._run(self.ma.flagged_reclassify_view, self._request(), insult.insult_id)
         self._assert_notified(mock_notify, "reclassified")
 
     def test_flagged_recategorize_post_notifies_recategorized(self, mock_notify):
         insult = self._make_insult(status=Insult.STATUS.FLAGGED)
         self._run(
             self.ma.flagged_recategorize_view,
-            self._request(data={"new_category": self.cat_b.pk}), insult.insult_id
+            self._request(data={"new_category": self.cat_b.pk}),
+            insult.insult_id,
         )
         self._assert_notified(mock_notify, "recategorized")
 

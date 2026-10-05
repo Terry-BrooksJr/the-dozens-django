@@ -134,6 +134,16 @@ indent_size=5
 [tool.djlint.js]
 indent_size=5
 
+[tool.ruff.lint]
+# RUF012 (mutable class attributes need ClassVar) misfires on the Django/DRF
+# declarative attributes (Meta.ordering/indexes/constraints, ModelAdmin.actions,
+# serializer field lists) that are meant to be plain class-level lists/dicts.
+# EXE001/EXE005 (shebang rules) misfire on the `#!SECTION` comment-region
+# markers used throughout core/settings.py.
+# BLE001 (blind `except Exception`): cache, metrics, logging, and signal code
+# deliberately fails soft — log and continue rather than fail the request.
+ignore = ["RUF012", "EXE001", "EXE005", "BLE001"]
+
 [tool.isort]
 profile = "black"
 skip = [".venv"]

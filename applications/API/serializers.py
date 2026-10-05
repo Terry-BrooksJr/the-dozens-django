@@ -103,8 +103,8 @@ class CachedBulkSerializer(serializers.ModelSerializer):
 
     # Define these in your concrete serializer
     select_related_fields = []  # e.g., ['added_by', 'category']
-    prefetch_related_fields = []  # e.g., ['reviews']  # noqa: RUF012
-    cached_fields = []  # Fields to cache individually  # noqa: RUF012
+    prefetch_related_fields = []  # e.g., ['reviews']
+    cached_fields = []  # Fields to cache individually
 
     def get_cache_key(self, obj, field_name: str) -> str:
         """
@@ -449,7 +449,8 @@ class BaseInsultSerializer(CachedBulkSerializer):
     def get_added_on_display(self, obj) -> str:
         """Return a formatted display string for the 'added_on' datetime of an object.
 
-        This method retrieves a cached, human-readable representation of the object's 'added_on' field.
+        Computed in-process: formatting a date is far cheaper than the cache
+        round trip it used to take per serialized row.
 
         Args:
             obj: The object containing the 'added_on' attribute.
@@ -457,11 +458,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         Returns:
             str: The formatted date string for display.
         """
-        return self.get_cached_field_value(
-            obj,
-            "added_on",
-            compute_method_name="compute_added_on_display",
-        )
+        return self.compute_added_on_display(obj)
 
     def to_internal_value(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert input data to native Python objects for validation and deserialization.
@@ -513,9 +510,13 @@ class BaseInsultSerializer(CachedBulkSerializer):
         """
         representation = super().to_representation(instance)
 
-        # Use cached category lookup instead of additional DB query
-        validated_category = type(self).resolve_category(representation["category"])
-        representation["category"] = validated_category["category_name"]
+        # Querysets select_related the category, so its name is already loaded;
+        # only fall back to the category cache when it isn't.
+        if isinstance(instance, Insult) and Insult.category.is_cached(instance):
+            representation["category"] = instance.category.name
+        else:
+            validated_category = type(self).resolve_category(representation["category"])
+            representation["category"] = validated_category["category_name"]
 
         return representation
 
@@ -523,7 +524,8 @@ class BaseInsultSerializer(CachedBulkSerializer):
     def get_added_by_display(self, obj) -> str | None:
         """Return a formatted display string for the user who added the insult.
 
-        This method retrieves a cached, human-readable representation of the object's 'added_by' field.
+        Computed in-process from the (select_related) user rather than via a
+        per-row cache round trip.
 
         Args:
             obj: The object containing the 'added_by' attribute.
@@ -531,9 +533,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
         Returns:
             Optional[str]: The formatted display name for the user who added the insult.
         """
-        return self.get_cached_field_value(
-            obj, "added_by", compute_method_name="compute_added_by_display"
-        )
+        return self.compute_added_by_display(obj)
 
 
 class MyInsultSerializer(BaseInsultSerializer):
