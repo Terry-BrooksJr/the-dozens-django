@@ -110,6 +110,7 @@ class InsultReviewForm(ModelForm):
     )
 
     def __init__(self, *args, **kwargs):
+        """Attach the crispy-forms helper that lays out and posts the report form."""
         super().__init__(*args, **kwargs)
 
         # Ensure queryset is up-to-date at runtime using cache manager

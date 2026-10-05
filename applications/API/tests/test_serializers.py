@@ -470,7 +470,7 @@ class TestBulkInsultSerializer(SerializerTestCase):
 
 class TestCreateInsultSerializer(SerializerTestCase):
 
-    # 70-char minimum for a valid content string
+    # Must satisfy CreateInsultSerializer.validate_content's "Yo momma ... so ..." format
     _VALID_CONTENT = (
         "Yo momma is so poor she can't afford a free sample at the grocery store today."
     )
@@ -493,6 +493,14 @@ class TestCreateInsultSerializer(SerializerTestCase):
         self.assertTrue(s.is_valid(), s.errors)
         self.assertEqual(s.validated_data["category"].category_key, "P")
 
+    def test_category_name_input_populates_category_field(self):
+        payload = self._payload()
+        del payload["category"]
+        payload["category_name"] = "Poor"
+        s = CreateInsultSerializer(data=payload)
+        self.assertTrue(s.is_valid(), s.errors)
+        self.assertEqual(s.validated_data["category"].category_key, "P")
+
     def test_validate_category_nonexistent_raises_validation_error(self):
         s = CreateInsultSerializer(data=self._payload(category="NONEXISTENT_99"))
         self.assertFalse(s.is_valid())
@@ -500,16 +508,56 @@ class TestCreateInsultSerializer(SerializerTestCase):
 
     # ── content validation ───────────────────────────────────────────────────
 
-    def test_content_shorter_than_45_chars_fails(self):
-        content = "x" * 44
-        s = CreateInsultSerializer(data=self._payload(content=content))
-        self.assertFalse(s.is_valid())
-        self.assertIn("content", s.errors)
+    _FORMAT_ERROR_FRAGMENT = '"Yo Momma is so...<SOMETHING>" format'
 
-    def test_content_exactly_45_chars_passes(self):
-        content = "x" * 45
-        s = CreateInsultSerializer(data=self._payload(content=content))
+    def test_validate_content_returns_value_when_format_matches(self):
+        s = CreateInsultSerializer()
+        self.assertEqual(s.validate_content(self._VALID_CONTENT), self._VALID_CONTENT)
+
+    def test_validate_content_raises_when_format_does_not_match(self):
+        s = CreateInsultSerializer()
+        with self.assertRaises(serializers.ValidationError) as ctx:
+            s.validate_content("x" * 45)
+        self.assertIn(self._FORMAT_ERROR_FRAGMENT, str(ctx.exception.detail[0]))
+
+    def test_content_accepts_supported_phrase_variants(self):
+        valid_contents = (
+            "Yo momma is so poor she can't afford to pay attention.",
+            "yo mama so old her birth certificate says expired.",
+            "Your mom's so short she poses for trophies.",
+            "Ya daddy is so lazy he stuck his nose out the window to blow it.",
+            "YO DAD SO TALL he trips over clouds.",
+            "Yo momma’s so poor ducks throw bread at her.",
+        )
+        for content in valid_contents:
+            with self.subTest(content=content):
+                s = CreateInsultSerializer(data=self._payload(content=content))
+                self.assertTrue(s.is_valid(), s.errors)
+
+    def test_content_rejects_text_not_in_yo_momma_format(self):
+        invalid_contents = (
+            "x" * 45,  # the old length-only rule no longer suffices
+            "My momma is so poor she can't afford to pay attention.",
+            "Yo momma is poor she can't afford to pay attention.",  # no "so"
+            "Yo momma is sopoor she can't afford to pay attention.",  # "so" not a word
+            "Yo momma is so",  # nothing after "so"
+            "Yo sister is so poor she can't afford to pay attention.",
+            "Yo momma is so poor\nshe can't afford to pay attention.",  # multi-line
+            "She said yo momma is so poor, and left.",  # must start the content
+        )
+        for content in invalid_contents:
+            with self.subTest(content=content):
+                s = CreateInsultSerializer(data=self._payload(content=content))
+                self.assertFalse(s.is_valid())
+                self.assertIn("content", s.errors)
+                self.assertIn(self._FORMAT_ERROR_FRAGMENT, str(s.errors["content"][0]))
+
+    def test_content_surrounding_whitespace_is_trimmed_before_format_check(self):
+        s = CreateInsultSerializer(
+            data=self._payload(content=f"  {self._VALID_CONTENT}\n")
+        )
         self.assertTrue(s.is_valid(), s.errors)
+        self.assertEqual(s.validated_data["content"], self._VALID_CONTENT)
 
     def test_content_blank_fails(self):
         s = CreateInsultSerializer(data=self._payload(content=""))

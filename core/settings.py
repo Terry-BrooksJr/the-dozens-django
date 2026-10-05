@@ -186,6 +186,17 @@ class Base(Configuration):
         g = Github(cls.GITHUB_API_TOKEN)
         return g.get_repo(f"{cls.GITHUB_API_OWNER}/{cls.GITHUB_API_REPO}")
 
+    # Secret token that Prometheus must send as "Authorization: Bearer <token>"
+    # when scraping /metrics.  Set METRICS_SCRAPE_TOKEN in Doppler; when unset,
+    # /metrics denies every request.
+    # IP-based allowlists are no longer used — Docker NAT makes them unreliable.
+    METRICS_SCRAPE_TOKEN = values.Value(
+        "",
+        environ=True,
+        environ_prefix=None,
+        environ_name="METRICS_SCRAPE_TOKEN",
+    )
+
     ROOT_URLCONF = values.Value("core.urls", environ=False)
     WSGI_APPLICATION = values.Value("core.wsgi.application", environ=False)
 
@@ -472,6 +483,7 @@ class Base(Configuration):
                         "django.template.context_processors.request",
                         "django.contrib.auth.context_processors.auth",
                         "django.contrib.messages.context_processors.messages",
+                        "applications.ld_integration.context_processors.launchdarkly_user",
                     ],
                 },
             },
@@ -837,6 +849,10 @@ class Base(Configuration):
         environ=True, environ_prefix=None, environ_name="EMAIL_ACCT_PASSWORD"
     )
     DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+    # mail_admins()/mail_managers() and error reports send from SERVER_EMAIL,
+    # not DEFAULT_FROM_EMAIL. Django's default is "root@localhost", which SMTP
+    # servers reject (504 5.5.2 "need fully-qualified address").
+    SERVER_EMAIL = EMAIL_HOST_USER
     MAILER_EMPTY_QUEUE_SLEEP = values.IntegerValue(
         environ=True, environ_prefix=None, environ_name="MAILER_EMPTY_QUEUE_SLEEP"
     )
@@ -848,11 +864,11 @@ class Base(Configuration):
         # Title on the brand (19 chars max) (defaults to current_admin_site.site_header if absent or None)
         "site_brand": "Yo Momma Jokes API",
         # Logo to use for your site, must be present in static files, used for brand on top left
-        "site_logo": "https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-frontend@f74b735018f9e8d330f2d6e507eea05110f92905/assets/yo_momma_brand.png",
+        "site_logo": "assets/yo_momma_brand.png",
         # Logo to use for your site, must be present in static files, used for login form logo (defaults to site_logo)
-        "login_logo": "https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-frontend@f74b735018f9e8d330f2d6e507eea05110f92905/assets/yo_momma_brand.png",
+        "login_logo": "assets/yo_momma_brand.png",
         # Logo to use for login form in dark themes (defaults to login_logo)
-        "login_logo_dark": "https://cdn.jsdelivr.net/gh/Terry-BrooksJr/the-dozens-frontend@f74b735018f9e8d330f2d6e507eea05110f92905/assets/yo_momma_brand.png",
+        "login_logo_dark": "assets/yo_momma_brand.png",
         # CSS classes that are applied to the logo above
         "site_logo_classes": "img-circle",
         # Relative path to a favicon for your site, will default to site_logo if absent (ideally 32x32 px)
@@ -966,15 +982,6 @@ class Production(Base):
 
     ALLOWED_HOSTS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_HOSTS"
-    )
-    # Secret token that Prometheus must send as "Authorization: Bearer <token>"
-    # when scraping /metrics.  Set METRICS_SCRAPE_TOKEN in Doppler.
-    # IP-based allowlists are no longer used — Docker NAT makes them unreliable.
-    METRICS_SCRAPE_TOKEN = values.Value(
-        "",
-        environ=True,
-        environ_prefix=None,
-        environ_name="METRICS_SCRAPE_TOKEN",
     )
     DEBUG = values.BooleanValue(False, environ=False)
 
@@ -1172,6 +1179,15 @@ class Development(Base):
         """Development: console output, plus Loki when LOKI_URL is set."""
         if not cls.configure_logging_common():
             return
+
+        # KoloMiddleware fire-and-forgets a `kolo._emit_auto` child after each
+        # request; when its Popen handle is GC'd while the child is still
+        # writing, CPython emits this ResourceWarning. Harmless, dev-only noise.
+        warnings.filterwarnings(
+            "ignore",
+            message=r"subprocess \d+ is still running",
+            category=ResourceWarning,
+        )
 
         # Loki Log Handler - May Replace OTEL in future iterations
         if loki_url := os.getenv("LOKI_URL"):

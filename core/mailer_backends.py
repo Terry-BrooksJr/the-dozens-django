@@ -1,3 +1,5 @@
+"""Email backends built on django-mailer."""
+
 from django.conf import settings
 
 from mailer.backend import DbBackend
@@ -25,6 +27,11 @@ class ImmediateDbBackend(DbBackend):
     """
 
     def send_messages(self, email_messages):
+        """Queue ``email_messages`` and deliver exactly those messages now.
+
+        Returns:
+            int: The number of messages queued.
+        """
         # Mirrors DbBackend.send_messages(), but keeps the created rows
         # (with real pks - Postgres's bulk_create returns them) instead of
         # just a count, so delivery below can be scoped to them.

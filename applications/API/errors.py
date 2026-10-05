@@ -468,6 +468,9 @@ def yo_momma_exception_handler(exc: Exception, context: Dict[str, Any]) -> Respo
 
     status_code = response.status_code
     data = response.data or {}
+    # Non-field ValidationErrors (e.g. ValidationError("msg")) produce a list body
+    if not isinstance(data, dict):
+        data = {"detail": data}
 
     # Try to pull an error code from DRF/APIException if present
     default_code = getattr(exc, "default_code", None)

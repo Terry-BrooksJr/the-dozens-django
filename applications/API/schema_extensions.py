@@ -22,6 +22,7 @@ class DjoserUserDeleteExtension(OpenApiViewExtension):
     # target_class = "djoser.views.UserViewSet"
 
     def view_replacement(self):
+        """Return a Djoser ``UserViewSet`` subclass with documented create/destroy."""
         from djoser.views import UserViewSet
 
         class PatchedUserViewset(UserViewSet):
@@ -43,6 +44,7 @@ class DjoserUserDeleteExtension(OpenApiViewExtension):
                 },
             )
             def destroy(self, request, *args, **kwargs):
+                """Delete the authenticated user's account."""
                 return super().perform_destroy(request, *args, **kwargs)
 
             @extend_schema(
@@ -73,4 +75,5 @@ class DjoserUserDeleteExtension(OpenApiViewExtension):
                 },
             )
             def create(self, request, *args, **kwargs):
+                """Register a new user account."""
                 return super().perform_create(request, *args, **kwargs)

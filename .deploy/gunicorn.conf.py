@@ -3,9 +3,15 @@
 # Equivalent to your [gunicorn] INI config, but with post-fork hooks.
 # This matters for SDKs that run background threads (like LaunchDarkly),
 # because threads do not survive fork.
+"""Gunicorn server configuration for the Django application.
+
+Defines bind/worker settings, UTC millisecond log timestamps, and the
+post-fork hook that re-initializes thread-backed SDKs in each worker.
+"""
 
 import logging
 import os
+import sys
 import time
 
 from gunicorn.glogging import Logger as GunicornLogger
@@ -50,6 +56,18 @@ max_requests = 1000
 max_requests_jitter = 100
 loglevel = "info"
 
+# gunicorn >=25.1 runs a control-socket server (for `gunicornc`) on a thread
+# in the master, stopped before and restarted after every fork(). On macOS
+# that still leaves the master multithreaded as far as the Objective-C
+# runtime is concerned, so the first +initialize in a fresh worker (e.g.
+# NSNumber, via urllib's _scproxy proxy lookup) aborts it with "may have been
+# in progress in another thread when fork() was called" and the master logs
+# "Worker was sent SIGKILL! Perhaps out of memory?". The first boot usually
+# survives; every *replacement* worker then crashes in an endless loop.
+# Nothing here uses gunicornc, and the Linux container is unaffected, so the
+# socket is only disabled on macOS.
+CONTROL_SOCKET_DISABLE = sys.platform == "darwin"
+
 # Gunicorn expects this name in python config.
 wsgi_app = "core.wsgi:application"
 
@@ -67,7 +85,7 @@ wsgi_app = "core.wsgi:application"
 # post-fork, so preloading can't be made safe here. Each worker instead
 # performs its own full app init (including LaunchDarkly/ldobserve) after
 # it's already a separate process, so no live gRPC channel is ever forked.
-preload_app = False
+PRELOAD_APP = False
 
 
 def post_fork(server, worker):

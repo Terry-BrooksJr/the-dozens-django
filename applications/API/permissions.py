@@ -17,6 +17,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
     """
 
     def has_object_permission(self, request, view, obj) -> bool:
+        """Allow safe methods for everyone; writes only for staff or the owner."""
         # Read permissions are allowed to any request (GET, HEAD, OPTIONS)
         if request.method in permissions.SAFE_METHODS:
             return True

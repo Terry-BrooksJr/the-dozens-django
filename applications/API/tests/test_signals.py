@@ -26,6 +26,7 @@ Insult._notify_admins_pending() / set_reference_id()
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.test import TestCase, override_settings
+from django.urls import reverse
 
 from applications.API.models import Insult, InsultCategory, Theme
 
@@ -216,9 +217,9 @@ class NotifyAdminsPendingInsultSignalTests(TestCase):
         self.assertIn("No", mail.outbox[0].body)
 
     def test_body_contains_admin_change_url(self):
-        """Body includes the relative admin change-page URL for the insult."""
+        """Body includes the admin change-page URL for the insult."""
         insult = self._create_insult()
-        expected_path = f"/admin/API/insult/{insult.insult_id}/change/"
+        expected_path = reverse("admin:API_insult_change", args=[insult.insult_id])
         self.assertIn(expected_path, mail.outbox[0].body)
 
     # ------------------------------------------------------------------

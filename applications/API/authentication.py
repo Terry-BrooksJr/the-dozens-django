@@ -24,6 +24,12 @@ class FlexibleTokenAuthentication(TokenAuthentication):
     """
 
     def authenticate(self, request):
+        """Authenticate via ``Token <key>``, falling back to a bare ``<key>``.
+
+        Returns:
+            tuple | None: ``(user, token)`` on success, or ``None`` when no
+            usable credentials are present.
+        """
         # Try the standard ``Token <key>`` path first.
         result = super().authenticate(request)
         if result is not None:

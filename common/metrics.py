@@ -1,7 +1,10 @@
+"""Prometheus and LaunchDarkly Observability metrics for caching and hot endpoints."""
+
 from __future__ import annotations
 
 import os
 import time
+from collections.abc import Iterable
 from contextlib import contextmanager, suppress
 from functools import lru_cache
 
@@ -29,6 +32,7 @@ def _ld_metrics_enabled() -> bool:
 
 
 def _as_cache_reason(reason: str | None) -> str:
+    """Normalize an invalidation reason, defaulting to ``"unspecified"``."""
     return (reason or "unspecified").strip() or "unspecified"
 
 
@@ -126,20 +130,18 @@ _CACHE_INVALIDATION_STATIC_PREFIXES: tuple[str, ...] = (
 )
 
 
-def init_cache_invalidation_metrics() -> None:
+def init_cache_invalidation_metrics(prefixes: Iterable[str] = ()) -> None:
     """Pre-register cache_invalidations_total label combos at startup.
+
+    ``prefixes`` is supplied by the caller (see ``ApiConfig._init_metrics``)
+    rather than read from ``common.cache_managers`` here, since that module
+    already imports this one and doing so would create an import cycle.
 
     Safe to call from AppConfig.ready — failures are suppressed so they
     never block Django startup.
     """
     with suppress(Exception):
-        from common.cache_managers import cache_registry
-
-        registry_prefixes = {
-            manager.cache_prefix
-            for manager in cache_registry.values()
-            if hasattr(manager, "cache_prefix")
-        }
+        registry_prefixes = set(prefixes)
         registry_prefixes.update(_CACHE_INVALIDATION_STATIC_PREFIXES)
         _pre_register_invalidation_labels(tuple(registry_prefixes))
 
@@ -323,6 +325,7 @@ class _MetricsFacade:
         stats: dict = {"query_count": 0, "total_ms": 0.0, "slowest_ms": 0.0}
 
         def _wrapper(execute, sql, params, many, context):
+            """Time one SQL statement and add it to ``stats``."""
             t0 = time.perf_counter()
             try:
                 return execute(sql, params, many, context)
@@ -353,6 +356,7 @@ class _MetricsFacade:
         RANDOM_INSULT_DB_QUERIES.inc(db_query_count)
 
     def record_random_insult_empty(self) -> None:
+        """Increment the counter for random-insult requests with no matches."""
         RANDOM_INSULT_QUERYSET_EMPTY.inc()
 
     def increment_endpoint_cache(self, endpoint: str, event: str) -> None:

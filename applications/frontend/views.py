@@ -31,10 +31,14 @@ from core.settings import Base
 
 
 class LandingPageView(TemplateView):
+    """Renders the public landing page."""
+
     template_name = "landing.html"
 
 
 class StatusPageView(TemplateView):
+    """Renders the service status page."""
+
     template_name = "status.html"
 
 
@@ -170,9 +174,9 @@ class ReportJokeView(CreateAPIView):
         Returns:
             Response | None: A DRF Response object indicating the result of the operation.
         """
-        logger.bind(
-            request_path=request.path, request_method=request.method
-        ).debug("Received request to report joke.")
+        logger.bind(request_path=request.path, request_method=request.method).debug(
+            "Received request to report joke."
+        )
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             vd = dict(serializer.validated_data)

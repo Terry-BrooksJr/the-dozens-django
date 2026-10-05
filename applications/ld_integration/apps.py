@@ -1,3 +1,5 @@
+"""Django app configuration for the LaunchDarkly integration."""
+
 import logging
 
 from django.apps import AppConfig
