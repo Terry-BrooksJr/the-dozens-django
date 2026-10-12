@@ -22,7 +22,7 @@ ReportJokeView.format_issue()
   * Returns dict with exactly the keys "issue_title" and "issue_body"
   * Title embeds the reference_id and review_type
   * Body equals the raw rationale_for_review text
-  * Raises ValueError when passed a non-dict
+  * Raises TypeError when passed a non-dict
 
 Notes
 -----
@@ -437,12 +437,12 @@ class FormatIssueTests(TestCase):
         result = self.view.format_issue(self._sample_data())
         self.assertEqual(result["issue_body"], _RATIONALE)
 
-    def test_raises_value_error_for_non_dict(self):
-        """format_issue() raises ValueError when not given a dict."""
-        with self.assertRaises(ValueError):
+    def test_raises_type_error_for_non_dict(self):
+        """format_issue() raises TypeError when not given a dict."""
+        with self.assertRaises(TypeError):
             self.view.format_issue("not a dict")
 
-    def test_raises_value_error_for_none(self):
-        """format_issue() raises ValueError when passed None."""
-        with self.assertRaises(ValueError):
+    def test_raises_type_error_for_none(self):
+        """format_issue() raises TypeError when passed None."""
+        with self.assertRaises(TypeError):
             self.view.format_issue(None)

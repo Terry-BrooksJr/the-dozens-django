@@ -90,10 +90,10 @@ class ReportJokeView(CreateAPIView):
             - "issue_body": The full rationale text for the review.
 
         Raises:
-            ValueError: If ``issue_data`` is not a dictionary.
+            TypeError: If ``issue_data`` is not a dictionary.
         """
         if not isinstance(issue_data, dict):
-            raise TypeError("issue_data must be an instance of InsultReviewForm.")
+            raise TypeError("issue_data must be a dict.")
         issue_body = issue_data["rationale_for_review"]
         issue_title = f"New Joke Review (Joke Id: {issue_data['insult_reference_id']}) - {issue_data['review_type']}"
 
