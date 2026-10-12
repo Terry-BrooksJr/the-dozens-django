@@ -483,7 +483,7 @@ class FormChoicesCacheManagerTests(TestCase):
         # choices should be list of (value, display) tuples
         choices = result["choices"]
         self.assertEqual(len(choices), 1)
-        value, display = choices[0]
+        value, _display = choices[0]
         self.assertEqual(value, "red")
 
     def test_build_form_choices_handles_attribute_error(self):

@@ -20,7 +20,8 @@ import os
 import threading
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type
+from collections.abc import Callable
+from typing import Any
 
 from django.core.cache import cache
 from django.core.serializers.json import DjangoJSONEncoder
@@ -37,7 +38,9 @@ class BaseCacheManager(ABC):
     Abstract base class for cache managers with standardized interface.
     """
 
-    def __init__(self, model_class: Type[models.Model], cache_prefix: str = None):
+    def __init__(
+        self, model_class: type[models.Model], cache_prefix: str | None = None
+    ):
         """Initialize the manager for ``model_class``.
 
         Args:
@@ -52,11 +55,11 @@ class BaseCacheManager(ABC):
         )  # RLock allows re-entry from the same thread
 
     @abstractmethod
-    def get_cache_keys(self) -> Dict[str, str]:
+    def get_cache_keys(self) -> dict[str, str]:
         """Return dictionary of cache key names and their full cache keys."""
 
     @abstractmethod
-    def build_data_from_db(self) -> Dict[str, Any]:
+    def build_data_from_db(self) -> dict[str, Any]:
         """Build data from database. Should return dict with cache key names as keys."""
 
     def invalidate_cache(self, reason: str = "manual") -> None:
@@ -85,9 +88,9 @@ class GenericDataCacheManager(BaseCacheManager):
 
     def __init__(
         self,
-        model_class: Type[models.Model],
-        cache_prefix: str = None,
-        data_builder: Callable = None,
+        model_class: type[models.Model],
+        cache_prefix: str | None = None,
+        data_builder: Callable | None = None,
         cache_timeout: int = int(os.environ.get("CACHE_TTL", "86400")),
     ):
         """Initialize a cache manager backed by a custom data builder.
@@ -104,18 +107,18 @@ class GenericDataCacheManager(BaseCacheManager):
         self.cache_timeout = cache_timeout or self.CACHE_TIMEOUT
 
         # Module-level cache storage
-        self._module_cache: Dict[str, Any] = {}
+        self._module_cache: dict[str, Any] = {}
 
         # Register signal handlers
         self._register_signals()
 
-    def get_cache_keys(self) -> Dict[str, str]:
+    def get_cache_keys(self) -> dict[str, str]:
         """Get cache keys for this manager."""
         return {
             "data": f"{self.cache_prefix}:generic_data_v1",
         }
 
-    def _default_data_builder(self) -> Dict[str, Any]:
+    def _default_data_builder(self) -> dict[str, Any]:
         """Default data builder - returns all model instances as dict."""
         try:
             queryset = self.model_class.objects.all()
@@ -125,7 +128,7 @@ class GenericDataCacheManager(BaseCacheManager):
             logger.error(f"Error in default data builder for {self.cache_prefix}: {e}")
             return {"data": []}
 
-    def build_data_from_db(self) -> Dict[str, Any]:
+    def build_data_from_db(self) -> dict[str, Any]:
         """Build data using the configured data builder."""
         return self.data_builder()
 
@@ -217,7 +220,7 @@ class GenericDataCacheManager(BaseCacheManager):
         """Write a single entry into the module-level (in-process) cache tier."""
         self._module_cache[cache_key] = value
 
-    def get_module_cache_snapshot(self) -> Dict[str, Any]:
+    def get_module_cache_snapshot(self) -> dict[str, Any]:
         """Return a shallow copy of the module-level cache tier's current contents."""
         return dict(self._module_cache)
 
@@ -249,7 +252,7 @@ class GenericDataCacheManager(BaseCacheManager):
             dispatch_uid=f"{self.__class__.__name__}_{self.model_class.__name__}_post_delete",
         )
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics for monitoring."""
         cache_keys = self.get_cache_keys()
         redis_data = cache.get_many(list(cache_keys.values()))
@@ -276,11 +279,11 @@ class FormChoicesCacheManager(GenericDataCacheManager):
 
     def __init__(
         self,
-        model_class: Type[models.Model],
+        model_class: type[models.Model],
         choice_field: str,
-        display_formatter: Callable[[Any], str] = None,
-        filter_kwargs: Dict[str, Any] = None,
-        cache_prefix: str = None,
+        display_formatter: Callable[[Any], str] | None = None,
+        filter_kwargs: dict[str, Any] | None = None,
+        cache_prefix: str | None = None,
     ):
         """Initialize a form-choices cache manager.
 
@@ -300,7 +303,7 @@ class FormChoicesCacheManager(GenericDataCacheManager):
         data_builder = self.build_form_choices_data
         super().__init__(model_class, cache_prefix, data_builder)
 
-    def get_cache_keys(self) -> Dict[str, str]:
+    def get_cache_keys(self) -> dict[str, str]:
         """Get cache keys for form choices."""
         return {
             "choices": f"{self.cache_prefix}:form_choices_v2",
@@ -314,7 +317,7 @@ class FormChoicesCacheManager(GenericDataCacheManager):
             return f"{self.choice_field.replace('_', ' ').title()}: {value}"
         return str(obj)
 
-    def build_form_choices_data(self) -> Dict[str, Any]:
+    def build_form_choices_data(self) -> dict[str, Any]:
         """Build form choices and queryset data from database."""
         try:
             # Build queryset with filters
@@ -345,7 +348,7 @@ class FormChoicesCacheManager(GenericDataCacheManager):
                 "queryset": "[]",
             }
 
-    def get_form_choices(self) -> List[Tuple[Any, str]]:
+    def get_form_choices(self) -> list[tuple[Any, str]]:
         """Get cached form choices."""
         return self.get_cached_data("choices") or []
 
@@ -353,7 +356,7 @@ class FormChoicesCacheManager(GenericDataCacheManager):
         """Get cached queryset as JSON string."""
         return self.get_cached_data("queryset") or "[]"
 
-    def get_choices_and_queryset(self) -> Tuple[List[Tuple[Any, str]], str]:
+    def get_choices_and_queryset(self) -> tuple[list[tuple[Any, str]], str]:
         """Get both choices and queryset in one call - matches your original API."""
         with self._cache_lock:
             choices = self.get_cached_data("choices") or []
@@ -375,7 +378,7 @@ class CategoryCacheManager(BaseCacheManager):
 
     def __init__(
         self,
-        model_class: Type[models.Model],
+        model_class: type[models.Model],
         key_field: str = "key",
         name_field: str = "name",
     ):
@@ -390,7 +393,7 @@ class CategoryCacheManager(BaseCacheManager):
         self.key_field = key_field
         self.name_field = name_field
 
-    def get_cache_keys(self) -> Dict[str, str]:
+    def get_cache_keys(self) -> dict[str, str]:
         """Get all cache keys used by category manager."""
         return {
             "all": f"{self.cache_prefix}:all",
@@ -398,7 +401,7 @@ class CategoryCacheManager(BaseCacheManager):
             "key_prefix": f"{self.cache_prefix}:key:",
         }
 
-    def build_data_from_db(self) -> Dict[str, Any]:
+    def build_data_from_db(self) -> dict[str, Any]:
         """Build category mappings from database."""
         try:
             queryset = self.model_class.objects.all()
@@ -414,7 +417,7 @@ class CategoryCacheManager(BaseCacheManager):
             logger.error(f"Error building category data: {e}")
             return {"all": {}}
 
-    def get_category_name_by_key(self, category_key: str) -> Optional[str]:
+    def get_category_name_by_key(self, category_key: str) -> str | None:
         """Get category name by key with caching."""
         cache_keys = self.get_cache_keys()
         cache_key = f"{cache_keys['name_prefix']}{category_key}"
@@ -426,7 +429,7 @@ class CategoryCacheManager(BaseCacheManager):
         all_categories = self.get_all_categories()
         return all_categories.get(category_key)
 
-    def get_category_key_by_name(self, category_name: str) -> Optional[str]:
+    def get_category_key_by_name(self, category_name: str) -> str | None:
         """Get category key by name with caching."""
         cache_keys = self.get_cache_keys()
         cache_key = f"{cache_keys['key_prefix']}{category_name.lower()}"
@@ -456,7 +459,7 @@ class CategoryCacheManager(BaseCacheManager):
         cache.set(cache_key_for_name_lookup, name, self.cache_timeout)
         cache.set(cache_key_for_key_lookup, category_key, self.cache_timeout)
 
-    def get_all_categories(self) -> Dict[str, str]:
+    def get_all_categories(self) -> dict[str, str]:
         """Get all categories from cache."""
         cache_keys = self.get_cache_keys()
         cached_data = cache.get(cache_keys["all"])
@@ -507,9 +510,9 @@ class CacheManagerRegistry:
 
     def __init__(self):
         """Create an empty registry."""
-        self._managers: Dict[str, BaseCacheManager] = {}
+        self._managers: dict[str, BaseCacheManager] = {}
 
-    def names(self) -> List[str]:
+    def names(self) -> list[str]:
         """Return a list of registered cache manager names (read-only)."""
         return list(self._managers.keys())
 
@@ -521,7 +524,7 @@ class CacheManagerRegistry:
         """Iterate managers (read-only)."""
         return self._managers.values()
 
-    def all(self) -> Dict[str, BaseCacheManager]:
+    def all(self) -> dict[str, BaseCacheManager]:
         """Return a shallow copy mapping of all registered managers (read-only)."""
         return dict(self._managers)
 
@@ -534,7 +537,7 @@ class CacheManagerRegistry:
         self._managers[name] = manager
         logger.info(f"Registered cache manager: {name}")
 
-    def get(self, name: str) -> Optional[BaseCacheManager]:
+    def get(self, name: str) -> BaseCacheManager | None:
         """Get a registered cache manager."""
         return self._managers.get(name)
 
@@ -547,7 +550,7 @@ class CacheManagerRegistry:
             except Exception as e:
                 logger.error(f"Error invalidating cache manager {name}: {e}")
 
-    def get_all_stats(self) -> Dict[str, Any]:
+    def get_all_stats(self) -> dict[str, Any]:
         """Get stats from all registered cache managers."""
         stats = {}
         for name, manager in self._managers.items():
@@ -570,11 +573,11 @@ cache_registry = CacheManagerRegistry()
 
 
 def create_form_choices_manager(
-    model_class: Type[models.Model],
+    model_class: type[models.Model],
     choice_field: str,
-    display_formatter: Callable[[Any], str] = None,
-    filter_kwargs: Dict[str, Any] = None,
-    cache_prefix: str = None,
+    display_formatter: Callable[[Any], str] | None = None,
+    filter_kwargs: dict[str, Any] | None = None,
+    cache_prefix: str | None = None,
 ) -> FormChoicesCacheManager:
     """
     Factory function to create and register a form choices cache manager.
@@ -595,7 +598,7 @@ def create_form_choices_manager(
 
 
 def create_category_manager(
-    model_class: Type[models.Model], key_field: str = "key", name_field: str = "name"
+    model_class: type[models.Model], key_field: str = "key", name_field: str = "name"
 ) -> CategoryCacheManager:
     """
     Factory function to create and register a category cache manager.
@@ -605,7 +608,7 @@ def create_category_manager(
     return manager
 
 
-def get_cache_performance_summary() -> Dict[str, Any]:
+def get_cache_performance_summary() -> dict[str, Any]:
     """
     Get performance summary for all registered cache managers.
     """

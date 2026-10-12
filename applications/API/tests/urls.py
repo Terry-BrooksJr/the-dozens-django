@@ -8,6 +8,6 @@ def dummy_report_view(request):
 
 
 urlpatterns = [
-    # The form's __init__ calls reverse("report-joke"), so provide a stub
-    path("report/", dummy_report_view, name="report-joke"),
+    # The form's __init__ calls reverse("report-list"), so provide a stub
+    path("api/v2.0.0/reports/", dummy_report_view, name="report-list"),
 ]

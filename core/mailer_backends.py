@@ -1,7 +1,6 @@
 """Email backends built on django-mailer."""
 
 from django.conf import settings
-
 from mailer.backend import DbBackend
 from mailer.engine import send_all
 from mailer.models import Message

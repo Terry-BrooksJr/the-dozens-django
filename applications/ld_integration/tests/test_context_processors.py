@@ -47,7 +47,9 @@ class LaunchDarklyUserContextProcessorTests(TestCase):
 
     def test_renders_logged_in_user_context(self):
         user = User.objects.create_user(
-            username="rendered", email="rendered@example.com", password="pw"
+            username="rendered",
+            email="rendered@example.com",
+            password="pw",  # nosec B106
         )
         request = self.factory.get("/")
         request.user = user

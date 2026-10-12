@@ -25,13 +25,16 @@ class IsOwnerOrReadOnlyTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.owner = User.objects.create_user(
-            username="owner", email="owner@example.com", password="pw"
+            username="owner", email="owner@example.com", password="pw"  # nosec B106
         )
         cls.other = User.objects.create_user(
-            username="other", email="other@example.com", password="pw"
+            username="other", email="other@example.com", password="pw"  # nosec B106
         )
         cls.staff = User.objects.create_user(
-            username="staff", email="staff@example.com", password="pw", is_staff=True
+            username="staff",
+            email="staff@example.com",
+            password="pw",
+            is_staff=True,  # nosec B106
         )
 
     def setUp(self):

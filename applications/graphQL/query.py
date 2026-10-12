@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 module: applications.graphQL.query
 
@@ -9,8 +8,6 @@ retrieval, and paginated list queries — along with their resolver
 implementations. Every public field on the Query type is documented in
 the schema and surfaced in the GraphiQL explorer at /graphql/playground/.
 """
-
-from typing import Optional
 
 from graphene import ID, Boolean, Field, Int, NonNull, ObjectType, String
 from graphql import GraphQLError
@@ -180,8 +177,8 @@ class Query(ObjectType):
     # ------------------------------------------------------------------
 
     def resolve_random_insult(
-        root, _info, category: Optional[str] = None
-    ) -> Optional[Insult]:
+        root, _info, category: str | None = None
+    ) -> Insult | None:
         """Return a randomly selected active insult, optionally scoped to a category.
 
         Queries active insults (status="A") and uses database-level random

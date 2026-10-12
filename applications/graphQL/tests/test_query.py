@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import json
 
 from django.contrib.auth import get_user_model
@@ -19,7 +18,9 @@ class GraphQLInsultQueryTests(GraphQLTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(
-            username="gql_owner", email="gql@example.com", password="pass1234"
+            username="gql_owner",
+            email="gql@example.com",
+            password="pass1234",  # nosec B106
         )
         cls.theme = Theme.objects.create(theme_key="GT", theme_name="GraphQL Theme")
         cls.cat_poor = InsultCategory.objects.create(

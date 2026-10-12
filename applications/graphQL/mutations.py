@@ -9,7 +9,6 @@ class Mutate(Mutation):
 
     def mutate(self, info, **kwargs):
         """No-op resolver; mutations are not yet supported."""
-        pass
 
     # class JokeCategory(Enum):
     #     class Meta:

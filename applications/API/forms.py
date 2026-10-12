@@ -136,7 +136,7 @@ class InsultReviewForm(ModelForm):
         self.helper = FormHelper()
         self.helper.form_id = "report-joke-form"
         self.helper.form_method = "post"
-        self.helper.form_action = reverse("report-joke")
+        self.helper.form_action = reverse("report-list")
         self.helper.layout = Layout(
             HTML("""
                 <h3 class="application-text modal-title">Report Form</h3>

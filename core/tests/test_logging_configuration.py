@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Tests for the Loguru logging configuration lifecycle in core.settings.
 
@@ -155,7 +154,10 @@ class DevelopmentLoggingTests(_ResetsLoggingConfigured):
         """With LOKI_URL and LOKI_PASSWORD set, a Loki handler sink is added alongside the console sink."""
         with patch.dict(
             os.environ,
-            {"LOKI_URL": "http://loki.example.com", "LOKI_PASSWORD": "secret"},
+            {
+                "LOKI_URL": "http://loki.example.com",
+                "LOKI_PASSWORD": "secret",
+            },  # nosec B105
         ):
             Development.configure_logging()
 
@@ -188,12 +190,17 @@ class ProductionLoggingTests(_ResetsLoggingConfigured):
         self, mock_logger, mock_loki_handler
     ):
         """With LOKI_URL set and LaunchDarkly Observability enabled, stdout, Loki, and LD all get sinks."""
-        with patch.dict(
-            os.environ,
-            {"LOKI_URL": "http://loki.example.com", "LOKI_PASSWORD": "secret"},
+        with (
+            patch.dict(
+                os.environ,
+                {
+                    "LOKI_URL": "http://loki.example.com",
+                    "LOKI_PASSWORD": "secret",
+                },  # nosec B105
+            ),
+            patch.object(Production, "LAUNCHDARKLY_OBSERVABILITY_ENABLED", True),
         ):
-            with patch.object(Production, "LAUNCHDARKLY_OBSERVABILITY_ENABLED", True):
-                Production.configure_logging()
+            Production.configure_logging()
 
         mock_loki_handler.assert_called_once()
         # stdout + Loki + LaunchDarkly
@@ -211,7 +218,10 @@ class StagingLoggingTests(_ResetsLoggingConfigured):
         """Staging never adds a Loki sink even if LOKI_URL is set, and adds one WARNING-level console sink."""
         with patch.dict(
             os.environ,
-            {"LOKI_URL": "http://loki.example.com", "LOKI_PASSWORD": "secret"},
+            {
+                "LOKI_URL": "http://loki.example.com",
+                "LOKI_PASSWORD": "secret",
+            },  # nosec B105
         ):
             Staging.configure_logging()
 

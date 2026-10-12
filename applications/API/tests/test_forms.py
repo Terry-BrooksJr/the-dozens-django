@@ -18,7 +18,9 @@ class InsultReviewFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create(
-            username="owner", email="owner@example.com", password="pass1234"
+            username="owner",
+            email="owner@example.com",
+            password="pass1234",  # nosec B106
         )
         cls.theme = Theme.objects.create(theme_name="Test Theme", theme_key="TEST")
         cls.cat = InsultCategory.objects.create(
@@ -62,7 +64,7 @@ class InsultReviewFormTests(TestCase):
         data = self._base_payload(
             anonymous="", reporter_first_name="", reporter_last_name=""
         )
-        self.assert_form_invalid_and_error_present(  # noqa
+        self.assert_form_invalid_and_error_present(
             data, "First name is required when not submitting anonymously"
         )
 

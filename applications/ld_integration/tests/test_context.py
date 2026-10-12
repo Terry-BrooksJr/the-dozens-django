@@ -73,7 +73,7 @@ class ContextFromRequestAuthenticatedTests(TestCase):
 
     def test_authenticated_user_uses_pk_as_key(self):
         user = User.objects.create_user(
-            username="jdoe", email="jdoe@example.com", password="pw"
+            username="jdoe", email="jdoe@example.com", password="pw"  # nosec B106
         )
         request = self.factory.get("/")
         request.user = user
@@ -87,7 +87,7 @@ class ContextFromRequestAuthenticatedTests(TestCase):
         user = User.objects.create_user(
             username="jdoe2",
             email="jdoe2@example.com",
-            password="pw",  # type: ignore
+            password="pw",  # type: ignore  # nosec B106
             is_staff=True,
             is_superuser=True,
         )
@@ -102,7 +102,7 @@ class ContextFromRequestAuthenticatedTests(TestCase):
 
     def test_authenticated_user_defaults_is_staff_is_superuser_false(self):
         user = User.objects.create_user(
-            username="jdoe3", email="jdoe3@example.com", password="pw"
+            username="jdoe3", email="jdoe3@example.com", password="pw"  # nosec B106
         )
         request = self.factory.get("/")
         request.user = user
@@ -116,7 +116,7 @@ class ContextFromRequestAuthenticatedTests(TestCase):
         user = User.objects.create_user(
             username="jdoe4",
             email="jdoe4@example.com",
-            password="pw",  # type: ignore
+            password="pw",  # type: ignore  # nosec B106
             first_name="Jane",
             last_name="Doe",
         )
@@ -129,7 +129,9 @@ class ContextFromRequestAuthenticatedTests(TestCase):
 
     def test_username_used_as_context_name_when_full_name_blank(self):
         user = User.objects.create_user(
-            username="nofullname", email="nofullname@example.com", password="pw"
+            username="nofullname",
+            email="nofullname@example.com",
+            password="pw",  # nosec B106
         )
         request = self.factory.get("/")
         request.user = user
@@ -172,7 +174,7 @@ class BrowserContextFromRequestTests(TestCase):
         user = User.objects.create_user(
             username="browser",
             email="browser@example.com",
-            password="pw",  # type: ignore
+            password="pw",  # type: ignore  # nosec B106
             is_staff=True,
             is_superuser=True,
         )

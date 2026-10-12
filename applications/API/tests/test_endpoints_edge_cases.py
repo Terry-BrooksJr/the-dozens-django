@@ -3,8 +3,8 @@ Edge-case tests for applications.API.endpoints that aren't covered by
 test_endpoints.py's happy-path CRUD/list suite.
 
 Covers:
-- InsultByCategoryEndpoint.list(): the early `?category=`/`?category_name=`
-  query-param redirect branch (bare and with extra query params preserved).
+- InsultByCategoryEndpoint.list(): `?category=`/`?category_name=` query-param
+  filtering, and per-category cache keys for the path form.
 - RandomInsultEndpoint: the empty-result 404 branch (deterministic, via a
   filter combination that is guaranteed to match nothing).
 - ListThemesAndCategoryEndpoint.get(): grouping of categories under their
@@ -46,36 +46,73 @@ def open_view(view_cls):
     return OpenView
 
 
-class InsultByCategoryRedirectTests(TestCase):
+class InsultCategoryQueryParamTests(TestCase):
+    """``?category=`` filters the collection in place (no redirect)."""
+
     def setUp(self):
         cache.clear()
         self.factory = APIRequestFactory()
         self.view = open_view(InsultByCategoryEndpoint).as_view()
+        user = User.objects.create_user(
+            username="cat_qp_user",
+            email="cat_qp@example.com",
+            password="pw",  # nosec B106
+        )
+        theme = Theme.objects.create(theme_key="QPT", theme_name="QP Theme")
+        self.poor = InsultCategory.objects.create(
+            category_key="QP", name="QP Poor", theme=theme
+        )
+        self.fat = InsultCategory.objects.create(
+            category_key="QF", name="QP Fat", theme=theme
+        )
+        for cat, nsfw in ((self.poor, False), (self.poor, True), (self.fat, False)):
+            Insult.objects.create(
+                content=f"Yo momma is so {cat.name} test insult nsfw={nsfw}.",
+                category=cat,
+                nsfw=nsfw,
+                added_by=user,
+                status=Insult.STATUS.ACTIVE,
+                added_on=timezone.now(),
+            )
 
-    def test_category_query_param_redirects_to_path_form(self):
-        request = self.factory.get("/api/insults/?category=poor")
+    def _categories(self, response):
+        return {row["category"] for row in response.data["results"]}
 
-        response = self.view(request)
+    def test_category_query_param_filters_results(self):
+        response = self.view(self.factory.get("/api/v2.0.0/insults/?category=QP"))
 
-        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
-        self.assertEqual(response.url, "/api/insults/poor")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self._categories(response), {"QP Poor"})
+        self.assertEqual(response.data["count"], 2)
 
-    def test_category_name_query_param_redirects_to_path_form(self):
-        request = self.factory.get("/api/insults/?category_name=Fat")
+    def test_category_name_query_param_alias_filters_results(self):
+        response = self.view(
+            self.factory.get("/api/v2.0.0/insults/?category_name=QP Fat")
+        )
 
-        response = self.view(request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self._categories(response), {"QP Fat"})
 
-        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
-        self.assertEqual(response.url, "/api/insults/Fat")
+    def test_category_combines_with_other_filters(self):
+        response = self.view(
+            self.factory.get("/api/v2.0.0/insults/?category=QP&nsfw=true")
+        )
 
-    def test_redirect_preserves_other_query_params(self):
-        request = self.factory.get("/api/insults/?category=poor&nsfw=true")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertTrue(response.data["results"][0]["nsfw"])
 
-        response = self.view(request)
+    def test_path_categories_do_not_share_a_cache_entry(self):
+        """Regression: the path kwarg must be part of the bulk cache key."""
+        poor = self.view(
+            self.factory.get("/api/v2.0.0/categories/QP/insults/"), category_name="QP"
+        )
+        fat = self.view(
+            self.factory.get("/api/v2.0.0/categories/QF/insults/"), category_name="QF"
+        )
 
-        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
-        self.assertIn("/api/insults/poor?", response.url)
-        self.assertIn("nsfw=true", response.url)
+        self.assertEqual(self._categories(poor), {"QP Poor"})
+        self.assertEqual(self._categories(fat), {"QP Fat"})
 
 
 class RandomInsultEmptyResultTests(TestCase):
@@ -84,7 +121,9 @@ class RandomInsultEmptyResultTests(TestCase):
         self.factory = APIRequestFactory()
         self.view = RandomInsultEndpoint.as_view()
         self.user = User.objects.create_user(
-            username="random_edge_user", email="random_edge@example.com", password="pw"
+            username="random_edge_user",
+            email="random_edge@example.com",
+            password="pw",  # nosec B106
         )
         self.theme = Theme.objects.create(theme_key="RND", theme_name="Random Theme")
         self.cat = InsultCategory.objects.create(
@@ -116,7 +155,7 @@ class ListThemesAndCategoryEndpointTests(TestCase):
         self.view = ListThemesAndCategoryEndpoint.as_view()
 
     def _get(self):
-        request = self.factory.get("/api/categories/")
+        request = self.factory.get("/api/v2.0.0/categories/")
         return self.view(request)
 
     def test_categories_grouped_under_their_theme(self):
@@ -166,3 +205,50 @@ class ListThemesAndCategoryEndpointTests(TestCase):
         response = self._get()
 
         self.assertIn("help_text", response.data)
+
+    def test_counts_are_annotated_not_queried_per_category(self):
+        """Regression: category counts come from one annotated query, not N COUNTs."""
+        theme = Theme.objects.create(theme_key="NQ", theme_name="N+1 Theme")
+        user = User.objects.create_user(
+            username="nq_user", email="nq@example.com", password="pw"  # nosec B106
+        )
+        for i in range(4):
+            category = InsultCategory.objects.create(
+                category_key=f"NQ{i}", name=f"NQ Cat {i}", theme=theme
+            )
+            for status_ in (Insult.STATUS.ACTIVE, Insult.STATUS.PENDING):
+                Insult.objects.create(
+                    content=f"Yo momma is so NQ {i} {status_}.",
+                    category=category,
+                    nsfw=False,
+                    added_by=user,
+                    status=status_,
+                    added_on=timezone.now(),
+                )
+
+        with self.assertNumQueries(2):
+            response = self._get()
+
+        categories = response.data["results"]["N+1 Theme"]["categories"]
+        self.assertEqual({row["count"] for row in categories.values()}, {1})
+
+    def test_themes_are_not_queried_per_category(self):
+        """Regression: grouping by theme never loads ``category.theme`` per row.
+
+        Categories are grouped via their ``theme_id`` column against a single
+        Theme query, so the query count stays at two (annotated categories +
+        themes) regardless of how many themes and categories exist.
+        """
+        for t in range(3):
+            theme = Theme.objects.create(theme_key=f"TQ{t}", theme_name=f"TQ Theme {t}")
+            for c in range(3):
+                InsultCategory.objects.create(
+                    category_key=f"T{t}C{c}", name=f"TQ Cat {t}-{c}", theme=theme
+                )
+
+        with self.assertNumQueries(2):
+            response = self._get()
+
+        for t in range(3):
+            categories = response.data["results"][f"TQ Theme {t}"]["categories"]
+            self.assertEqual(set(categories), {f"T{t}C{c}" for c in range(3)})

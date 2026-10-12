@@ -38,7 +38,7 @@ class RequestIDMiddlewarePropagationTests(TestCase):
         """Client-supplied X-Request-ID must not be replaced."""
         client_id = "my-client-request-id-123"
         request = self.factory.get("/", HTTP_X_REQUEST_ID=client_id)
-        mw, get_response, response = _make_middleware()
+        mw, _get_response, _response = _make_middleware()
 
         mw(request)
 
@@ -47,7 +47,7 @@ class RequestIDMiddlewarePropagationTests(TestCase):
     def test_missing_header_generates_uuid(self):
         """No X-Request-ID header → middleware generates one."""
         request = self.factory.get("/")
-        mw, get_response, response = _make_middleware()
+        mw, _get_response, _response = _make_middleware()
 
         mw(request)
 

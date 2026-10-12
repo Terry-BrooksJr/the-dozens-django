@@ -28,11 +28,13 @@ class GrafanaDashboardViewTests(TestCase):
         cls.staff_user = User.objects.create_user(
             username="staffer",
             email="staffer@example.com",
-            password="pw12345",
+            password="pw12345",  # nosec B106
             is_staff=True,
         )
         cls.regular_user = User.objects.create_user(
-            username="regular", email="regular@example.com", password="pw12345"
+            username="regular",
+            email="regular@example.com",
+            password="pw12345",  # nosec B106
         )
 
     def test_anonymous_user_is_redirected_to_admin_login(self):

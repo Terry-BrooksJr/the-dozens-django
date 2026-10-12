@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 pytest plugin: pytest_dozens_plugin
 ------------------------------------
@@ -28,7 +27,7 @@ import pytest
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_load_initial_conftests(early_config, parser, args):  # noqa: ARG001
+def pytest_load_initial_conftests(early_config, parser, args):
     """Install django-configurations importer before pytest-django reads settings."""
     # Environment variables must be set BEFORE importer.install() because
     # install() calls validate(), which raises ImproperlyConfigured if
