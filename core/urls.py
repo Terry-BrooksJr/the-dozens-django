@@ -9,6 +9,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponseForbidden
 from django.urls import include, path
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django_prometheus.exports import ExportToDjangoView
 
@@ -27,6 +28,7 @@ from core.admin_view import grafana_dashboard_view
 
 
 @csrf_exempt
+@never_cache
 def metrics_view(request):
     """Serve Prometheus metrics only to requests bearing the correct scrape token.
 
@@ -36,6 +38,8 @@ def metrics_view(request):
     The token is compared with hmac.compare_digest to prevent timing attacks.
     Set METRICS_SCRAPE_TOKEN in Doppler; if unset the endpoint is always denied.
     CSRF-exempt because auth is header-only (no cookies), so CSRF doesn't apply.
+    never_cache because UpdateCacheMiddleware would otherwise store each
+    scrape for CACHE_MIDDLEWARE_SECONDS and replay that stale snapshot.
     """
     expected = getattr(settings, "METRICS_SCRAPE_TOKEN", "")
     if not expected:

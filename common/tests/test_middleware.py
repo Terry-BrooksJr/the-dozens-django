@@ -127,3 +127,17 @@ class RequestIDMiddlewareLogContextTests(TestCase):
             mock_logger.contextualize.assert_called_once_with(request_id="ctx-test-id")
             ctx_manager.__enter__.assert_called_once()
             ctx_manager.__exit__.assert_called_once()
+
+
+class RequestIDMiddlewareOrderingTests(TestCase):
+    def test_runs_outside_the_cache_middleware(self):
+        """It must wrap UpdateCache/FetchFromCache, so cache hits get their own
+        ID and the stored response never carries a stale one."""
+        from django.conf import settings
+
+        mw = list(settings.MIDDLEWARE)
+        rid = mw.index("common.middleware.RequestIDMiddleware")
+        self.assertLess(rid, mw.index("django.middleware.cache.UpdateCacheMiddleware"))
+        self.assertLess(
+            rid, mw.index("django.middleware.cache.FetchFromCacheMiddleware")
+        )

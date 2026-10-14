@@ -19,7 +19,6 @@ from github import Github
 from loguru import logger
 from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
 
-from applications.ld_integration.client import configure_launchdarkly
 from common.helpers import (
     SanitizingLoguruFormatter,
     _force_utc_time,
@@ -90,6 +89,12 @@ _INSTALLED_APPS_PROJECT = [
 
 _MIDDLEWARE_CORE = [
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
+    # Above UpdateCacheMiddleware/FetchFromCacheMiddleware on purpose: it
+    # must run for cache hits too (which short-circuit at FetchFromCache),
+    # and it must set X-Request-ID only *after* UpdateCacheMiddleware has
+    # stored the response - otherwise every later cache hit replays the
+    # first request's ID.
+    "common.middleware.RequestIDMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.cache.UpdateCacheMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -103,7 +108,6 @@ _MIDDLEWARE_CORE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.cache.FetchFromCacheMiddleware",
     "django_prometheus.middleware.PrometheusAfterMiddleware",
-    "common.middleware.RequestIDMiddleware",
 ]
 
 
@@ -213,14 +217,13 @@ class Base(Configuration):
     LAUNCHDARKLY_OBSERVABILITY_ENABLED = os.getenv(
         "LAUNCHDARKLY_OBSERVABILITY_ENABLED", ""
     ).lower() in ("1", "true", "yes", "on")
-    LAUNCHDARKLY_SERVICE_NAME = os.getenv("LAUNCHDARKLY_SERVICE_NAME")
-    configure_launchdarkly(
-        sdk_key=LAUNCHDARKLY_SDK_KEY,
-        enabled=LAUNCHDARKLY_ENABLED,
-        obs_enabled=LAUNCHDARKLY_OBSERVABILITY_ENABLED,
-        service_name=LAUNCHDARKLY_SERVICE_NAME or "django-service",
-        service_version=os.getenv("LAUNCHDARKLY_SERVICE_VERSION", "dev"),
+    # The client itself is initialized once, in LDIntegrationConfig.ready(),
+    # from these values - not here at settings import, which would run before
+    # ready() bridges stdlib logging and in every manage.py invocation.
+    LAUNCHDARKLY_SERVICE_NAME = (
+        os.getenv("LAUNCHDARKLY_SERVICE_NAME") or "django-service"
     )
+    LAUNCHDARKLY_SERVICE_VERSION = os.getenv("LAUNCHDARKLY_SERVICE_VERSION") or "dev"
 
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
     SESSION_CACHE_ALIAS = "default"
@@ -1081,8 +1084,6 @@ class Production(Base):
     #!SECTION End - API Schema / Docs (Production overrides)
 
     # SECTION Start - Logging
-    LAUNCHDARKLY_SERVICE_VERSION = os.getenv("LAUNCHDARKLY_SERVICE_VERSION")
-
     @classmethod
     def configure_logging(cls):
         """Production: stdout (+ optional Loki, + optional LD sink). No file

@@ -201,9 +201,8 @@ class GenericDataCacheManager(BaseCacheManager):
             logger.error(f"Database not ready for {self.cache_prefix}: {e}")
             return None
         except Exception as e:
-            db_duration = time.time() - db_start_time
+            # time_database_query() already recorded this as status="error".
             logger.error(f"Unexpected error caching {self.cache_prefix} data: {e}")
-            metrics.record_database_query_time(self.cache_prefix, db_duration, "error")
             return None
 
     def invalidate_cache(self, reason: str = "manual") -> None:

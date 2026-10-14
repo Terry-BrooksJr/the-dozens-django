@@ -24,9 +24,11 @@ def _ld_metrics_enabled() -> bool:
     Note: ldobserve is designed to no-op safely when not initialized,
     but this avoids extra work in hot paths when disabled.
     """
+    # Same truthy set as settings.LAUNCHDARKLY_OBSERVABILITY_ENABLED, so the
+    # plugin and these metrics can't disagree about whether it's on.
     return (
-        os.getenv("LAUNCHDARKLY_OBSERVABILITY_ENABLED", "false").strip().lower()
-        == "true"
+        os.getenv("LAUNCHDARKLY_OBSERVABILITY_ENABLED", "").strip().lower()
+        in ("1", "true", "yes", "on")
         and observe is not None
     )
 

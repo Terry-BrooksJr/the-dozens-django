@@ -19,6 +19,7 @@ Covers:
 
 from unittest.mock import patch
 
+from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase, override_settings
 
 from core.urls import metrics_view
@@ -41,7 +42,7 @@ class MetricsViewTokenAllowedTests(TestCase):
     @override_settings(METRICS_SCRAPE_TOKEN=VALID_TOKEN)
     def test_correct_bearer_token_returns_200(self):
         with patch(PROMETHEUS_200_PATCH) as mock_export:
-            mock_export.return_value.status_code = 200
+            mock_export.return_value = HttpResponse("ok")
             response = metrics_view(_request(f"Bearer {VALID_TOKEN}"))
         mock_export.assert_called_once()
         self.assertEqual(response.status_code, 200)
@@ -50,7 +51,7 @@ class MetricsViewTokenAllowedTests(TestCase):
     def test_correct_token_with_surrounding_whitespace_is_accepted(self):
         """Prometheus may send a token with trailing newline from credentials_file."""
         with patch(PROMETHEUS_200_PATCH) as mock_export:
-            mock_export.return_value.status_code = 200
+            mock_export.return_value = HttpResponse("ok")
             response = metrics_view(_request(f"Bearer  {VALID_TOKEN}  "))
         mock_export.assert_called_once()
         self.assertEqual(response.status_code, 200)
@@ -148,3 +149,24 @@ class MetricsURLTests(TestCase):
             "/metrics", data="", content_type="application/json"
         )
         self.assertEqual(response.status_code, 403)
+
+
+@override_settings(METRICS_SCRAPE_TOKEN=VALID_TOKEN)
+class MetricsViewNotPageCachedTests(TestCase):
+    def test_each_scrape_is_fresh_through_the_cache_middleware(self):
+        """UpdateCacheMiddleware must not store a scrape and replay it later."""
+        from django.core.cache import cache
+
+        from common.metrics import RANDOM_INSULT_QUERYSET_EMPTY
+
+        cache.clear()
+        client = Client()
+        auth = {"HTTP_AUTHORIZATION": f"Bearer {VALID_TOKEN}"}
+
+        first = client.get("/metrics", **auth)
+        RANDOM_INSULT_QUERYSET_EMPTY.inc()
+        second = client.get("/metrics", **auth)
+
+        self.assertEqual(first.status_code, 200)
+        self.assertIn("no-store", second["Cache-Control"])
+        self.assertNotEqual(first.content, second.content)

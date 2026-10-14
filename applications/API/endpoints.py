@@ -28,6 +28,7 @@ from drf_spectacular.utils import (
     extend_schema_view,
 )
 from loguru import logger
+from rest_framework.exceptions import APIException
 from rest_framework.generics import (
     CreateAPIView,
     GenericAPIView,
@@ -593,77 +594,85 @@ class RandomInsultEndpoint(GenericAPIView):
         category_filtered = category_param is not None
         resolved_category_key: str | None = None
 
-        with metrics.sql_instrumentation() as sql_stats:
-            # Phase 1: base queryset build
-            with metrics.time_random_insult_stage("queryset_build"):
-                queryset = Insult.public.select_related("added_by", "category").all()
+        # Recorded in `finally` so requests that raise (400 on a bad category,
+        # 500 on a DB error) are counted too, not just 200/404.
+        status_label = "500"
+        sql_stats: dict = {"query_count": 0, "total_ms": 0.0, "slowest_ms": 0.0}
+        try:
+            with metrics.sql_instrumentation() as sql_stats:
+                # Phase 1: queryset build. Lazy - no SQL runs here, so the base
+                # queryset and the NSFW filter share one stage.
+                with metrics.time_random_insult_stage("queryset_build"):
+                    queryset = Insult.public.select_related(
+                        "added_by", "category"
+                    ).all()
+                    if nsfw_param is not None:
+                        nsfw = nsfw_param.lower() in ["true", "1", "yes"]
+                        queryset = queryset.filter(nsfw=nsfw)
 
-            # Phase 2: NSFW filter
-            with metrics.time_random_insult_stage("nsfw_filter"):
-                if nsfw_param is not None:
-                    nsfw = nsfw_param.lower() in ["true", "1", "yes"]
-                    queryset = queryset.filter(nsfw=nsfw)
+                # Phase 2: category resolution (may hit cache/DB)
+                with metrics.time_random_insult_stage("category_resolution"):
+                    if category_param:
+                        resolved = BaseInsultSerializer.resolve_category(
+                            category_param.upper()
+                        )
+                        resolved_category_key = resolved.get("category_key")
+                        queryset = queryset.filter(
+                            category__category_key=resolved_category_key
+                        )
 
-            # Phase 3: category resolution
-            with metrics.time_random_insult_stage("category_resolution"):
-                if category_param:
-                    resolved = BaseInsultSerializer.resolve_category(
-                        category_param.upper()
+                # Phase 3: count serves double duty — emptiness check + random
+                # offset bound. First SQL query of the request.
+                with metrics.time_random_insult_stage("emptiness_check"):
+                    count = queryset.count()
+
+                if count == 0:
+                    status_label = "404"
+                    duration_ms = (time.perf_counter() - t_start) * 1000.0
+                    metrics.record_random_insult_empty()
+                    logger.bind(
+                        request_id=request_id,
+                        path=request.path,
+                        nsfw_param=nsfw_param,
+                        category_param=category_param,
+                        resolved_category_key=resolved_category_key,
+                        duration_ms=round(duration_ms, 2),
+                        db_query_count=sql_stats["query_count"],
+                        db_total_ms=round(sql_stats["total_ms"], 2),
+                        db_slowest_ms=round(sql_stats["slowest_ms"], 2),
+                        empty_result=True,
+                    ).info("random_insult | no results found after filtering")
+                    return Response(
+                        {"detail": "No insults found matching the criteria."},
+                        status=404,
                     )
-                    resolved_category_key = resolved.get("category_key")
-                    queryset = queryset.filter(
-                        category__category_key=resolved_category_key
-                    )
 
-            # Phase 4: count serves double duty — emptiness check + random offset bound
-            with metrics.time_random_insult_stage("emptiness_check"):
-                count = queryset.count()
+                # Phase 4: offset-based random selection.
+                # ORDER BY insult_id uses the PK index (O(log n) + offset).
+                # Replaces ORDER BY RANDOM() which was a full-table sort (O(n log n)).
+                with metrics.time_random_insult_stage("random_selection"):
+                    random_insult = queryset.order_by("insult_id")[
+                        random.randint(0, count - 1)
+                    ]
 
-            if count == 0:
-                duration_ms = (time.perf_counter() - t_start) * 1000.0
-                metrics.record_random_insult_empty()
-                metrics.record_random_insult_request(
-                    status="404",
-                    category_filtered=category_filtered,
-                    nsfw_filtered=nsfw_filtered,
-                    db_query_count=sql_stats["query_count"],
-                )
-                logger.bind(
-                    request_id=request_id,
-                    path=request.path,
-                    nsfw_param=nsfw_param,
-                    category_param=category_param,
-                    resolved_category_key=resolved_category_key,
-                    duration_ms=round(duration_ms, 2),
-                    db_query_count=sql_stats["query_count"],
-                    db_total_ms=round(sql_stats["total_ms"], 2),
-                    db_slowest_ms=round(sql_stats["slowest_ms"], 2),
-                    empty_result=True,
-                ).info("random_insult | no results found after filtering")
-                return Response(
-                    {"detail": "No insults found matching the criteria."}, status=404
-                )
+                # Phase 5: serialization
+                with metrics.time_random_insult_stage("serialization"):
+                    serializer = OptimizedInsultSerializer(random_insult)
+                    data = serializer.data
 
-            # Phase 5: offset-based random selection.
-            # ORDER BY insult_id uses the PK index (O(log n) + offset).
-            # Replaces ORDER BY RANDOM() which was a full-table sort (O(n log n)).
-            with metrics.time_random_insult_stage("random_selection"):
-                random_insult = queryset.order_by("insult_id")[
-                    random.randint(0, count - 1)
-                ]
-
-            # Phase 6: serialization
-            with metrics.time_random_insult_stage("serialization"):
-                serializer = OptimizedInsultSerializer(random_insult)
-                data = serializer.data
+            status_label = "200"
+        except APIException as exc:
+            status_label = str(exc.status_code)
+            raise
+        finally:
+            metrics.record_random_insult_request(
+                status=status_label,
+                category_filtered=category_filtered,
+                nsfw_filtered=nsfw_filtered,
+                db_query_count=sql_stats["query_count"],
+            )
 
         duration_ms = (time.perf_counter() - t_start) * 1000.0
-        metrics.record_random_insult_request(
-            status="200",
-            category_filtered=category_filtered,
-            nsfw_filtered=nsfw_filtered,
-            db_query_count=sql_stats["query_count"],
-        )
         logger.bind(
             request_id=request_id,
             path=request.path,

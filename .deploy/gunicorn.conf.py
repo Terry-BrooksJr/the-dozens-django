@@ -5,16 +5,36 @@
 # because threads do not survive fork.
 """Gunicorn server configuration for the Django application.
 
-Defines bind/worker settings, UTC millisecond log timestamps, and the
-post-fork hook that re-initializes thread-backed SDKs in each worker.
+Defines bind/worker settings, UTC millisecond log timestamps, Prometheus
+multiprocess mode, and the post-fork hook that re-initializes thread-backed
+SDKs in each worker.
 """
 
 import logging
 import os
+import shutil
 import sys
+import tempfile
 import time
 
 from gunicorn.glogging import Logger as GunicornLogger
+
+# prometheus_client keeps metrics in per-process memory by default, so with
+# several workers each /metrics scrape only saw whichever worker answered it,
+# and max_requests recycling reset that worker's counters every ~1000
+# requests. Multiprocess mode has every worker write to mmap'd files in a
+# shared directory; django_prometheus's ExportToDjangoView (behind our
+# /metrics view) switches to MultiProcessCollector automatically when this
+# env var is set, aggregating across all workers. It must be set before any
+# worker imports prometheus_client - setting it here, in the master, before
+# fork, guarantees that. The directory is (re)created in on_starting().
+PROMETHEUS_MULTIPROC_DIR = os.environ.setdefault(
+    "PROMETHEUS_MULTIPROC_DIR",
+    os.path.join(
+        "/dev/shm" if os.path.isdir("/dev/shm") else tempfile.gettempdir(),
+        "dozens-prometheus",
+    ),
+)
 
 # Gunicorn's own error log ordinarily reads server-local time via
 # time.localtime() and has no way to render milliseconds through strftime
@@ -66,7 +86,7 @@ loglevel = "info"
 # survives; every *replacement* worker then crashes in an endless loop.
 # Nothing here uses gunicornc, and the Linux container is unaffected, so the
 # socket is only disabled on macOS.
-CONTROL_SOCKET_DISABLE = sys.platform == "darwin"
+control_socket_disable = sys.platform == "darwin"
 
 # Gunicorn expects this name in python config.
 wsgi_app = "core.wsgi:application"
@@ -85,7 +105,34 @@ wsgi_app = "core.wsgi:application"
 # post-fork, so preloading can't be made safe here. Each worker instead
 # performs its own full app init (including LaunchDarkly/ldobserve) after
 # it's already a separate process, so no live gRPC channel is ever forked.
-PRELOAD_APP = False
+preload_app = False
+
+
+def on_starting(server):
+    """
+    Start every master with an empty Prometheus multiprocess directory.
+
+    Files left by a previous run (same container restarted, or a local run)
+    would otherwise be summed into the new run's counters.
+    """
+    shutil.rmtree(PROMETHEUS_MULTIPROC_DIR, ignore_errors=True)
+    os.makedirs(PROMETHEUS_MULTIPROC_DIR, exist_ok=True)
+
+
+def child_exit(server, worker):
+    """
+    Tell prometheus_client a worker is gone.
+
+    Counters and histograms from the dead worker's files are kept (so totals
+    don't drop when max_requests recycles it); this only removes its
+    live-gauge series.
+    """
+    try:
+        from prometheus_client import multiprocess
+
+        multiprocess.mark_process_dead(worker.pid)
+    except Exception as e:
+        server.log.warning(f"Prometheus mark_process_dead() failed: {e!r}")
 
 
 def post_fork(server, worker):
