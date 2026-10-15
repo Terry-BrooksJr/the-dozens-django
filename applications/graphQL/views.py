@@ -19,8 +19,13 @@ GraphQLView:
       for new visitors.
 """
 
+import time
+
 from django.views.decorators.csrf import csrf_exempt
-from graphene_django.views import GraphQLView
+from graphene_django.views import GraphQLView, HttpError
+from graphql import FieldNode, GraphQLError, get_operation_ast, parse
+
+from common.metrics import metrics
 
 
 class DozenGraphQLView(GraphQLView):
@@ -74,6 +79,81 @@ class DozenGraphQLView(GraphQLView):
             response["X-Content-Type-Options"] = "nosniff"
 
         return response
+
+    def execute_graphql_request(
+        self,
+        request,
+        data,
+        query,
+        variables,
+        operation_name,
+        show_graphiql=False,
+    ):
+        """Execute the operation and record its type, outcome and duration.
+
+        Outcomes: ``ok`` (no errors), ``error`` (the result carries errors,
+        including parse/validation errors), ``rejected`` (graphene refused
+        the request with an HTTP error, e.g. no query or a mutation over GET).
+        Requests that only render the GraphiQL page (``None`` result) are not
+        counted.
+        """
+        start = time.perf_counter()
+        outcome = None  # stays None only for a GraphiQL page render
+        try:
+            result = super().execute_graphql_request(
+                request, data, query, variables, operation_name, show_graphiql
+            )
+            if result is not None:
+                outcome = "error" if result.errors else "ok"
+            return result
+        except HttpError:
+            outcome = "rejected"
+            raise
+        except Exception:
+            outcome = "error"
+            raise
+        finally:
+            if outcome is not None:
+                operation_type, root_fields = self._describe_operation(
+                    query, operation_name
+                )
+                metrics.record_graphql_operation(
+                    operation_type=operation_type,
+                    outcome=outcome,
+                    duration=time.perf_counter() - start,
+                    root_fields=root_fields,
+                )
+
+    def _describe_operation(self, query, operation_name):
+        """Return ``(operation type, root fields)`` for metrics labels.
+
+        Root fields are kept only when the schema defines them on that root
+        type, so client-chosen names can never become label values.
+        """
+        try:
+            document = parse(query) if query else None
+        except GraphQLError:
+            document = None
+        operation = get_operation_ast(document, operation_name) if document else None
+        if operation is None:
+            return "unknown", ()
+
+        operation_type = operation.operation.value
+        schema = self.schema.graphql_schema
+        root_type = {
+            "query": schema.query_type,
+            "mutation": schema.mutation_type,
+            "subscription": schema.subscription_type,
+        }.get(operation_type)
+        known = root_type.fields if root_type is not None else {}
+        root_fields = sorted(
+            {
+                selection.name.value
+                for selection in operation.selection_set.selections
+                if isinstance(selection, FieldNode) and selection.name.value in known
+            }
+        )
+        return operation_type, root_fields
 
     @classmethod
     def as_api_view(cls, schema, **kwargs):

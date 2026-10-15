@@ -253,10 +253,10 @@ class CachedResponseMixin(GenericAPIView):
         # Try using the cache manager if available
         if hasattr(self, "_cache_manager") and self._cache_manager:
             try:
+                # The manager records its own hit (with tier) or miss.
                 cached_data = self._cache_manager.get_cached_data("view_data")
                 if cached_data:
                     logger.debug(f"Bulk Cache Hit via manager - Cache Key: {cache_key}")
-                    metrics.increment_cache(self.primary_model.__name__, "hit")
 
                     # Build fresh queryset from cached IDs if they exist
                 if (

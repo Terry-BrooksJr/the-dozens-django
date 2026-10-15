@@ -17,6 +17,8 @@ from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
+from common.metrics import metrics
+
 # ---------------------------------------------------------------------------
 # Core templates: single source of truth for error payloads
 # ---------------------------------------------------------------------------
@@ -457,6 +459,11 @@ def yo_momma_exception_handler(exc: Exception, context: dict[str, Any]) -> Respo
             exc=exc,
         )
         base = ERROR_TEMPLATES[status.HTTP_500_INTERNAL_SERVER_ERROR]
+        metrics.record_api_error(
+            view=view.__class__.__name__ if view else "unknown",
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            code=base["code"],
+        )
         return Response(
             _build_payload(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -542,5 +549,8 @@ def yo_momma_exception_handler(exc: Exception, context: dict[str, Any]) -> Respo
             **log_context,
         )
 
+    metrics.record_api_error(
+        view=log_context["view"], status=status_code, code=payload.get("code")
+    )
     response.data = payload
     return response

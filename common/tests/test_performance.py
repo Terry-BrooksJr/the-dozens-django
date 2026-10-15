@@ -384,7 +384,9 @@ def test_get_cached_bulk_data_uses_manager_cache_hit(api_rf, insults, metrics_sp
     ]
     assert extra_data["total_count"] == 2
     assert "timestamp" in extra_data
-    metrics_spy.increment_cache.assert_called_once_with("Insult", "hit")
+    # The cache manager records its own hit (with its tier); the view must not
+    # count the same lookup a second time.
+    metrics_spy.increment_cache.assert_not_called()
 
 
 def test_get_cached_bulk_data_uses_redis_fallback_hit(api_rf, insults, metrics_spy):

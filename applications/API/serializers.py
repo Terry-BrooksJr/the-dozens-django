@@ -17,7 +17,6 @@ from functools import lru_cache
 from typing import Any, ClassVar
 
 import arrow
-from django.conf import settings
 from django.core.cache import cache
 from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _
@@ -260,7 +259,7 @@ class BaseInsultSerializer(CachedBulkSerializer):
             return ""
         try:
             formatted_dt = arrow.get(dt)
-            return formatted_dt.humanize(settings.GLOBAL_NOW)
+            return formatted_dt.humanize()  # relative to the current time
         except Exception:
             return str(dt)
 

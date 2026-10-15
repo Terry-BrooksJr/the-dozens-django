@@ -11,7 +11,6 @@ import sys
 import threading
 import time
 import warnings
-from datetime import UTC, datetime
 from pathlib import Path
 
 from configurations import Configuration, values
@@ -27,8 +26,6 @@ from common.helpers import (
     ld_loguru_sink,
     log_warning,
 )
-
-GLOBAL_NOW = datetime.now(tz=UTC)
 
 BASE_DIR = values.PathValue(Path(__file__).resolve().parent.parent, environ=False)
 
@@ -402,17 +399,26 @@ class Base(Configuration):
     DATABASES = values.DictValue(
         {
             "default": {
-                "ENGINE": "django.db.backends.postgresql",
+                # Django's postgresql backend wrapped to export query counts,
+                # durations, errors and new connections to Prometheus.
+                "ENGINE": "django_prometheus.db.backends.postgresql",
                 "NAME": os.getenv("POSTGRES_DB"),
                 "USER": os.getenv("PG_DATABASE_USER"),
                 "PASSWORD": os.getenv("PG_DATABASE_PASSWORD"),
                 "HOST": os.getenv("PG_DATABASE_HOST"),
                 "DISABLE_SERVER_SIDE_CURSORS": True,
                 "PORT": os.getenv("PG_DATABASE_PORT"),
-                "pool": {
-                    "max_size": 11,
-                    "name": "django-thedozens",
-                    "max_idle": 15,
+                # Django reads the pool from OPTIONS (it needs psycopg 3 and
+                # CONN_MAX_AGE=0, the default). One pool per gunicorn worker
+                # process, opened lazily after fork; each worker serves at
+                # most `threads` (4) requests at once, so it rarely needs
+                # more than 4 of these connections.
+                "OPTIONS": {
+                    "pool": {
+                        "max_size": 11,
+                        "name": "django-thedozens",
+                        "max_idle": 15,
+                    },
                 },
             }
         }
@@ -1245,7 +1251,7 @@ class Staging(Development):
     DATABASES = values.DictValue(
         {
             "default": {
-                "ENGINE": "django.db.backends.postgresql",
+                "ENGINE": "django_prometheus.db.backends.postgresql",
                 "NAME": os.getenv("POSTGRES_DB", "test_db"),
                 "USER": os.getenv("PG_DATABASE_USER", "root"),
                 "PASSWORD": os.getenv("PG_DATABASE_PASSWORD", "postgres"),

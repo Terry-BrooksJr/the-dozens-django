@@ -454,3 +454,28 @@ class ExceptionHandlerLoggingTests(ExceptionHandlerTestCase):
         response = self.handle(Unavailable())
         self.assertEqual(response.status_code, 503)
         self.logger.error.assert_called_once()
+
+
+class ExceptionHandlerMetricsTests(ExceptionHandlerTestCase):
+    @staticmethod
+    def _value(status_code, code):
+        from common.metrics import API_ERRORS
+
+        return API_ERRORS.labels("FakeView", str(status_code), code)._value.get()
+
+    def test_handled_error_is_counted_with_its_response_code(self):
+        response = self.handle(exceptions.NotFound())
+        code = response.data["code"]
+        before = self._value(404, code)
+
+        self.handle(exceptions.NotFound())
+
+        self.assertEqual(self._value(404, code), before + 1)
+
+    def test_unhandled_exception_is_counted_as_500(self):
+        code = ERROR_TEMPLATES[status.HTTP_500_INTERNAL_SERVER_ERROR]["code"]
+        before = self._value(500, code)
+
+        self.handle(RuntimeError("boom"))
+
+        self.assertEqual(self._value(500, code), before + 1)

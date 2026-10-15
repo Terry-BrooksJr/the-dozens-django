@@ -161,6 +161,21 @@ def on_exit(server):
         server.log.warning(f"Prometheus cleanup failed: {e!r}")
 
 
+def worker_abort(worker):
+    """
+    Count a worker gunicorn is killing for exceeding ``timeout``.
+
+    Runs inside the worker (on SIGABRT) just before it exits; the counter
+    survives in the multiprocess archive via child_exit compaction.
+    """
+    try:
+        from common.metrics import metrics
+
+        metrics.record_worker_timeout()
+    except Exception as e:
+        worker.log.warning(f"Recording worker timeout failed: {e!r}")
+
+
 def post_fork(server, worker):
     """
     Reinitialize SDKs that rely on background threads after fork.

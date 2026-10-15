@@ -75,6 +75,7 @@ django==6.0.8
     #   django-mailer
     #   django-prometheus
     #   django-redis
+    #   django-simple-history
     #   django-storages
     #   djangorestframework
     #   djangorestframework-simplejwt
@@ -102,6 +103,8 @@ django-mailer==2.3.2
 django-prometheus==2.5.0
     # via the-dozens-django
 django-redis==7.0.0
+    # via the-dozens-django
+django-simple-history==3.13.0
     # via the-dozens-django
 django-storages==1.14.6
     # via the-dozens-django
@@ -507,8 +510,12 @@ protobuf==5.29.6
     #   opentelemetry-proto
 psutil==7.2.2
     # via opentelemetry-instrumentation-system-metrics
-psycopg2-binary==2.9.13
+psycopg==3.3.6
     # via the-dozens-django
+psycopg-binary==3.3.6 ; implementation_name != 'pypy'
+    # via psycopg
+psycopg-pool==3.3.3
+    # via psycopg
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
 pydantic==2.13.5
@@ -608,6 +615,7 @@ typing-extensions==4.16.0
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
+    #   psycopg-pool
     #   pydantic
     #   pydantic-core
     #   pygithub
@@ -618,6 +626,7 @@ tzdata==2026.4
     # via
     #   arrow
     #   django
+    #   psycopg
 uritemplate==4.2.0
     # via
     #   drf-spectacular

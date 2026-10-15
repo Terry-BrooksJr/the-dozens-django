@@ -1337,7 +1337,7 @@
             "type": "prometheus",
             "uid": "bfxuyyd2fdqtcf"
           },
-          "expr": "sum by (status, category_filtered, nsfw_filtered) (rate(random_insult_requests_total{job=\"api\"}[5m]))",
+          "expr": "sum by (status, category_filtered, nsfw_filtered) (rate(dozens_api_random_insult_requests_total{job=\"api\"}[5m]))",
           "legendFormat": "{{status}} cat={{category_filtered}} nsfw={{nsfw_filtered}}",
           "refId": "A"
         }
@@ -1398,7 +1398,7 @@
             "type": "prometheus",
             "uid": "bfxuyyd2fdqtcf"
           },
-          "expr": "histogram_quantile(0.95, sum by (stage, le) (rate(random_insult_stage_seconds_bucket{job=\"api\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (stage, le) (rate(dozens_api_random_insult_stage_seconds_bucket{job=\"api\"}[5m])))",
           "legendFormat": "{{stage}}",
           "refId": "A"
         }
@@ -1465,7 +1465,7 @@
             "type": "prometheus",
             "uid": "bfxuyyd2fdqtcf"
           },
-          "expr": "rate(random_insult_db_queries_total{job=\"api\"}[5m]) / clamp_min(rate(random_insult_requests_total{job=\"api\"}[5m]), 0.001)",
+          "expr": "rate(dozens_api_random_insult_db_queries_total{job=\"api\"}[5m]) / clamp_min(rate(dozens_api_random_insult_requests_total{job=\"api\"}[5m]), 0.001)",
           "legendFormat": "queries/req",
           "refId": "A"
         }
@@ -1528,7 +1528,7 @@
             "type": "prometheus",
             "uid": "bfxuyyd2fdqtcf"
           },
-          "expr": "rate(random_insult_queryset_empty_total{job=\"api\"}[5m])",
+          "expr": "rate(dozens_api_random_insult_queryset_empty_total{job=\"api\"}[5m])",
           "legendFormat": "empty/s",
           "refId": "A"
         }
@@ -1543,6 +1543,620 @@
         "w": 24,
         "x": 0,
         "y": 73
+      },
+      "id": 900,
+      "panels": [],
+      "title": "Application — Errors, GraphQL, DB, Workflow",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfxuyyd2fdqtcf"
+      },
+      "description": "Error responses from the REST exception handler (Production config).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 74
+      },
+      "id": 901,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfxuyyd2fdqtcf"
+          },
+          "expr": "sum by (status, code) (rate(dozens_api_api_errors_total{job=\"api\"}[5m]))",
+          "legendFormat": "{{status}} {{code}}",
+          "refId": "A"
+        }
+      ],
+      "title": "API Errors by Status / Code",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfxuyyd2fdqtcf"
+      },
+      "description": "Django requests per HTTP method.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 74
+      },
+      "id": 902,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfxuyyd2fdqtcf"
+          },
+          "expr": "sum by (operation_type, outcome) (rate(dozens_api_graphql_operations_total{job=\"api\"}[5m]))",
+          "legendFormat": "{{operation_type}} {{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "title": "GraphQL — Operations by Type / Outcome",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfxuyyd2fdqtcf"
+      },
+      "description": "Django requests per HTTP method.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 82
+      },
+      "id": 903,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfxuyyd2fdqtcf"
+          },
+          "expr": "histogram_quantile(0.95, sum by (operation_type, le) (rate(dozens_api_graphql_operation_seconds_bucket{job=\"api\"}[5m])))",
+          "legendFormat": "{{operation_type}}",
+          "refId": "A"
+        }
+      ],
+      "title": "GraphQL — p95 Operation Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfxuyyd2fdqtcf"
+      },
+      "description": "Django requests per HTTP method.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 82
+      },
+      "id": 904,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfxuyyd2fdqtcf"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(dozens_api_django_db_query_duration_seconds_bucket{job=\"api\"}[5m])))",
+          "legendFormat": "p95",
+          "refId": "A"
+        }
+      ],
+      "title": "DB — p95 Query Duration",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfxuyyd2fdqtcf"
+      },
+      "description": "Django requests per HTTP method.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 90
+      },
+      "id": 905,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfxuyyd2fdqtcf"
+          },
+          "expr": "sum(rate(dozens_api_django_db_execute_total{job=\"api\"}[5m]))",
+          "legendFormat": "queries",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfxuyyd2fdqtcf"
+          },
+          "expr": "sum(rate(dozens_api_django_db_errors_total{job=\"api\"}[5m]))",
+          "legendFormat": "errors",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfxuyyd2fdqtcf"
+          },
+          "expr": "sum(rate(dozens_api_django_db_new_connections_total{job=\"api\"}[5m]))",
+          "legendFormat": "new connections",
+          "refId": "C"
+        }
+      ],
+      "title": "DB — Queries / Errors / New Connections per sec",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfxuyyd2fdqtcf"
+      },
+      "description": "Cache managers and view caches: local = in-process dict, shared = Redis.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 90
+      },
+      "id": 906,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfxuyyd2fdqtcf"
+          },
+          "expr": "sum by (tier) (rate(dozens_api_cache_hits_total{job=\"api\"}[5m]))",
+          "legendFormat": "hit {{tier}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfxuyyd2fdqtcf"
+          },
+          "expr": "sum(rate(dozens_api_cache_misses_total{job=\"api\"}[5m]))",
+          "legendFormat": "miss",
+          "refId": "B"
+        }
+      ],
+      "title": "App Cache — Hits by Tier / Misses",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfxuyyd2fdqtcf"
+      },
+      "description": "Django requests per HTTP method.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 98
+      },
+      "id": 907,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfxuyyd2fdqtcf"
+          },
+          "expr": "sum by (model, from_status, to_status) (increase(dozens_api_status_transitions_total{job=\"api\"}[1h]))",
+          "legendFormat": "{{model}}: {{from_status}} → {{to_status}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Joke Workflow — Status Transitions (per hour)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfxuyyd2fdqtcf"
+      },
+      "description": "Requests that returned no matching insult.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "yellow",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 106
+      },
+      "id": 908,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfxuyyd2fdqtcf"
+          },
+          "expr": "sum by (review_type) (increase(dozens_api_insult_reports_total{job=\"api\"}[24h]))",
+          "legendFormat": "{{review_type}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Reports by Type (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfxuyyd2fdqtcf"
+      },
+      "description": "Requests that returned no matching insult.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "yellow",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 106
+      },
+      "id": 909,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfxuyyd2fdqtcf"
+          },
+          "expr": "sum by (result) (increase(dozens_api_emails_total{job=\"api\"}[24h]))",
+          "legendFormat": "{{result}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Emails Sent / Unsent (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfxuyyd2fdqtcf"
+      },
+      "description": "Requests that returned no matching insult.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "yellow",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 106
+      },
+      "id": 910,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfxuyyd2fdqtcf"
+          },
+          "expr": "sum(increase(dozens_api_gunicorn_worker_timeouts_total{job=\"api\"}[24h]))",
+          "legendFormat": "timeouts",
+          "refId": "A"
+        }
+      ],
+      "title": "Gunicorn Worker Timeouts (24h)",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 112
       },
       "id": 500,
       "panels": [],
@@ -1575,7 +2189,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 74
+        "y": 113
       },
       "id": 40,
       "options": {
@@ -1661,7 +2275,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 74
+        "y": 113
       },
       "id": 45,
       "options": {
@@ -1717,7 +2331,7 @@
         "h": 6,
         "w": 8,
         "x": 0,
-        "y": 82
+        "y": 121
       },
       "id": 42,
       "options": {
@@ -1738,7 +2352,7 @@
             "type": "prometheus",
             "uid": "bfxuyyd2fdqtcf"
           },
-          "expr": "sum(rate(cache_invalidations_total{job=\"api\"}[5m]))",
+          "expr": "sum(rate(dozens_api_cache_invalidations_total{job=\"api\"}[5m]))",
           "legendFormat": "invalidations/s",
           "refId": "A"
         }
@@ -1784,7 +2398,7 @@
         "h": 6,
         "w": 8,
         "x": 8,
-        "y": 82
+        "y": 121
       },
       "id": 56,
       "options": {
@@ -1849,7 +2463,7 @@
         "h": 6,
         "w": 8,
         "x": 16,
-        "y": 82
+        "y": 121
       },
       "id": 43,
       "options": {
@@ -1915,7 +2529,7 @@
         "h": 6,
         "w": 8,
         "x": 0,
-        "y": 88
+        "y": 127
       },
       "id": 57,
       "options": {
@@ -1989,7 +2603,7 @@
         "h": 6,
         "w": 8,
         "x": 8,
-        "y": 88
+        "y": 127
       },
       "id": 44,
       "options": {
@@ -2046,7 +2660,7 @@
         "h": 6,
         "w": 8,
         "x": 16,
-        "y": 88
+        "y": 127
       },
       "id": 55,
       "options": {
@@ -2083,7 +2697,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 94
+        "y": 133
       },
       "id": 600,
       "panels": [],
@@ -2116,7 +2730,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 95
+        "y": 134
       },
       "id": 50,
       "options": {
@@ -2180,7 +2794,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 95
+        "y": 134
       },
       "id": 51,
       "options": {
@@ -2244,7 +2858,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 95
+        "y": 134
       },
       "id": 52,
       "options": {
@@ -2311,7 +2925,7 @@
         "h": 6,
         "w": 8,
         "x": 0,
-        "y": 103
+        "y": 142
       },
       "id": 53,
       "options": {
@@ -2372,7 +2986,7 @@
         "h": 6,
         "w": 8,
         "x": 8,
-        "y": 103
+        "y": 142
       },
       "id": 54,
       "options": {
@@ -2439,7 +3053,7 @@
         "h": 6,
         "w": 8,
         "x": 16,
-        "y": 103
+        "y": 142
       },
       "id": 58,
       "options": {
@@ -2496,7 +3110,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 109
+        "y": 148
       },
       "id": 59,
       "options": {
@@ -2581,7 +3195,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 109
+        "y": 148
       },
       "id": 60,
       "options": {
@@ -2640,7 +3254,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 117
+        "y": 156
       },
       "id": 61,
       "options": {
@@ -2695,7 +3309,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 117
+        "y": 156
       },
       "id": 62,
       "options": {
@@ -2730,7 +3344,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 123
+        "y": 162
       },
       "id": 700,
       "panels": [],
@@ -2763,7 +3377,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 124
+        "y": 163
       },
       "id": 70,
       "options": {
@@ -2821,7 +3435,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 124
+        "y": 163
       },
       "id": 71,
       "options": {
@@ -2879,7 +3493,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 131
+        "y": 170
       },
       "id": 72,
       "options": {
@@ -2936,7 +3550,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 131
+        "y": 170
       },
       "id": 73,
       "options": {
@@ -2991,7 +3605,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 131
+        "y": 170
       },
       "id": 74,
       "options": {
@@ -3051,7 +3665,7 @@
         "h": 5,
         "w": 24,
         "x": 0,
-        "y": 138
+        "y": 177
       },
       "id": 75,
       "options": {
@@ -3088,7 +3702,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 143
+        "y": 182
       },
       "id": 800,
       "panels": [],
@@ -3123,7 +3737,7 @@
         "h": 5,
         "w": 8,
         "x": 0,
-        "y": 144
+        "y": 183
       },
       "id": 80,
       "options": {
@@ -3210,7 +3824,7 @@
         "h": 5,
         "w": 8,
         "x": 8,
-        "y": 144
+        "y": 183
       },
       "id": 81,
       "options": {
@@ -3275,7 +3889,7 @@
         "h": 5,
         "w": 8,
         "x": 16,
-        "y": 144
+        "y": 183
       },
       "id": 82,
       "options": {
@@ -3335,7 +3949,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 149
+        "y": 188
       },
       "id": 83,
       "options": {
@@ -3396,7 +4010,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 157
+        "y": 196
       },
       "id": 84,
       "options": {
@@ -3478,7 +4092,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 165
+        "y": 204
       },
       "id": 85,
       "options": {
@@ -3545,7 +4159,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 165
+        "y": 204
       },
       "id": 86,
       "options": {
@@ -3603,7 +4217,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 173
+        "y": 212
       },
       "id": 87,
       "options": {
@@ -3661,7 +4275,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 181
+        "y": 220
       },
       "id": 88,
       "options": {
@@ -3728,7 +4342,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 181
+        "y": 220
       },
       "id": 89,
       "options": {
@@ -3795,7 +4409,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 189
+        "y": 228
       },
       "id": 90,
       "options": {
@@ -3859,7 +4473,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 189
+        "y": 228
       },
       "id": 91,
       "options": {
@@ -3935,7 +4549,7 @@
         "h": 5,
         "w": 6,
         "x": 0,
-        "y": 196
+        "y": 235
       },
       "id": 92,
       "options": {
@@ -3996,7 +4610,7 @@
         "h": 5,
         "w": 6,
         "x": 6,
-        "y": 196
+        "y": 235
       },
       "id": 93,
       "options": {
@@ -4059,7 +4673,7 @@
         "h": 5,
         "w": 6,
         "x": 12,
-        "y": 196
+        "y": 235
       },
       "id": 94,
       "options": {
@@ -4118,7 +4732,7 @@
         "h": 5,
         "w": 6,
         "x": 18,
-        "y": 196
+        "y": 235
       },
       "id": 95,
       "options": {
@@ -4175,7 +4789,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 201
+        "y": 240
       },
       "id": 96,
       "options": {
