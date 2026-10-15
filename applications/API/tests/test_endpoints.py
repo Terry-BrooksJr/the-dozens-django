@@ -321,6 +321,22 @@ class EndpointTests(APITestCase):
         else:
             self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_random_insult_counts_authentication_failures(self):
+        """A bad token is rejected before get() runs, and is still counted."""
+        from common.metrics import RANDOM_INSULT_REQUESTS
+
+        view = RandomInsultEndpoint.as_view()
+        req = self.factory.get(
+            "/api/insults/random", HTTP_AUTHORIZATION="Token not-a-real-token"
+        )
+        counter = RANDOM_INSULT_REQUESTS.labels("401", "false", "false")
+        before = counter._value.get()
+
+        resp = view(req)
+
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(counter._value.get(), before + 1)
+
     def test_random_insult_counts_requests_that_raise(self):
         """A request that raises is still counted, under its real status."""
         from common.metrics import RANDOM_INSULT_REQUESTS

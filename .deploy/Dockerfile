@@ -3,10 +3,6 @@ FROM python:3.14-slim-bookworm AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     libmagic1 \
-    curl \
-    ca-certificates \
-    gnupg \
-    && curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
@@ -21,6 +17,9 @@ RUN python -m pip install --no-cache-dir --timeout=300 --no-deps -r requirements
 FROM python:3.14-slim-bookworm
 
 ARG DJANGO_CONFIGURATION="Production"
+# No Doppler CLI in the image: nothing here runs it (CMD starts gunicorn
+# directly; secrets arrive as environment variables from the platform), and
+# as the image's only Go-built binary it carried Go standard-library CVEs.
 ENV DJANGO_CONFIGURATION=${DJANGO_CONFIGURATION} \
     DJANGO_SETTINGS_MODULE=core.settings \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -31,8 +30,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libmagic1 \
     curl \
     ca-certificates \
-    gnupg \
-    && curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
 

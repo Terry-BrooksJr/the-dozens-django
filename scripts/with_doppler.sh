@@ -12,10 +12,16 @@
 # task's own `env:` block set from being clobbered by a same-named value in
 # the Doppler config, so the selected Django settings class is never
 # silently swapped out from under a task.
+#
+# DOPPLER_PRESERVE_EXTRA (comma-separated names) adds more variables to keep,
+# e.g. the PG_DATABASE_* of a local database, so a Doppler config that points
+# at another database can't redirect a local `migrate` to it.
 set -euo pipefail
 
+PRESERVE="DJANGO_CONFIGURATION${DOPPLER_PRESERVE_EXTRA:+,${DOPPLER_PRESERVE_EXTRA}}"
+
 if [ -n "${DOPPLER_TOKEN:-}" ]; then
-    exec doppler run --preserve-env=DJANGO_CONFIGURATION -t "${DOPPLER_TOKEN}" -- "$@"
+    exec doppler run --preserve-env="${PRESERVE}" -t "${DOPPLER_TOKEN}" -- "$@"
 else
     exec "$@"
 fi

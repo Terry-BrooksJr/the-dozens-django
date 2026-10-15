@@ -12,7 +12,6 @@ SDKs in each worker.
 
 import logging
 import os
-import shutil
 import sys
 import tempfile
 import time
@@ -24,13 +23,19 @@ from gunicorn.glogging import Logger as GunicornLogger
 # and max_requests recycling reset that worker's counters every ~1000
 # requests. Multiprocess mode has every worker write to mmap'd files in a
 # shared directory; django_prometheus's ExportToDjangoView (behind our
-# /metrics view) switches to MultiProcessCollector automatically when this
-# env var is set, aggregating across all workers. It must be set before any
-# worker imports prometheus_client - setting it here, in the master, before
-# fork, guarantees that. The directory is (re)created in on_starting().
-PROMETHEUS_MULTIPROC_DIR = os.environ.setdefault(
-    "PROMETHEUS_MULTIPROC_DIR",
-    os.path.join(
+# /metrics view) switches to MultiProcessCollector automatically when
+# PROMETHEUS_MULTIPROC_DIR is set, aggregating across all workers.
+#
+# on_starting() points PROMETHEUS_MULTIPROC_DIR at a directory owned by this
+# master alone - "gunicorn-<master pid>" under the base below - so two masters
+# sharing a base never read or clear each other's files, and cleanup never
+# touches anything outside it. A PROMETHEUS_MULTIPROC_DIR set by the operator
+# is used as the base. The original base is remembered in its own variable so
+# a config reload (SIGHUP re-runs this file) doesn't nest directories.
+PROMETHEUS_BASE_DIR = os.environ.setdefault(
+    "DOZENS_PROMETHEUS_BASE_DIR",
+    os.environ.get("PROMETHEUS_MULTIPROC_DIR")
+    or os.path.join(
         "/dev/shm" if os.path.isdir("/dev/shm") else tempfile.gettempdir(),
         "dozens-prometheus",
     ),
@@ -110,29 +115,50 @@ preload_app = False
 
 def on_starting(server):
     """
-    Start every master with an empty Prometheus multiprocess directory.
+    Give this master its own, empty Prometheus multiprocess directory.
 
-    Files left by a previous run (same container restarted, or a local run)
-    would otherwise be summed into the new run's counters.
+    Runs in the master before any worker is forked, so every worker inherits
+    the variable before it imports prometheus_client. Only prometheus_client's
+    own *.db files are cleared - left behind if a previous master with the
+    same pid (e.g. PID 1 in a restarted container) exited uncleanly.
     """
-    shutil.rmtree(PROMETHEUS_MULTIPROC_DIR, ignore_errors=True)
-    os.makedirs(PROMETHEUS_MULTIPROC_DIR, exist_ok=True)
+    from common.prometheus_multiproc import clear_metric_files
+
+    path = os.path.join(PROMETHEUS_BASE_DIR, f"gunicorn-{os.getpid()}")
+    os.makedirs(path, mode=0o700, exist_ok=True)
+    os.environ["PROMETHEUS_MULTIPROC_DIR"] = path
+    clear_metric_files(path)
+    server.log.info(f"Prometheus multiprocess dir: {path}")
 
 
 def child_exit(server, worker):
     """
-    Tell prometheus_client a worker is gone.
+    Fold a dead worker's metric files into the archive files.
 
-    Counters and histograms from the dead worker's files are kept (so totals
-    don't drop when max_requests recycles it); this only removes its
-    live-gauge series.
+    Keeps totals intact when max_requests recycles a worker, while keeping the
+    directory (a size-limited tmpfs) at a bounded number of files instead of
+    gaining two more for every worker that ever ran.
     """
     try:
-        from prometheus_client import multiprocess
+        from common.prometheus_multiproc import compact_dead_process
 
-        multiprocess.mark_process_dead(worker.pid)
+        compact_dead_process(worker.pid)
     except Exception as e:
-        server.log.warning(f"Prometheus mark_process_dead() failed: {e!r}")
+        server.log.warning(
+            f"Prometheus compaction for worker {worker.pid} failed: {e!r}"
+        )
+
+
+def on_exit(server):
+    """Remove this master's Prometheus files and directory on shutdown."""
+    try:
+        from common.prometheus_multiproc import multiproc_dir, remove_multiproc_dir
+
+        path = multiproc_dir()
+        if path:
+            remove_multiproc_dir(path)
+    except Exception as e:
+        server.log.warning(f"Prometheus cleanup failed: {e!r}")
 
 
 def post_fork(server, worker):

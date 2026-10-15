@@ -24,6 +24,7 @@ from applications.frontend.views import (
     page_not_found_view,
 )
 from common.deprecation import deprecated_route
+from common.prometheus_multiproc import collection_lock
 from core.admin_view import grafana_dashboard_view
 
 
@@ -54,7 +55,10 @@ def metrics_view(request):
     if not hmac.compare_digest(provided.strip(), expected):
         return HttpResponseForbidden()
 
-    return ExportToDjangoView(request)
+    # Shared lock: gunicorn's child_exit compaction (exclusive) must not
+    # delete or merge worker files while this scrape is reading them.
+    with collection_lock():
+        return ExportToDjangoView(request)
 
 
 urlpatterns = [

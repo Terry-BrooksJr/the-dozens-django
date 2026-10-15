@@ -95,7 +95,7 @@ volumes:
 
 ## Environment variables
 
-The image defaults to the `Production` configuration (`DJANGO_CONFIGURATION=Production`). Django exits at startup if a **required** variable is missing.
+The image defaults to the `Production` configuration (`DJANGO_CONFIGURATION=Production`). Set every variable marked **required**. Some are secrets that stop Django from starting if they're missing. The rest have no defaults, so leaving them out breaks the feature that uses them.
 
 ### Core
 
@@ -125,7 +125,7 @@ The image defaults to the `Production` configuration (`DJANGO_CONFIGURATION=Prod
 | `REDIS_CACHE_TOKEN` | ✅* | Redis/Dragonfly connection URL, such as `redis://cache:6379/0`. |
 | `USE_REDIS_CACHE` | | Set to `false` to use the in-process memory cache instead (*then `REDIS_CACHE_TOKEN` isn't needed*). |
 | `CACHE_KEY_PREFIX` | | A prefix for every cache key. |
-| `CACHE_TTL` | | View cache TTL in seconds. |
+| `CACHE_TTL` | ✅ | View cache TTL in seconds, such as `600`. The service won't start without it. |
 
 ### Object storage (S3-compatible)
 
@@ -150,6 +150,7 @@ Static files are served from object storage in production, so run `collectstatic
 | `EMAIL_TSL_PORT` | ✅ | SMTP TLS port. |
 | `NOTIFICATION_SENDER_EMAIL` | ✅ | The "From" address for notifications. |
 | `EMAIL_ACCT_PASSWORD` | ✅ | SMTP password. |
+| `MAILER_EMPTY_QUEUE_SLEEP` | ✅ | Seconds the mail queue worker waits between polls when the queue is empty, such as `30`. |
 | `EMAIL_ASSET_BASE_URL` | | Public base URL for images in emails. |
 
 ### Observability

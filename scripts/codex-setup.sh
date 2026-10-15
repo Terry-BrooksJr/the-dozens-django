@@ -24,6 +24,27 @@ PG_USER="${PG_DATABASE_USER:-root}"
 PG_PASSWORD="${PG_DATABASE_PASSWORD:-postgres}"
 PG_DB="${POSTGRES_DB:-test_db}"
 
+# Role and database names must be plain identifiers. Neither they nor the
+# password are ever spliced into shell or SQL text: they reach psql as
+# variables, and SQL quotes them itself (format %I / %L).
+for ident in "$PG_USER" "$PG_DB"; do
+    if [[ ! "$ident" =~ ^[A-Za-z_][A-Za-z0-9_]{0,62}$ ]]; then
+        echo "Invalid Postgres identifier '$ident' (PG_DATABASE_USER / POSTGRES_DB):" \
+            "use letters, digits and underscores only" >&2
+        exit 1
+    fi
+done
+
+# Run a command as the postgres OS user with its arguments passed as argv,
+# never re-parsed by a shell.
+as_postgres() {
+    if command -v runuser >/dev/null 2>&1; then
+        runuser -u postgres -- "$@"
+    else
+        su postgres -s /bin/sh -c 'exec "$0" "$@"' "$@"
+    fi
+}
+
 install_services() {
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
@@ -38,15 +59,19 @@ start_services() {
     done
     pg_isready -q || { echo "Postgres did not start" >&2; exit 1; }
 
-    su postgres -c "psql -v ON_ERROR_STOP=1 -q" <<SQL
-DO \$\$ BEGIN
-    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${PG_USER}') THEN
-        CREATE ROLE "${PG_USER}" LOGIN SUPERUSER PASSWORD '${PG_PASSWORD}';
-    END IF;
-END \$\$;
+    # Idempotent and self-reconciling: on every run the role gets the
+    # requested password/privileges and the database the requested owner, so
+    # a rerun after the credentials change doesn't leave the old ones behind.
+    # The heredoc is quoted ('SQL'), so the shell expands nothing inside it.
+    as_postgres psql -X -q -v ON_ERROR_STOP=1 \
+        -v "role=${PG_USER}" -v "password=${PG_PASSWORD}" -v "db=${PG_DB}" <<'SQL'
+SELECT format('CREATE ROLE %I', :'role')
+WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = :'role') \gexec
+SELECT format('ALTER ROLE %I WITH LOGIN SUPERUSER PASSWORD %L', :'role', :'password') \gexec
+SELECT format('CREATE DATABASE %I OWNER %I', :'db', :'role')
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = :'db') \gexec
+SELECT format('ALTER DATABASE %I OWNER TO %I', :'db', :'role') \gexec
 SQL
-    su postgres -c "psql -tAc \"SELECT 1 FROM pg_database WHERE datname = '${PG_DB}'\"" | grep -q 1 \
-        || su postgres -c "createdb -O '${PG_USER}' '${PG_DB}'"
 
     redis-cli ping >/dev/null 2>&1 || redis-server --daemonize yes >/dev/null
     echo "Postgres (${PG_USER}@localhost:5432/${PG_DB}) and Redis (localhost:6379) are up"
@@ -65,6 +90,11 @@ install_services
 start_services
 
 # Apply migrations with the CI test configuration, so the database matches
-# what `task test:coverage` / `task run:test` expect.
+# what `task test:coverage` / `task run:test` expect. The local database's
+# settings are exported and preserved through Doppler, so a Doppler config
+# that names another database can't redirect this migrate to it.
+export PG_DATABASE_HOST=localhost PG_DATABASE_PORT=5432 \
+    PG_DATABASE_USER="$PG_USER" PG_DATABASE_PASSWORD="$PG_PASSWORD" POSTGRES_DB="$PG_DB"
 DJANGO_CONFIGURATION=Staging PYTHONPATH="$REPO_ROOT" \
+    DOPPLER_PRESERVE_EXTRA="PG_DATABASE_HOST,PG_DATABASE_PORT,PG_DATABASE_USER,PG_DATABASE_PASSWORD,POSTGRES_DB" \
     ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py migrate --no-input
