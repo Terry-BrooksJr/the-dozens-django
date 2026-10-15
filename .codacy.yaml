@@ -10,3 +10,4 @@ engines:
       - "applications/frontend/tests/**"
       - "common/tests/**"
       - "core/tests/**"
+      - "scripts/**"
