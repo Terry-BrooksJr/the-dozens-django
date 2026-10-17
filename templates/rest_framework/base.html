@@ -1,8 +1,70 @@
 {% extends "rest_framework/base.html" %}
-{% load static %}
+{% load static i18n %}
 <!-- Shared by every Browsable API page (api.html, login.html) -->
 {% block styles %}
     {{ block.super }}
     {{ ld_user|json_script:"ld-user" }}
     <script type="module" src="{% static 'js/darkly.js' %}"></script>
 {% endblock styles %}
+<!-- Sidebar: replace rest_wind's DRF/rest_wind links with this project's -->
+{% block drawer_branding %}
+    <div class="tooltip tooltip-right rtl:tooltip-left tooltip-primary"
+         data-tip="Yo' Momma API">
+        <h1 class="relative">
+            <a href="{% url 'landing' %}"
+               class="btn btn-square btn-primary lg:btn-lg 2xl:btn-lg overflow-hidden p-0">
+                <img src="{% static 'assets/yo_momma_brand.png' %}"
+                     alt=""
+                     class="size-full object-cover">
+                <span class="sr-only">Yo' Momma API</span>
+            </a>
+        </h1>
+    </div>
+{% endblock drawer_branding %}
+{% block package %}
+    <div class="tooltip tooltip-left rtl:tooltip-right"
+         data-tip="{% trans 'Github' %}">
+        <a href="https://github.com/Terry-BrooksJr/the-dozens-django"
+           class="btn btn-sm lg:btn-md 2xl:btn-lg btn-square btn-ghost">
+            <i data-lucide="github" class="size-4 lg:size-6"></i>
+            <span class="sr-only">{% trans 'Github' %}</span>
+        </a>
+    </div>
+{% endblock package %}
+{% block user_links %}
+    <li class="is-drawer-close:tooltip is-drawer-close:tooltip-right rtl:is-drawer-close:tooltip-left"
+        data-tip="Home">
+        <a href="{% url 'landing' %}">
+            <i data-lucide="home" class="size-4 lg:size-6"></i>
+            <span class="is-drawer-close:sr-only">Home</span>
+        </a>
+    </li>
+    <li class="is-drawer-close:tooltip is-drawer-close:tooltip-right rtl:is-drawer-close:tooltip-left"
+        data-tip="Swagger UI">
+        <a href="{% url 'swagger' %}">
+            <i data-lucide="zap" class="size-4 lg:size-6"></i>
+            <span class="is-drawer-close:sr-only">Swagger UI</span>
+        </a>
+    </li>
+    <li class="is-drawer-close:tooltip is-drawer-close:tooltip-right rtl:is-drawer-close:tooltip-left"
+        data-tip="ReDoc">
+        <a href="{% url 'redoc' %}">
+            <i data-lucide="book-text" class="size-4 lg:size-6"></i>
+            <span class="is-drawer-close:sr-only">ReDoc</span>
+        </a>
+    </li>
+    <li class="is-drawer-close:tooltip is-drawer-close:tooltip-right rtl:is-drawer-close:tooltip-left"
+        data-tip="GraphQL Playground">
+        <a href="{% url 'playground' %}">
+            <i data-lucide="waypoints" class="size-4 lg:size-6"></i>
+            <span class="is-drawer-close:sr-only">GraphQL Playground</span>
+        </a>
+    </li>
+    <li class="is-drawer-close:tooltip is-drawer-close:tooltip-right rtl:is-drawer-close:tooltip-left"
+        data-tip="Status">
+        <a href="{% url 'status' %}">
+            <i data-lucide="activity" class="size-4 lg:size-6"></i>
+            <span class="is-drawer-close:sr-only">Status</span>
+        </a>
+    </li>
+{% endblock user_links %}

@@ -6,7 +6,12 @@ from django.template.context import make_context
 from django.template.loader import get_template
 from django.template.loader_tags import BlockNode
 from django.templatetags.static import static
-from djoser.email import ConfirmationEmail
+from django.utils import timezone
+from djoser.email import (
+    ConfirmationEmail,
+    PasswordChangedConfirmationEmail,
+    UsernameChangedConfirmationEmail,
+)
 from loguru import logger
 from rest_framework.authtoken.models import Token
 
@@ -111,6 +116,71 @@ class WelcomeEmail(ConfirmationEmail):
         except Exception:
             logger.error("Welcome email send failure | to={}", recipients)
             raise
+
+
+class AccountChangeEmailMixin:
+    """Shared context and delivery for "your account changed" security emails.
+
+    Subclasses set ``template_name``, ``hero_image`` (a path under static/)
+    and ``log_label``.
+    """
+
+    hero_image = ""
+    log_label = "Account change email"
+
+    def get_context_data(self):
+        """Add brand fonts, the hero image, links and the change time."""
+        context = super().get_context_data()
+        protocol = context.get("protocol", "https")
+        domain = context.get("domain")
+        base = f"{protocol}://{domain}"
+        context.update(
+            {
+                "site_url": base,
+                "site_domain": domain,
+                "docs_url": f"{base}/api/redoc",
+                "support_email": "developer@yo-momma.io",
+                "changed_at": timezone.now(),
+                "hero_image_url": email_asset_url(self.hero_image, base),
+                **email_font_urls(base),
+            }
+        )
+        return context
+
+    def send(self, to=None, fail_silently=False, **kwargs):
+        """Send the email, logging the attempt and its outcome.
+
+        When ``to`` is omitted the message is assumed to be already rendered
+        (the django-mailer delivery path) and is sent directly.
+        """
+        recipients = to or getattr(self, "to", None) or []
+        logger.info("{} send attempt | to={}", self.log_label, recipients)
+        try:
+            if to is not None:
+                result = super().send(to, fail_silently=fail_silently, **kwargs)
+            else:
+                result = EmailMultiAlternatives.send(self, fail_silently=fail_silently)
+            logger.info("{} send success | to={}", self.log_label, recipients)
+            return result
+        except Exception:
+            logger.error("{} send failure | to={}", self.log_label, recipients)
+            raise
+
+
+class PasswordChangedEmail(AccountChangeEmailMixin, PasswordChangedConfirmationEmail):
+    """Tells a user their password was just changed or reset."""
+
+    template_name = "email/password_changed_confirmation.html"
+    hero_image = "assets/password_changed.png"
+    log_label = "Password changed email"
+
+
+class UsernameChangedEmail(AccountChangeEmailMixin, UsernameChangedConfirmationEmail):
+    """Tells a user their username was just changed."""
+
+    template_name = "email/username_changed_confirmation.html"
+    hero_image = "assets/username_changed.png"
+    log_label = "Username changed email"
 
 
 # Per-outcome presentation for email/submission_review.html. Every key the

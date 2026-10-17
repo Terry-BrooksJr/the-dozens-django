@@ -136,7 +136,7 @@ tasks:
     desc: Check Models and Serializers for schema compliance with OpenAPI 3.0 Standards and fail on warnings
     cmds:
       - PYTHONPATH="${PYTHONPATH}" ./scripts/with_doppler.sh .venv/bin/python3 run/manage.py spectacular --file /dev/null --validate
-    internal: true
+    internal: false
 
   schema:
     deps: [ schema-check ]
