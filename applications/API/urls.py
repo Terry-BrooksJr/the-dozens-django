@@ -11,6 +11,7 @@ OpenAPI schema.
 """
 
 from django.urls import include, path
+from django.views.decorators.cache import never_cache
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
@@ -97,10 +98,25 @@ urlpatterns = [
     # Health / liveness
     path("ping/", PingEndpoint.as_view(), name="ping"),  # Traefik liveness probe
     path("health/", HealthEndpoint.as_view(), name="health"),  # deep readiness check
-    # API documentation/schema endpoints
-    path("schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("swagger/", SpectacularSwaggerView.as_view(), name="swagger"),
-    path("redoc/", SpectacularRedocView.as_view(), name="redoc"),
+    # API documentation/schema endpoints. never_cache: the page cache would
+    # otherwise keep serving a schema (and docs page) built from older code
+    # for CACHE_MIDDLEWARE_SECONDS after the code changes. Not throttled:
+    # every docs page load is two requests (the page, then the schema).
+    path(
+        "schema/",
+        never_cache(SpectacularAPIView.as_view(throttle_classes=[])),
+        name="schema",
+    ),
+    path(
+        "swagger/",
+        never_cache(SpectacularSwaggerView.as_view(throttle_classes=[])),
+        name="swagger",
+    ),
+    path(
+        "redoc/",
+        never_cache(SpectacularRedocView.as_view(throttle_classes=[])),
+        name="redoc",
+    ),
     # Versioned resources
     path("v2.0.0/", include(v2_urlpatterns)),
     *legacy_urlpatterns,

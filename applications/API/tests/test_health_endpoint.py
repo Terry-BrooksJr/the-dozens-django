@@ -114,3 +114,51 @@ class HealthEndpointTests(TestCase):
 
         self.assertEqual(response.data["launchdarkly"], "unavailable")
         self.assertEqual(response.status_code, 503)
+
+
+class HealthEndpointLokiTests(TestCase):
+    """`loki` is reported but never makes the service degraded."""
+
+    def _get(self):
+        return HealthEndpoint.as_view()(APIRequestFactory().get("/api/health/"))
+
+    @override_settings(LAUNCHDARKLY_ENABLED=False)
+    def test_each_loki_status_is_reported_without_degrading(self):
+        for value in (
+            "Actively Forwarded",
+            "Configured - Not Forwarding",
+            "Disabled",
+        ):
+            with (
+                self.subTest(loki=value),
+                patch("common.loki.forwarding_status", return_value=value),
+            ):
+                response = self._get()
+                self.assertEqual(response.data["loki"], value)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.data["status"], "ok")
+
+
+class HealthEndpointCachingTests(TestCase):
+    """Health responses go through the full middleware stack uncached."""
+
+    @override_settings(LAUNCHDARKLY_ENABLED=False)
+    def test_health_and_ping_are_never_cached(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        for path in ("/api/health/", "/api/ping/"):
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertIn("no-store", response["Cache-Control"])
+
+    @override_settings(LAUNCHDARKLY_ENABLED=False)
+    def test_a_later_check_is_not_served_a_cached_result(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        with patch("common.loki.forwarding_status", return_value="Disabled"):
+            self.client.get("/api/health/")
+        with patch("common.loki.forwarding_status", return_value="Actively Forwarded"):
+            response = self.client.get("/api/health/")
+        self.assertEqual(response.json()["loki"], "Actively Forwarded")

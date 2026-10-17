@@ -16,7 +16,12 @@ from typing import Any
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.generic import TemplateView
-from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+)
 from loguru import logger
 from rest_framework import status
 from rest_framework.generics import CreateAPIView
@@ -25,7 +30,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from applications.API.errors import StandardErrorResponses
-from applications.API.models import Insult
+from applications.API.models import Insult, InsultReview
 from applications.API.serializers import InsultReviewSerializer
 from core.settings import Base
 
@@ -63,6 +68,84 @@ def page_not_found_view(request, exception):  # pylint: disable=unused-argument
     return render(request, "404.html", status=404)
 
 
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Joke Reporting"],
+        operation_id="report_joke",
+        auth=[],
+        summary="Report a joke for review",
+        description=(
+            "Flag a joke for moderator review. A valid report opens a GitHub issue "
+            "for the moderation team; the response links to it.\n\n"
+            "`rationale_for_review` must be at least 70 characters. Reports can be "
+            "anonymous; otherwise first and last name are required, and an email "
+            "is required when `post_review_contact_desired` is true."
+        ),
+        request=InsultReviewSerializer,
+        examples=[
+            OpenApiExample(
+                "Anonymous report",
+                value={
+                    "insult_reference_id": "SNORT_MQ==",
+                    "review_type": "RE",
+                    "anonymous": True,
+                    "rationale_for_review": (
+                        "This joke is explicit and should be marked NSFW so it does "
+                        "not show up in SFW results."
+                    ),
+                },
+                request_only=True,
+            )
+        ],
+        responses={
+            201: OpenApiResponse(
+                description="Report accepted and a GitHub issue opened.",
+                examples=[
+                    OpenApiExample(
+                        name="Report submitted",
+                        value={
+                            "status": "SUCCESS",
+                            "github_url": "https://github.com/Terry-BrooksJr/the-dozens-django/issues/123",
+                        },
+                        response_only=True,
+                    )
+                ],
+            ),
+            400: OpenApiResponse(
+                description="Invalid report; `errors` lists the problems by field.",
+                examples=[
+                    OpenApiExample(
+                        name="Validation error",
+                        value={
+                            "status": "FAILED",
+                            "errors": {
+                                "rationale_for_review": [
+                                    "Ensure this field has at least 70 characters."
+                                ]
+                            },
+                        },
+                        response_only=True,
+                    )
+                ],
+            ),
+            422: OpenApiResponse(
+                description=(
+                    "The report was valid but the GitHub issue couldn't be created "
+                    "(e.g. GitHub is unreachable). Retry later."
+                ),
+                examples=[
+                    OpenApiExample(
+                        name="Could not forward",
+                        value={"status": "FAILED", "errors": {}},
+                        response_only=True,
+                    )
+                ],
+            ),
+            429: StandardErrorResponses.RATE_LIMIT_EXCEEDED,
+            500: StandardErrorResponses.INTERNAL_SERVER_ERROR,
+        },
+    )
+)
 class ReportJokeView(CreateAPIView):
     """API view to handle joke reporting."""
 
@@ -99,71 +182,6 @@ class ReportJokeView(CreateAPIView):
 
         return {"issue_title": issue_title, "issue_body": issue_body}
 
-    @extend_schema(
-        tags=["Joke Reporting"],
-        operation_id="report_joke",
-        auth=[],
-        summary="Report a joke for review",
-        description=(
-            "Submit a report for a joke that may violate community guidelines. "
-            "The report is validated and forwarded to the moderation team via a GitHub issue. "
-            "Anonymous submissions are supported; non-anonymous submissions require a first and last name. "
-            "If post-review contact is desired, a valid email address must be provided."
-        ),
-        request=InsultReviewSerializer,
-        responses={
-            201: OpenApiResponse(
-                description="Report submitted successfully",
-                examples=[
-                    OpenApiExample(
-                        name="Report Submitted",
-                        summary="Joke report created and forwarded for review",
-                        description="Returned when the joke report is valid and has been successfully submitted.",
-                        value={"status": "SUCCESS"},
-                        response_only=True,
-                    )
-                ],
-            ),
-            400: OpenApiResponse(
-                description="Invalid report payload",
-                examples=[
-                    OpenApiExample(
-                        name="Validation Error",
-                        summary="One or more required fields are missing or invalid",
-                        description="Returned when the submitted data fails serializer validation.",
-                        value={
-                            "status": "FAILED",
-                            "errors": {
-                                "rationale_for_review": [
-                                    "Ensure this field has at least 70 characters."
-                                ]
-                            },
-                        },
-                        response_only=True,
-                    )
-                ],
-            ),
-            422: OpenApiResponse(
-                description="Report could not be processed",
-                examples=[
-                    OpenApiExample(
-                        name="Processing Error",
-                        summary="Report was valid but could not be forwarded",
-                        description=(
-                            "Returned when the report payload is valid but an upstream error "
-                            "(e.g. GitHub API failure) prevented the issue from being created."
-                        ),
-                        value={
-                            "status": "FAILED - GitHub API connection error",
-                            "errors": {},
-                        },
-                        response_only=True,
-                    )
-                ],
-            ),
-            **StandardErrorResponses.get_common_error_responses(),
-        },
-    )
     def post(self, request: Request, *_args, **_kwargs) -> Response:
         """Handle POST requests to report a joke for review.
 
@@ -182,6 +200,7 @@ class ReportJokeView(CreateAPIView):
         )
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
+            serializer.save()
             vd = dict(serializer.validated_data)
             ref_id = vd.get("insult_reference_id", "unknown")
             review_type = vd.get("review_type", "unknown")

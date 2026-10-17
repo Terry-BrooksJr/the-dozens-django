@@ -16,16 +16,15 @@ from pathlib import Path
 from configurations import Configuration, values
 from github import Github
 from loguru import logger
-from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
 
 from common.helpers import (
-    SanitizingLoguruFormatter,
     _force_utc_time,
     _insert_after_middleware,
     _normalize_append_components,
     ld_loguru_sink,
     log_warning,
 )
+from common.loki import install_loki_sink
 
 BASE_DIR = values.PathValue(Path(__file__).resolve().parent.parent, environ=False)
 
@@ -561,15 +560,42 @@ class Base(Configuration):
     # SECTION Start - REST API.SWAGGER DOCUMENTATION SETTINGS
     SPECTACULAR_SETTINGS = {
         "TITLE": "Yo' Momma - The Joke API",
-        "VERSION": os.getenv("API_VERSION", "1.0.0"),
+        "VERSION": os.getenv("API_VERSION", "2.0.0"),
         "SERVE_INCLUDE_SCHEMA": True,
         "OAS_VERSION": "3.0.3",
-        # Cache the generated schema for 15 minutes — generation is expensive
-        # (introspects every view/serializer on the fly) and the output is
-        # deterministic until a deploy.  Without this, every ReDoc/Swagger page
-        # load triggers a multi-second schema build before the UI can render.
-        "SCHEMA_CACHE_TIMEOUT": 60 * 15,
+        "TOS": "https://dozens.s3.us-east-005.backblazeb2.com/TERMS_OF_SERVICE.md",
+        "CONTACT": {
+            "name": "Terry A. Brooks, Jr.",
+            "email": "api@yo-momma.io",
+            "url": "https://brooksjr.dev",
+        },
         "COMPONENT_SPLIT_REQUEST": True,
+        # Order and describe the groups shown in Swagger/ReDoc. Every
+        # operation's tag must be one of these (see test_openapi_schema).
+        "TAGS": [
+            {"name": "Insults", "description": "Browse, fetch and submit insults."},
+            {
+                "name": "Insult Categories",
+                "description": "Categories and the themes they belong to.",
+            },
+            {
+                "name": "Joke Reporting",
+                "description": "Flag a joke for moderator review.",
+            },
+            {
+                "name": "Authentication",
+                "description": "Get and revoke API tokens.",
+            },
+            {
+                "name": "Users",
+                "description": "Register and manage accounts.",
+            },
+            {
+                "name": "Health & Status Check",
+                "description": "Liveness and dependency checks.",
+            },
+            {"name": "Documentation", "description": "This API's OpenAPI schema."},
+        ],
         "SECURITY": [{"TokenAuth": []}],
         "AUTHENTICATION_WHITELIST": [],
         "SERVE_AUTHENTICATION": None,
@@ -768,11 +794,6 @@ class Base(Configuration):
         },
         "SWAGGER_UI_DIST": "SIDECAR",
         "REDOC_DIST": "SIDECAR",
-        "CONTACT": {
-            "name": "Terry A. Brooks, Jr.",
-            "url": "https://brooksjr.com",
-            "email": "terry@brooksjr.com",
-        },
         "EXTERNAL_DOCS": {
             "url": "https://github.com/Terry-BrooksJr/the-dozens-django",
             "description": "GitHub Repository and full API documentation Hub",
@@ -784,8 +805,12 @@ class Base(Configuration):
     # SECTION Start - Djoser Settings
     DJOSER = {
         "SEND_CONFIRMATION_EMAIL": True,
+        "PASSWORD_CHANGED_EMAIL_CONFIRMATION": True,
+        "USERNAME_CHANGED_EMAIL_CONFIRMATION": True,
         "EMAIL": {
             "confirmation": "applications.API.emails.WelcomeEmail",
+            "password_changed_confirmation": "applications.API.emails.PasswordChangedEmail",
+            "username_changed_confirmation": "applications.API.emails.UsernameChangedEmail",
         },
         "EMAIL_FRONTEND_DOMAIN": "api.yo-momma.io",
         "EMAIL_FRONTEND_PROTOCOL": "https",
@@ -1098,19 +1123,9 @@ class Production(Base):
         if not cls.configure_logging_common():
             return
 
-        # Loki Log Handler - May Replace OTEL in future iterations
-        if (loki_url := os.getenv("LOKI_URL")) and (
-            loki_password := os.getenv("LOKI_PASSWORD")
-        ):
-            loki_handler = LokiLoggerHandler(
-                url=loki_url,
-                auth=("lokiadmin", loki_password),
-                labels={"application": "dozen_api", "environment": "Production"},
-                label_keys={},
-                timeout=10,
-                default_formatter=SanitizingLoguruFormatter(),
-            )
-            logger.add(loki_handler, serialize=True)
+        # Loki sink when LOKI_URL/LOKI_PASSWORD are set; its delivery status
+        # is reported by /api/health/ (see common.loki).
+        install_loki_sink("Production")
 
         # serialize=False: plain text to stdout for local `docker logs`
         # readability; Loki gets its own serialized sink above.
@@ -1211,19 +1226,9 @@ class Development(Base):
             category=ResourceWarning,
         )
 
-        # Loki Log Handler - May Replace OTEL in future iterations
-        if (loki_url := os.getenv("LOKI_URL")) and (
-            loki_password := os.getenv("LOKI_PASSWORD")
-        ):
-            loki_handler = LokiLoggerHandler(
-                url=loki_url,
-                auth=("lokiadmin", loki_password),
-                labels={"application": "dozen_api", "environment": "Development"},
-                label_keys={},
-                timeout=10,
-                default_formatter=SanitizingLoguruFormatter(),
-            )
-            logger.add(loki_handler, serialize=True)
+        # Loki sink when LOKI_URL/LOKI_PASSWORD are set; its delivery status
+        # is reported by /api/health/ (see common.loki).
+        install_loki_sink("Development")
 
         logger.add(
             cls.DEFAULT_HANDLER,

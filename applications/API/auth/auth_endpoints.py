@@ -12,9 +12,13 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 
 @extend_schema_view(
     post=extend_schema(
+        tags=["Authentication"],
         operation_id="auth_token_destroy",
-        summary="Logout user and destroy token",
-        description="Destroys the authentication token, effectively logging out the user.",
+        summary="Log out (delete my token)",
+        description=(
+            "Delete the caller's API token, logging them out everywhere it was "
+            "used. Log in again for a new one."
+        ),
         responses={
             204: OpenApiResponse(
                 description="Token successfully deleted and user logged out"
