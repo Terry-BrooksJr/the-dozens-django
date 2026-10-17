@@ -809,9 +809,12 @@ class Base(Configuration):
         "USERNAME_CHANGED_EMAIL_CONFIRMATION": True,
         "EMAIL": {
             "confirmation": "applications.API.emails.WelcomeEmail",
+            "password_reset": "applications.API.emails.BrandedPasswordResetEmail",
             "password_changed_confirmation": "applications.API.emails.PasswordChangedEmail",
             "username_changed_confirmation": "applications.API.emails.UsernameChangedEmail",
         },
+        # Link in the reset email; served by PasswordResetPageView.
+        "PASSWORD_RESET_CONFIRM_URL": "password/reset/confirm/{uid}/{token}/",
         "EMAIL_FRONTEND_DOMAIN": "api.yo-momma.io",
         "EMAIL_FRONTEND_PROTOCOL": "https",
     }

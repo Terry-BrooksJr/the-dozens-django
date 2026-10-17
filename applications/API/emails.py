@@ -10,6 +10,7 @@ from django.utils import timezone
 from djoser.email import (
     ConfirmationEmail,
     PasswordChangedConfirmationEmail,
+    PasswordResetEmail,
     UsernameChangedConfirmationEmail,
 )
 from loguru import logger
@@ -140,6 +141,7 @@ class AccountChangeEmailMixin:
                 "site_domain": domain,
                 "docs_url": f"{base}/api/redoc",
                 "support_email": "developer@yo-momma.io",
+                "password_reset_url": f"{base}/password/reset/",
                 "changed_at": timezone.now(),
                 "hero_image_url": email_asset_url(self.hero_image, base),
                 **email_font_urls(base),
@@ -181,6 +183,21 @@ class UsernameChangedEmail(AccountChangeEmailMixin, UsernameChangedConfirmationE
     template_name = "email/username_changed_confirmation.html"
     hero_image = "assets/username_changed.png"
     log_label = "Username changed email"
+
+
+class BrandedPasswordResetEmail(AccountChangeEmailMixin, PasswordResetEmail):
+    """Sends the password reset link (to PasswordResetPageView)."""
+
+    template_name = "email/password_reset.html"
+    hero_image = "assets/password_reset.png"
+    log_label = "Password reset email"
+
+    def get_context_data(self):
+        """Add the absolute reset link and how long it stays valid."""
+        context = super().get_context_data()
+        context["reset_url"] = f"{context['site_url']}/{context['url']}"
+        context["link_valid_days"] = settings.PASSWORD_RESET_TIMEOUT // 86400
+        return context
 
 
 # Per-outcome presentation for email/submission_review.html. Every key the

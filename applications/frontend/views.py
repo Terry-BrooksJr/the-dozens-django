@@ -41,6 +41,18 @@ class LandingPageView(TemplateView):
     template_name = "landing.html"
 
 
+class PasswordResetPageView(TemplateView):
+    """Browser front end for Djoser's JSON password-reset endpoints.
+
+    Without ``uid``/``token`` it asks for an email and POSTs it to
+    ``/auth/users/reset_password/``. With them (the link in Djoser's reset
+    email, see ``DJOSER["PASSWORD_RESET_CONFIRM_URL"]``) it asks for the new
+    password and POSTs it to ``/auth/users/reset_password_confirm/``.
+    """
+
+    template_name = "password_reset.html"
+
+
 class StatusPageView(TemplateView):
     """Renders the service status page."""
 

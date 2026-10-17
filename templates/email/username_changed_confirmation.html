@@ -6,7 +6,7 @@ The username for your Yo' Momma API account was changed to "{{ user.username }}"
 
 If this was you, you're all set. Sign in with your new username from now on. Your API token and the jokes you've submitted are unchanged.
 
-If this wasn't you, someone else may have access to your account. Reset your password right away and email us at {{ support_email }} so we can restore your old username.
+If this wasn't you, someone else may have access to your account. Reset your password right away at {{ password_reset_url }} and email us at {{ support_email }} so we can restore your old username.
 
 You're receiving this because a security setting changed on your account at {{ site_domain }}.
 {% endblock text_body %}
@@ -234,8 +234,11 @@ You're receiving this because a security setting changed on your account at {{ s
                                                           color:#555555;
                                                           margin:0;
                                                           line-height:1.6">
-                                                    Someone else may have access to your account. Reset your password right away and
-                                                    email us at
+                                                    Someone else may have access to your account.
+                                                    <a href="{{ password_reset_url }}"
+                                                       style="color:#770071;
+                                                              text-decoration:underline">Reset your password</a>
+                                                    right away and email us at
                                                     <a href="mailto:{{ support_email }}"
                                                        style="color:#770071;
                                                               text-decoration:underline">{{ support_email }}</a>

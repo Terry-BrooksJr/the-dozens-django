@@ -18,6 +18,7 @@ import applications.graphQL.urls as GRAPHQL_URL
 from applications.API.auth.auth_endpoints import TokenDestroyView
 from applications.frontend.views import (
     LandingPageView,
+    PasswordResetPageView,
     ReportJokeView,
     StatusPageView,
     get_reference_ids,
@@ -77,6 +78,17 @@ urlpatterns = [
     path("metrics", metrics_view, name="prometheus-django-metrics"),
     path("api/", include(API_URLS)),
     path("auth/token/logout/", TokenDestroyView.as_view(), name="token_logout"),
+    # Browser pages for Djoser's JSON password reset (link in the reset email).
+    path(
+        "password/reset/",
+        PasswordResetPageView.as_view(),
+        name="password-reset",
+    ),
+    path(
+        "password/reset/confirm/<str:uid>/<str:token>/",
+        PasswordResetPageView.as_view(),
+        name="password-reset-confirm",
+    ),
     path("auth/", include("djoser.urls")),
     path("auth/", include("djoser.urls.authtoken")),
     # Deprecated aliases for routes that now live under /api/v2.0.0/.

@@ -64,6 +64,45 @@ class TestLandingPageView(SimpleTestCase):
 
 
 # ---------------------------------------------------------------------------
+# PasswordResetPageView
+# ---------------------------------------------------------------------------
+
+
+class TestPasswordResetPageView(SimpleTestCase):
+    """The browser pages in front of Djoser's JSON password-reset endpoints."""
+
+    def test_request_page_posts_email_to_djoser(self):
+        """/password/reset/ asks for an email and targets reset_password."""
+        resp = self.client.get("/password/reset/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'data-endpoint="/auth/users/reset_password/"')
+        self.assertContains(resp, 'name="email"')
+
+    def test_confirm_page_carries_uid_and_token(self):
+        """The emailed link renders the new-password form with its uid/token."""
+        resp = self.client.get("/password/reset/confirm/MQ/abc-123/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(
+            resp, 'data-endpoint="/auth/users/reset_password_confirm/"'
+        )
+        self.assertContains(resp, 'data-uid="MQ"')
+        self.assertContains(resp, 'data-token="abc-123"')
+        self.assertContains(resp, 'name="new_password"')
+
+    def test_djoser_reset_link_resolves_to_confirm_page(self):
+        """DJOSER's PASSWORD_RESET_CONFIRM_URL points at this page's route."""
+        from django.conf import settings
+        from django.urls import resolve
+
+        path = settings.DJOSER["PASSWORD_RESET_CONFIRM_URL"].format(
+            uid="MQ", token="abc-123"
+        )
+        match = resolve(f"/{path}")
+        self.assertEqual(match.url_name, "password-reset-confirm")
+        self.assertEqual(match.kwargs, {"uid": "MQ", "token": "abc-123"})
+
+
+# ---------------------------------------------------------------------------
 # page_not_found_view
 # ---------------------------------------------------------------------------
 
