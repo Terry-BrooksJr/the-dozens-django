@@ -47,7 +47,7 @@ class RequestIDMiddleware:
         return response
 
 
-def _trace_context(request_id: str) -> dict[str, str]:
+def _trace_context(request_id: str):
     """Trace/span IDs of the active OpenTelemetry span, as log context.
 
     Returns an empty dict when no span is active (observability disabled, or

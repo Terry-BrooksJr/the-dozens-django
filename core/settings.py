@@ -38,7 +38,7 @@ INSULT_REFERENCE_ID_PREFIX_OPTIONS = values.ListValue(
 # Shared configuration building blocks
 # ---------------------------------------------------------------------------
 # Plain lists/dicts that configuration classes compose via spread/concat so
-# each environment only declares its *differences* from the baseline.
+# each environment on                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ly declares its *differences* from the baseline.
 
 _INSTALLED_APPS_CORE = [
     # 0) Instrumentation that wants to wrap others early
