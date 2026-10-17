@@ -127,3 +127,65 @@ class RequestIDMiddlewareLogContextTests(TestCase):
             mock_logger.contextualize.assert_called_once_with(request_id="ctx-test-id")
             ctx_manager.__enter__.assert_called_once()
             ctx_manager.__exit__.assert_called_once()
+
+
+class RequestIDMiddlewareOrderingTests(TestCase):
+    def test_runs_outside_the_cache_middleware(self):
+        """It must wrap UpdateCache/FetchFromCache, so cache hits get their own
+        ID and the stored response never carries a stale one."""
+        from django.conf import settings
+
+        mw = list(settings.MIDDLEWARE)
+        rid = mw.index("common.middleware.RequestIDMiddleware")
+        self.assertLess(rid, mw.index("django.middleware.cache.UpdateCacheMiddleware"))
+        self.assertLess(
+            rid, mw.index("django.middleware.cache.FetchFromCacheMiddleware")
+        )
+
+
+def _capture_extra(captured: dict) -> None:
+    """Log one line through a temporary sink and copy its ``extra`` context."""
+    from loguru import logger
+
+    sink_id = logger.add(lambda m: captured.update(m.record["extra"]), level="DEBUG")
+    try:
+        logger.debug("inside")
+    finally:
+        logger.remove(sink_id)
+
+
+class RequestIDMiddlewareTraceContextTests(TestCase):
+    def test_trace_and_span_ids_are_bound_when_a_span_is_active(self):
+        from opentelemetry import trace
+        from opentelemetry.trace import NonRecordingSpan, SpanContext, TraceFlags
+
+        ctx = SpanContext(
+            trace_id=0x0AF7651916CD43DD8448EB211C80319C,
+            span_id=0x00F067AA0BA902B7,
+            is_remote=False,
+            trace_flags=TraceFlags(TraceFlags.SAMPLED),
+        )
+        captured = {}
+
+        def get_response(request):
+            _capture_extra(captured)
+            return MagicMock()
+
+        mw = RequestIDMiddleware(get_response)
+        with trace.use_span(NonRecordingSpan(ctx)):
+            mw(RequestFactory().get("/"))
+
+        self.assertEqual(captured["trace_id"], "0af7651916cd43dd8448eb211c80319c")
+        self.assertEqual(captured["span_id"], "00f067aa0ba902b7")
+
+    def test_no_trace_ids_without_an_active_span(self):
+        captured = {}
+
+        def get_response(request):
+            _capture_extra(captured)
+            return MagicMock()
+
+        RequestIDMiddleware(get_response)(RequestFactory().get("/"))
+
+        self.assertIn("request_id", captured)
+        self.assertNotIn("trace_id", captured)

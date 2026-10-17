@@ -21,10 +21,13 @@ from django.db.models import F
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_prometheus.models import ExportModelOperationsMixin
 from loguru import logger
 from simple_history.models import HistoricalRecords
+
+from common.metrics import metrics
 
 
 class Base64DecoderException(Exception):
@@ -57,6 +60,22 @@ def encode_base64(number: int) -> str:
     except Exception as e:
         logger.exception(f"Unable to Encode Reference ID for Insult {number}: {e!s}")
         raise Base64EncoderException(str(e)) from e
+
+
+class StatusTransitionMetricsMixin:
+    """Remember the ``status`` a row was loaded with, for transition metrics.
+
+    ``record_status_transition`` (a post_save receiver below) compares it with
+    the saved value to count ``old -> new`` status changes. Changes made with
+    ``QuerySet.update()`` bypass save() and aren't seen here.
+    """
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        """Load the instance and note its status (absent if deferred)."""
+        instance = super().from_db(db, field_names, values)
+        instance._loaded_status = instance.__dict__.get("status")
+        return instance
 
 
 class PublicInsultCategoryManager(models.Manager):
@@ -175,7 +194,9 @@ class PublicInsultManager(models.Manager):
         )
 
 
-class Insult(ExportModelOperationsMixin("insult"), models.Model):
+class Insult(
+    ExportModelOperationsMixin("insult"), StatusTransitionMetricsMixin, models.Model
+):
     """
     Model representing an Insult with various attributes and methods for manipulation. This model represents an Insult with fields like content, category, nsfw, added_on, added_by, last_modified, and status. It includes methods for removing, approving, marking for review, re-categorizing, and reclassifying insults.
 
@@ -510,7 +531,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
 
         try:
             self.status = Insult.STATUS.REMOVED  # Set status to REMOVED
-            self.last_modified = settings.GLOBAL_NOW
+            self.last_modified = timezone.now()
             self.save(update_fields=["status", "last_modified"])
             logger.success(f"Successfully Removed {self.reference_id}")
         except Exception as e:
@@ -530,7 +551,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
 
         try:
             self.status = Insult.STATUS.ACTIVE  # Set status to ACTIVE
-            self.last_modified = settings.GLOBAL_NOW
+            self.last_modified = timezone.now()
             self.save(update_fields=["status", "last_modified"])
             logger.success(f"Successfully Approved {self.reference_id}")
         except Exception as e:
@@ -549,7 +570,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
 
         try:
             self.status = Insult.STATUS.REJECTED  # Set status to REJECTED
-            self.last_modified = settings.GLOBAL_NOW
+            self.last_modified = timezone.now()
             self.save(update_fields=["status", "last_modified"])
             logger.success(f"Successfully Rejected {self.reference_id}")
         except Exception as e:
@@ -579,7 +600,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             self.is_admin_modified = True
             self.modified_content = modified_content
             self.reviewer_notes = reviewer_notes
-            self.last_modified = settings.GLOBAL_NOW
+            self.last_modified = timezone.now()
             self.save(
                 update_fields=[
                     "status",
@@ -607,7 +628,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
 
         try:
             self.status = Insult.STATUS.PENDING  # Set status to PENDING
-            self.last_modified = settings.GLOBAL_NOW
+            self.last_modified = timezone.now()
             self.save(update_fields=["status", "last_modified"])
             logger.warning(f"Successfully Sent to Review {self.reference_id}")
         except Exception as e:
@@ -632,7 +653,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
             self.category = new_category
             # Automatically update theme to match new category's theme
             self.theme = new_category.theme
-            self.last_modified = settings.GLOBAL_NOW
+            self.last_modified = timezone.now()
             self.save(update_fields=["category", "theme", "last_modified"])
             logger.success(
                 f"Successfully Re-Categorized {self.reference_id} to {self.category} "
@@ -654,7 +675,7 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         """
         try:
             self.nsfw = nsfw_status
-            self.last_modified = settings.GLOBAL_NOW
+            self.last_modified = timezone.now()
             self.save(update_fields=["nsfw", "last_modified"])
             logger.success(
                 f"Successfully reclassified {self.reference_id} to {self.nsfw}"
@@ -688,7 +709,9 @@ class Insult(ExportModelOperationsMixin("insult"), models.Model):
         ]
 
 
-class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
+class InsultReview(
+    ExportModelOperationsMixin("jokeReview"), StatusTransitionMetricsMixin, models.Model
+):
     """
     Model representing an Insult Review with methods for marking different review types.
 
@@ -754,7 +777,9 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
     post_review_contact_desired = models.BooleanField(default=False)
     history = HistoricalRecords()
     reporter_email = models.EmailField(null=True, blank=True)
-    date_submitted = models.DateField(auto_now=True)
+    # Set once, on creation (auto_now would reset it on every save, including
+    # when the review is decided).
+    date_submitted = models.DateField(auto_now_add=True)
     date_reviewed = models.DateField(null=True, blank=True)
     rationale_for_review = models.TextField()
     reviewer = models.ForeignKey(
@@ -826,7 +851,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         try:
             self.status = self.STATUS.SAME_CLASSIFICATION
             self.reviewer = reviewer
-            self.date_reviewed = settings.GLOBAL_NOW
+            self.date_reviewed = timezone.localdate()
             logger.success(f"Marked {self.insult_reference_id} as Not Reclassified")
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
         except Exception as e:
@@ -841,7 +866,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         try:
             self.status = self.STATUS.NEW_CATEGORY
             self.reviewer = reviewer
-            self.date_reviewed = settings.GLOBAL_NOW
+            self.date_reviewed = timezone.localdate()
             logger.success(f"Marked {self.insult_reference_id} as Recategorized")
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
         except Exception as e:
@@ -863,7 +888,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             self.status = self.STATUS.SAME_CATEGORY
             if reviewer:
                 self.reviewer = reviewer
-            self.date_reviewed = settings.GLOBAL_NOW
+            self.date_reviewed = timezone.localdate()
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
             logger.success(f"Marked {self.insult_reference_id} as Not Recategorized")
         except Exception as e:
@@ -885,7 +910,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             self.status = self.STATUS.REMOVED
             if reviewer:
                 self.reviewer = reviewer
-            self.date_reviewed = settings.GLOBAL_NOW
+            self.date_reviewed = timezone.localdate()
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
             logger.success(f"Marked {self.insult_reference_id} as Removed")
         except Exception as e:
@@ -909,7 +934,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
             self.status = self.STATUS.SAME_CATEGORY
             if reviewer:
                 self.reviewer = reviewer
-            self.date_reviewed = settings.GLOBAL_NOW
+            self.date_reviewed = timezone.localdate()
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
             logger.success(f"Marked {self.insult_reference_id} as Not Removed")
         except Exception as e:
@@ -929,7 +954,7 @@ class InsultReview(ExportModelOperationsMixin("jokeReview"), models.Model):
         try:
             self.status = self.STATUS.NEW_CLASSIFICATION
             self.reviewer = reviewer
-            self.date_reviewed = settings.GLOBAL_NOW
+            self.date_reviewed = timezone.localdate()
             logger.success(f"Marked {self.insult_reference_id} as Reclassified")
             self.save(update_fields=["status", "reviewer", "date_reviewed"])
         except Exception as e:
@@ -1008,6 +1033,41 @@ def flag_insult(instance, created, **kwargs):
             Insult.objects.filter(pk=instance.insult_id).update(
                 status=Insult.STATUS.FLAGGED, reports_count=F("reports_count") + 1
             )
+        metrics.record_insult_report(
+            _choice_label(InsultReview.REVIEW_TYPE, instance.review_type)
+        )
+
+
+def _choice_label(choices, value) -> str:
+    """Metric label for a TextChoices value: its member name, lowercased."""
+    try:
+        return choices(value).name.lower()
+    except ValueError:
+        return "unknown"
+
+
+_STATUS_METRIC_MODELS = {"Insult": "insult", "InsultReview": "insult_review"}
+
+
+@receiver(post_save, sender=Insult)
+@receiver(post_save, sender=InsultReview)
+def record_status_transition(sender, instance, created, raw=False, **kwargs):
+    """Count insult/review status changes (``new -> status`` on creation)."""
+    if raw:  # loaddata: not a real workflow event
+        return
+    new_status = instance.__dict__.get("status")
+    if new_status is None:
+        return
+    old_status = None if created else getattr(instance, "_loaded_status", None)
+    if created or (old_status is not None and old_status != new_status):
+        metrics.record_status_transition(
+            model=_STATUS_METRIC_MODELS[sender.__name__],
+            from_status=(
+                "new" if created else _choice_label(sender.STATUS, old_status)
+            ),
+            to_status=_choice_label(sender.STATUS, new_status),
+        )
+    instance._loaded_status = new_status
 
 
 @receiver(post_delete, sender=InsultReview)

@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from loguru import logger
@@ -318,6 +320,52 @@ class EndpointTests(APITestCase):
             self.assertEqual(canon_cat(resp.data.get("category")), "Poor")
         else:
             self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_random_insult_counts_authentication_failures(self):
+        """A bad token is rejected before get() runs, and is still counted."""
+        from common.metrics import RANDOM_INSULT_REQUESTS
+
+        view = RandomInsultEndpoint.as_view()
+        req = self.factory.get(
+            "/api/insults/random", HTTP_AUTHORIZATION="Token not-a-real-token"
+        )
+        counter = RANDOM_INSULT_REQUESTS.labels("401", "false", "false")
+        before = counter._value.get()
+
+        resp = view(req)
+
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(counter._value.get(), before + 1)
+
+    def test_random_insult_counts_requests_that_raise(self):
+        """A request that raises is still counted, under its real status."""
+        from common.metrics import RANDOM_INSULT_REQUESTS
+
+        def _count(status_label):
+            return RANDOM_INSULT_REQUESTS.labels(
+                status_label, "true", "false"
+            )._value.get()
+
+        before_400 = _count("400")
+        before_500 = _count("500")
+
+        resp = self.get_view_response(
+            RandomInsultEndpoint, "/api/insults/random?category=NOT-A-CATEGORY"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(_count("400"), before_400 + 1)
+
+        with (
+            patch(
+                "applications.API.endpoints.BaseInsultSerializer.resolve_category",
+                side_effect=RuntimeError("db down"),
+            ),
+            self.assertRaises(RuntimeError),
+        ):
+            self.get_view_response(
+                RandomInsultEndpoint, "/api/insults/random?category=P"
+            )
+        self.assertEqual(_count("500"), before_500 + 1)
 
     def get_view_response(self, view_class, path):
         """Creates a view instance from the given class, builds a GET request for the specified path, and executes the view.

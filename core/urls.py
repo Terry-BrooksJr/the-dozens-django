@@ -9,6 +9,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponseForbidden
 from django.urls import include, path
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django_prometheus.exports import ExportToDjangoView
 
@@ -17,16 +18,19 @@ import applications.graphQL.urls as GRAPHQL_URL
 from applications.API.auth.auth_endpoints import TokenDestroyView
 from applications.frontend.views import (
     LandingPageView,
+    PasswordResetPageView,
     ReportJokeView,
     StatusPageView,
     get_reference_ids,
     page_not_found_view,
 )
 from common.deprecation import deprecated_route
+from common.prometheus_multiproc import collection_lock
 from core.admin_view import grafana_dashboard_view
 
 
 @csrf_exempt
+@never_cache
 def metrics_view(request):
     """Serve Prometheus metrics only to requests bearing the correct scrape token.
 
@@ -36,6 +40,8 @@ def metrics_view(request):
     The token is compared with hmac.compare_digest to prevent timing attacks.
     Set METRICS_SCRAPE_TOKEN in Doppler; if unset the endpoint is always denied.
     CSRF-exempt because auth is header-only (no cookies), so CSRF doesn't apply.
+    never_cache because UpdateCacheMiddleware would otherwise store each
+    scrape for CACHE_MIDDLEWARE_SECONDS and replay that stale snapshot.
     """
     expected = getattr(settings, "METRICS_SCRAPE_TOKEN", "")
     if not expected:
@@ -50,7 +56,10 @@ def metrics_view(request):
     if not hmac.compare_digest(provided.strip(), expected):
         return HttpResponseForbidden()
 
-    return ExportToDjangoView(request)
+    # Shared lock: gunicorn's child_exit compaction (exclusive) must not
+    # delete or merge worker files while this scrape is reading them.
+    with collection_lock():
+        return ExportToDjangoView(request)
 
 
 urlpatterns = [
@@ -69,6 +78,17 @@ urlpatterns = [
     path("metrics", metrics_view, name="prometheus-django-metrics"),
     path("api/", include(API_URLS)),
     path("auth/token/logout/", TokenDestroyView.as_view(), name="token_logout"),
+    # Browser pages for Djoser's JSON password reset (link in the reset email).
+    path(
+        "password/reset/",
+        PasswordResetPageView.as_view(),
+        name="password-reset",
+    ),
+    path(
+        "password/reset/confirm/<str:uid>/<str:token>/",
+        PasswordResetPageView.as_view(),
+        name="password-reset-confirm",
+    ),
     path("auth/", include("djoser.urls")),
     path("auth/", include("djoser.urls.authtoken")),
     # Deprecated aliases for routes that now live under /api/v2.0.0/.

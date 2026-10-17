@@ -12,7 +12,6 @@ Covers:
 - sql_instrumentation: counts queries and tracks timing
 - record_random_insult_request: increments RANDOM_INSULT_REQUESTS counter
 - record_random_insult_empty: increments RANDOM_INSULT_QUERYSET_EMPTY counter
-- increment_endpoint_cache: hit / miss / unknown raises
 """
 
 from __future__ import annotations
@@ -42,13 +41,14 @@ def _histogram_count(histogram, *label_values):
 
 
 class IncrementCacheTests(TestCase):
-
     def test_hit_increments_cache_hits_counter(self):
         from common.metrics import CACHE_HITS
 
-        before = _counter_value(CACHE_HITS, "test_prefix_hit")
+        before = _counter_value(CACHE_HITS, "test_prefix_hit", "shared")
         metrics.increment_cache("test_prefix_hit", "hit")
-        self.assertEqual(_counter_value(CACHE_HITS, "test_prefix_hit"), before + 1)
+        self.assertEqual(
+            _counter_value(CACHE_HITS, "test_prefix_hit", "shared"), before + 1
+        )
 
     def test_miss_increments_cache_misses_counter(self):
         from common.metrics import CACHE_MISSES
@@ -104,7 +104,6 @@ class IncrementCacheTests(TestCase):
 
 
 class TimeCacheOperationTests(TestCase):
-
     def test_context_manager_exits_without_exception(self):
         """Should not raise and should record an observation."""
         from common.metrics import CACHE_OP_SECONDS
@@ -132,7 +131,6 @@ class TimeCacheOperationTests(TestCase):
 
 
 class TimeDatabaseQueryTests(TestCase):
-
     def test_success_path_records_observation(self):
         from common.metrics import DB_QUERY_SECONDS
 
@@ -163,7 +161,6 @@ class TimeDatabaseQueryTests(TestCase):
 
 
 class RecordDatabaseQueryTimeTests(TestCase):
-
     def test_success_status_records_observation(self):
         from common.metrics import DB_QUERY_SECONDS
 
@@ -203,7 +200,6 @@ class RecordDatabaseQueryTimeTests(TestCase):
 
 
 class TimeRandomInsultStageTests(TestCase):
-
     def test_context_manager_exits_cleanly(self):
         from common.metrics import RANDOM_INSULT_STAGE_SECONDS
 
@@ -280,7 +276,6 @@ class SqlInstrumentationTests(TestCase):
 
 
 class RecordRandomInsultRequestTests(TestCase):
-
     def test_increments_request_counter(self):
         from common.metrics import RANDOM_INSULT_REQUESTS
 
@@ -317,32 +312,134 @@ class RecordRandomInsultRequestTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# increment_endpoint_cache
+# Naming, cache tiers, LaunchDarkly forwarding, new recorders
 # ---------------------------------------------------------------------------
 
 
-class IncrementEndpointCacheTests(TestCase):
+class MetricNamingTests(TestCase):
+    def test_every_metric_uses_the_service_namespace(self):
+        from common.metrics import _EXPORTED_NAMES
 
-    def test_hit_increments_endpoint_cache_hits(self):
-        from common.metrics import ENDPOINT_CACHE_HITS
+        self.assertTrue(_EXPORTED_NAMES)
+        for name in _EXPORTED_NAMES.values():
+            self.assertTrue(name.startswith("dozens_api_"), name)
 
-        before = _counter_value(ENDPOINT_CACHE_HITS, "/api/insults/")
-        metrics.increment_endpoint_cache("/api/insults/", "hit")
-        self.assertEqual(
-            _counter_value(ENDPOINT_CACHE_HITS, "/api/insults/"), before + 1
+
+class CacheTierTests(TestCase):
+    def test_hits_are_counted_per_tier(self):
+        from common.metrics import CACHE_HITS
+
+        local = _counter_value(CACHE_HITS, "tier_prefix", "local")
+        shared = _counter_value(CACHE_HITS, "tier_prefix", "shared")
+        metrics.increment_cache("tier_prefix", "hit", tier="local")
+        self.assertEqual(_counter_value(CACHE_HITS, "tier_prefix", "local"), local + 1)
+        self.assertEqual(_counter_value(CACHE_HITS, "tier_prefix", "shared"), shared)
+
+    def test_unknown_tier_raises(self):
+        with self.assertRaises(ValueError):
+            metrics.increment_cache("tier_prefix", "hit", tier="disk")
+
+
+class LaunchDarklyForwardingTests(TestCase):
+    """With observability on, each recording also goes to LaunchDarkly."""
+
+    def setUp(self):
+        from unittest.mock import MagicMock, patch
+
+        self.observe = MagicMock()
+        patches = [
+            patch("common.metrics._ld_metrics_enabled", return_value=True),
+            patch("common.metrics.observe", self.observe),
+        ]
+        for p in patches:
+            p.start()
+            self.addCleanup(p.stop)
+
+    def test_counter_forwarded_with_same_name_and_labels(self):
+        metrics.increment_cache("ld_prefix", "hit", tier="local")
+        self.observe.record_count.assert_called_once_with(
+            "dozens_api_cache_hits_total",
+            1,
+            attributes={"cache_prefix": "ld_prefix", "tier": "local"},
         )
 
-    def test_miss_increments_endpoint_cache_misses(self):
-        from common.metrics import ENDPOINT_CACHE_MISSES
+    def test_endpoint_metrics_are_forwarded_too(self):
+        with metrics.time_random_insult_stage("serialization"):
+            pass
+        name = self.observe.record_histogram.call_args.args[0]
+        self.assertEqual(name, "dozens_api_random_insult_stage_seconds")
 
-        before = _counter_value(ENDPOINT_CACHE_MISSES, "/api/insults/random/")
-        metrics.increment_endpoint_cache("/api/insults/random/", "miss")
+    def test_failed_db_query_uses_span_context_and_records_error(self):
+        with self.assertRaises(RuntimeError), metrics.time_database_query("ld_db"):
+            raise RuntimeError("boom")
+        # The span is entered and exited as a context manager, so the
+        # exception reaches it (it records it and marks the span failed).
+        span_cm = self.observe.start_span.return_value
+        span_cm.__enter__.assert_called_once()
+        exc_type = span_cm.__exit__.call_args.args[0]
+        self.assertIs(exc_type, RuntimeError)
+        _, kwargs = self.observe.record_histogram.call_args
         self.assertEqual(
-            _counter_value(ENDPOINT_CACHE_MISSES, "/api/insults/random/"), before + 1
+            kwargs["attributes"], {"cache_prefix": "ld_db", "status": "error"}
         )
 
-    def test_unknown_event_raises_value_error(self):
-        with self.assertRaises(ValueError) as ctx:
-            metrics.increment_endpoint_cache("/api/test/", "stale")
-        self.assertIn("stale", str(ctx.exception))
-        self.assertIn("hit|miss", str(ctx.exception))
+
+class ApiErrorMetricTests(TestCase):
+    def _value(self, view, status, code):
+        from common.metrics import API_ERRORS
+
+        return _counter_value(API_ERRORS, view, status, code)
+
+    def test_known_code_is_kept(self):
+        before = self._value("V", "401", "not_authenticated")
+        metrics.record_api_error(view="V", status=401, code="not_authenticated")
+        self.assertEqual(self._value("V", "401", "not_authenticated"), before + 1)
+
+    def test_free_form_codes_are_bucketed_as_other(self):
+        before = self._value("V", "400", "other")
+        for code in (["list"], "Has Spaces", "x" * 200, None):
+            metrics.record_api_error(view="V", status=400, code=code)
+        self.assertEqual(self._value("V", "400", "other"), before + 4)
+
+
+class NewRecorderTests(TestCase):
+    def test_graphql_operation(self):
+        from common.metrics import GRAPHQL_OPERATIONS, GRAPHQL_ROOT_FIELDS
+
+        ops = _counter_value(GRAPHQL_OPERATIONS, "query", "ok")
+        field = _counter_value(GRAPHQL_ROOT_FIELDS, "query", "allInsults")
+        metrics.record_graphql_operation(
+            operation_type="query",
+            outcome="ok",
+            duration=0.01,
+            root_fields=["allInsults"],
+        )
+        self.assertEqual(_counter_value(GRAPHQL_OPERATIONS, "query", "ok"), ops + 1)
+        self.assertEqual(
+            _counter_value(GRAPHQL_ROOT_FIELDS, "query", "allInsults"), field + 1
+        )
+
+    def test_email_delivery(self):
+        from common.metrics import EMAILS
+
+        sent = _counter_value(EMAILS, "sent")
+        unsent = _counter_value(EMAILS, "unsent")
+        metrics.record_email_delivery(sent=2, unsent=1, duration=0.2)
+        self.assertEqual(_counter_value(EMAILS, "sent"), sent + 2)
+        self.assertEqual(_counter_value(EMAILS, "unsent"), unsent + 1)
+
+    def test_launchdarkly_init_labels_are_strings(self):
+        from common.metrics import LAUNCHDARKLY_INITS
+
+        before = _counter_value(LAUNCHDARKLY_INITS, "false", "Missing key")
+        metrics.record_launchdarkly_init(configured=False, reason="Missing key")
+        self.assertEqual(
+            _counter_value(LAUNCHDARKLY_INITS, "false", "Missing key"), before + 1
+        )
+
+    def test_worker_timeout(self):
+        from common.metrics import GUNICORN_WORKER_TIMEOUTS
+
+        before = GUNICORN_WORKER_TIMEOUTS._value.get()
+        metrics.record_worker_timeout()
+        self.assertEqual(GUNICORN_WORKER_TIMEOUTS._value.get(), before + 1)

@@ -148,27 +148,17 @@ class DevelopmentLoggingTests(_ResetsLoggingConfigured):
 
         self.assertEqual(mock_logger.add.call_count, 1)
 
-    @patch("core.settings.LokiLoggerHandler")
+    @patch("core.settings.install_loki_sink")
     @patch("core.settings.logger")
-    def test_adds_loki_sink_when_loki_url_set(self, mock_logger, mock_loki_handler):
-        """With LOKI_URL and LOKI_PASSWORD set, a Loki handler sink is added alongside the console sink."""
-        with patch.dict(
-            os.environ,
-            {
-                "LOKI_URL": "http://loki.example.com",
-                "LOKI_PASSWORD": "secret",
-            },  # nosec B105
-        ):
-            Development.configure_logging()
+    def test_installs_loki_sink_labelled_development(
+        self, mock_logger, mock_install_loki
+    ):
+        """Development asks common.loki for a sink labelled "Development" (it
+        adds one only when LOKI_URL/LOKI_PASSWORD are set; see test_loki)."""
+        Development.configure_logging()
 
-        mock_loki_handler.assert_called_once()
-        self.assertEqual(
-            mock_loki_handler.call_args.kwargs["url"], "http://loki.example.com"
-        )
-        self.assertEqual(
-            mock_loki_handler.call_args.kwargs["auth"], ("lokiadmin", "secret")
-        )
-        self.assertEqual(mock_logger.add.call_count, 2)
+        mock_install_loki.assert_called_once_with("Development")
+        self.assertEqual(mock_logger.add.call_count, 1)  # console
 
 
 class ProductionLoggingTests(_ResetsLoggingConfigured):
@@ -184,36 +174,28 @@ class ProductionLoggingTests(_ResetsLoggingConfigured):
 
         self.assertEqual(mock_logger.add.call_count, 1)
 
-    @patch("core.settings.LokiLoggerHandler")
+    @patch("core.settings.install_loki_sink")
     @patch("core.settings.logger")
     def test_adds_loki_and_launchdarkly_sinks_when_enabled(
-        self, mock_logger, mock_loki_handler
+        self, mock_logger, mock_install_loki
     ):
-        """With LOKI_URL set and LaunchDarkly Observability enabled, stdout, Loki, and LD all get sinks."""
-        with (
-            patch.dict(
-                os.environ,
-                {
-                    "LOKI_URL": "http://loki.example.com",
-                    "LOKI_PASSWORD": "secret",
-                },  # nosec B105
-            ),
-            patch.object(Production, "LAUNCHDARKLY_OBSERVABILITY_ENABLED", True),
-        ):
+        """With LaunchDarkly Observability enabled, stdout and LD get sinks and
+        a Loki sink labelled "Production" is requested from common.loki."""
+        with patch.object(Production, "LAUNCHDARKLY_OBSERVABILITY_ENABLED", True):
             Production.configure_logging()
 
-        mock_loki_handler.assert_called_once()
-        # stdout + Loki + LaunchDarkly
-        self.assertEqual(mock_logger.add.call_count, 3)
+        mock_install_loki.assert_called_once_with("Production")
+        # stdout + LaunchDarkly (the Loki sink is added by common.loki)
+        self.assertEqual(mock_logger.add.call_count, 2)
 
 
 class StagingLoggingTests(_ResetsLoggingConfigured):
     """Tests for `Staging.configure_logging`."""
 
-    @patch("core.settings.LokiLoggerHandler")
+    @patch("core.settings.install_loki_sink")
     @patch("core.settings.logger")
     def test_ignores_loki_url_and_adds_single_warning_sink(
-        self, mock_logger, mock_loki_handler
+        self, mock_logger, mock_install_loki
     ):
         """Staging never adds a Loki sink even if LOKI_URL is set, and adds one WARNING-level console sink."""
         with patch.dict(
@@ -225,7 +207,7 @@ class StagingLoggingTests(_ResetsLoggingConfigured):
         ):
             Staging.configure_logging()
 
-        mock_loki_handler.assert_not_called()
+        mock_install_loki.assert_not_called()
         mock_logger.add.assert_called_once()
         _, kwargs = mock_logger.add.call_args
         self.assertEqual(kwargs["level"], "WARNING")

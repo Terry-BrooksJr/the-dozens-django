@@ -6,6 +6,7 @@ from django.apps import AppConfig
 from django.conf import settings
 
 from common.helpers import InterceptHandler
+from common.metrics import metrics
 
 from .client import configure_launchdarkly
 
@@ -50,7 +51,7 @@ class LDIntegrationConfig(AppConfig):
         root_logger = logging.getLogger()
         root_logger.handlers = [InterceptHandler()]
         root_logger.setLevel(logging.INFO)
-        configure_launchdarkly(
+        result = configure_launchdarkly(
             sdk_key=getattr(settings, "LAUNCHDARKLY_SDK_KEY", ""),
             enabled=getattr(settings, "LAUNCHDARKLY_ENABLED", True),
             obs_enabled=getattr(settings, "LAUNCHDARKLY_OBSERVABILITY_ENABLED", False),
@@ -58,4 +59,8 @@ class LDIntegrationConfig(AppConfig):
                 settings, "LAUNCHDARKLY_SERVICE_NAME", "django-service"
             ),
             service_version=getattr(settings, "LAUNCHDARKLY_SERVICE_VERSION", "dev"),
+        )
+        # reason is one of configure_launchdarkly()'s fixed strings.
+        metrics.record_launchdarkly_init(
+            configured=result.configured, reason=result.reason
         )

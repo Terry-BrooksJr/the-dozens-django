@@ -155,14 +155,14 @@ class GenericDataCacheManager(BaseCacheManager):
                 logger.debug(
                     f"Module-level cache hit for {self.cache_prefix}:{cache_key}"
                 )
-                metrics.increment_cache(self.cache_prefix, "hit")
+                metrics.increment_cache(self.cache_prefix, "hit", tier="local")
                 return self._module_cache[cache_key]
 
             # Level 2: Redis cache
             cached_data = cache.get(full_cache_key)
             if cached_data is not None:
                 logger.debug(f"Redis cache hit for {self.cache_prefix}:{cache_key}")
-                metrics.increment_cache(self.cache_prefix, "hit")
+                metrics.increment_cache(self.cache_prefix, "hit", tier="shared")
                 self._module_cache[cache_key] = cached_data
                 return cached_data
 
@@ -201,9 +201,8 @@ class GenericDataCacheManager(BaseCacheManager):
             logger.error(f"Database not ready for {self.cache_prefix}: {e}")
             return None
         except Exception as e:
-            db_duration = time.time() - db_start_time
+            # time_database_query() already recorded this as status="error".
             logger.error(f"Unexpected error caching {self.cache_prefix} data: {e}")
-            metrics.record_database_query_time(self.cache_prefix, db_duration, "error")
             return None
 
     def invalidate_cache(self, reason: str = "manual") -> None:
@@ -423,6 +422,7 @@ class CategoryCacheManager(BaseCacheManager):
         cache_key = f"{cache_keys['name_prefix']}{category_key}"
 
         if cached_name := cache.get(cache_key):
+            metrics.increment_cache(self.cache_prefix, "hit", tier="shared")
             return cached_name
 
         # Fallback to all categories
@@ -435,6 +435,7 @@ class CategoryCacheManager(BaseCacheManager):
         cache_key = f"{cache_keys['key_prefix']}{category_name.lower()}"
 
         if cached_key := cache.get(cache_key):
+            metrics.increment_cache(self.cache_prefix, "hit", tier="shared")
             return cached_key
 
         # Fallback to all categories
@@ -465,10 +466,13 @@ class CategoryCacheManager(BaseCacheManager):
         cached_data = cache.get(cache_keys["all"])
 
         if cached_data is not None:
+            metrics.increment_cache(self.cache_prefix, "hit", tier="shared")
             return cached_data
 
         # Build from database
-        built_data = self.build_data_from_db()
+        metrics.increment_cache(self.cache_prefix, "miss")
+        with metrics.time_database_query(self.cache_prefix):
+            built_data = self.build_data_from_db()
         categories = built_data["all"]
 
         # Cache the result

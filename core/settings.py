@@ -11,25 +11,20 @@ import sys
 import threading
 import time
 import warnings
-from datetime import UTC, datetime
 from pathlib import Path
 
 from configurations import Configuration, values
 from github import Github
 from loguru import logger
-from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
 
-from applications.ld_integration.client import configure_launchdarkly
 from common.helpers import (
-    SanitizingLoguruFormatter,
     _force_utc_time,
     _insert_after_middleware,
     _normalize_append_components,
     ld_loguru_sink,
     log_warning,
 )
-
-GLOBAL_NOW = datetime.now(tz=UTC)
+from common.loki import install_loki_sink
 
 BASE_DIR = values.PathValue(Path(__file__).resolve().parent.parent, environ=False)
 
@@ -43,7 +38,7 @@ INSULT_REFERENCE_ID_PREFIX_OPTIONS = values.ListValue(
 # Shared configuration building blocks
 # ---------------------------------------------------------------------------
 # Plain lists/dicts that configuration classes compose via spread/concat so
-# each environment only declares its *differences* from the baseline.
+# each environment on                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ly declares its *differences* from the baseline.
 
 _INSTALLED_APPS_CORE = [
     # 0) Instrumentation that wants to wrap others early
@@ -90,6 +85,12 @@ _INSTALLED_APPS_PROJECT = [
 
 _MIDDLEWARE_CORE = [
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
+    # Above UpdateCacheMiddleware/FetchFromCacheMiddleware on purpose: it
+    # must run for cache hits too (which short-circuit at FetchFromCache),
+    # and it must set X-Request-ID only *after* UpdateCacheMiddleware has
+    # stored the response - otherwise every later cache hit replays the
+    # first request's ID.
+    "common.middleware.RequestIDMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.cache.UpdateCacheMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -103,7 +104,6 @@ _MIDDLEWARE_CORE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.cache.FetchFromCacheMiddleware",
     "django_prometheus.middleware.PrometheusAfterMiddleware",
-    "common.middleware.RequestIDMiddleware",
 ]
 
 
@@ -213,14 +213,13 @@ class Base(Configuration):
     LAUNCHDARKLY_OBSERVABILITY_ENABLED = os.getenv(
         "LAUNCHDARKLY_OBSERVABILITY_ENABLED", ""
     ).lower() in ("1", "true", "yes", "on")
-    LAUNCHDARKLY_SERVICE_NAME = os.getenv("LAUNCHDARKLY_SERVICE_NAME")
-    configure_launchdarkly(
-        sdk_key=LAUNCHDARKLY_SDK_KEY,
-        enabled=LAUNCHDARKLY_ENABLED,
-        obs_enabled=LAUNCHDARKLY_OBSERVABILITY_ENABLED,
-        service_name=LAUNCHDARKLY_SERVICE_NAME or "django-service",
-        service_version=os.getenv("LAUNCHDARKLY_SERVICE_VERSION", "dev"),
+    # The client itself is initialized once, in LDIntegrationConfig.ready(),
+    # from these values - not here at settings import, which would run before
+    # ready() bridges stdlib logging and in every manage.py invocation.
+    LAUNCHDARKLY_SERVICE_NAME = (
+        os.getenv("LAUNCHDARKLY_SERVICE_NAME") or "django-service"
     )
+    LAUNCHDARKLY_SERVICE_VERSION = os.getenv("LAUNCHDARKLY_SERVICE_VERSION") or "dev"
 
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
     SESSION_CACHE_ALIAS = "default"
@@ -399,17 +398,26 @@ class Base(Configuration):
     DATABASES = values.DictValue(
         {
             "default": {
-                "ENGINE": "django.db.backends.postgresql",
+                # Django's postgresql backend wrapped to export query counts,
+                # durations, errors and new connections to Prometheus.
+                "ENGINE": "django_prometheus.db.backends.postgresql",
                 "NAME": os.getenv("POSTGRES_DB"),
                 "USER": os.getenv("PG_DATABASE_USER"),
                 "PASSWORD": os.getenv("PG_DATABASE_PASSWORD"),
                 "HOST": os.getenv("PG_DATABASE_HOST"),
                 "DISABLE_SERVER_SIDE_CURSORS": True,
                 "PORT": os.getenv("PG_DATABASE_PORT"),
-                "pool": {
-                    "max_size": 11,
-                    "name": "django-thedozens",
-                    "max_idle": 15,
+                # Django reads the pool from OPTIONS (it needs psycopg 3 and
+                # CONN_MAX_AGE=0, the default). One pool per gunicorn worker
+                # process, opened lazily after fork; each worker serves at
+                # most `threads` (4) requests at once, so it rarely needs
+                # more than 4 of these connections.
+                "OPTIONS": {
+                    "pool": {
+                        "max_size": 11,
+                        "name": "django-thedozens",
+                        "max_idle": 15,
+                    },
                 },
             }
         }
@@ -552,15 +560,42 @@ class Base(Configuration):
     # SECTION Start - REST API.SWAGGER DOCUMENTATION SETTINGS
     SPECTACULAR_SETTINGS = {
         "TITLE": "Yo' Momma - The Joke API",
-        "VERSION": os.getenv("API_VERSION", "1.0.0"),
+        "VERSION": os.getenv("API_VERSION", "2.0.0"),
         "SERVE_INCLUDE_SCHEMA": True,
         "OAS_VERSION": "3.0.3",
-        # Cache the generated schema for 15 minutes — generation is expensive
-        # (introspects every view/serializer on the fly) and the output is
-        # deterministic until a deploy.  Without this, every ReDoc/Swagger page
-        # load triggers a multi-second schema build before the UI can render.
-        "SCHEMA_CACHE_TIMEOUT": 60 * 15,
+        "TOS": "https://dozens.s3.us-east-005.backblazeb2.com/TERMS_OF_SERVICE.md",
+        "CONTACT": {
+            "name": "Terry A. Brooks, Jr.",
+            "email": "api@yo-momma.io",
+            "url": "https://brooksjr.dev",
+        },
         "COMPONENT_SPLIT_REQUEST": True,
+        # Order and describe the groups shown in Swagger/ReDoc. Every
+        # operation's tag must be one of these (see test_openapi_schema).
+        "TAGS": [
+            {"name": "Insults", "description": "Browse, fetch and submit insults."},
+            {
+                "name": "Insult Categories",
+                "description": "Categories and the themes they belong to.",
+            },
+            {
+                "name": "Joke Reporting",
+                "description": "Flag a joke for moderator review.",
+            },
+            {
+                "name": "Authentication",
+                "description": "Get and revoke API tokens.",
+            },
+            {
+                "name": "Users",
+                "description": "Register and manage accounts.",
+            },
+            {
+                "name": "Health & Status Check",
+                "description": "Liveness and dependency checks.",
+            },
+            {"name": "Documentation", "description": "This API's OpenAPI schema."},
+        ],
         "SECURITY": [{"TokenAuth": []}],
         "AUTHENTICATION_WHITELIST": [],
         "SERVE_AUTHENTICATION": None,
@@ -759,11 +794,6 @@ class Base(Configuration):
         },
         "SWAGGER_UI_DIST": "SIDECAR",
         "REDOC_DIST": "SIDECAR",
-        "CONTACT": {
-            "name": "Terry A. Brooks, Jr.",
-            "url": "https://brooksjr.com",
-            "email": "terry@brooksjr.com",
-        },
         "EXTERNAL_DOCS": {
             "url": "https://github.com/Terry-BrooksJr/the-dozens-django",
             "description": "GitHub Repository and full API documentation Hub",
@@ -775,9 +805,16 @@ class Base(Configuration):
     # SECTION Start - Djoser Settings
     DJOSER = {
         "SEND_CONFIRMATION_EMAIL": True,
+        "PASSWORD_CHANGED_EMAIL_CONFIRMATION": True,
+        "USERNAME_CHANGED_EMAIL_CONFIRMATION": True,
         "EMAIL": {
             "confirmation": "applications.API.emails.WelcomeEmail",
+            "password_reset": "applications.API.emails.BrandedPasswordResetEmail",
+            "password_changed_confirmation": "applications.API.emails.PasswordChangedEmail",
+            "username_changed_confirmation": "applications.API.emails.UsernameChangedEmail",
         },
+        # Link in the reset email; served by PasswordResetPageView.
+        "PASSWORD_RESET_CONFIRM_URL": "password/reset/confirm/{uid}/{token}/",
         "EMAIL_FRONTEND_DOMAIN": "api.yo-momma.io",
         "EMAIL_FRONTEND_PROTOCOL": "https",
     }
@@ -1081,8 +1118,6 @@ class Production(Base):
     #!SECTION End - API Schema / Docs (Production overrides)
 
     # SECTION Start - Logging
-    LAUNCHDARKLY_SERVICE_VERSION = os.getenv("LAUNCHDARKLY_SERVICE_VERSION")
-
     @classmethod
     def configure_logging(cls):
         """Production: stdout (+ optional Loki, + optional LD sink). No file
@@ -1091,19 +1126,9 @@ class Production(Base):
         if not cls.configure_logging_common():
             return
 
-        # Loki Log Handler - May Replace OTEL in future iterations
-        if (loki_url := os.getenv("LOKI_URL")) and (
-            loki_password := os.getenv("LOKI_PASSWORD")
-        ):
-            loki_handler = LokiLoggerHandler(
-                url=loki_url,
-                auth=("lokiadmin", loki_password),
-                labels={"application": "dozen_api", "environment": "Production"},
-                label_keys={},
-                timeout=10,
-                default_formatter=SanitizingLoguruFormatter(),
-            )
-            logger.add(loki_handler, serialize=True)
+        # Loki sink when LOKI_URL/LOKI_PASSWORD are set; its delivery status
+        # is reported by /api/health/ (see common.loki).
+        install_loki_sink("Production")
 
         # serialize=False: plain text to stdout for local `docker logs`
         # readability; Loki gets its own serialized sink above.
@@ -1204,19 +1229,9 @@ class Development(Base):
             category=ResourceWarning,
         )
 
-        # Loki Log Handler - May Replace OTEL in future iterations
-        if (loki_url := os.getenv("LOKI_URL")) and (
-            loki_password := os.getenv("LOKI_PASSWORD")
-        ):
-            loki_handler = LokiLoggerHandler(
-                url=loki_url,
-                auth=("lokiadmin", loki_password),
-                labels={"application": "dozen_api", "environment": "Development"},
-                label_keys={},
-                timeout=10,
-                default_formatter=SanitizingLoguruFormatter(),
-            )
-            logger.add(loki_handler, serialize=True)
+        # Loki sink when LOKI_URL/LOKI_PASSWORD are set; its delivery status
+        # is reported by /api/health/ (see common.loki).
+        install_loki_sink("Development")
 
         logger.add(
             cls.DEFAULT_HANDLER,
@@ -1244,7 +1259,7 @@ class Staging(Development):
     DATABASES = values.DictValue(
         {
             "default": {
-                "ENGINE": "django.db.backends.postgresql",
+                "ENGINE": "django_prometheus.db.backends.postgresql",
                 "NAME": os.getenv("POSTGRES_DB", "test_db"),
                 "USER": os.getenv("PG_DATABASE_USER", "root"),
                 "PASSWORD": os.getenv("PG_DATABASE_PASSWORD", "postgres"),

@@ -31,11 +31,13 @@ Covers:
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 from django.test import TestCase
+from django.utils import timezone
 
 from applications.API.models import (
     Base64DecoderException,
@@ -324,3 +326,41 @@ class DecrementReportCountSignalTests(_InsultReviewBase):
         )
 
         review.delete()  # must not raise
+
+
+class ReviewDateIsCurrentTests(MarkReviewMethodsHappyPathTests):
+    """date_reviewed is the day the review is decided, not the server's boot day.
+
+    The clock is moved to a fixed future instant: a value captured at import
+    time (the old settings.GLOBAL_NOW) can't match it.
+    """
+
+    FUTURE = datetime(2031, 5, 17, 15, 30, tzinfo=UTC)
+
+    def test_every_decision_method_stamps_today(self):
+        for method in (
+            "mark_review_not_reclassified",
+            "mark_review_recategorized",
+            "mark_review_not_recatagoized",
+            "mark_review_removed",
+            "mark_review_not_removed",
+            "mark_review_reclassified",
+        ):
+            with self.subTest(method=method):
+                review = self._saved_review()
+                with patch("django.utils.timezone.now", return_value=self.FUTURE):
+                    getattr(review, method)(self.reviewer)
+                    expected = timezone.localdate()
+                review.refresh_from_db()
+                self.assertEqual(review.date_reviewed, expected)
+
+    def test_deciding_a_review_keeps_its_submission_date(self):
+        review = self._saved_review()
+        submitted = review.date_submitted
+
+        with patch("django.utils.timezone.now", return_value=self.FUTURE):
+            review.mark_review_removed(self.reviewer)
+        review.refresh_from_db()
+
+        self.assertEqual(review.date_submitted, submitted)
+        self.assertNotEqual(review.date_reviewed, submitted)

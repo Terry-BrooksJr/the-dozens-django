@@ -1,9 +1,13 @@
 """Email backends built on django-mailer."""
 
+import time
+
 from django.conf import settings
 from mailer.backend import DbBackend
 from mailer.engine import send_all
 from mailer.models import Message
+
+from common.metrics import metrics
 
 
 class ImmediateDbBackend(DbBackend):
@@ -41,5 +45,16 @@ class ImmediateDbBackend(DbBackend):
         if not messages:
             return 0
 
-        send_all(queryset=Message.objects.filter(pk__in=[m.pk for m in messages]))
+        pks = [m.pk for m in messages]
+        start = time.perf_counter()
+        send_all(queryset=Message.objects.filter(pk__in=pks))
+        # send_all() deletes each Message row it delivers (or discards as
+        # undecodable); anything left was deferred after a failure or not
+        # attempted, and stays queued.
+        unsent = Message.objects.filter(pk__in=pks).count()
+        metrics.record_email_delivery(
+            sent=len(pks) - unsent,
+            unsent=unsent,
+            duration=time.perf_counter() - start,
+        )
         return len(messages)

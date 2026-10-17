@@ -5,16 +5,41 @@
 # because threads do not survive fork.
 """Gunicorn server configuration for the Django application.
 
-Defines bind/worker settings, UTC millisecond log timestamps, and the
-post-fork hook that re-initializes thread-backed SDKs in each worker.
+Defines bind/worker settings, UTC millisecond log timestamps, Prometheus
+multiprocess mode, and the post-fork hook that re-initializes thread-backed
+SDKs in each worker.
 """
 
 import logging
 import os
 import sys
+import tempfile
 import time
 
 from gunicorn.glogging import Logger as GunicornLogger
+
+# prometheus_client keeps metrics in per-process memory by default, so with
+# several workers each /metrics scrape only saw whichever worker answered it,
+# and max_requests recycling reset that worker's counters every ~1000
+# requests. Multiprocess mode has every worker write to mmap'd files in a
+# shared directory; django_prometheus's ExportToDjangoView (behind our
+# /metrics view) switches to MultiProcessCollector automatically when
+# PROMETHEUS_MULTIPROC_DIR is set, aggregating across all workers.
+#
+# on_starting() points PROMETHEUS_MULTIPROC_DIR at a directory owned by this
+# master alone - "gunicorn-<master pid>" under the base below - so two masters
+# sharing a base never read or clear each other's files, and cleanup never
+# touches anything outside it. A PROMETHEUS_MULTIPROC_DIR set by the operator
+# is used as the base. The original base is remembered in its own variable so
+# a config reload (SIGHUP re-runs this file) doesn't nest directories.
+PROMETHEUS_BASE_DIR = os.environ.setdefault(
+    "DOZENS_PROMETHEUS_BASE_DIR",
+    os.environ.get("PROMETHEUS_MULTIPROC_DIR")
+    or os.path.join(
+        "/dev/shm" if os.path.isdir("/dev/shm") else tempfile.gettempdir(),
+        "dozens-prometheus",
+    ),
+)
 
 # Gunicorn's own error log ordinarily reads server-local time via
 # time.localtime() and has no way to render milliseconds through strftime
@@ -66,7 +91,7 @@ loglevel = "info"
 # survives; every *replacement* worker then crashes in an endless loop.
 # Nothing here uses gunicornc, and the Linux container is unaffected, so the
 # socket is only disabled on macOS.
-CONTROL_SOCKET_DISABLE = sys.platform == "darwin"
+control_socket_disable = sys.platform == "darwin"
 
 # Gunicorn expects this name in python config.
 wsgi_app = "core.wsgi:application"
@@ -85,7 +110,70 @@ wsgi_app = "core.wsgi:application"
 # post-fork, so preloading can't be made safe here. Each worker instead
 # performs its own full app init (including LaunchDarkly/ldobserve) after
 # it's already a separate process, so no live gRPC channel is ever forked.
-PRELOAD_APP = False
+preload_app = False
+
+
+def on_starting(server):
+    """
+    Give this master its own, empty Prometheus multiprocess directory.
+
+    Runs in the master before any worker is forked, so every worker inherits
+    the variable before it imports prometheus_client. Only prometheus_client's
+    own *.db files are cleared - left behind if a previous master with the
+    same pid (e.g. PID 1 in a restarted container) exited uncleanly.
+    """
+    from common.prometheus_multiproc import clear_metric_files
+
+    path = os.path.join(PROMETHEUS_BASE_DIR, f"gunicorn-{os.getpid()}")
+    os.makedirs(path, mode=0o700, exist_ok=True)
+    os.environ["PROMETHEUS_MULTIPROC_DIR"] = path
+    clear_metric_files(path)
+    server.log.info(f"Prometheus multiprocess dir: {path}")
+
+
+def child_exit(server, worker):
+    """
+    Fold a dead worker's metric files into the archive files.
+
+    Keeps totals intact when max_requests recycles a worker, while keeping the
+    directory (a size-limited tmpfs) at a bounded number of files instead of
+    gaining two more for every worker that ever ran.
+    """
+    try:
+        from common.prometheus_multiproc import compact_dead_process
+
+        compact_dead_process(worker.pid)
+    except Exception as e:
+        server.log.warning(
+            f"Prometheus compaction for worker {worker.pid} failed: {e!r}"
+        )
+
+
+def on_exit(server):
+    """Remove this master's Prometheus files and directory on shutdown."""
+    try:
+        from common.prometheus_multiproc import multiproc_dir, remove_multiproc_dir
+
+        path = multiproc_dir()
+        if path:
+            remove_multiproc_dir(path)
+    except Exception as e:
+        server.log.warning(f"Prometheus cleanup failed: {e!r}")
+
+
+def worker_abort(worker):
+    """
+    Count a worker gunicorn is killing for exceeding ``timeout``.
+
+    Runs inside the worker (on SIGABRT) just before it exits; the counter
+    survives in the multiprocess archive via child_exit compaction.
+    """
+    try:
+        from common.metrics import metrics
+
+        metrics.record_worker_timeout()
+    except Exception as e:
+        worker.log.warning(f"Recording worker timeout failed: {e!r}")
 
 
 def post_fork(server, worker):

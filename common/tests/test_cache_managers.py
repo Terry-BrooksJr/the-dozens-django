@@ -422,6 +422,23 @@ class GenericDataCacheManagerTests(TestCase):
         self.assertEqual(stats["cache_prefix"], "stats_test")
         self.assertEqual(stats["cache_timeout"], 120)
 
+    def test_builder_error_records_one_db_error_observation(self):
+        """A failing rebuild is recorded as status="error" exactly once."""
+        from common.metrics import DB_QUERY_SECONDS
+
+        def _boom():
+            raise RuntimeError("db down")
+
+        mgr = _make_generic_manager(prefix="db_error_once", builder=_boom)
+        errors = DB_QUERY_SECONDS.labels("db_error_once", "error")
+        before = sum(b.get() for b in errors._buckets)
+
+        with patch("common.cache_managers.cache") as mock_cache:
+            mock_cache.get.return_value = None
+            self.assertIsNone(mgr.get_cached_data("data"))
+
+        self.assertEqual(sum(b.get() for b in errors._buckets), before + 1)
+
 
 # ---------------------------------------------------------------------------
 # FormChoicesCacheManager

@@ -140,3 +140,55 @@ class TestDozenGraphQLViewResponseHeaders(TestCase):
         )
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp["Cache-Control"], "no-store")
+
+
+# ---------------------------------------------------------------------------
+# Metrics
+# ---------------------------------------------------------------------------
+
+
+class TestDozenGraphQLViewMetrics(TestCase):
+    """Each executed operation is counted; GraphiQL page renders are not."""
+
+    @staticmethod
+    def _ops_total(operation_type):
+        from common.metrics import GRAPHQL_OPERATIONS
+
+        return sum(
+            GRAPHQL_OPERATIONS.labels(operation_type, outcome)._value.get()
+            for outcome in ("ok", "error", "rejected")
+        )
+
+    def test_operation_and_schema_root_fields_are_counted(self):
+        from common.metrics import GRAPHQL_ROOT_FIELDS
+
+        ops = self._ops_total("query")
+        field = GRAPHQL_ROOT_FIELDS.labels("query", "randomInsult")._value.get()
+        bogus = GRAPHQL_ROOT_FIELDS.labels("query", "notAField")._value.get()
+
+        self.client.post(
+            GRAPHQL_API_URL,
+            json.dumps({"query": "{ randomInsult { content } notAField }"}),
+            content_type=_JSON_CT,
+        )
+
+        self.assertEqual(self._ops_total("query"), ops + 1)
+        self.assertEqual(
+            GRAPHQL_ROOT_FIELDS.labels("query", "randomInsult")._value.get(),
+            field + 1,
+        )
+        # Client-chosen names that aren't schema fields never become labels.
+        self.assertEqual(
+            GRAPHQL_ROOT_FIELDS.labels("query", "notAField")._value.get(), bogus
+        )
+
+    def test_unparseable_query_is_counted_as_unknown_error(self):
+        from common.metrics import GRAPHQL_OPERATIONS
+
+        before = GRAPHQL_OPERATIONS.labels("unknown", "error")._value.get()
+        self.client.post(
+            GRAPHQL_API_URL, json.dumps({"query": "{ nope"}), content_type=_JSON_CT
+        )
+        self.assertEqual(
+            GRAPHQL_OPERATIONS.labels("unknown", "error")._value.get(), before + 1
+        )

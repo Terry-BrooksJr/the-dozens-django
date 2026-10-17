@@ -34,6 +34,7 @@ colorama==0.4.6 ; sys_platform == 'win32'
     #   pylint
 cssbeautifier==2.0.3
     # via djlint
+debugpy==1.8.22
 dill==0.4.1
     # via pylint
 distlib==0.4.3

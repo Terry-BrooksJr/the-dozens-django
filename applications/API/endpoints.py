@@ -21,13 +21,14 @@ from django.views.decorators.cache import never_cache
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import (
     OpenApiExample,
-    OpenApiParameter,
     OpenApiResponse,
     OpenApiTypes,
     extend_schema,
     extend_schema_view,
+    inline_serializer,
 )
 from loguru import logger
+from rest_framework import serializers
 from rest_framework.generics import (
     CreateAPIView,
     GenericAPIView,
@@ -38,12 +39,10 @@ from rest_framework.mixins import CreateModelMixin
 from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from applications.API import openapi
 from applications.API.authentication import FlexibleTokenAuthentication
 from applications.API.errors import (
     StandardErrorResponses,
-    get_category_list_responses,
-    get_insult_crud_responses,
-    get_public_list_responses,
 )
 from applications.API.filters import InsultFilter
 from applications.API.models import Insult, InsultCategory, InsultReview, Theme
@@ -66,75 +65,21 @@ User = get_user_model()
         tags=["Insults"],
         operation_id="list_insults_by_category",
         auth=[],
-        summary="List insults by category",
-        description="Retrieve paginated insults filtered by category. Authenticated users see their own insults plus all active insults; unauthenticated users see only active insults. Supports both category keys (e.g., 'P') and names (e.g., 'Poor').",
-        parameters=[
-            OpenApiParameter(
-                name="nsfw",
-                type=OpenApiTypes.BOOL,
-                location=OpenApiParameter.QUERY,
-                description="Filter explicit content. `true` returns only NSFW insults; `false` returns only SFW. If omitted, both are returned.",
-                required=False,
-            ),
-        ],
+        summary="List insults in a category",
+        description=(
+            "A page of insults in one category, in random order. Anonymous callers "
+            "see active insults; an authenticated caller also sees their own "
+            "submissions in the category, whatever their status. The page also "
+            "carries `total_count` and `timestamp`."
+        ),
+        parameters=[openapi.CATEGORY_NAME_PARAM, openapi.NSFW_QUERY_PARAM],
         responses={
             200: OpenApiResponse(
-                description="Successfully retrieved paginated list of category-filtered insults",
                 response=OptimizedInsultSerializer,
-                examples=[
-                    OpenApiExample(
-                        name="Success Response - Unfiltered (NSFW) and Uncategorized (Category)",
-                        description="Example 200 response payload showing a list of insults without NSFW filtering applied and without any category restrictions. This represents the default unfiltered response.",
-                        value={
-                            "count": 133,
-                            "results": [
-                                {
-                                    "reference_id": "SNICKER_NDc4",
-                                    "content": "Yo momma is so ugly... when they took her to the beautician it took 12 hours for a quote!",
-                                    "category": "Ugly",
-                                    "nsfw": False,
-                                    "added_by": "John D.",
-                                    "added_on": "2 days ago",
-                                },
-                                {
-                                    "reference_id": "CACKLE_NDQ5",
-                                    "content": "Yo momma is so fat... when she dives into the ocean, there is a tsunami-warning!'",
-                                    "category": "Fat",
-                                    "nsfw": False,
-                                    "added_by": "Linda p.",
-                                    "added_on": "12 days ago",
-                                },
-                                {
-                                    "reference_id": "CHUCKLE_NDUz",
-                                    "content": "Yo momma is so old her driver's license is written with Roman numerals.",
-                                    "category": "Old",
-                                    "nsfw": False,
-                                    "added_by": "John D.",
-                                    "added_on": "4 Weeks Ago",
-                                },
-                            ],
-                        },
-                    ),
-                    OpenApiExample(
-                        name="Success Response - categorized (Category) & filtered(NSFW)",
-                        description="Example 200 response payload filtered to show only NSFW insults in the 'Poor' category. Demonstrates combined filtering via `category=P` and `nsfw=true`.",
-                        value={
-                            "count": 1,
-                            "results": [
-                                {
-                                    "reference_id": "CACKLE_NDY2",
-                                    "content": "Yo momma is so poor... she accepts food stamps for sex!",
-                                    "category": "Poor",
-                                    "nsfw": True,
-                                    "added_by": "John D.",
-                                    "added_on": "2 days ago",
-                                }
-                            ],
-                        },
-                    ),
-                ],
+                description="A page of insults.",
+                examples=[openapi.insult_page_example(openapi.INSULT)],
             ),
-            **get_public_list_responses(),
+            **openapi.public_list_responses(),
         },
     )
 )
@@ -311,24 +256,46 @@ class InsultByCategoryEndpoint(CachedResponseMixin, ListAPIView):
         operation_id="list_insults",
         auth=[],
         summary="List insults",
-        description="Retrieve paginated active insults, optionally filtered by `category` (key or name) and `nsfw`.",
-        parameters=[
-            OpenApiParameter(
-                name="category",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
-                description="Category key or name to filter by.",
-                required=False,
+        description=(
+            "A page of insults in random order, optionally filtered by `category` "
+            "and `nsfw`. Anonymous callers see active insults; an authenticated "
+            "caller also sees all of their own submissions. The page also carries "
+            "`total_count` and `timestamp`."
+        ),
+        parameters=[openapi.CATEGORY_QUERY_PARAM, openapi.NSFW_QUERY_PARAM],
+        responses={
+            200: OpenApiResponse(
+                response=OptimizedInsultSerializer,
+                description="A page of insults.",
+                examples=[
+                    openapi.insult_page_example(openapi.INSULT, openapi.INSULT_POOR)
+                ],
             ),
-        ],
+            **openapi.public_list_responses(),
+        },
     ),
     post=extend_schema(
         tags=["Insults"],
         operation_id="create_insult",
+        auth=[{"TokenAuth": []}],
         summary="Create an insult",
-        description="Create a new insult owned by the authenticated user. New insults default to `Pending` status.",
+        description=(
+            "Submit a new insult as the authenticated user. `category` takes a key "
+            "or name. The insult starts as `Pending - New` and stays out of public "
+            "listings until a moderator approves it; its owner can still retrieve it."
+        ),
         request=CreateInsultSerializer,
-        responses={201: CreateInsultSerializer},
+        examples=[openapi.CREATE_INSULT_REQUEST_EXAMPLE],
+        responses={
+            201: OpenApiResponse(
+                response=CreateInsultSerializer,
+                description="The created insult.",
+                examples=[openapi.CREATED_INSULT_EXAMPLE],
+            ),
+            400: openapi.INVALID_INSULT,
+            401: StandardErrorResponses.UNAUTHORIZED,
+            500: StandardErrorResponses.INTERNAL_SERVER_ERROR,
+        },
     ),
 )
 class InsultCollectionEndpoint(CreateModelMixin, InsultByCategoryEndpoint):
@@ -364,93 +331,85 @@ class InsultCollectionEndpoint(CreateModelMixin, InsultByCategoryEndpoint):
         tags=["Insults"],
         auth=[],
         operation_id="retrieve_insult",
-        summary="Retrieve a specific insult by ID.",
-        parameters=[
-            OpenApiParameter(
-                name="reference_id",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.PATH,
-                description="A unique integer value identifying this insult",
-            )
-        ],
+        summary="Retrieve an insult",
+        description=(
+            "One insult by reference ID. Active insults are public; an "
+            "authenticated owner can also retrieve their own pending or rejected "
+            "submissions. Anything else returns `404`."
+        ),
+        parameters=[openapi.REFERENCE_ID_PARAM],
         responses={
             200: OpenApiResponse(
                 response=OptimizedInsultSerializer,
-                examples=[
-                    OpenApiExample(
-                        "Success Response",
-                        value={
-                            "reference_id": 1,
-                            "content": "Yo momma is so fat... she rolled over 4 quarters and made a dollar!'",
-                            "category": "Fat",
-                            "status": "Active",
-                            "nsfw": False,
-                            "added_by": "Mike R.",
-                            "added_on": "2 years ago",
-                        },
-                    )
-                ],
+                description="The insult.",
+                examples=[openapi.INSULT_EXAMPLE],
             ),
             404: StandardErrorResponses.INSULT_NOT_FOUND,
-            **StandardErrorResponses.get_common_error_responses(),
+            429: StandardErrorResponses.RATE_LIMIT_EXCEEDED,
+            500: StandardErrorResponses.INTERNAL_SERVER_ERROR,
         },
     ),
     put=extend_schema(
         tags=["Insults"],
         auth=[{"TokenAuth": []}],
         operation_id="update_insult",
-        summary="Update an existing insult. Only the owner can perform this action.",
-        parameters=[
-            OpenApiParameter(
-                name="reference_id",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.PATH,
-                description="A unique integer value identifying this insult",
-            )
-        ],
+        summary="Replace an insult",
+        description="Replace an insult's editable fields. Only its owner may do this.",
+        parameters=[openapi.REFERENCE_ID_PARAM],
         request=OptimizedInsultSerializer,
         responses={
-            204: OpenApiResponse(description="Insult updated successfully"),
-            400: OpenApiResponse(description="Invalid input data provided"),
-            **get_insult_crud_responses(),
+            200: OpenApiResponse(
+                response=OptimizedInsultSerializer,
+                description="The updated insult.",
+                examples=[openapi.INSULT_EXAMPLE],
+            ),
+            400: StandardErrorResponses.BAD_REQUEST,
+            401: StandardErrorResponses.UNAUTHORIZED,
+            403: StandardErrorResponses.OWNER_ONLY_ACCESS,
+            404: StandardErrorResponses.INSULT_NOT_FOUND,
+            429: StandardErrorResponses.RATE_LIMIT_EXCEEDED,
+            500: StandardErrorResponses.INTERNAL_SERVER_ERROR,
         },
     ),
     patch=extend_schema(
         tags=["Insults"],
         auth=[{"TokenAuth": []}],
         operation_id="partial_update_insult",
-        summary="Partial Update to existing insult. Only the owner can perform this action.",
-        parameters=[
-            OpenApiParameter(
-                name="reference_id",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.PATH,
-                description="A unique integer value identifying this insult",
-            )
-        ],
+        summary="Update part of an insult",
+        description=(
+            'Update only the fields sent, e.g. `{"nsfw": true}`. Only the '
+            "insult's owner may do this."
+        ),
+        parameters=[openapi.REFERENCE_ID_PARAM],
         request=OptimizedInsultSerializer,
         responses={
-            204: OpenApiResponse(description="Insult partially updated successfully"),
-            400: OpenApiResponse(description="Invalid input data provided"),
-            **get_insult_crud_responses(),
+            200: OpenApiResponse(
+                response=OptimizedInsultSerializer,
+                description="The updated insult.",
+                examples=[openapi.INSULT_EXAMPLE],
+            ),
+            400: StandardErrorResponses.BAD_REQUEST,
+            401: StandardErrorResponses.UNAUTHORIZED,
+            403: StandardErrorResponses.OWNER_ONLY_ACCESS,
+            404: StandardErrorResponses.INSULT_NOT_FOUND,
+            429: StandardErrorResponses.RATE_LIMIT_EXCEEDED,
+            500: StandardErrorResponses.INTERNAL_SERVER_ERROR,
         },
     ),
     delete=extend_schema(
         tags=["Insults"],
         auth=[{"TokenAuth": []}],
         operation_id="delete_insult",
-        summary="Delete an existing insult. Only the owner can perform this action.",
-        parameters=[
-            OpenApiParameter(
-                name="reference_id",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.PATH,
-                description="A unique integer value identifying this insult",
-            )
-        ],
+        summary="Delete an insult",
+        description="Permanently delete an insult. Only its owner may do this.",
+        parameters=[openapi.REFERENCE_ID_PARAM],
         responses={
-            204: OpenApiResponse(description="Insult deleted successfully"),
-            **get_insult_crud_responses(),
+            204: OpenApiResponse(description="Deleted; no response body."),
+            401: StandardErrorResponses.UNAUTHORIZED,
+            403: StandardErrorResponses.OWNER_ONLY_ACCESS,
+            404: StandardErrorResponses.INSULT_NOT_FOUND,
+            429: StandardErrorResponses.RATE_LIMIT_EXCEEDED,
+            500: StandardErrorResponses.INTERNAL_SERVER_ERROR,
         },
     ),
 )
@@ -525,6 +484,32 @@ class InsultDetailsEndpoint(CreateModelMixin, RetrieveUpdateDestroyAPIView):
         return Response(serializer.data)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Insults"],
+        operation_id="get_random_insult",
+        auth=[],
+        summary="Get a random insult",
+        description=(
+            "One random active insult, optionally limited by `category` and "
+            "`nsfw`. Never cached: every call can return a different insult. "
+            "Not rate limited."
+        ),
+        parameters=[openapi.CATEGORY_QUERY_PARAM, openapi.NSFW_QUERY_PARAM],
+        request=None,
+        responses={
+            200: OpenApiResponse(
+                response=OptimizedInsultSerializer,
+                description="A random insult.",
+                examples=[openapi.INSULT_EXAMPLE],
+            ),
+            400: openapi.UNKNOWN_CATEGORY,
+            401: StandardErrorResponses.UNAUTHORIZED,
+            404: StandardErrorResponses.NO_RESULTS_FOUND,
+            500: StandardErrorResponses.INTERNAL_SERVER_ERROR,
+        },
+    )
+)
 class RandomInsultEndpoint(GenericAPIView):
     """Serves a single random active insult, instrumented per query phase."""
 
@@ -532,39 +517,31 @@ class RandomInsultEndpoint(GenericAPIView):
     permission_classes = [AllowAny]
     throttle_classes = []
 
+    def dispatch(self, request, *args, **kwargs):
+        """Count every request to this endpoint, under its final status.
+
+        Counted here rather than in ``get()`` because DRF authenticates,
+        checks permissions and throttles in ``initial()``, before ``get()``
+        runs: a bad token is turned into a 401/403 response inside
+        ``super().dispatch()`` and would otherwise never be counted. An
+        unhandled exception propagates out of ``super().dispatch()`` and is
+        counted as a 500 in ``finally``.
+        """
+        self._sql_stats = {"query_count": 0, "total_ms": 0.0, "slowest_ms": 0.0}
+        status_label = "500"
+        try:
+            response = super().dispatch(request, *args, **kwargs)
+            status_label = str(response.status_code)
+            return response
+        finally:
+            metrics.record_random_insult_request(
+                status=status_label,
+                category_filtered="category" in request.GET,
+                nsfw_filtered="nsfw" in request.GET,
+                db_query_count=self._sql_stats["query_count"],
+            )
+
     @method_decorator(never_cache)
-    @extend_schema(
-        tags=["Insults"],
-        operation_id="get_random_insult",
-        auth=[],
-        summary="Get a random insult",
-        description="Returns a single random insult from the active collection. Supports optional filtering by NSFW status and category for more targeted results.",
-        responses={
-            200: OpenApiResponse(
-                response=OptimizedInsultSerializer,
-                description="Random insult retrieved successfully",
-            ),
-            404: StandardErrorResponses.NO_RESULTS_FOUND,
-            **StandardErrorResponses.get_common_error_responses(),
-        },
-        request=None,
-        parameters=[
-            OpenApiParameter(
-                name="nsfw",
-                type=OpenApiTypes.BOOL,
-                location=OpenApiParameter.QUERY,
-                description="Filter explicit content. `true` returns only NSFW insults; `false` returns only SFW. If omitted, both are returned.",
-                required=False,
-            ),
-            OpenApiParameter(
-                name="category",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
-                description="Filter insult to a category such as fat, poor, etc. ",
-                required=False,
-            ),
-        ],
-    )
     def get(self, request):
         """
 
@@ -589,22 +566,21 @@ class RandomInsultEndpoint(GenericAPIView):
 
         nsfw_param = request.query_params.get("nsfw")
         category_param = request.query_params.get("category")
-        nsfw_filtered = nsfw_param is not None
-        category_filtered = category_param is not None
         resolved_category_key: str | None = None
 
+        # Request counting (by final status) happens in dispatch(); the SQL
+        # stats are shared with it through self._sql_stats.
         with metrics.sql_instrumentation() as sql_stats:
-            # Phase 1: base queryset build
+            self._sql_stats = sql_stats
+            # Phase 1: queryset build. Lazy - no SQL runs here, so the base
+            # queryset and the NSFW filter share one stage.
             with metrics.time_random_insult_stage("queryset_build"):
                 queryset = Insult.public.select_related("added_by", "category").all()
-
-            # Phase 2: NSFW filter
-            with metrics.time_random_insult_stage("nsfw_filter"):
                 if nsfw_param is not None:
                     nsfw = nsfw_param.lower() in ["true", "1", "yes"]
                     queryset = queryset.filter(nsfw=nsfw)
 
-            # Phase 3: category resolution
+            # Phase 2: category resolution (may hit cache/DB)
             with metrics.time_random_insult_stage("category_resolution"):
                 if category_param:
                     resolved = BaseInsultSerializer.resolve_category(
@@ -615,19 +591,14 @@ class RandomInsultEndpoint(GenericAPIView):
                         category__category_key=resolved_category_key
                     )
 
-            # Phase 4: count serves double duty — emptiness check + random offset bound
+            # Phase 3: count serves double duty — emptiness check + random
+            # offset bound. First SQL query of the request.
             with metrics.time_random_insult_stage("emptiness_check"):
                 count = queryset.count()
 
             if count == 0:
                 duration_ms = (time.perf_counter() - t_start) * 1000.0
                 metrics.record_random_insult_empty()
-                metrics.record_random_insult_request(
-                    status="404",
-                    category_filtered=category_filtered,
-                    nsfw_filtered=nsfw_filtered,
-                    db_query_count=sql_stats["query_count"],
-                )
                 logger.bind(
                     request_id=request_id,
                     path=request.path,
@@ -641,10 +612,11 @@ class RandomInsultEndpoint(GenericAPIView):
                     empty_result=True,
                 ).info("random_insult | no results found after filtering")
                 return Response(
-                    {"detail": "No insults found matching the criteria."}, status=404
+                    {"detail": "No insults found matching the criteria."},
+                    status=404,
                 )
 
-            # Phase 5: offset-based random selection.
+            # Phase 4: offset-based random selection.
             # ORDER BY insult_id uses the PK index (O(log n) + offset).
             # Replaces ORDER BY RANDOM() which was a full-table sort (O(n log n)).
             with metrics.time_random_insult_stage("random_selection"):
@@ -652,18 +624,12 @@ class RandomInsultEndpoint(GenericAPIView):
                     random.randint(0, count - 1)
                 ]
 
-            # Phase 6: serialization
+            # Phase 5: serialization
             with metrics.time_random_insult_stage("serialization"):
                 serializer = OptimizedInsultSerializer(random_insult)
                 data = serializer.data
 
         duration_ms = (time.perf_counter() - t_start) * 1000.0
-        metrics.record_random_insult_request(
-            status="200",
-            category_filtered=category_filtered,
-            nsfw_filtered=nsfw_filtered,
-            db_query_count=sql_stats["query_count"],
-        )
         logger.bind(
             request_id=request_id,
             path=request.path,
@@ -685,25 +651,50 @@ class RandomInsultEndpoint(GenericAPIView):
         tags=["Insult Categories"],
         auth=[],
         operation_id="list_categories",
-        summary="List all available insult categories",
+        summary="List categories by theme",
+        description=(
+            "Every public category, grouped by theme and keyed by category key, "
+            "with its name, description and number of active insults. Use either "
+            "the key or the name wherever the API takes a category."
+        ),
         responses={
             200: OpenApiResponse(
-                description="List of available categories",
+                response=OpenApiTypes.OBJECT,
+                description="Categories grouped by theme.",
                 examples=[
                     OpenApiExample(
-                        "Categories List",
+                        "Categories",
                         value={
-                            "help_text": "Available categories",
-                            "available_categories": [
-                                {"p": {"category_name": "poor", "insult_count": 134}},
-                                {"f": {"category_name": "fat", "insult_count": 80}},
-                                # ...
-                            ],
+                            "help_text": (
+                                "Here is a list of all available Insult Categories. "
+                                "The API will accept either values and is case "
+                                "insensitive. Ex: `/api/insults/p` and "
+                                "`api/insults/POOR` will yield the same result"
+                            ),
+                            "results": {
+                                "Yo Momma": {
+                                    "theme_description": "Classic yo momma jokes.",
+                                    "categories": {
+                                        "F": {
+                                            "name": "Fat",
+                                            "description": "",
+                                            "count": 80,
+                                        },
+                                        "P": {
+                                            "name": "Poor",
+                                            "description": "",
+                                            "count": 134,
+                                        },
+                                    },
+                                }
+                            },
                         },
+                        response_only=True,
                     )
                 ],
             ),
-            **get_category_list_responses(),
+            429: StandardErrorResponses.RATE_LIMIT_EXCEEDED,
+            500: StandardErrorResponses.INTERNAL_SERVER_ERROR,
         },
     )
 )
@@ -784,35 +775,25 @@ class ListThemesAndCategoryEndpoint(CachedResponseMixin, GenericAPIView):
 @extend_schema_view(
     post=extend_schema(
         tags=["Insults"],
-        auth=[
-            {"FlexibleTokenAuthentication": []}
-        ],  # pyright: ignore[reportArgumentType]
+        auth=[{"TokenAuth": []}],
         operation_id="create-insult",
+        deprecated=True,
+        summary="Create an insult (deprecated)",
+        description=(
+            "Deprecated alias served only at `POST /api/insults/new`; use "
+            "`POST /api/v2.0.0/insults/`, which behaves the same."
+        ),
         request=CreateInsultSerializer,
-        summary="Create New Insult",
+        examples=[openapi.CREATE_INSULT_REQUEST_EXAMPLE],
         responses={
             201: OpenApiResponse(
-                description="Insult created successfully",
                 response=CreateInsultSerializer,
-                examples=[
-                    OpenApiExample(
-                        "Successful Creation",
-                        summary="New insult created successfully",
-                        description="Example response when a new insult is successfully created",
-                        value={
-                            "reference_id": "GIGGLE_ABC123",
-                            "category": "Poor",
-                            "content": "Your code is so poor, it makes welfare look like a luxury lifestyle.",
-                            "nsfw": False,
-                            "status": "Pending",
-                            "added_by": "DevJoker",
-                            "added_on": "2 minutes ago",
-                        },
-                    )
-                ],
+                description="The created insult.",
+                examples=[openapi.CREATED_INSULT_EXAMPLE],
             ),
-            400: OpenApiResponse(description="Invalid input data provided"),
-            **StandardErrorResponses.get_authenticated_endpoint_responses(),
+            400: openapi.INVALID_INSULT,
+            401: StandardErrorResponses.UNAUTHORIZED,
+            500: StandardErrorResponses.INTERNAL_SERVER_ERROR,
         },
     )
 )
@@ -849,33 +830,31 @@ class CreateInsultEndpoint(CreateAPIView):
         tags=["Insults"],
         auth=[],
         operation_id="list_reference_ids",
-        summary="List all active insult reference IDs",
+        summary="List active insult reference IDs",
         description=(
-            "Returns a paginated list of reference IDs for every active insult in the "
-            "public collection. Useful for bulk look-ups, pre-fetching, or building a "
-            "client-side cache of available identifiers. Pass each ID to "
-            "`GET /api/v2.0.0/insults/{reference_id}/` to retrieve the full insult."
+            "A page of the reference IDs of every active insult, sorted so paging "
+            "is stable. Pass an ID to `GET /api/v2.0.0/insults/{reference_id}/` "
+            "for the full insult. Not rate limited."
         ),
         responses={
             200: OpenApiResponse(
-                description="Paginated list of active insult reference IDs",
+                response=OpenApiTypes.OBJECT,
+                description="A page of reference IDs.",
                 examples=[
                     OpenApiExample(
-                        "Success Response",
+                        "Reference IDs",
                         value={
-                            "count": 500,
-                            "next": "/api/v2.0.0/insults/reference-ids/?page=2",
+                            "count": 214,
+                            "next": "https://api.yo-momma.io/api/v2.0.0/insults/reference-ids/?page=2",
                             "previous": None,
-                            "results": [
-                                "CACKLE_NDQ5",
-                                "CHUCKLE_NDUz",
-                                "GIGGLE_ABC123",
-                            ],
+                            "results": ["CACKLE_NDQ5", "CHUCKLE_NDUz", "GIGGLE_Mg=="],
                         },
+                        response_only=True,
                     )
                 ],
             ),
-            **get_public_list_responses(),
+            404: openapi.INVALID_PAGE,
+            500: StandardErrorResponses.INTERNAL_SERVER_ERROR,
         },
     )
 )
@@ -931,8 +910,83 @@ class UserContentManagementEndpoint(ListAPIView):
     serializer_class = MyInsultSerializer
 
 
+_HEALTH_RESPONSE = inline_serializer(
+    name="HealthResponse",
+    fields={
+        "status": serializers.ChoiceField(choices=["ok", "degraded"]),
+        "database": serializers.ChoiceField(choices=["ok", "unavailable"]),
+        "graphql": serializers.ChoiceField(choices=["ok", "error"]),
+        "launchdarkly": serializers.ChoiceField(
+            choices=["ok", "disabled", "not_initialized", "unavailable"]
+        ),
+        "loki": serializers.ChoiceField(
+            choices=["Actively Forwarded", "Configured - Not Forwarding", "Disabled"]
+        ),
+        "timestamp": serializers.DateTimeField(),
+    },
+)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Health & Status Check"],
+        auth=[],
+        operation_id="service_heartbeat",
+        summary="Service health heartbeat",
+        description=(
+            "Checks the service's dependencies. Responds `503` with "
+            "`status: degraded` when the database, GraphQL or (if enabled) "
+            "LaunchDarkly is unhealthy, otherwise `200`.\n\n"
+            "`loki` reports log forwarding for the worker that answered: "
+            "`Actively Forwarded` (configured and the latest push succeeded), "
+            "`Configured - Not Forwarding` (configured but nothing delivered yet, "
+            "or the latest push failed) or `Disabled` (not configured). It is "
+            "informational and never makes the service degraded.\n\n"
+            "Never cached and not rate limited."
+        ),
+        responses={
+            200: OpenApiResponse(
+                response=_HEALTH_RESPONSE,
+                description="All checks healthy.",
+                examples=[
+                    OpenApiExample(
+                        "Healthy",
+                        value={
+                            "status": "ok",
+                            "database": "ok",
+                            "graphql": "ok",
+                            "launchdarkly": "ok",
+                            "loki": "Actively Forwarded",
+                            "timestamp": "2026-10-16T10:04:41.581040+00:00",
+                        },
+                        response_only=True,
+                    )
+                ],
+            ),
+            503: OpenApiResponse(
+                response=_HEALTH_RESPONSE,
+                description="One or more checks degraded.",
+                examples=[
+                    OpenApiExample(
+                        "Degraded",
+                        value={
+                            "status": "degraded",
+                            "database": "unavailable",
+                            "graphql": "ok",
+                            "launchdarkly": "not_initialized",
+                            "loki": "Configured - Not Forwarding",
+                            "timestamp": "2026-10-16T10:04:41.581040+00:00",
+                        },
+                        response_only=True,
+                    )
+                ],
+            ),
+        },
+    )
+)
 class HealthEndpoint(GenericAPIView):
-    """Deep readiness check covering the database, GraphQL, and LaunchDarkly."""
+    """Deep readiness check covering the database, GraphQL, and LaunchDarkly,
+    plus the Loki log-forwarding status (informational only)."""
 
     permission_classes = [AllowAny]
     authentication_classes = []
@@ -976,48 +1030,20 @@ class HealthEndpoint(GenericAPIView):
         except Exception:
             return "unavailable"
 
-    @extend_schema(
-        tags=["Health"],
-        auth=[],
-        operation_id="health_check",
-        summary="Service health heartbeat",
-        description=(
-            "Returns the aggregated health status of the service, including database "
-            "connectivity, GraphQL schema availability, and LaunchDarkly client state."
-        ),
-        responses={
-            200: OpenApiResponse(
-                description="All checks healthy",
-                examples=[
-                    OpenApiExample(
-                        "Healthy",
-                        value={
-                            "status": "ok",
-                            "database": "ok",
-                            "graphql": "ok",
-                            "launchdarkly": "ok",
-                            "timestamp": "2026-03-04T12:00:00Z",
-                        },
-                    )
-                ],
-            ),
-            503: OpenApiResponse(
-                description="One or more checks degraded",
-                examples=[
-                    OpenApiExample(
-                        "Degraded",
-                        value={
-                            "status": "degraded",
-                            "database": "unavailable",
-                            "graphql": "ok",
-                            "launchdarkly": "not_initialized",
-                            "timestamp": "2026-03-04T12:00:00Z",
-                        },
-                    )
-                ],
-            ),
-        },
-    )
+    def _check_loki(self) -> str:
+        """Report Loki log forwarding for this worker process.
+
+        Returns:
+            str: ``"Actively Forwarded"``, ``"Configured - Not Forwarding"``
+            or ``"Disabled"`` (see ``common.loki``).
+        """
+        from common.loki import forwarding_status
+
+        return forwarding_status()
+
+    # never_cache: UpdateCacheMiddleware would otherwise store a healthy
+    # response for CACHE_MIDDLEWARE_SECONDS and replay it, hiding an outage.
+    @method_decorator(never_cache)
     def get(self, request):
         """Run every health check; respond 503 if any check is degraded."""
         checks = {
@@ -1030,12 +1056,39 @@ class HealthEndpoint(GenericAPIView):
             {
                 "status": "degraded" if degraded else "ok",
                 **checks,
+                # Informational: a log-shipping outage must not take the API
+                # out of rotation, so it's excluded from `degraded`.
+                "loki": self._check_loki(),
                 "timestamp": timezone.now().isoformat(),
             },
             status=503 if degraded else 200,
         )
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Health & Status Check"],
+        auth=[],
+        operation_id="ping",
+        summary="Liveness probe",
+        description=(
+            'Returns `{"status": "ok"}` whenever the server can answer '
+            "requests. It checks nothing else; use `GET /api/health/` for "
+            "dependency checks. Never cached and not rate limited."
+        ),
+        responses={
+            200: OpenApiResponse(
+                response=inline_serializer(
+                    name="PingResponse", fields={"status": serializers.CharField()}
+                ),
+                description="The server is up.",
+                examples=[
+                    OpenApiExample("Alive", value={"status": "ok"}, response_only=True)
+                ],
+            )
+        },
+    )
+)
 class PingEndpoint(GenericAPIView):
     """Lightweight liveness probe used by Traefik health checks.
 
@@ -1048,7 +1101,7 @@ class PingEndpoint(GenericAPIView):
     throttle_classes = []
     serializer_class = None
 
-    @extend_schema(exclude=True)
+    @method_decorator(never_cache)
     def get(self, request):
         """Return a static ``ok`` payload."""
         return Response({"status": "ok"})

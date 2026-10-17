@@ -250,3 +250,27 @@ class MailerSettingsWiringTests(TestCase):
         for configuration in (Production, Offline, Development, Staging):
             with self.subTest(configuration=configuration.__name__):
                 self.assertFalse(_class_body_assigns(configuration, "EMAIL_BACKEND"))
+
+
+@override_settings(**_BACKEND_OVERRIDES)
+class ImmediateDbBackendMetricsTests(TestCase):
+    def test_delivered_messages_are_counted_as_sent(self):
+        from common.metrics import EMAILS
+
+        sent = EMAILS.labels("sent")._value.get()
+        unsent = EMAILS.labels("unsent")._value.get()
+
+        mail.send_mail("Subject", "Body", "from@example.com", ["to@example.com"])
+
+        self.assertEqual(EMAILS.labels("sent")._value.get(), sent + 1)
+        self.assertEqual(EMAILS.labels("unsent")._value.get(), unsent)
+
+    def test_failed_messages_are_counted_as_unsent(self):
+        from common.metrics import EMAILS
+
+        unsent = EMAILS.labels("unsent")._value.get()
+
+        with patch(_LOCMEM_SEND, side_effect=smtplib.SMTPException("down")):
+            mail.send_mail("Subject", "Body", "from@example.com", ["to@example.com"])
+
+        self.assertEqual(EMAILS.labels("unsent")._value.get(), unsent + 1)

@@ -16,7 +16,7 @@ dependencies = [
     "djangorestframework",
     "django-filter",
     "loguru",
-    "psycopg2-binary",
+    "psycopg[binary,pool]",  # psycopg 3: required for Django's connection pool
     "redis[hiredis]",
     "django-mailer",
     "graphene-django",
