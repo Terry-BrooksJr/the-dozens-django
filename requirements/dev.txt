@@ -161,5 +161,5 @@ tzdata==2026.4 ; sys_platform == 'win32'
     # via django
 ulid-py==1.1.0
     # via kolo
-virtualenv==21.12.1
+virtualenv==21.14.13
     # via pre-commit
