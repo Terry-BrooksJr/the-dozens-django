@@ -126,7 +126,7 @@ drf-spectacular-sidecar==2026.9.1
     # via the-dozens-django
 expiringdict==1.2.2
     # via launchdarkly-server-sdk
-filelock==4.0.3
+filelock==4.2.1
     # via huggingface-hub
 fsspec==2026.9.0
     # via huggingface-hub
