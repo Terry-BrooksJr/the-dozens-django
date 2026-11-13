@@ -150,6 +150,26 @@ _LOCAL_STORAGES = {
 }
 
 
+def _postgres_databases(**options):
+    return {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("POSTGRES_DB"),
+            "USER": os.getenv("PG_DATABASE_USER"),
+            "PASSWORD": os.getenv("PG_DATABASE_PASSWORD"),
+            "HOST": os.getenv("PG_DATABASE_HOST"),
+            "DISABLE_SERVER_SIDE_CURSORS": True,
+            "PORT": os.getenv("PG_DATABASE_PORT"),
+            "OPTIONS": options,
+            "pool": {
+                "max_size": 11,
+                "name": "django-thedozens",
+                "max_idle": 15,
+            },
+        }
+    }
+
+
 class Base(Configuration):
     """
     Base configuration class for Django settings in the thedozens project.
@@ -396,24 +416,7 @@ class Base(Configuration):
 
     MIDDLEWARE = values.ListValue(_MIDDLEWARE_CORE, environ=False)
 
-    DATABASES = values.DictValue(
-        {
-            "default": {
-                "ENGINE": "django.db.backends.postgresql",
-                "NAME": os.getenv("POSTGRES_DB"),
-                "USER": os.getenv("PG_DATABASE_USER"),
-                "PASSWORD": os.getenv("PG_DATABASE_PASSWORD"),
-                "HOST": os.getenv("PG_DATABASE_HOST"),
-                "DISABLE_SERVER_SIDE_CURSORS": True,
-                "PORT": os.getenv("PG_DATABASE_PORT"),
-                "pool": {
-                    "max_size": 11,
-                    "name": "django-thedozens",
-                    "max_idle": 15,
-                },
-            }
-        }
-    )
+    DATABASES = values.DictValue(_postgres_databases())
     # SECTION Start - Static files & Templates
     AWS_ACCESS_KEY_ID = values.SecretValue(
         environ=True, environ_prefix=None, environ_name="S3_OBJECT_STORAGE_KEY"
@@ -993,6 +996,15 @@ class Production(Base):
     detection, and configures logging for stdout plus optional Loki and
     LaunchDarkly Observability sinks (see `configure_logging`).
     """
+
+    DATABASES = values.DictValue(
+        _postgres_databases(
+            sslmode="verify-full",
+            sslrootcert=os.environ.get("PGSSLROOTCERT", "/etc/dozens/postgres/root-ca.crt"),
+            gssencmode="disable",
+        ),
+        environ=False,
+    )
 
     ALLOWED_HOSTS = values.ListValue(
         environ=True, environ_prefix=None, environ_name="ALLOWED_HOSTS"
