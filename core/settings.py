@@ -1000,7 +1000,9 @@ class Production(Base):
     DATABASES = values.DictValue(
         _postgres_databases(
             sslmode="verify-full",
-            sslrootcert=os.environ.get("PGSSLROOTCERT", "/etc/dozens/postgres/root-ca.crt"),
+            sslrootcert=os.environ.get(
+                "PATH_TO_DB_ROOT_CERT", "/etc/dozens/postgres/root-ca.crt"
+            ),
             gssencmode="disable",
         ),
         environ=False,
