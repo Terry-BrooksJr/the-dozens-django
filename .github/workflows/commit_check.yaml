@@ -179,11 +179,13 @@ jobs:
 
   docker:
     name: Build and Publish Docker Image
-    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     needs:
       - build-status
 
     runs-on: ubuntu-latest
+    concurrency:
+      group: docker-image-${{ github.ref }}
+      cancel-in-progress: false
 
     steps:
       - name: Checkout repository
@@ -192,13 +194,8 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Generate Docker metadata
+        if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
@@ -214,15 +211,90 @@ jobs:
           file: .deploy/Dockerfile
           call: check
 
-      - name: Build and push Docker image
+      - name: Build Docker image for startup check
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: .deploy/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          outputs: type=oci,dest=${{ runner.temp }}/dozens-api.tar
+          tags: dozens-api:ci
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: mode=max
           sbom: true
+
+      - name: Load the OCI image for startup verification
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends skopeo
+          skopeo copy "oci-archive:${RUNNER_TEMP}/dozens-api.tar" docker-daemon:dozens-api:ci
+
+      - name: Verify the API image starts
+        run: |
+          docker run --detach --name dozens-api-smoke --network none \
+            --env ALLOWED_HOSTS=localhost,127.0.0.1 \
+            --env SECRET_KEY=ci-startup-test-only \
+            --env SITE_ID=1 \
+            --env CACHE_TTL=60 \
+            --env USE_REDIS_CACHE=false \
+            --env GITHUB_ACCESS_TOKEN=ci-placeholder \
+            --env RECAPTCHA_PRIVATE_KEY=ci-placeholder \
+            --env RECAPTCHA_PUBLIC_KEY=ci-placeholder \
+            --env S3_OBJECT_STORAGE_KEY=ci-placeholder \
+            --env S3_OBJECT_STORAGE_SECRET=ci-placeholder \
+            --env S3_OBJECT_STORAGE_BUCKET_NAME=ci-placeholder \
+            --env S3_ENDPOINT_URL=https://example.invalid \
+            --env S3_REGION_NAME=us-east-1 \
+            --env EMAIL_SERVER=localhost \
+            --env EMAIL_TSL_PORT=587 \
+            --env NOTIFICATION_SENDER_EMAIL=ci@example.invalid \
+            --env EMAIL_ACCT_PASSWORD=ci-placeholder \
+            --env MAILER_EMPTY_QUEUE_SLEEP=5 \
+            dozens-api:ci
+          trap 'docker rm -f dozens-api-smoke >/dev/null' EXIT
+
+          for attempt in {1..30}; do
+            if [[ "$(docker inspect --format '{{.State.Running}}' dozens-api-smoke)" != true ]]; then
+              break
+            fi
+            status="$(docker exec dozens-api-smoke curl --silent --output /dev/null \
+              --write-out '%{http_code}' --max-time 2 http://127.0.0.1:9555/api/ping/ || true)"
+            if [[ "$status" == 200 ]]; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          docker logs dozens-api-smoke
+          echo "::error::The Docker image did not serve HTTP 200 at /api/ping/"
+          exit 1
+
+      - name: Check that this commit is still the default-branch head
+        if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        id: publish
+        run: |
+          remote_ref="$(git ls-remote --exit-code --refs origin "$GITHUB_REF")"
+          read -r head_sha _ <<< "$remote_ref"
+          if [[ "$head_sha" == "$GITHUB_SHA" ]]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Skipping image publication because the default branch has advanced"
+          fi
+
+      - name: Login to Docker Hub
+        if: steps.publish.outputs.current == 'true'
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish the verified OCI image
+        if: steps.publish.outputs.current == 'true'
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          while IFS= read -r tag; do
+            skopeo copy --all --preserve-digests \
+              "oci-archive:${RUNNER_TEMP}/dozens-api.tar" "docker://$tag"
+          done <<< "$IMAGE_TAGS"
