@@ -89,7 +89,17 @@ jobs:
           POSTGRES_DB: test_db
         run: |
           if [[ "$GITHUB_ACTOR" == "dependabot[bot]" ]]; then
-            DOPPLER_TOKEN= SECRET_KEY=ci-only-django-secret-key task test:coverage
+            export DOPPLER_TOKEN=
+            export SECRET_KEY=ci-only-django-secret-key SITE_ID=1 CACHE_TTL=300
+            export GITHUB_ACCESS_TOKEN=ci-unused
+            export RECAPTCHA_PRIVATE_KEY=ci-unused RECAPTCHA_PUBLIC_KEY=ci-unused
+            export S3_OBJECT_STORAGE_KEY=ci-unused S3_OBJECT_STORAGE_SECRET=ci-unused
+            export S3_OBJECT_STORAGE_BUCKET_NAME=ci-unused S3_REGION_NAME=us-east-1
+            export S3_ENDPOINT_URL=http://127.0.0.1:9000
+            export EMAIL_SERVER=localhost EMAIL_TSL_PORT=2525
+            export NOTIFICATION_SENDER_EMAIL=ci@example.invalid EMAIL_ACCT_PASSWORD=ci-unused
+            export MAILER_EMPTY_QUEUE_SLEEP=1
+            task test:coverage
             exit
           fi
 
