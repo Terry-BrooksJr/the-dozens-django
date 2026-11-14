@@ -78,7 +78,7 @@ jobs:
           # above + in-memory LocMemCache). Set here rather than relying on
           # Taskfile's `env:` block: go-task does not override a variable that
           # already exists, and Doppler injects its own DJANGO_CONFIGURATION.
-          # --preserve-env below (and scripts/with_doppler.sh) keep this value.
+          # Preserve the workflow's local database and Django configuration.
           # A shared Redis let parallel CI runs' cache.clear() calls wipe each
           # other's session keys (django.contrib.sessions UpdateError).
           DJANGO_CONFIGURATION: Staging
@@ -108,7 +108,7 @@ jobs:
             --config "$DOPPLER_CONFIG" \
             --token "$DOPPLER_TOKEN" \
             --preserve-env \
-            -- task test:coverage
+            -- env -u DOPPLER_TOKEN task test:coverage
 
       - name: Upload coverage to Codacy
         if: github.actor != 'dependabot[bot]'
