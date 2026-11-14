@@ -4,7 +4,7 @@ name: CI Pipeline
 on:
   push:
   pull_request:
-    branches: [main, develop]
+    branches: [master, main, develop]
 
 env:
   PYTHON_VERSION: '3.14'
@@ -64,11 +64,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Doppler CLI
+        if: github.actor != 'dependabot[bot]'
         run: |
           curl -Ls https://cli.doppler.com/install.sh | sudo sh
           doppler --version
 
-      - name: Run tests with coverage (Doppler)
+      - name: Run tests with coverage
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
           DOPPLER_PROJECT: ${{ vars.DOPPLER_PROJECT }}
@@ -87,6 +88,11 @@ jobs:
           PG_DATABASE_PASSWORD: postgres
           POSTGRES_DB: test_db
         run: |
+          if [[ "$GITHUB_ACTOR" == "dependabot[bot]" ]]; then
+            DOPPLER_TOKEN= SECRET_KEY=ci-only-django-secret-key task test:coverage
+            exit
+          fi
+
           doppler run \
             --project "$DOPPLER_PROJECT" \
             --config "$DOPPLER_CONFIG" \
@@ -95,6 +101,7 @@ jobs:
             -- task test:coverage
 
       - name: Upload coverage to Codacy
+        if: github.actor != 'dependabot[bot]'
         uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 # v1.3.0
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
