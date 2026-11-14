@@ -60,6 +60,9 @@ RUN mkdir -p /src/logs && chown api:api /src/logs
 
 USER api
 
+# Fail the image build if audit history is missing from the runtime dependencies.
+RUN python -c "import django, simple_history"
+
 EXPOSE 9555
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
